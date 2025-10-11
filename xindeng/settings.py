@@ -137,6 +137,10 @@ DJANGO_VITE = {
     }
 }
 
+ # Django-Vite configuration for production
+DJANGO_VITE_DEV_MODE = False
+DJANGO_VITE_ASSETS_PATH = os.path.join(BASE_DIR, 'assets')
+
 # Media files
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR /"media"
