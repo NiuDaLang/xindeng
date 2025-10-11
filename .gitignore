@@ -180,3 +180,7 @@ node_modules/
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+
+# SSH
+*.pem
+django-app-key.pem
