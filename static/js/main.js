@@ -1,5 +1,4 @@
 import "@/css/main.css"
-import "@/js/test.js"
 
 import Swiper from 'swiper'
 import { Navigation, Pagination } from 'swiper/modules'
