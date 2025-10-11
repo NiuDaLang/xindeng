@@ -133,13 +133,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Django-Vite
 DJANGO_VITE = {
     "default": {
-        "dev_mode": False
+        "dev_mode": False,
+        "manifest_path": BASE_DIR / "assets" / "manifest.json",
+        "static_url_prefix": "assets"
     }
 }
-
- # Django-Vite configuration for production
-DJANGO_VITE_DEV_MODE = False
-DJANGO_VITE_ASSETS_PATH = os.path.join(BASE_DIR, 'assets')
 
 # Media files
 MEDIA_URL = "/media/"
