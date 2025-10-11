@@ -1,6 +1,5 @@
 import "@/css/main.css"
 import "@/js/test.js"
-import { sayHello } from './important'
 
 import Swiper from 'swiper'
 import { Navigation, Pagination } from 'swiper/modules'
@@ -8,7 +7,6 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 
-sayHello("hello solar systems!")
 
 // ***** change theme *****
 let checkbox = document.querySelector("#day_night_checkbox")

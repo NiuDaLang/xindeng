@@ -16,7 +16,7 @@ export default defineConfig({
     assetsDir: "django-assets",
     rollupOptions: {
       input: {
-        test: resolve("./static/js/main.js"),
+        main: resolve("./static/js/main.js"),
       }
     }
   },
