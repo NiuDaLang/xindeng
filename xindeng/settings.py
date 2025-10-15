@@ -135,7 +135,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Django-Vite
 DJANGO_VITE = {
     "default": {
-        "dev_mode": DEBUG,
+        "dev_mode": False,
         "manifest_path": BASE_DIR / "assets" / "manifest.json",
         "static_url_prefix": ""
     }
