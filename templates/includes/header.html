@@ -16,7 +16,7 @@
                     class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
                     <li><a>介紹</a></li>
                     <li>
-                    <a>產品</a>
+                    <a>寶貝</a>
                     <ul class="p-2">
                         <li><a>油畫</a></li>
                         <li><a>水彩畫</a></li>
@@ -38,8 +38,9 @@
             <li><a>介紹</a></li>
             <li>
                 <details class="dropdown">
-                    <summary>產品</summary>
+                    <summary>寶貝</summary>
                     <ul class="menu dropdown-content bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+                        <li><a href="{% url 'products' %}">一覽</a></li>
                         <li><a>油畫</a></li>
                         <li><a>水彩畫</a></li>
                         <li><a>其他</a></li>
@@ -71,13 +72,13 @@
                 <!-- dropdown content -->
                 <div
                     tabindex="0"
-                    class="card card-compact dropdown-content bg-base-100 z-1 mt-3 w-52 shadow">
+                    class="card card-compact dropdown-content bg-base-100 z-1 mt-3 w-52 shadow right-0">
                     <div class="card-body">
-                    <span class="text-lg font-bold">8 Items</span>
-                    <span class="text-info">Subtotal: $999</span>
-                    <div class="card-actions">
-                        <button class="btn btn-primary btn-block">View cart</button>
-                    </div>
+                        <span class="text-lg font-bold">8 Items</span>
+                        <span class="text-info">Subtotal: $999</span>
+                        <div class="card-actions">
+                            <button class="btn btn-primary btn-block">View cart</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -96,19 +97,39 @@
                     <!-- dropdown content -->
                     <ul
                     tabindex="0"
-                    class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
+                    class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow right-0">
+                        <li><a href="{% url 'dashboard' %}">管理主頁</a></li>
+                        <li><a>會員檔案</a></li>
+                        <li><a>配送地址</a></li>
+                        <li><a>優惠券</a></li>
+                        <li><a>寶貝評價</a></li>
+                        <li><a>購物紀錄</a></li>
+                        <li><a>未來購物清單</a></li>
+                        <li><a>收藏</a></li>
                         <li>
-                        <a class="justify-between">
-                            Profile
-                            <span class="badge">New</span>
-                        </a>
+                            <a class="justify-between">
+                                訊息
+                                <span class="badge text-xs bg-primary text-primary-content">新到 17</span>
+                            </a>
                         </li>
-                        <li><a>Settings</a></li>
-                        <li><a>Logout</a></li>
+                        <li><a>客服熱線</a></li>
+                        <li><a>3D創作</a></li>
+                        <li><a>錢包</a></li>
                     </ul>
                 </div>
+            {% else %}
                 <!-- login btn -->
+                <a class="flex items-center" href="{% url 'login' %}">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span class="text-xs">登入</span>
+                </a>
                 <!-- register btn -->
+                <a class="flex items-center" href="{% url 'register' %}">
+                    <button class="btn btn-sm btn-active btn-primary">
+                        <i class="fa-regular fa-registered"></i>
+                        註冊
+                    </button>
+                </a>
             {% endif %}
             <!-- theme toggle -->
             <label class="swap swap-flip">

@@ -15,13 +15,13 @@
     {% vite_asset 'static/js/main.js' %}
 </head>
 <body class="noto-serif-tc-regular">
-{% include 'includes/header.html' %}
+    {% include 'includes/header.html' %}
 
-{% block content %}
+    {% block content %}
+    
+    <!-- =============== contents =============== -->
+    
+    {% endblock %}
 
-<!-- =============== contents =============== -->
-
-{% endblock %}
-
-</body>
-</html>
+<!-- FOOTER -->
+    {% include 'includes/footer.html' %}

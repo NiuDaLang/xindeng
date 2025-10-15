@@ -1,0 +1,22 @@
+{% block content %}
+    <!-- BCKGROUND -->
+    <img src="/media/hero/purpleFlower.svg" class="opacity-50 object-cover aspect-100/17" alt="">
+
+    <!-- DESCRIPTION -->
+    <div class="absolute top-0 left-0 flex flex-col w-full h-full justify-center items-center">
+        <!-- titles -->
+        <h1 class="text-base-content text-3xl">{{ main_title }}</h1>
+        <h3 class="text-base-content text-sm">{{ sub_title }}</h3>
+        <!-- bread crumb -->
+        <div class="breadcrumbs text-xs text-info-content">
+            <ul>
+                <li><a href="{{ bread_crumb_1_url }}">{{ bread_crumb_1 }}</a></li>
+                <li><a href="{{ bread_crumb_2_url }}">{{ bread_crumb_2 }}</a></li>
+                {% if bread_crumb_3 %}
+                <li><a href="{{ bread_crumb_3_url }}">{{ bread_crumb_3 }}</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+{% endblock %}

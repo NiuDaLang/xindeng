@@ -27,6 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_vite",
+    "store",
 ]
 
 MIDDLEWARE = [
@@ -133,7 +135,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Django-Vite
 DJANGO_VITE = {
     "default": {
-        "dev_mode": False,
+        "dev_mode": DEBUG,
         "manifest_path": BASE_DIR / "assets" / "manifest.json",
         "static_url_prefix": ""
     }

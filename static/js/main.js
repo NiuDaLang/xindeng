@@ -16,6 +16,10 @@ const is_dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
 // (1) on document load, set checkbox status + set localStorage's theme
 document.addEventListener('DOMContentLoaded', function() {
+    if(localStorage.getItem("theme")==="auto"){
+        is_dark ? localStorage.setItem("theme", darkTheme) : localStorage.setItem("theme", lightTheme)
+        return
+    }
     checkbox.checked = localStorage.getItem("theme") === darkTheme ? true : false
     if(!selectedTheme){
         if(is_dark){
@@ -69,3 +73,4 @@ const swiper = new Swiper('.swiper', {
         el: '.swiper-scrollbar',
     },
 });
+

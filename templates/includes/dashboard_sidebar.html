@@ -1,0 +1,135 @@
+{% block content %}
+
+    <div class="sm:col-span-1 lg:col-span-2 rounded-2xl">
+        <!-- profile -->
+        <div class="flex w-full">
+            <!-- avatar -->
+            <div class="avatar">
+                <div class="ring-primary ring-offset-base-100 w-12 rounded-full ring-2 ring-offset-2">
+                    <img src="https://img.daisyui.com/images/profile/demo/spiderperson@192.webp" />
+                </div>
+            </div>
+            <!-- name etc. -->
+            <div class="ml-3">
+                <div class="card-title">Username</div>
+                <div class="text-sm">DOB: 2000/1/1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;星座：摩羯</div>
+            </div>
+        </div>
+
+        <!-- dashboard menu -->
+        <!-- <div class="relative my-10"> -->
+            <!-- panels -->
+            <div class="my-10 grid grid-cols-2 w-full z-10 text-xs text-shadow-lg text-shadow-accent">
+                <!-- profile -->
+                <div class="">
+                    <div class="pointer cursor-pointer rounded-tl-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFCDE6]">
+                        <i class="fa-solid fa-address-card"></i>
+                        <p>會員檔案</p>
+                    </div>
+                </div>
+                <!-- address book -->
+                <div class="">
+                    <div class="pointer cursor-pointer rounded-tr-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#DBDBFF]">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <p>配送地址簿</p>
+                    </div>
+                </div>
+                <!-- my perks -->
+                <div class="">
+                    <div class="pointer cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#9DFFFF]">
+                        <i class="fa-solid fa-tags"></i>
+                        <p>優惠券</p>
+                    </div>
+                </div>
+                <!-- my reviews -->
+                <div class="">
+                    <div class="pointer cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#CEFF9F]">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <p>寶貝評價</p>
+                    </div>
+                </div>
+                <!-- orders -->
+                <div class="">
+                    <div class="pointer cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFCE9E]">
+                        <i class="fa-solid fa-clipboard"></i>
+                        <p>購物紀錄</p>
+                    </div>
+                </div>
+                <!-- wish list -->
+                <div class="">
+                    <div class="pointer cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFFFCC]">
+                        <i class="fa-solid fa-list"></i>
+                        <p>未來購物清單</p>
+                    </div>
+                </div>
+                <!-- collections -->
+                <div class="">
+                    <a href="" class="py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#D5FFEA]">
+                        <i class="fa-solid fa-heart"></i>
+                        <p>收藏</p>
+                    </a>
+                </div>
+                <!-- customer hotline -->
+                <div class="">
+                    <a href="" class="py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFBDFF]">
+                        <i class="fa-solid fa-comments"></i>
+                        <p>客服熱線</p>
+                    </a>
+                </div>
+                <!-- 3D design -->
+                <div class="">
+                    <a href="" class="rounded-bl-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFD6EA]">
+                        <i class="fa-solid fa-palette"></i>
+                        <p>3D作品自創</p>
+                    </a>
+                </div>
+                <!-- wallet -->
+                <div class="">
+                    <a href="" class="rounded-br-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#bdf796]">
+                        <i class="fa-solid fa-piggy-bank"></i>
+                        <p>錢包</p>
+                    </a>
+                </div>
+            </div>
+        <!-- </div> -->
+
+        <!-- pinned articles -->
+        <div class="flex flex-col gap-[50px]">
+            <h2 class="text-[1.2rem] text-center">特選文章</h2>
+            <div class="w-full relative pinup">
+                <h3 class="absolute z-10 top-1/2 left-1/2 -translate-1/2">手繪入門課<br>～第一天～</h3>
+                <i class="z-10 fa-solid fa-map-pin absolute left-1/2 top-1 -translate-1/2 text-error"></i>
+                <img src="/media/hero/tulip.svg" alt="" class="z-10 w-full border-2 border-accent -rotate-3">
+                <!-- <img src="/media/hero/lavendar.svg" class="rounded-box" /> -->
+            </div>        
+        </div>
+    </div>
+
+
+    <style>
+        .pinup::before,
+        .pinup::after {
+            content: "";
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            display: block;
+        }
+        .pinup::before {
+            border: 2px solid var(--color-secondary);
+            transform: rotate(0);
+            z-index: -10;
+            /* background-color: var(--color-secondary-content); */
+            background-color: transparent;
+        }
+        .pinup::after {
+            border: 2px solid var(--color-success-content);
+            transform: rotate(5deg) translateY(-5px);
+            z-index: -9;
+            /* background-color: var(--color-success); */
+            background-color: transparent;
+        }
+    </style>
+{% endblock %}

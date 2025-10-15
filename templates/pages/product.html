@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- BANNER -->
+<div class="relative mt-16 w-full">
+    {% include 'includes/banner.html' %}
+</div>
+
+<main class="px-[max(1rem,5vw)] py-20">
+    <!-- INFO -->
+    <div class="md:grid md:grid-cols-8 md:gap-5">
+        <!-- images -->
+        <div class="col-span-5">
+            <!-- L-size image -->
+            <figure class="w-full aspect-4/3 rounded-xl ribbon-wrapper">
+                <div class="ribbon-content">
+                    <span class="ribbon bg-secondary text-[#ffffff]">新出爐！</span>
+                </div>
+                <img src="/media/hero/tulip.svg" class="w-full h-full object-cover rounded-xl"/>
+            </figure>
+
+            <!-- S-size gallery -->
+            <div class="col-span-3 flex gap-3 mt-3">
+                <label class="switch" name="pattern">
+                    <input type="radio" name="pattern">
+                    <img src="/media/images/variations/pattern1.png" class="switch-img rounded-sm"></img>
+                </label>
+                <label class="switch" name="pattern">
+                    <input type="radio" name="pattern">
+                    <img src="/media/images/variations/pattern2.png" class="switch-img rounded-sm"></img>
+                </label>
+                <label class="switch" name="pattern">
+                    <input type="radio" name="pattern">
+                    <img src="/media/images/variations/pattern3.png" class="switch-img rounded-sm"></img>
+                </label>
+            </div>
+        </div>
+
+        <!-- order details -->
+        <div class="col-span-3 ">
+            <div class="rounded-xl border-3 border-primary-content border-double p-3">
+                <form action="" method="POST" class="w-full">
+                    <!-- key-info -->
+                    <div class="flex flex-col">
+                        <!-- description -->
+                        <div class="">
+                            <h2 class="card-title font-bold">超好看的迷你油畫</h2>
+                        </div>
+                        <div class="flex flex-wrap gap-1 my-2">
+                            <div class="badge badge-outline badge-neutral badge-xs">產品標籤</div>
+                            <div class="badge badge-outline badge-neutral badge-xs">產品標籤</div>
+                            <div class="badge badge-outline badge-neutral badge-xs">產品標籤</div>
+                        </div>
+                        <div class="badge badge-warning badge-xs">
+                            <i class="fa-solid fa-tags"></i>
+                            活動優惠券 10%OFF！
+                        </div>                    
+                        <!-- price select -->
+                        <select class="select select-md w-full mt-3 font-extrabold text-right">
+                            <option selected>RMB&nbsp;500</option>
+                            <option>HKD&nbsp;600</option>
+                            <option>TWD&nbsp;2,400</option>
+                            <option>USD&nbsp;80</option>
+                            <option>JPY&nbsp;8,000</option>
+                        </select>   
+                    </div>
+    
+                    <!-- variation - pattern -->
+                    <div class="my-5 flex flex-wrap justify-start gap-3">
+                        <label class="switch" name="pattern">
+                            <input type="radio" name="pattern">
+                            <img src="/media/images/variations/pattern1.png" class="switch-img"></img>
+                        </label>
+                        <label class="switch" name="pattern">
+                            <input type="radio" name="pattern">
+                            <img src="/media/images/variations/pattern2.png" class="switch-img"></img>
+                        </label>
+                        <label class="switch" name="pattern">
+                            <input type="radio" name="pattern">
+                            <img src="/media/images/variations/pattern3.png" class="switch-img"></img>
+                        </label>
+                    </div>
+    
+                    <!-- variation - size etc. -->
+                    <select class="select select-xs select-ghost w-full">
+                        <option disabled selected>尺寸</option>
+                        <option>L - 大</option>
+                        <option>M - 中</option>
+                        <option>S - 小</option>
+                    </select>
+                    <select class="select select-xs select-ghost w-full">
+                        <option disabled selected>底色</option>
+                        <option>金</option>
+                        <option>銀</option>
+                        <option>銅</option>
+                    </select>
+    
+                    <div class="text-[10px] mt-5">
+                        <!-- short description -->
+                        <p>
+                            借我掃荷故面實邊元功星造定肖道嗎呀你已邊；尤美右秋，
+                            尺央進找助肉民您木時波吉員昔主水止鳥它何，棵少跑蝸訴空棵香裏世即：
+                            高故了福走來。借我掃荷故面實邊元功星造定肖道嗎呀你已邊；尤美右秋，
+                            尺央進找助肉民您木時波吉員昔主水止鳥它何，棵少跑蝸訴空棵香裏世即：
+                        </p>
+                        <!-- specification -->
+                        <p>
+                            <b>净重量：</b>350g <br>
+                            <b>原材料：</b>XX、xxx、ZZZ、YYY<br>
+                        </p>
+                    </div>
+                    <div class="divider"></div>
+    
+                    <!-- add to cart button -->
+                    <button class="w-full my-3 block btn btn-xs sm:btn-sm md:btn-md">加 入 購 物 車</button>
+                    <!-- buy now button -->
+                    <button type="submit" class="w-full my-3 block btn btn-primary btn-xs sm:btn-sm md:btn-md">立 即 購 買</button>
+    
+                </form>
+            </div>
+
+        </div>
+    </div>    
+
+    <!-- DETAILS (Rich Text) -->
+    <div class="my-10">
+        <h2 class="text-neutral text-2xl font-bold">寶 貝 詳 情</h2>
+        <p class="my-2">
+            的色違不就，己的成這了感謝陣真希望證明⋯一飯對自好喔所的經驗⋯突看不的玩這麼一：
+            沒有人感覺旅人甚至在收不希望，發現放上可看到親友。給他動新居搬包二時候個世界有可。
+            上也好想重要的在那邊沒關範圍，掉代理如果，能不過都會。看別人聊天面的這要開始真的，
+            是不是愛的的人變髮型要畫意，官，的感覺是話說現盼店不會有點不的所以，有點這樣，
+            久違給他們流我太幾。年的都用來這覺得有，自己的根本，大家都真是啦以後真的。
+            <br/>
+            <br/>
+            有趣直接，接著這樣對保護請問的存在的第，己覺得新居，提醒的不過的已經麼那麼，
+            他覺得在家，人在還用在會喔喔我到底很多人師。
+        </p>
+        <img src="/media/hero/purpleFlower.svg" alt="" class="w-full">
+    </div>
+
+    <!-- REVIEWS -->
+    <div class="my-10">
+        <h2 class="text-neutral text-2xl font-bold">客 戶 反 饋</h2>
+        <!-- write review for this product -->
+        <form action="" method="POST" class="mt-5">
+            {% csrf_token %}
+            <div>
+                <!-- Rating Stars -->
+                <label>您的評分是？</label>
+                <br/>
+                <div class="rate text-primary-content">
+                    <input type="radio" name="rating" id="rating10" value="5" required/>
+                    <label for="rating10" title="5"></label>
+                    <input type="radio" name="rating" id="rating9" value="4.5" required />
+                    <label for="rating9" title="4.5" class="half"></label>
+                    <input type="radio" name="rating" id="rating8" value="4" required />
+                    <label for="rating8" title="4"></label>
+                    <input type="radio" name="rating" id="rating7" value="3.5" required />
+                    <label for="rating7" title="3.5" class="half"></label>
+                    <input type="radio" name="rating" id="rating6" value="3" required />
+                    <label for="rating6" title="3"></label>
+                    <input type="radio" name="rating" id="rating5" value="2.5" required />
+                    <label for="rating5" title="2.5" class="half"></label>
+                    <input type="radio" name="rating" id="rating4" value="2" required />
+                    <label for="rating4" title="2"></label>
+                    <input type="radio" name="rating" id="rating3" value="1.5" required />
+                    <label for="rating3" title="1.5" class="half"></label>
+                    <input type="radio" name="rating" id="rating2" value="1" required />
+                    <label for="rating2" title="1"></label>
+                    <input type="radio" name="rating" id="rating1" value="0.5" required />
+                    <label for="rating1" title="0.5" class="half"></label>
+                </div>
+                <br/>
+                <!-- Rating Review -->
+                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
+                    <legend class="fieldset-legend">紀錄您對該作品的評價</legend>
+                    <input type="text" class="input w-full" placeholder="題名" required/>
+                    <textarea placeholder="內容" class="textarea textarea-primary w-full" required></textarea>
+                    <p class="label">您可以隨時修改評價內容</p>
+                    <input type="submit" value="提 交" class="btn btn-primary" />
+                    <br/>
+   					<p>如果您已購買本產品，請進行會員<span><a class="text-accent-content font-bold" href="">登陸</a></span>填寫評價，謝謝！</p>
+                </fieldset>
+            </div>
+            <br>
+	    </form>
+
+
+
+        <!-- reviews on this product -->
+        <div>
+            <div class="flex my-5">
+                <div class="avatar">
+                    <div class="mask mask-heart w-16 mr-2">
+                        <img src="https://img.daisyui.com/images/profile/demo/distracted3@192.webp" />
+                    </div>
+                </div>
+                <div>
+                    <div class="flex gap-3 items-center">
+                        <b class="text-sm">客戶A<span class="ml-2"><small class="text-xs">3小時前</small></span></b>
+                        <div class="rating-star">
+                            <span>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa fa-regular fa-star" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-xs">好喜歡這一款產品，下次一定再來光顧！好喜歡這一款產品，下次一定再來光顧！好喜歡這一款產品，下次一定再來光顧！</p>
+                </div>
+            </div>
+            <div class="flex my-5">
+                <div class="avatar">
+                    <div class="mask mask-squircle w-16 mr-2">
+                        <img src="https://img.daisyui.com/images/profile/demo/distracted1@192.webp" />
+                    </div>
+                </div>
+                <div>
+                    <div class="flex gap-3 items-center">
+                        <b class="text-sm">客戶A<span class="ml-2"><small class="text-xs">2小時前</small></span></b>
+                        <div class="rating-star">
+                            <span>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa-solid fa-star-half-stroke" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-xs">好喜歡這一款產品，下次一定再來光顧！好喜歡這一款產品，下次一定再來光顧！好喜歡這一款產品，下次一定再來光顧！</p>
+                </div>
+            </div>
+            <div class="flex my-5">
+                <div class="avatar">
+                    <div class="mask mask-hexagon-2 w-16 mr-2">
+                        <img src="https://img.daisyui.com/images/profile/demo/distracted2@192.webp" />
+                    </div>
+                </div>
+                <div>
+                    <div class="flex gap-3 items-center">
+                        <b class="text-sm">客戶A<span class="ml-2"><small class="text-xs">3小時前</small></span></b>
+                        <div class="rating-star">
+                            <span>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa fa-regular fa-star" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-xs">好喜歡這一款產品，下次一定再來光顧！好喜歡這一款產品，下次一定再來光顧！好喜歡這一款產品，下次一定再來光顧！</p>
+                </div>
+            </div>
+            <div class="flex my-5">
+                <div class="avatar">
+                    <div class="mask mask-circle w-16 mr-2">
+                        <img src="https://img.daisyui.com/images/profile/demo/distracted3@192.webp" />
+                    </div>
+                </div>
+                <div>
+                    <div class="flex gap-3 items-center">
+                        <b class="text-sm">客戶A<span class="ml-2"><small class="text-xs">3小時前</small></span></b>
+                        <div class="rating-star">
+                            <span>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
+                                <i class="fa-solid fa-star-half-stroke" aria-hidden="true"></i>
+                                <i class="fa fa-regular fa-star" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-xs">好喜歡這一款產品，下次一定再來光顧！好喜歡這一款產品，下次一定再來光顧！好喜歡這一款產品，下次一定再來光顧！</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</main>
+{% endblock %}

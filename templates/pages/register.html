@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="flex mt-16 w-full h-[calc(100dvh-64px)] ">
+    <!-- TITLE -->
+    <div class="relative flex flex-col justify-center items-center grow">
+        <img src="/media/hero/purpleFlower.svg" alt="" class="absolute left-0 top-0 w-full h-full object-cover -z-1">
+        <h1 class="text-5xl text-primary-content text-shadow-lg text-shadow-base-300 mb-2">加入會員</h1>
+        <h2 class="text-primary-content text-shadow-lg text-shadow-base-300 mb-5">~ 基本套餐免費 ～</h2>
+        <div class="ml-[2rem]">
+            <h3>專享福利 福利！</h3>
+            <h3>驚喜不斷 驚喜不斷 源源不絕！</h3>
+        </div>
+    </div>
+
+    <!-- FORM -->
+    <div class="flex flex-col justify-center grow-0 h-full bg-primary-content p-10">
+        <h2 class="text-3xl pb-5">註冊 Sign up</h2>
+        <form action="" method="POST">
+            <fieldset class="fieldset w-md">
+                <button class="btn bg-white text-black border-[#e5e5e5] flex justify-between">
+                    <svg aria-label="Google logo" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g><path d="m0 0H512V512H0" fill="#fff"></path><path fill="#34a853" d="M153 292c30 82 118 95 171 60h62v48A192 192 0 0190 341"></path><path fill="#4285f4" d="m386 400a140 175 0 0053-179H260v74h102q-7 37-38 57"></path><path fill="#fbbc02" d="m90 341a208 200 0 010-171l63 49q-12 37 0 73"></path><path fill="#ea4335" d="m153 219c22-69 116-109 179-50l55-54c-78-75-230-72-297 55"></path></g></svg>
+                    <span>用 Google帳號 註冊</span>
+                </button>
+
+                <button class="btn bg-[#1A77F2] text-white border-[#005fd8] flex justify-between">
+                    <svg aria-label="Facebook logo" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path fill="white" d="M8 12h5V8c0-6 4-7 11-6v5c-4 0-5 0-5 3v2h5l-1 6h-4v12h-6V18H8z"></path></svg>
+                    <span>用 Facebook帳號 註冊</span>
+                </button>
+
+                <div class="divider">或 OR</div>
+
+                <label class="label">用戶名</label>
+                <input type="text" class="input w-full" placeholder="Username" />
+
+                <label class="label">郵箱 Email</label>
+                <input type="email" class="input w-full" placeholder="Email" />
+
+                <label class="label">密碼 Password</label>
+                <input type="password" class="input w-full" placeholder="Password" />
+
+                <label class="label">確認密碼 Confirm Password</label>
+                <input type="password" class="input w-full" placeholder="Confirm Password" />
+
+                <label class="label">會員種類 Membership Type</label>
+                <select class="select select-primary w-full">
+                    <option disabled selected>選擇套餐種類</option>
+                    <option>【葉】基礎會員<div class="badge badge-sm badge-success">免費Free</div></option>
+                    <option>【花】私享會員</option>
+                </select>
+
+                <br>
+                <div class="flex items-center gap-1 text-xs">
+                    <input type="checkbox" class="checkbox checkbox-xs checkbox-neutral" />
+                    <span class="text-base">我同意<a href=""><u>會員條款</u></a>  I agree to the <a href=""><u>User Terms</u></a>.</span>
+                </div>
+
+                <button class="btn btn-neutral mt-4">註&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;冊</button>
+            </fieldset>
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

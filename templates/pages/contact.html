@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+    <!-- BANNER -->
+    <div class="relative mt-16 w-full">
+        {% include 'includes/banner.html' %}
+    </div>
+
+    <!-- MAIN -->
+    <!-- heading -->
+    <div class="px-[max(1rem,5vw)] w-full mt-20">
+        <h2 class="text-5xl font-extrabold mb-2">期待您的來信！</h2>
+        <h4 class="text-2xl font-semibold text-base-300">專享福利 福利！</h4>
+        <h4 class="text-2xl font-semibold text-base-300">驚喜不斷 驚喜不斷 源源不絕！！</h4>
+    </div> 
+    <div class="px-[max(1rem,5vw)] mt-10 mb-50 grid grid-cols-3 gap-4 sm:columns-3 sm:gap-8">
+        <!-- CARD-1 -->
+        <div class="card col-span-1 bg-base-100 shadow-sm">
+            <figure>
+                <img
+                src="/media/hero/lavendar.svg"
+                alt="Shoes" />
+            </figure>
+            <div class="card-body">
+                <div class="flex justify-center">
+                    <h2 class="card-title">會員熱線</h2>
+                </div>
+                <div class="card-actions justify-center">
+                    <button class="btn btn-primary">進入後台畫面留言</button>
+                </div>
+            </div>
+        </div>
+        <!-- CARD-2 -->
+        <div class="card col-span-1 bg-base-100 shadow-sm">
+            <figure>
+                <img
+                src="/media/hero/purpleFlower.svg"
+                alt="Shoes" />
+            </figure>
+            <div class="card-body text-accent-content">
+                <div class="flex justify-center">
+                    <h2 class="card-title">非會員顧客專線</h2>
+                </div>
+                <div class="card-actions justify-center">
+                    <label class="input text-xs">
+                        <input type="text" class="grow" placeholder="您在本店曾使用的郵箱" />
+                        <span class="badge badge-neutral badge-xs"><a href="" roll="submit">GO!</a></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <!-- CARD-3 -->
+        <div class="card col-span-1 bg-base-100 shadow-sm">
+            <figure>
+                <img
+                src="/media/hero/tulip.svg"
+                alt="Shoes" />
+            </figure>
+            <div class="card-body text-warning">
+                <div class="flex justify-center">
+                    <h2 class="card-title">諮詢郵箱</h2>
+                </div>
+                <div class="card-actions justify-center">
+                    <button class="btn btn-warning btn-outline">info@xxx.com</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}
