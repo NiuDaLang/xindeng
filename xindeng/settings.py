@@ -121,7 +121,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+# STATIC_URL = "static/"
+STATIC_URL = 'http://xindeng-env-syd1.eba-9tetninf.ap-southeast-2.elasticbeanstalk.com/static/'
 STATICFILES_DIRS = [
     BASE_DIR / "assets",
 ]
