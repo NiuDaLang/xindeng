@@ -1,0 +1,362 @@
+{% extends 'accounts/dashboard_base.html' %}
+
+{% block accounts_content %}
+<!-- hero -->
+<div class="relative h-[14rem]">
+    <img src="/media/hero/red_leaves.jpeg" alt="" class="reel -z-1 absolute left-0 top-0 h-full w-full object-cover">
+    <div class="absolute top-[47%] left-[20%]">
+        <h2 class="text-5xl text-primary-content">霜降</h2>
+    </div>
+    <div class="absolute right-8 bottom-12 text-right text-primary-content">
+        <div id="dynamic-date"></div>
+        <div id="dynamic-clock"></div>
+    </div>
+</div>
+
+<!-- addresses -->
+<div class="flex gap-4 my-5">
+    <div class="w-full grid grid-cols-2 justify-between gap-[4%] gap-y-6">
+        <div class="col-span-1 card">
+            <div class="card-body bg-base-300 rounded-2xl relative flex-grow-0 shadow-sm">
+                <span class="absolute top-[1rem] left-[2rem] badge badge-xs badge-warning">默認</span>
+                <!-- address details -->
+                <div class="collapse collapse-arrow join-item">
+                    <input type="checkbox"/>
+                    <div class="collapse-title pb-[8px] font-semibold">
+                        <ul class="flex flex-col gap-2 text-xs">
+                            <li>
+                                <i class="fa-solid fa-person-arrow-down-to-line"></i>
+                                <span class="font-bold">&nbsp;&nbsp;Firstname</span>
+                                <span class="font-bold">&nbsp;Lastname</span>
+                            </li>
+                            <li class="opacity-50">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                                <span>&nbsp;&nbsp;Address 1</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="collapse-content text-sm my-0">
+                        <ul class="flex flex-col gap-2 text-xs ">
+                            <li>
+                                <i class="fa-solid fa-map-location"></i>
+                                <span>&nbsp;&nbsp;Address 2</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-tree-city"></i>
+                                <span>&nbsp;&nbsp;City / Suburb</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-map"></i>
+                                <span>&nbsp;&nbsp;State</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-globe"></i>
+                                <span>&nbsp;&nbsp;Country</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-envelopes-bulk"></i>
+                                <span>&nbsp;&nbsp;Zip</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-mobile-screen-button"></i>
+                                <span>&nbsp;&nbsp;Mobile</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- submit button -->
+                <button class="btn btn-primary btn-block" onclick="my_modal_2.showModal()">更&nbsp;&nbsp;&nbsp;改</button>
+            </div>
+        </div>
+        <div class="col-span-1 card">
+            <div class="card-body bg-base-300 rounded-2xl relative flex-grow-0 shadow-sm">
+                <!-- address details -->
+                <div class="collapse collapse-arrow join-item">
+                    <input type="checkbox"/>
+                    <div class="collapse-title pb-[8px] font-semibold">
+                        <ul class="flex flex-col gap-2 text-xs">
+                            <li>
+                                <i class="fa-solid fa-person-arrow-down-to-line"></i>
+                                <span class="font-bold">&nbsp;&nbsp;Firstname2</span>
+                                <span class="font-bold">&nbsp;Lastname</span>
+                            </li>
+                            <li class="opacity-50">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                                <span>&nbsp;&nbsp;Address 1</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="collapse-content text-sm my-0">
+                        <ul class="flex flex-col gap-2 text-xs ">
+                            <li>
+                                <i class="fa-solid fa-map-location"></i>
+                                <span>&nbsp;&nbsp;Address 2</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-tree-city"></i>
+                                <span>&nbsp;&nbsp;City / Suburb</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-map"></i>
+                                <span>&nbsp;&nbsp;State</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-globe"></i>
+                                <span>&nbsp;&nbsp;Country</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-envelopes-bulk"></i>
+                                <span>&nbsp;&nbsp;Zip</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-mobile-screen-button"></i>
+                                <span>&nbsp;&nbsp;Mobile</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- submit button -->
+                <button class="btn btn-primary btn-block">更&nbsp;&nbsp;&nbsp;改</button>
+            </div>
+        </div>
+        <div class="col-span-1 card">
+            <div class="card-body bg-base-300 rounded-2xl relative flex-grow-0 shadow-sm">
+                <!-- address details -->
+                <div class="collapse collapse-arrow join-item">
+                    <input type="checkbox"/>
+                    <div class="collapse-title pb-[8px] font-semibold">
+                        <ul class="flex flex-col gap-2 text-xs">
+                            <li>
+                                <i class="fa-solid fa-person-arrow-down-to-line"></i>
+                                <span class="font-bold">&nbsp;&nbsp;Firstname2</span>
+                                <span class="font-bold">&nbsp;Lastname</span>
+                            </li>
+                            <li class="opacity-50">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                                <span>&nbsp;&nbsp;Address 1</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="collapse-content text-sm my-0">
+                        <ul class="flex flex-col gap-2 text-xs ">
+                            <li>
+                                <i class="fa-solid fa-map-location"></i>
+                                <span>&nbsp;&nbsp;Address 2</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-tree-city"></i>
+                                <span>&nbsp;&nbsp;City / Suburb</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-map"></i>
+                                <span>&nbsp;&nbsp;State</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-globe"></i>
+                                <span>&nbsp;&nbsp;Country</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-envelopes-bulk"></i>
+                                <span>&nbsp;&nbsp;Zip</span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-mobile-screen-button"></i>
+                                <span>&nbsp;&nbsp;Mobile</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- submit button -->
+                <button class="btn btn-primary btn-block">更&nbsp;&nbsp;&nbsp;改</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- add new 【MODAL】-->
+<div class="relative card w-full min-h-[5rem] justify-center items-center ">
+    <!-- add button -->
+    <button class="absolute botttom-3 m-auto btn btn-square w-[3rem] h-[3rem]" onclick="my_modal_1.showModal()">
+        <i class="fa-solid fa-circle-plus fa-2xl"></i>
+    </button>
+    <!-- modal -->
+    <dialog id="my_modal_1" class="modal">
+        <div class="modal-box relative">
+            <h3 class="w-full text-center mt-5 font-bold">添加新地址</h3>
+            <div class="modal-action pb-[2rem] px-[3rem] mt-0">
+                <!-- form -->
+                <form action="{% url 'addresses' %}" method="POST" class="w-full text-center">
+                    {% csrf_token %}
+                    <div class="w-full flex flex-col gap-2 py-5 border-b-1 border-dashed border-primary-content ">
+                        <!-- first name -->
+                        <label class="input input-border flex w-full items-center gap-2">
+                            <i class="fa-solid fa-person"></i>
+                            <input type="text" class="grow w-full" placeholder="First Name">
+                        </label>
+                        <!-- last name -->
+                        <label class="input input-border flex w-full items-center gap-2">
+                            <i class="fa-solid fa-people-roof"></i> 
+                            <input type="text" class="grow w-full" placeholder="Family Name">
+                        </label>
+                        <!-- mobile number -->
+                        <div class="join">
+                            <select class="select rounded-l-4xl w-[6rem]" required>
+                                <option disabled selected>
+                                    🌏
+                                <option>🇦🇺 +61</option>
+                                <option>🇭🇰 +852</option>
+                                <option>🇹🇼 +886</option>
+                                <option>🇲🇴 +853</option>
+                                <option>🇸🇬 +65</option>
+                            </select>                    
+                            <div class="flex-grow">
+                                <label class="input validator join-item">
+                                <i class="fa-solid fa-mobile-screen-button"></i>
+                                <input type="text" placeholder="123-456-789" required />
+                                </label>
+                                <div class="validator-hint hidden">Enter valid email address</div>
+                            </div>
+                        </div>
+
+                        <!-- address_1 -->
+                            <label class="input input-border flex w-full items-center gap-2">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                                <input type="text" class="grow w-full" placeholder="Address_1">
+                            </label>
+                        <!-- address_2 -->
+                            <label class="input input-border flex w-full items-center gap-2">
+                                <i class="fa-solid fa-map-location"></i>
+                                <input type="text" class="grow w-full" placeholder="Address_2">
+                            </label>
+                        <!-- city / suburb -->
+                        <div class="w-full text-xs">
+                            <label class="input input-border flex w-full iitems-center gap-2">
+                                <i class="fa-solid fa-tree-city"></i>
+                                <input type="text" class="grow w-full" placeholder="City">
+                            </label>
+                        </div> 
+                        <!-- state -->
+                        <div class="w-full text-xs">
+                            <label class="input input-border flex w-full iitems-center gap-2">
+                                <i class="fa-solid fa-map"></i>
+                                <input type="text" class="grow w-full" placeholder="State">
+                            </label>
+                        </div> 
+                        <!-- country -->
+                        <div class="w-full text-xs">
+                            <label class="input input-border flex w-full iitems-center gap-2">
+                                <i class="fa-solid fa-globe"></i>
+                                <input type="text" class="grow w-full" placeholder="Country">
+                            </label>
+                        </div> 
+                        <!-- zip -->
+                        <div class="w-full text-xs">
+                            <label class="input input-border flex w-full iitems-center gap-2">
+                                <i class="fa-solid fa-envelopes-bulk"></i>
+                                <input type="text" class="grow w-full" placeholder="Zip">
+                            </label>
+                        </div> 
+                    </div>
+                    <button class="btn">提&nbsp;&nbsp;&nbsp;交</button>
+                </form>
+                <!-- close button -->
+                <form method="dialog">
+                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
+</div>
+
+<!-- update 【MODAL】-->
+<div class="relative card w-full min-h-[5rem] justify-center items-center ">
+    <!-- modal -->
+    <dialog id="my_modal_2" class="modal">
+        <div class="modal-box relative">
+            <h3 class="w-full text-center mt-5 font-bold">更新地址</h3>
+            <div class="modal-action pb-[2rem] px-[3rem] mt-0">
+                <!-- form -->
+                <form action="{% url 'addresses' %}" method="POST" class="w-full text-center">
+                    {% csrf_token %}
+                    <div class="w-full flex flex-col gap-2 py-5 border-b-1 border-dashed border-primary-content ">
+                        <!-- first name -->
+                        <label class="input input-border flex w-full items-center gap-2">
+                            <i class="fa-solid fa-person"></i>
+                            <input type="text" class="grow w-full" placeholder="First Name">
+                        </label>
+                        <!-- last name -->
+                        <label class="input input-border flex w-full items-center gap-2">
+                            <i class="fa-solid fa-people-roof"></i> 
+                            <input type="text" class="grow w-full" placeholder="Family Name">
+                        </label>
+                        <!-- mobile number -->
+                        <div class="join">
+                            <select class="select rounded-l-4xl w-[6rem]" required>
+                                <option disabled selected>
+                                    🌏
+                                <option>🇦🇺 +61</option>
+                                <option>🇭🇰 +852</option>
+                                <option>🇹🇼 +886</option>
+                                <option>🇲🇴 +853</option>
+                                <option>🇸🇬 +65</option>
+                            </select>                    
+                            <div class="flex-grow">
+                                <label class="input validator join-item">
+                                <i class="fa-solid fa-mobile-screen-button"></i>
+                                <input type="text" placeholder="123-456-789" required />
+                                </label>
+                                <div class="validator-hint hidden">Enter valid email address</div>
+                            </div>
+                        </div>
+
+                        <!-- address_1 -->
+                            <label class="input input-border flex w-full items-center gap-2">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                                <input type="text" class="grow w-full" placeholder="Address_1">
+                            </label>
+                        <!-- address_2 -->
+                            <label class="input input-border flex w-full items-center gap-2">
+                                <i class="fa-solid fa-map-location"></i>
+                                <input type="text" class="grow w-full" placeholder="Address_2">
+                            </label>
+                        <!-- city / suburb -->
+                        <div class="w-full text-xs">
+                            <label class="input input-border flex w-full iitems-center gap-2">
+                                <i class="fa-solid fa-tree-city"></i>
+                                <input type="text" class="grow w-full" placeholder="City">
+                            </label>
+                        </div> 
+                        <!-- state -->
+                        <div class="w-full text-xs">
+                            <label class="input input-border flex w-full iitems-center gap-2">
+                                <i class="fa-solid fa-map"></i>
+                                <input type="text" class="grow w-full" placeholder="State">
+                            </label>
+                        </div> 
+                        <!-- country -->
+                        <div class="w-full text-xs">
+                            <label class="input input-border flex w-full iitems-center gap-2">
+                                <i class="fa-solid fa-globe"></i>
+                                <input type="text" class="grow w-full" placeholder="Country">
+                            </label>
+                        </div> 
+                        <!-- zip -->
+                        <div class="w-full text-xs">
+                            <label class="input input-border flex w-full iitems-center gap-2">
+                                <i class="fa-solid fa-envelopes-bulk"></i>
+                                <input type="text" class="grow w-full" placeholder="Zip">
+                            </label>
+                        </div> 
+                    </div>
+                    <button class="btn">提&nbsp;&nbsp;&nbsp;交</button>
+                </form>
+                <!-- close button -->
+                <form method="dialog">
+                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
+</div>
+
+{% endblock %}

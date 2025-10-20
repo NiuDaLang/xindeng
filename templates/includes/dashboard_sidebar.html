@@ -16,86 +16,99 @@
             </div>
         </div>
 
+        <!-- bg-[#FFCDE6]
+        bg-[#DBDBFF]
+        bg-[#9DFFFF]
+        bg-[#CEFF9F]
+        bg-[#FFCE9E]
+
+        bg-[#FFFFCC]
+        bg-[#D5FFEA]
+        bg-[#FFBDFF]
+        bg-[#FFD6EA]
+        bg-[#bdf796] -->
+
+
         <!-- dashboard menu -->
         <!-- <div class="relative my-10"> -->
             <!-- panels -->
             <div class="my-10 grid grid-cols-2 w-full z-10 text-xs text-shadow-lg text-shadow-accent">
-                <!-- profile -->
-                <div class="">
-                    <div class="pointer cursor-pointer rounded-tl-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFCDE6]">
+                <!-- (1) main -->
+                <a href="{% url 'dashboard' %}" class="group">
+                    <div class="group-active:translate-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer rounded-tl-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFCDE6]">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <p>管理主頁</p>
+                    </div>
+                </a>
+                <!-- (2) profile -->
+                <a href="{% url 'member_profile' %}" class="group">
+                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer rounded-tr-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#DBDBFF]">
                         <i class="fa-solid fa-address-card"></i>
                         <p>會員檔案</p>
                     </div>
-                </div>
-                <!-- address book -->
-                <div class="">
-                    <div class="pointer cursor-pointer rounded-tr-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#DBDBFF]">
+                </a>
+                <!-- (3) address book -->
+                <a href="{% url 'addresses' %}" class="group">
+                    <div class="group-active:translate-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#9DFFFF]">
                         <i class="fa-solid fa-location-dot"></i>
                         <p>配送地址簿</p>
                     </div>
-                </div>
-                <!-- my perks -->
-                <div class="">
-                    <div class="pointer cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#9DFFFF]">
-                        <i class="fa-solid fa-tags"></i>
-                        <p>優惠券</p>
-                    </div>
-                </div>
-                <!-- my reviews -->
-                <div class="">
-                    <div class="pointer cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#CEFF9F]">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                        <p>寶貝評價</p>
-                    </div>
-                </div>
-                <!-- orders -->
-                <div class="">
-                    <div class="pointer cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFCE9E]">
+                </a>
+                <!-- (4) orders -->
+                <a href="{% url 'orders' %}" class="group">
+                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#CEFF9F]">
                         <i class="fa-solid fa-clipboard"></i>
                         <p>購物紀錄</p>
                     </div>
-                </div>
-                <!-- wish list -->
-                <div class="">
-                    <div class="pointer cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFFFCC]">
+                </a>
+                <!-- (5) my perks -->
+                <a href="" class="group">
+                    <div class="group-active:translate-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFCE9E]">
+                        <i class="fa-solid fa-tags"></i>
+                        <p>優惠券</p>
+                    </div>
+                </a>
+                <!-- (6) wallet -->
+                <a href="" class="group">
+                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFFFCC]">
+                        <i class="fa-solid fa-piggy-bank"></i>
+                        <p>錢包</p>
+                    </div>
+                </a>
+                <!-- (7) customer hotline -->
+                <a href="{% url 'help' %}" class="group">
+                    <div class="group-active:translate-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#D5FFEA]">
+                        <i class="fa-solid fa-comments"></i>
+                        <p>客服熱線</p>
+                    </div>
+                </a>
+                <!-- (8) wish list -->
+                <a href="" class="group">
+                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFBDFF]">
                         <i class="fa-solid fa-list"></i>
                         <p>未來購物清單</p>
                     </div>
-                </div>
-                <!-- collections -->
-                <div class="">
-                    <a href="" class="py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#D5FFEA]">
+                </a>
+                <!-- (9) collections -->
+                <a href="" class="group">
+                    <div class="group-active:translate-0.5 group-hover:text-primary duration-300 ease-out rounded-bl-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFD6EA]">
                         <i class="fa-solid fa-heart"></i>
                         <p>收藏</p>
-                    </a>
-                </div>
-                <!-- customer hotline -->
-                <div class="">
-                    <a href="" class="py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFBDFF]">
-                        <i class="fa-solid fa-comments"></i>
-                        <p>客服熱線</p>
-                    </a>
-                </div>
-                <!-- 3D design -->
-                <div class="">
-                    <a href="" class="rounded-bl-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFD6EA]">
+                    </div>
+                </a>
+                <!-- (10) 3D design -->
+                <a href="" class="group">
+                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-primary duration-300 ease-out rounded-br-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#bdf796]">
                         <i class="fa-solid fa-palette"></i>
                         <p>3D作品自創</p>
-                    </a>
-                </div>
-                <!-- wallet -->
-                <div class="">
-                    <a href="" class="rounded-br-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#bdf796]">
-                        <i class="fa-solid fa-piggy-bank"></i>
-                        <p>錢包</p>
-                    </a>
-                </div>
+                    </div>
+                </a>
             </div>
         <!-- </div> -->
 
         <!-- pinned articles -->
         <div class="flex flex-col gap-[50px]">
-            <h2 class="text-[1.2rem] text-center">特選文章</h2>
+            <h2 class="text-[1.2rem] text-center">精選文章</h2>
             <div class="w-full relative pinup">
                 <h3 class="absolute z-10 top-1/2 left-1/2 -translate-1/2">手繪入門課<br>～第一天～</h3>
                 <i class="z-10 fa-solid fa-map-pin absolute left-1/2 top-1 -translate-1/2 text-error"></i>

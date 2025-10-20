@@ -1,6 +1,10 @@
 from django.shortcuts import render
 
 
+def test(request):
+    return render(request, 'pages/test.html')
+
+
 def home(request):
     
     return render(request, 'home.html', )
@@ -17,3 +21,11 @@ def contact(request):
         "bread_crumb_3_url": "",
     }
     return render(request, 'pages/contact.html', context)
+
+
+def error_404(request):
+    return render(request, 'errors/404.html', status=404)
+
+
+def error_500(request):
+    return render(request, 'errors/500.html', status=500)

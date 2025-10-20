@@ -1,0 +1,174 @@
+{% extends 'accounts/dashboard_base.html' %}
+
+{% block accounts_content %}
+<!-- hero -->
+<div class="relative h-[14rem]">
+    <img src="/media/hero/red_leaves.jpeg" alt="" class="reel -z-1 absolute left-0 top-0 h-full w-full object-cover">
+    <div class="absolute top-[47%] left-[20%]">
+        <h2 class="text-5xl text-primary-content">霜降</h2>
+    </div>
+    <div class="absolute right-8 bottom-12 text-right text-primary-content">
+        <div id="dynamic-date"></div>
+        <div id="dynamic-clock"></div>
+    </div>
+</div>
+
+<!-- form -->
+<div class="flex gap-4 my-5">
+    <div class="w-full border border-base-300 rounded-2xl p-5">
+        <div class="flex w-full flex-col lg:flex-row">
+            <!-- LEFT -->
+            <div class="w-[48%] card bg-base-300 rounded-box grid grow place-items-center">
+                <!-- [top] avatar image -->
+                <div class="avatar m-auto pt-5">
+                    <div class="w-16 rounded-full">
+                        <img src="https://img.daisyui.com/images/profile/demo/yellingcat@192.webp" />
+                    </div>
+                </div>
+                <div class="border-b-1 border-dashed border-primary-content w-full pb-5 text-xs">
+                    <fieldset class="fieldset w-4/5 m-auto">
+                        <legend class="fieldset-legend">更換頭像（圖片形狀：正方形）</legend>
+                        <input type="file" class="file-input" />
+                        <label class="label">Max size 2MB</label>
+                    </fieldset>
+                </div>
+                <!-- [bottom] name details -->
+                <div class="flex flex-col gap-2 py-5 w-4/5">
+                    <!-- first name -->
+                    <label class="input input-border flex w-full items-center gap-2">
+                        <i class="fa-solid fa-person"></i>
+                        <input type="text" class="grow w-full" placeholder="First Name">
+                    </label>
+                    <!-- last name -->
+                    <label class="input input-border flex w-full items-center gap-2">
+                        <i class="fa-solid fa-people-roof"></i> 
+                        <input type="text" class="grow w-full" placeholder="Family Name">
+                    </label>
+                    <!-- DOB -->
+                    <label class="input input-border flex w-full items-center gap-2">
+                        <i class="fa-solid fa-cake-candles"></i> 
+                        <input type="date" class="grow w-full" class="input" />
+                    </label>
+                    <!-- username -->
+                    <label class="input input-border flex w-full max-w-none items-center gap-2">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" class="grow w-full" placeholder="Username">
+                    </label>
+                    <!-- email -->
+                    <label class="input input-border flex w-full max-w-none items-center gap-2">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" class="grow w-full" placeholder="Email">
+                    </label>
+                    <!-- mobile number -->
+                    <div class="join">
+                        <select class="select rounded-l-4xl w-[6rem]" required>
+                            <option disabled selected>
+                                🌏
+                            <option>🇦🇺 +61</option>
+                            <option>🇭🇰 +852</option>
+                            <option>🇹🇼 +886</option>
+                            <option>🇲🇴 +853</option>
+                            <option>🇸🇬 +65</option>
+                        </select>                    
+                        <div class="flex-grow">
+                            <label class="input validator join-item">
+                            <i class="fa-solid fa-mobile-screen-button"></i>
+                            <input type="text" placeholder="123-456-789" required />
+                            </label>
+                            <div class="validator-hint hidden">Enter valid email address</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MIDDLE -->
+            <div class="divider lg:divider-horizontal w-[4%]"></div>
+
+            <!-- RIGHT -->
+            <div class="w-[48%] card bg-base-300 rounded-box grid grow place-items-center">
+                <!-- address -->
+                <div class="w-4/5 flex flex-col gap-2 py-5 border-b-1 border-dashed border-primary-content ">
+                    <!-- address_1 -->
+                    <div class="w-full text-xs">
+                        <label class="input input-border flex max-w-none items-center gap-2">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                            <input type="text" class="grow w-full" placeholder="Address_1">
+                        </label>
+                    </div> 
+                    <!-- address_2 -->
+                    <div class="w-full text-xs">
+                        <label class="input input-border flex max-w-none items-center gap-2">
+                            <i class="fa-solid fa-map-location"></i>
+                            <input type="text" class="grow w-full" placeholder="Address_2">
+                        </label>
+                    </div> 
+                    <!-- city / suburb -->
+                    <div class="w-full text-xs">
+                        <label class="input input-border flex max-w-none items-center gap-2">
+                            <i class="fa-solid fa-tree-city"></i>
+                            <input type="text" class="grow w-full" placeholder="City">
+                        </label>
+                    </div> 
+                    <!-- state -->
+                    <div class="w-full text-xs">
+                        <label class="input input-border flex max-w-none items-center gap-2">
+                            <i class="fa-solid fa-map"></i>
+                            <input type="text" class="grow w-full" placeholder="State">
+                        </label>
+                    </div> 
+                    <!-- country -->
+                    <div class="w-full text-xs">
+                        <label class="input input-border flex max-w-none items-center gap-2">
+                            <i class="fa-solid fa-globe"></i>
+                            <input type="text" class="grow w-full" placeholder="Country">
+                        </label>
+                    </div> 
+                    <!-- zip -->
+                    <div class="w-full text-xs">
+                        <label class="input input-border flex max-w-none items-center gap-2">
+                            <i class="fa-solid fa-envelopes-bulk"></i>
+                            <input type="text" class="grow w-full" placeholder="Zip">
+                        </label>
+                    </div> 
+                </div>
+                <!-- miscellaneous -->
+                <div class="flex flex-col w-4/5 h-full my-5 text-center gap-2 justify-center">
+                    <!-- misc - color -->
+                    <select class="select">
+                        <option disabled selected>🎨&nbsp;最喜歡的色系</option>
+                        <option style="color: #FF0000;">🎨&nbsp;最喜歡 - 紅色系</option>
+                        <option style="color: #FFC0CB">🎨&nbsp;最喜歡 - 粉紅色系</option>
+                        <option style="color: #FFA500">🎨&nbsp;最喜歡 - 橙色系</option>
+                        <option style="color: #FFFF00">🎨&nbsp;最喜歡 - 黃色系</option>
+                        <option style="color: #800080">🎨&nbsp;最喜歡 - 紫色系</option>
+                        <option style="color: #008000">🎨&nbsp;最喜歡 - 綠色系</option>
+                        <option style="color: #0000FF">🎨&nbsp;最喜歡 - 藍色系</option>
+                        <option style="color: #A52A2A">🎨&nbsp;最喜歡 - 褐色系</option>
+                        <option style="color: #FFFFFF">🎨&nbsp;最喜歡 - 白色系</option>
+                        <option style="color: #808080">🎨&nbsp;最喜歡 - 灰&黑色系</option>
+                    </select>
+                    <!-- misc - blood -->
+                    <select class="select">
+                        <option disabled selected>🩸&nbsp;血型</option>
+                        <option>🩸&nbsp;血型 - A型</option>
+                        <option>🩸&nbsp;血型 - B型</option>
+                        <option>🩸&nbsp;血型 - AB型</option>
+                        <option>🩸&nbsp;血型 - O型</option>
+                        <option>🩸&nbsp;血型 - 稀有型</option>
+                    </select>
+                    <!-- misc - gender -->
+                    <select class="select">
+                        <option disabled selected>⚧️&nbsp;性別</option>
+                        <option>男性</option>
+                        <option>女性</option>
+                        <option>秘密</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

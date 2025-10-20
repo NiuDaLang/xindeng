@@ -1,0 +1,176 @@
+{% extends 'accounts/dashboard_base.html' %}
+
+{% block accounts_content %}
+<div class="flex gap-5 mb-10 w-full">
+    <!-- mobile mockup -->
+    <div class="w-3/4">
+        <div class="relative mockup-help-phone w-full">
+            <div class="mockup-phone-camera"></div>
+            <div class="relative mockup-help-phone-display text-white px-10 pt-25 items-start bg-accent-content overflow-y-auto">
+                <!-- input -->
+                <form action="" method="POST" class="w-full h-[5rem] flex gap-[5%] items-center mb-5">
+                    {% csrf_token %}
+                    <textarea placeholder="请输入内容" class="w-[76%] h-full textarea textarea-primary text-primary"></textarea>
+                    <button class="btn btn-primary w-[19%] px-5 h-full text-[1.05rem]">發&nbsp;送</button>
+                </form>
+
+                <!-- dialog -->
+                <div class="overflow-y-auto">
+                    <!-- member -->
+                    <div class="chat chat-start">
+                    <div class="chat-image avatar">
+                        <div class="w-10 rounded-full">
+                        <img
+                            alt="Tailwind CSS chat bubble component"
+                            src="https://img.daisyui.com/images/profile/demo/kenobee@192.webp"
+                        />
+                        </div>
+                    </div>
+                    <div class="chat-header">
+                        Obi-Wan Kenobi
+                        <time class="text-xs opacity-50">12:45</time>
+                    </div>
+                    <div class="chat-bubble">You were the Chosen One!</div>
+                    <div class="chat-footer opacity-50">Delivered</div>
+                    </div>
+                    <!-- staff -->
+                    <div class="chat chat-end">
+                    <div class="chat-image avatar">
+                        <div class="w-10 rounded-full">
+                        <img
+                            alt="Tailwind CSS chat bubble component"
+                            src="https://img.daisyui.com/images/profile/demo/anakeen@192.webp"
+                        />
+                        </div>
+                    </div>
+                    <div class="chat-header">
+                        Anakin
+                        <time class="text-xs opacity-50">12:46</time>
+                    </div>
+                    <div class="chat-bubble">I hate you!</div>
+                    <div class="chat-footer opacity-50">Seen at 12:46</div>
+                    </div>
+                    <!-- member -->
+                    <div class="chat chat-start">
+                    <div class="chat-image avatar">
+                        <div class="w-10 rounded-full">
+                        <img
+                            alt="Tailwind CSS chat bubble component"
+                            src="https://img.daisyui.com/images/profile/demo/kenobee@192.webp"
+                        />
+                        </div>
+                    </div>
+                    <div class="chat-header">
+                        Obi-Wan Kenobi
+                        <time class="text-xs opacity-50">12:45</time>
+                    </div>
+                    <div class="chat-bubble">You were the Chosen One!</div>
+                    <div class="chat-footer opacity-50">Delivered</div>
+                    </div>
+                    <!-- staff -->
+                    <div class="chat chat-end">
+                    <div class="chat-image avatar">
+                        <div class="w-10 rounded-full">
+                        <img
+                            alt="Tailwind CSS chat bubble component"
+                            src="https://img.daisyui.com/images/profile/demo/anakeen@192.webp"
+                        />
+                        </div>
+                    </div>
+                    <div class="chat-header">
+                        Anakin
+                        <time class="text-xs opacity-50">12:46</time>
+                    </div>
+                    <div class="chat-bubble">I hate you!</div>
+                    <div class="chat-footer opacity-50">Seen at 12:46</div>
+                    </div>
+                    <!-- member -->
+                    <div class="chat chat-start">
+                    <div class="chat-image avatar">
+                        <div class="w-10 rounded-full">
+                        <img
+                            alt="Tailwind CSS chat bubble component"
+                            src="https://img.daisyui.com/images/profile/demo/kenobee@192.webp"
+                        />
+                        </div>
+                    </div>
+                    <div class="chat-header">
+                        Obi-Wan Kenobi
+                        <time class="text-xs opacity-50">12:45</time>
+                    </div>
+                    <div class="chat-bubble">You were the Chosen One!</div>
+                    <div class="chat-footer opacity-50">Delivered</div>
+                    </div>
+                    <!-- staff -->
+                    <div class="chat chat-end">
+                    <div class="chat-image avatar">
+                        <div class="w-10 rounded-full">
+                        <img
+                            alt="Tailwind CSS chat bubble component"
+                            src="https://img.daisyui.com/images/profile/demo/anakeen@192.webp"
+                        />
+                        </div>
+                    </div>
+                    <div class="chat-header">
+                        Anakin
+                        <time class="text-xs opacity-50">12:46</time>
+                    </div>
+                    <div class="chat-bubble">I hate you!</div>
+                    <div class="chat-footer opacity-50">Seen at 12:46</div>
+                    </div>
+                </div>
+
+
+
+            </div>
+
+            <!-- clock -->
+            <div class="absolute left-1/2 bottom-5 -translate-x-1/2 text-center text-primary-content">
+                <div id="dynamic-date"></div>
+                <div id="dynamic-clock"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- hero -->
+    <div class="relative w-1/4 h-auto rounded-[64px] bg-[url(/static/hero/red_leaves.jpeg)] bg-cover" style="box-shadow: 0 0 8px 8px var(--color-base-100) inset;">
+        <!-- <img src="/media/hero/red_leaves.jpeg" alt="" 
+        style="box-shadow: 0 0 32px 32px white inset;"
+        class="rounded-[64px] h-full object-cover"> -->
+        <div class="absolute top-[10rem] right-[20%]">
+            <h2 class="text-5xl text-primary-content">霜</h2>
+            <h2 class="text-5xl text-primary-content">降</h2>
+        </div>
+    </div>
+
+
+<style>
+    .mockup-help-phone {
+        display: inline-grid;
+        justify-items: center;
+        border: 5px solid #6b6b6b;
+        border-radius: 65px;
+        background-color: var(--color-accent);
+        padding: 6px;
+        overflow: hidden;
+        width: 100%;
+        aspect-ratio: 462 / 978;
+    }
+
+    .mockup-help-phone-display {
+        border-radius: 54px;
+        grid-column: 1 / 1;
+        grid-row: 1 / 1;
+        /* overflow: hidden; */
+        width: 100%;
+        height: 100%;
+    }
+</style>
+
+
+
+</div>
+
+{% endblock %}

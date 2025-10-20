@@ -32,4 +32,89 @@ def dashboard(request):
         "bread_crumb_3_url": "",
     }
 
-    return render(request, "pages/dashboard.html", context)
+    return render(request, "accounts/dashboard_main.html", context)
+
+
+def member_profile(request):
+    user = request.user
+
+    context = {
+        "main_title": f"您好,{user}!",
+        "sub_title": "XXXXX XXXXX",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "會員",
+        "bread_crumb_3": "會員資料",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/accounts/dashboard",
+        "bread_crumb_3_url": "/accounts/dashboard/member_profile",
+    }
+
+    return render(request, "accounts/dashboard_profile.html", context)
+
+
+def addresses(request):
+    user = request.user
+
+    context = {
+        "main_title": f"您好,{user}!",
+        "sub_title": "XXXXX XXXXX",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "會員",
+        "bread_crumb_3": "地址",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/accounts/dashboard",
+        "bread_crumb_3_url": "/accounts/dashboard/addresses",
+    }
+
+    return render(request, "accounts/dashboard_addresses.html", context)
+
+
+def orders(request):
+    user = request.user
+
+    context = {
+        "main_title": f"您好,{user}!",
+        "sub_title": "XXXXX XXXXX",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "會員",
+        "bread_crumb_3": "訂單紀錄",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/accounts/dashboard",
+        "bread_crumb_3_url": "/accounts/dashboard/orders",
+    }
+    return render(request, "accounts/dashboard_orders.html", context)
+
+
+def order(request):
+    user = request.user
+    order_num = 'xxxxxxx'
+    context = {
+        "main_title": f"您好,{user}!",
+        "sub_title": "XXXXX XXXXX",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "會員",
+        "bread_crumb_3": "訂單紀錄",
+        "bread_crumb_4": f"訂單No.{order_num}",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/accounts/dashboard",
+        "bread_crumb_3_url": "/accounts/dashboard/orders",
+        "bread_crumb_4_url": "/accounts/dashboard/orders/order",
+    }
+    return render(request, "accounts/dashboard_order.html", context)
+
+
+def help(request):
+    user = request.user
+
+    context = {
+        "main_title": f"您好,{user}!",
+        "sub_title": "XXXXX XXXXX",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "會員",
+        "bread_crumb_3": "幫助",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/accounts/dashboard",
+        "bread_crumb_3_url": "/accounts/dashboard/help",
+    }
+
+    return render(request, "accounts/dashboard_help.html", context)

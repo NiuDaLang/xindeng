@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- BANNER -->
+<div class="relative mt-16 w-full">
+    {% include 'includes/banner.html' %}
+</div>
+
+<!-- MAIN -->
+<main class="px-[max(1rem,5vw)] lg:px-[max(2rem,10vw)] xl:px-[max(3rem,20vw)] py-20 min-h-[calc(100dvh-200px)]">
+
+    <div class="grid grid-cols-3 gap-8">
+        <!-- LEFT: tabs - name of each tab group should be unique -->
+        <div class="col-span-2 relative">
+            <!-- search icon -->
+            <button class="absolute right-2 top-0 btn btn-ghost btn-circle">
+                <a href="#">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /> </svg>
+                </a>
+            </button>  
+            <!-- tabs -->
+            <div class="tabs tabs-lift">
+                <!-- tab-1 latest -->
+                <label class="tab items-center">
+                    <input type="radio" name="blog_tab" checked="checked" />
+                    <i class="fa-solid fa-newspaper"></i>
+                    近期發佈
+                </label>
+                <!-- posts -->
+                <div class="tab-content bg-base-100 border-base-300 p-6">
+                    <!-- post cards -->
+                    <a href="{% url 'post' %}" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-base-content">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/purpleFlower.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <div class="divider"></div>
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-base-content">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/tulip.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <div class="divider"></div>
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-base-content">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/lavendar.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <div class="divider"></div>
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-base-content">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/purpleFlower.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <div class="divider"></div>
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-base-content">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/tulip.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <!-- all button -->
+                    <button class="btn btn-outline btn-primary">
+                        <i class="fa-solid fa-folder-open"></i>
+                        全部
+                    </button>
+                </div>
+        
+                <!-- tab-2 diary -->
+                <label class="tab items-center">
+                    <input type="radio" name="blog_tab"/>
+                    <i class="fa-solid fa-book"></i>
+                    店主日記
+                </label>
+                <!-- posts -->
+                <div class="tab-content bg-base-100 border-base-300 p-6">
+                    <!-- post cards -->
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/purpleFlower.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <div class="divider"></div>
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/tulip.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <div class="divider"></div>
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/lavendar.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <div class="divider"></div>
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/purpleFlower.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <div class="divider"></div>
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/tulip.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <!-- all button -->
+                    <button class="btn btn-outline btn-secondary">
+                        <i class="fa-solid fa-folder-open"></i>
+                        全部
+                    </button>
+                </div>
+        
+                <!-- tab-3 events -->
+                <label class="tab items-center">
+                    <input type="radio" name="blog_tab" />
+                    <i class="fa-solid fa-calendar-days"></i>
+                    活動資訊
+                </label>
+                <div class="tab-content bg-base-100 border-base-300 p-6">
+                    <!-- post cards -->
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-accent">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/purpleFlower.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <div class="divider"></div>
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-accent">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/tulip.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <div class="divider"></div>
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-accent">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/lavendar.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <div class="divider"></div>
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-accent">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/purpleFlower.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <div class="divider"></div>
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-accent">
+                        <div class="card-body w-2/3">
+                            <div class="flex justify-left">
+                                <h2 class="card-title">作品背後的故事</h2>
+                            </div>
+                            <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                送香或造念斗左地父彩太黃。
+                            </p>
+                            <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                        </div>
+                        <figure class="w-1/3">
+                            <img
+                            class="object-cover"
+                            src="/media/hero/tulip.svg"
+                            alt="tulip drawing image" />
+                        </figure>
+                    </a>
+                    <!-- all button -->
+                    <button class="btn btn-outline btn-accent">
+                        <i class="fa-solid fa-folder-open"></i>
+                        全部
+                    </button>
+
+                </div>
+        
+            </div>
+        </div>
+
+        <!-- RIGHT: sidebar -->
+        {% include 'includes/blog_sidebar.html' %}
+    </div>
+
+</main>
+{% endblock %}

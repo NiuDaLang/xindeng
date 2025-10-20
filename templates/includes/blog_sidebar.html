@@ -1,0 +1,65 @@
+{% block content %}
+
+<aside class="col-span-1 bg-primary-content rounded-2xl border-1 border-base-300 text-info-content px-5 py-5">
+    <!-- logo -->
+    <div class="w-full text-center py-2">
+        <div class="mask mask-squircle">
+            <img class="w-18" src="https://img.daisyui.com/images/stock/photo-1494232410401-ad00d5433cfa.webp" alt="">
+        </div>
+    </div>
+    <!-- popular articles -->
+    <div class="text-center text-lg">熱 門 筆 記</div>
+
+    <!-- thumbnails -->
+    <div class="w-full my-5 relative">
+        <div class="absolute -translate-1/2 top-1/2 left-1/2 text-primary-content">XX花藝</div>
+        <img src="/media/images/site/ad1.png.webp" alt="" class="rounded-2xl object-contain">
+    </div>
+    <div class="w-full my-5 relative">
+        <div class="absolute -translate-1/2 top-1/2 left-1/2 text-primary-content">網站開發</div>
+        <img src="/media/images/site/ad2.png" alt="" class="rounded-2xl object-contain">
+    </div>
+    <div class="w-full my-5 relative">
+        <div class="absolute -translate-1/2 top-1/2 left-1/2 text-primary-content">XX花藝</div>
+        <img src="/media/images/site/ad1.png.webp" alt="" class="rounded-2xl object-contain">
+    </div>
+
+    <!-- by tags -->
+    <div class="my-10">
+        <div class="text-center text-lg">話 題 標 籤</div>
+        <!-- tag links -->
+        <div class="text-info text-sm my-5 flex flex-wrap gap-x-3 justify-center">
+            <a href="">
+                <i class="fa-solid fa-hashtag"></i>
+                <span>自然生活(2)</span>
+            </a>
+            <a href="">
+                <i class="fa-solid fa-hashtag"></i>
+                <span>靈性發現(5)</span>
+            </a>
+            <a href="">
+                <i class="fa-solid fa-hashtag"></i>
+                <span>自我啟蒙(3)</span>
+            </a>
+            <a href="">
+                <i class="fa-solid fa-hashtag"></i>
+                <span>大覺醒(5)</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- by date -->
+    <div class="my-10">
+        <div class="text-center text-lg mb-5">檔 案 庫</div>
+        <!-- sort-by-month links -->
+        <div class="text-accent text-sm my-5 text-center">
+            <a href="" class="block">2025-12 (4)</a>
+            <a href="" class="block">2025-11 (2)</a>
+            <a href="" class="block">2025-10 (3)</a>
+            <a href="" class="block">2025-9 (1)</a>
+        </div>
+
+    </div>
+</aside>
+
+{% endblock %}

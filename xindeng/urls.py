@@ -28,5 +28,9 @@ urlpatterns = [
     path("store/", include('store.urls')),
     path("accounts/", include('accounts.urls')),
     path("contact/", views.contact, name="contact"),
+    path("blog/", include('blog.urls')),
+    path("error/404/", views.error_404, name="error_404"),
+    path("error/500/", views.error_500, name="error_500"),
+    path("test/", views.test, name="test"),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

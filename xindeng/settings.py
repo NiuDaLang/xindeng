@@ -122,10 +122,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles" # "collectstatic"
 STATICFILES_DIRS = [
     BASE_DIR / "assets",
+    BASE_DIR / "media",
 ]
-STATIC_ROOT = BASE_DIR / "staticfiles" # "collectstatic"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -135,7 +136,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Django-Vite
 DJANGO_VITE = {
     "default": {
-        "dev_mode": False,
+        "dev_mode": DEBUG,
         "manifest_path": BASE_DIR / "assets" / "manifest.json",
         "static_url_prefix": ""
     }

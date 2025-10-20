@@ -25,3 +25,15 @@ def product(request):
         "bread_crumb_3_url": "/",
     }
     return render(request, 'pages/product.html', context)
+
+
+def cart(request):
+    context = {
+        "main_title": "購物車",
+        "sub_title": "此處有驚喜在等待您",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "購物車",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/store/cart",
+    }
+    return render(request, 'pages/cart.html', context)
