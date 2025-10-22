@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- BANNER -->
+<div class="relative mt-16 w-full">
+    {% include 'includes/banner.html' %}
+</div>
+
+<!-- MAIN -->
+<main class="px-[max(1rem,5vw)] py-10 min-h-[calc(100dvh-200px)]">
+    <div class="w-full border border-base-300 rounded-2xl p-5">
+        <div class="flex w-full flex-col lg:flex-row">
+            <!-- LEFT - address -->
+            <div class="w-[58%] card bg-base-300 rounded-box p-3">
+                <h3 class="my-3 text-center font-bold"><i class="fa-solid fa-clipboard-check"></i>&nbsp;內容確認</h3>
+                <!-- delivery address -->
+                <div class="card w-full bg-base-100 card-sm shadow-sm rounded-2xl mb-5">
+                    <div class="flex flex-auto flex-col gap-0.5 text-[0.875rem]">
+                        <!-- heading -->
+                        <h2 class="card-title w-full text-primary-content bg-accent rounded-t-2xl p-2">配送地址</h2>
+                        <!-- details -->
+                        <div class="p-2">
+                            <p>收件人：Firstname Lastname</p>
+                            <p>地址: Address_1, Address_2, City, State, Country, ZIP#</p>
+                            <p>手機號碼：</p>
+                            <p>備注：不要郵寄發票</p>
+                            <div class="justify-end card-actions">
+                                <button class="btn btn-primary btn-sm">修改</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>                
+                <!-- payment method -->
+                <div class="card w-full bg-base-100 card-sm shadow-sm rounded-2xl mb-5">
+                    <div class="flex flex-auto flex-col gap-0.5 text-[0.875rem]">
+                        <!-- heading -->
+                        <h2 class="card-title w-full text-primary-content bg-accent rounded-t-2xl p-2">付款方式</h2>
+                        <!-- options -->
+                        <div class="p-2 flex gap-3">
+                            <label for="" class="flex items-center">
+                                <input type="radio" name="payment_selection" class="radio radio-xs" />
+                                <span>PayPal </span>
+                            </label>
+                            <label for="" class="flex items-center">
+                                <input type="radio" name="payment_selection" class="radio radio-xs" />
+                                <span>信用卡 </span>
+                            </label>
+                            <label for="" class="flex items-center">
+                                <input type="radio" name="payment_selection" class="radio radio-xs" />
+                                <span>微信 </span>
+                            </label>
+                        </div>
+
+                        <!-- NOTE -->
+                        <div class="m-2">*****備注：支付方式表格後期將進一步完善*****</div>
+                    </div>
+                </div>
+                <!-- products -->
+                <div class="card w-full bg-base-100 card-sm shadow-sm rounded-2xl mb-5">
+                    <div class="flex flex-auto flex-col gap-0.5 text-[0.875rem]">
+                        <!-- heading -->
+                        <h2 class="card-title w-full text-primary-content bg-accent rounded-t-2xl p-2">產品一覽</h2>
+                        <!-- products -->
+
+                        <!-- heading -->
+                        <div class="grid grid-cols-6 mt-3 text-center pb-2 font-bold">
+                            <!-- product description -->
+                            <div class="col-span-3 text-xs">
+                                Product
+                            </div>
+                            <!-- order stats -->
+                            <div class="col-span-1 text-xs">
+                                Qty
+                            </div>
+                            <div class="col-span-2 text-xs">
+                                Sub-Total
+                            </div>
+                        </div>
+                        <div class="divider mt-0 my-5"></div>
+
+                        <!-- item list -->
+                        <div class="px-5">
+                            <!-- item 1 -->
+                            <div class="grid grid-cols-6 mb-5">
+                                <!-- product description -->
+                                <div class="col-span-1 pl-3">
+                                    <img src="/media/hero/lavendar.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
+                                </div>
+                                <div class="col-span-2 text-xs pl-2">
+                                    <span class="font-bold">Product Name</span>
+                                    <br/>
+                                    <span class="text-[10px]">Product Description</span>
+                                </div>
+                                <!-- order stats -->
+                                <div class="col-span-1 text-xs text-center">
+                                    1
+                                </div>
+                                <div class="col-span-2 text-xs text-right font-bold pr-3">
+                                    RMB 500
+                                    <br>
+                                    <small>單價：RMB 500</small>
+                                </div>
+                            </div>
+
+                            <!-- item 2 -->
+                            <div class="grid grid-cols-6 mb-5">
+                                <!-- product description -->
+                                <div class="col-span-1 pl-3">
+                                    <img src="/media/hero/tulip.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
+                                </div>
+                                <div class="col-span-2 text-xs pl-2">
+                                    <span class="font-bold">Product Name</span>
+                                    <br/>
+                                    <span class="text-[10px]">Product Description</span>
+                                </div>
+                                <!-- order stats -->
+                                <div class="col-span-1 text-xs text-center">
+                                    2
+                                </div>
+                                <div class="col-span-2 text-xs text-right font-bold pr-3">
+                                    RMB 1,200
+                                    <br>
+                                    <small>單價：RMB 600</small>
+                                </div>
+                            </div>
+
+                            <!-- item 3 -->
+                            <div class="grid grid-cols-6 mb-5">
+                                <!-- product description -->
+                                <div class="col-span-1 pl-3">
+                                    <img src="/media/hero/purpleFlower.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
+                                </div>
+                                <div class="col-span-2 text-xs pl-2">
+                                    <span class="font-bold">Product Name</span>
+                                    <br/>
+                                    <span class="text-[10px]">Product Description</span>
+                                </div>
+                                <!-- order stats -->
+                                <div class="col-span-1 text-xs text-center">
+                                    1
+                                </div>
+                                <div class="col-span-2 text-xs text-right font-bold pr-3">
+                                    RMB 300
+                                    <br>
+                                    <small>單價：RMB 300</small>
+                                </div>
+                            </div>
+
+                            <!-- item 4 -->
+                            <div class="grid grid-cols-6 mb-5">
+                                <!-- product description -->
+                                <div class="col-span-1 pl-3">
+                                    <img src="/media/hero/lavendar.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
+                                </div>
+                                <div class="col-span-2 text-xs pl-2">
+                                    <span class="font-bold">Product Name</span>
+                                    <br/>
+                                    <span class="text-[10px]">Product Description</span>
+                                </div>
+                                <!-- order stats -->
+                                <div class="col-span-1 text-xs text-center">
+                                    1
+                                </div>
+                                <div class="col-span-2 text-xs text-right font-bold pr-3">
+                                    RMB 500
+                                    <br>
+                                    <small>單價：RMB 500</small>
+                                </div>
+                            </div>
+
+                            <!-- item 5 -->
+                            <div class="grid grid-cols-6 mb-5">
+                                <!-- product description -->
+                                <div class="col-span-1 pl-3">
+                                    <img src="/media/hero/tulip.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
+                                </div>
+                                <div class="col-span-2 text-xs pl-2">
+                                    <span class="font-bold">Product Name</span>
+                                    <br/>
+                                    <span class="text-[10px]">Product Description</span>
+                                </div>
+                                <!-- order stats -->
+                                <div class="col-span-1 text-xs text-center">
+                                    2
+                                </div>
+                                <div class="col-span-2 text-xs text-right font-bold pr-3">
+                                    RMB 1,200
+                                    <br>
+                                    <small>單價：RMB 600</small>
+                                </div>
+                            </div>
+
+                            <!-- item 6 -->
+                            <div class="grid grid-cols-6 mb-5">
+                                <!-- product description -->
+                                <div class="col-span-1 pl-3">
+                                    <img src="/media/hero/purpleFlower.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
+                                </div>
+                                <div class="col-span-2 text-xs pl-2">
+                                    <span class="font-bold">Product Name</span>
+                                    <br/>
+                                    <span class="text-[10px]">Product Description</span>
+                                </div>
+                                <!-- order stats -->
+
+                                <div class="col-span-1 text-xs text-center">
+                                    1
+                                </div>
+                                <div class="col-span-2 text-xs text-right font-bold pr-3">
+                                    RMB 300
+                                    <br>
+                                    <small>單價：RMB 600</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="divider mt-0 my-5"></div>
+
+                    </div>
+                </div>                
+            </div>
+
+            <!-- MIDDLE -->
+            <div class="divider lg:divider-horizontal w-[2%]"></div>
+
+            <!-- RIGHT - items list -->
+            <div class="w-[40%] card bg-base-300 rounded-box p-3 ">
+                <h3 class="my-3 text-center font-bold"><i class="fa-solid fa-money-bill-wave"></i>&nbsp;付款</h3>
+                <!-- payment summary -->
+                <div class="card w-full bg-base-100 card-sm shadow-sm rounded-2xl mb-5">
+                    <div class="flex flex-auto flex-col gap-0.5 text-[0.875rem]">
+                        <!-- heading -->
+                        <h2 class="card-title w-full text-primary-content bg-accent rounded-t-2xl p-2">金額</h2>
+                        <!-- sub-total & other costs/discounts -->
+                        <div class="w-full text-right text-sm font-black px-8 mb-5 py-5">
+                            <!-- sub-total -->
+                            <div class="mb-3">小計 RMB 4,000</div>
+                            <!-- coupon -->
+                            <div class="text-info-content">優惠活動 (RMB -100)</div>
+                            <!-- gift voucher -->
+                            <div class="text-info-content">禮品券 (RMB -200)</div>
+                            <!-- postage & handling -->
+                            <div class="w-full border-b-2 border-double">配送費 RMB 50</div>
+                            <!-- Grand Total -->
+                            <div class="text-md mt-2 text-base">總計支付金額 RMB 3,750</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- payment buttons -->
+                <div class="w-full flex flex-col gap-2">
+                    <button class="w-full btn btn-success">各類支付按鈕</button>
+                    <button class="w-full btn btn-secondary">各類支付按鈕</button>
+                </div>
+
+                <!-- 繼續購物 -->
+                <button class="btn btn-accent btn-outline mb-3 my-10 py-5 text-[1.05rem]">
+                    <i class="fa-solid fa-person-walking-arrow-loop-left"></i>繼續購物
+                </button>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+{% endblock %}

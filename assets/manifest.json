@@ -1,11 +1,11 @@
 {
   "static/js/main.js": {
-    "file": "django-assets/main-Cvd2VoQg.js",
+    "file": "django-assets/main-D1wR1_cS.js",
     "name": "main",
     "src": "static/js/main.js",
     "isEntry": true,
     "css": [
-      "django-assets/main-BxrnfMGX.css"
+      "django-assets/main-BoOr2d1g.css"
     ]
   }
 }

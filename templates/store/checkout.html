@@ -1,0 +1,522 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- BANNER -->
+<div class="relative mt-16 w-full">
+    {% include 'includes/banner.html' %}
+</div>
+
+<!-- MAIN -->
+<main class="px-[max(1rem,5vw)] py-10 min-h-[calc(100dvh-200px)]">
+    <div class="w-full border border-base-300 rounded-2xl p-5">
+        <div class="flex w-full flex-col lg:flex-row">
+            <!-- LEFT - address -->
+            <div class="w-[40%] card bg-base-300 rounded-box p-3">
+                <h3 class="my-3 text-center font-bold"><i class="fa-solid fa-truck"></i>&nbsp;配送訊息</h3>
+                <div class="flex flex-col gap-2 py-5 w-full">
+                    <!-- name -->
+                    <div class="flex gap-1 w-full">
+                        <!-- first name -->
+                        <label class="input input-border flex w-full items-center gap-2">
+                            <i class="fa-solid fa-person"></i>
+                            <input type="text" class="grow w-full" placeholder="First Name">
+                        </label>
+                        <!-- last name -->
+                        <label class="input input-border flex w-full items-center gap-2">
+                            <i class="fa-solid fa-people-roof"></i> 
+                            <input type="text" class="grow w-full" placeholder="Family Name">
+                        </label>
+                    </div>
+                    <!-- contact methods -->
+                    <!-- <div class="flex gap-1 w-full"> -->
+
+                    <!-- email -->
+                    <label class="input input-border w-full flex max-w-none items-center gap-2">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" class="grow w-full" placeholder="Email">
+                    </label>
+                    <!-- mobile number -->
+                    <div class="join w-full">
+                        <select class="select rounded-l-4xl w-[6rem]" required>
+                            <option disabled selected>
+                                🌏
+                            <option>🇦🇺 +61</option>
+                            <option>🇭🇰 +852</option>
+                            <option>🇹🇼 +886</option>
+                            <option>🇲🇴 +853</option>
+                            <option>🇸🇬 +65</option>
+                        </select>                    
+                        <div class="flex-grow">
+                            <label class="input w-full validator join-item">
+                                <i class="fa-solid fa-mobile-screen-button"></i>
+                                <input type="text" placeholder="123-456-789" required />
+                            </label>
+                            <div class="validator-hint hidden">Enter valid email address</div>
+                        </div>
+                    </div>
+
+                    <!-- </div> -->
+                    <!-- address_1 -->
+                    <div class="w-full text-xs">
+                        <label class="w-full input input-border flex max-w-none items-center gap-2">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                            <input type="text" class="grow w-full" placeholder="Address_1">
+                        </label>
+                    </div> 
+                    <!-- address_2 -->
+                    <div class="w-full text-xs">
+                        <label class="w-full input input-border flex max-w-none items-center gap-2">
+                            <i class="fa-solid fa-map-location"></i>
+                            <input type="text" class="grow w-full" placeholder="Address_2">
+                        </label>
+                    </div> 
+                    <!-- city & state -->
+                    <div class="flex gap-1 w-full">
+                        <!-- city / suburb -->
+                        <div class="w-full text-xs">
+                            <label class="input input-border flex max-w-none items-center gap-2">
+                                <i class="fa-solid fa-tree-city"></i>
+                                <input type="text" class="grow w-full" placeholder="City">
+                            </label>
+                        </div> 
+                        <!-- state -->
+                        <div class="w-full text-xs">
+                            <label class="input input-border flex max-w-none items-center gap-2">
+                                <i class="fa-solid fa-map"></i>
+                                <input type="text" class="grow w-full" placeholder="State">
+                            </label>
+                        </div> 
+                    </div>
+                    <!-- country & zip -->
+                    <div class="flex gap-1 w-full">
+                        <!-- country -->
+                        <div class="w-full text-xs">
+                            <label class="input input-border flex max-w-none items-center gap-2">
+                                <i class="fa-solid fa-globe"></i>
+                                <input type="text" class="grow w-full" placeholder="Country">
+                            </label>
+                        </div> 
+                        <!-- zip -->
+                        <div class="w-full text-xs">
+                            <label class="input input-border flex max-w-none items-center gap-2">
+                                <i class="fa-solid fa-envelopes-bulk"></i>
+                                <input type="text" class="grow w-full" placeholder="Zip">
+                            </label>
+                        </div> 
+                    </div>
+                    <!-- note -->
+                    <textarea placeholder="配送備注：" class="w-full textarea textarea-primary"></textarea>
+                    <!-- include invoice -->
+                    <label class="label text-base-content pl-3">
+                        <i class="fa-solid fa-gift"></i>
+                        <input type="checkbox" class="toggle toggle-xs" />
+                        <span class="text-xs">不要寄帳單或價格標籤</span>
+                    </label>
+
+                    <!-- change address - MODAL -->
+                    <div class="relative card w-full min-h-[5rem] justify-center items-center ">
+                        <button class="w-full btn btn-primary mt-2" onclick="my_modal_1.showModal()">
+                            <i class="fa-solid fa-address-book"></i>
+                            <span>選擇其他配送地址</span>
+                        </button>
+
+                        <!-- modal -->
+                        <dialog id="my_modal_1" class="modal ">
+                            <!-- close button -->
+                            <div class="modal-box h-1/2">
+                                <form method="dialog" class="absolute right-2 top-2">
+                                    <button class="btn btn-sm btn-circle btn-ghost ">✕</button>
+                                </form>
+                                <!-- title -->
+                                <h3 class="w-full text-center mt-5 font-bold">地址簿</h3>
+
+                                <div class="max-h-6/7 overflow-hidden overflow-y-scroll">
+                                    <!-- address 1 -->
+                                    <div class="w-full pb-[2rem] mt-5">
+                                        <!-- form -->
+                                        <div class="card w-full">
+                                            <div class="card-body bg-base-300 rounded-2xl relative flex-grow-0 shadow-sm">
+                                                <span class="absolute top-[1rem] left-[2rem] badge badge-xs badge-warning">默認</span>
+                                                <!-- address details -->
+                                                <div class="collapse collapse-arrow join-item">
+                                                    <input type="checkbox"/>
+                                                    <div class="collapse-title pb-[8px] font-semibold">
+                                                        <ul class="flex flex-col gap-2 text-xs">
+                                                            <li>
+                                                                <i class="fa-solid fa-person-arrow-down-to-line"></i>
+                                                                <span class="font-bold">&nbsp;&nbsp;Firstname</span>
+                                                                <span class="font-bold">&nbsp;Lastname</span>
+                                                            </li>
+                                                            <li class="opacity-50">
+                                                                <i class="fa-solid fa-map-location-dot"></i>
+                                                                <span>&nbsp;&nbsp;Address 1</span>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                    <div class="collapse-content text-sm my-0">
+                                                        <ul class="flex flex-col gap-2 text-xs ">
+                                                            <li>
+                                                                <i class="fa-solid fa-map-location"></i>
+                                                                <span>&nbsp;&nbsp;Address 2</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-tree-city"></i>
+                                                                <span>&nbsp;&nbsp;City / Suburb</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-map"></i>
+                                                                <span>&nbsp;&nbsp;State</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-globe"></i>
+                                                                <span>&nbsp;&nbsp;Country</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-envelopes-bulk"></i>
+                                                                <span>&nbsp;&nbsp;Zip</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-mobile-screen-button"></i>
+                                                                <span>&nbsp;&nbsp;Mobile</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-house-circle-check"></i>
+                                                                <label class="label">
+                                                                    <input type="checkbox" checked="checked" class="toggle checkbox-xs" />
+                                                                    <span>取消默認配送地址</span>
+                                                                </label>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                                <!-- submit button -->
+                                                <button class="btn btn-primary btn-block" onclick="my_modal_2.showModal()">使&nbsp;&nbsp;&nbsp;用</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- address 2 -->
+                                    <div class="w-full pb-[2rem] mt-5">
+                                        <!-- form -->
+                                        <div class="card w-full">
+                                            <div class="card-body bg-base-300 rounded-2xl relative flex-grow-0 shadow-sm">
+                                                <!-- address details -->
+                                                <div class="collapse collapse-arrow join-item">
+                                                    <input type="checkbox"/>
+                                                    <div class="collapse-title pb-[8px] font-semibold">
+                                                        <ul class="flex flex-col gap-2 text-xs">
+                                                            <li>
+                                                                <i class="fa-solid fa-person-arrow-down-to-line"></i>
+                                                                <span class="font-bold">&nbsp;&nbsp;Firstname</span>
+                                                                <span class="font-bold">&nbsp;Lastname</span>
+                                                            </li>
+                                                            <li class="opacity-50">
+                                                                <i class="fa-solid fa-map-location-dot"></i>
+                                                                <span>&nbsp;&nbsp;Address 1</span>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                    <div class="collapse-content text-sm my-0">
+                                                        <ul class="flex flex-col gap-2 text-xs ">
+                                                            <li>
+                                                                <i class="fa-solid fa-map-location"></i>
+                                                                <span>&nbsp;&nbsp;Address 2</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-tree-city"></i>
+                                                                <span>&nbsp;&nbsp;City / Suburb</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-map"></i>
+                                                                <span>&nbsp;&nbsp;State</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-globe"></i>
+                                                                <span>&nbsp;&nbsp;Country</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-envelopes-bulk"></i>
+                                                                <span>&nbsp;&nbsp;Zip</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-mobile-screen-button"></i>
+                                                                <span>&nbsp;&nbsp;Mobile</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-house-circle-check"></i>
+                                                                <label class="label">
+                                                                    <input type="checkbox" class="toggle checkbox-xs" />
+                                                                    <span>設為默認配送地址</span>
+                                                                </label>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                                <!-- submit button -->
+                                                <button class="btn btn-primary btn-block" onclick="my_modal_2.showModal()">使&nbsp;&nbsp;&nbsp;用</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- address 3 -->
+                                    <div class="w-full pb-[2rem] mt-5">
+                                        <!-- form -->
+                                        <div class="card w-full">
+                                            <div class="card-body bg-base-300 rounded-2xl relative flex-grow-0 shadow-sm">
+                                                <!-- address details -->
+                                                <div class="collapse collapse-arrow join-item">
+                                                    <input type="checkbox"/>
+                                                    <div class="collapse-title pb-[8px] font-semibold">
+                                                        <ul class="flex flex-col gap-2 text-xs">
+                                                            <li>
+                                                                <i class="fa-solid fa-person-arrow-down-to-line"></i>
+                                                                <span class="font-bold">&nbsp;&nbsp;Firstname</span>
+                                                                <span class="font-bold">&nbsp;Lastname</span>
+                                                            </li>
+                                                            <li class="opacity-50">
+                                                                <i class="fa-solid fa-map-location-dot"></i>
+                                                                <span>&nbsp;&nbsp;Address 1</span>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                    <div class="collapse-content text-sm my-0">
+                                                        <ul class="flex flex-col gap-2 text-xs ">
+                                                            <li>
+                                                                <i class="fa-solid fa-map-location"></i>
+                                                                <span>&nbsp;&nbsp;Address 2</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-tree-city"></i>
+                                                                <span>&nbsp;&nbsp;City / Suburb</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-map"></i>
+                                                                <span>&nbsp;&nbsp;State</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-globe"></i>
+                                                                <span>&nbsp;&nbsp;Country</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-envelopes-bulk"></i>
+                                                                <span>&nbsp;&nbsp;Zip</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-mobile-screen-button"></i>
+                                                                <span>&nbsp;&nbsp;Mobile</span>
+                                                            </li>
+                                                            <li>
+                                                                <i class="fa-solid fa-house-circle-check"></i>
+                                                                <label class="label">
+                                                                    <input type="checkbox" class="toggle checkbox-xs" />
+                                                                    <span>設為默認配送地址</span>
+                                                                </label>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                                <!-- submit button -->
+                                                <button class="btn btn-primary btn-block" onclick="my_modal_2.showModal()">使&nbsp;&nbsp;&nbsp;用</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </dialog>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MIDDLE -->
+            <div class="divider lg:divider-horizontal w-[2%]"></div>
+
+            <!-- RIGHT - items list -->
+            <div class="w-[58%] card bg-base-300 rounded-box p-3 ">
+                <!-- heading -->
+                <div class="grid grid-cols-10 mt-3 text-center pb-2 font-bold">
+                    <!-- product description -->
+                    <div class="col-span-5 text-xs">
+                        Product
+                    </div>
+                    <!-- order stats -->
+                    <div class="col-span-2 text-xs">
+                        Price
+                    </div>
+                    <div class="col-span-1 text-xs">
+                        Qty
+                    </div>
+                    <div class="col-span-2 text-xs">
+                        Sub-Total
+                    </div>
+                </div>
+                <div class="divider mt-0 my-5"></div>
+
+                <!-- item 1 -->
+                <div class="grid grid-cols-10 mb-5">
+                    <!-- product description -->
+                    <div class="col-span-2 pl-3">
+                        <img src="/media/hero/lavendar.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
+                    </div>
+                    <div class="col-span-3 text-xs pl-2">
+                        <span class="font-bold">Product Name</span>
+                        <br/>
+                        <span class="text-[10px]">Product Description</span>
+                    </div>
+                    <!-- order stats -->
+                    <div class="col-span-2 text-xs text-center">
+                        RMB 500
+                    </div>
+                    <div class="col-span-1 text-xs text-center">
+                        1
+                    </div>
+                    <div class="col-span-2 text-xs text-right font-bold pr-3">
+                        RMB 500
+                    </div>
+                </div>
+
+                <!-- item 2 -->
+                <div class="grid grid-cols-10 mb-5">
+                    <!-- product description -->
+                    <div class="col-span-2 pl-3">
+                        <img src="/media/hero/tulip.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
+                    </div>
+                    <div class="col-span-3 text-xs pl-2">
+                        <span class="font-bold">Product Name</span>
+                        <br/>
+                        <span class="text-[10px]">Product Description</span>
+                    </div>
+                    <!-- order stats -->
+                    <div class="col-span-2 text-xs text-center">
+                        RMB 600
+                    </div>
+                    <div class="col-span-1 text-xs text-center">
+                        2
+                    </div>
+                    <div class="col-span-2 text-xs text-right font-bold pr-3">
+                        RMB 1,200
+                    </div>
+                </div>
+
+                <!-- item 3 -->
+                <div class="grid grid-cols-10 mb-5">
+                    <!-- product description -->
+                    <div class="col-span-2 pl-3">
+                        <img src="/media/hero/purpleFlower.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
+                    </div>
+                    <div class="col-span-3 text-xs pl-2">
+                        <span class="font-bold">Product Name</span>
+                        <br/>
+                        <span class="text-[10px]">Product Description</span>
+                    </div>
+                    <!-- order stats -->
+                    <div class="col-span-2 text-xs text-center">
+                        RMB 300
+                    </div>
+                    <div class="col-span-1 text-xs text-center">
+                        1
+                    </div>
+                    <div class="col-span-2 text-xs text-right font-bold pr-3">
+                        RMB 300
+                    </div>
+                </div>
+
+                <!-- item 4 -->
+                <div class="grid grid-cols-10 mb-5">
+                    <!-- product description -->
+                    <div class="col-span-2 pl-3">
+                        <img src="/media/hero/lavendar.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
+                    </div>
+                    <div class="col-span-3 text-xs pl-2">
+                        <span class="font-bold">Product Name</span>
+                        <br/>
+                        <span class="text-[10px]">Product Description</span>
+                    </div>
+                    <!-- order stats -->
+                    <div class="col-span-2 text-xs text-center">
+                        RMB 500
+                    </div>
+                    <div class="col-span-1 text-xs text-center">
+                        1
+                    </div>
+                    <div class="col-span-2 text-xs text-right font-bold pr-3">
+                        RMB 500
+                    </div>
+                </div>
+
+                <!-- item 5 -->
+                <div class="grid grid-cols-10 mb-5">
+                    <!-- product description -->
+                    <div class="col-span-2 pl-3">
+                        <img src="/media/hero/tulip.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
+                    </div>
+                    <div class="col-span-3 text-xs pl-2">
+                        <span class="font-bold">Product Name</span>
+                        <br/>
+                        <span class="text-[10px]">Product Description</span>
+                    </div>
+                    <!-- order stats -->
+                    <div class="col-span-2 text-xs text-center">
+                        RMB 600
+                    </div>
+                    <div class="col-span-1 text-xs text-center">
+                        2
+                    </div>
+                    <div class="col-span-2 text-xs text-right font-bold pr-3">
+                        RMB 1,200
+                    </div>
+                </div>
+
+                <!-- item 6 -->
+                <div class="grid grid-cols-10 mb-5">
+                    <!-- product description -->
+                    <div class="col-span-2 pl-3">
+                        <img src="/media/hero/purpleFlower.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
+                    </div>
+                    <div class="col-span-3 text-xs pl-2">
+                        <span class="font-bold">Product Name</span>
+                        <br/>
+                        <span class="text-[10px]">Product Description</span>
+                    </div>
+                    <!-- order stats -->
+                    <div class="col-span-2 text-xs text-center">
+                        RMB 300
+                    </div>
+                    <div class="col-span-1 text-xs text-center">
+                        1
+                    </div>
+                    <div class="col-span-2 text-xs text-right font-bold pr-3">
+                        RMB 300
+                    </div>
+                </div>
+
+                <div class="divider mt-0 my-5"></div>
+
+                <!-- sub-total & other costs/discounts -->
+                <div class="w-full text-right text-sm font-black px-5 py-5 rounded-4xl bg-primary-content">
+                    <!-- sub-total -->
+                    <div class="mb-3">小計 RMB 4,000</div>
+                    <!-- coupon -->
+                    <div class="text-info-content">優惠活動 (RMB -100)</div>
+                    <!-- gift voucher -->
+                    <div class="text-info-content">禮品券 (RMB -200)</div>
+                    <!-- postage & handling -->
+                    <div class="w-full border-b-2 border-double">配送費 RMB 50</div>
+                    <!-- Grand Total -->
+                    <div class="text-[1.05rem] mt-2">總計支付金額 RMB 3,750</div>
+                </div>
+
+                <!-- 前往支付 -->
+                <button class="text-success-content btn border-2 border-success my-3 py-5 skeleton bg-success text-[1.05rem]">
+                    <i class="fa-solid fa-credit-card"></i> 前往支付
+                </button>
+
+                <!-- 繼續購物 -->
+                <button class="btn btn-accent btn-outline mb-3 py-5 text-[1.05rem]">
+                    <i class="fa-solid fa-store"></i>繼續購物
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+</main>
+
+{% endblock %}

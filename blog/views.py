@@ -11,7 +11,7 @@ def all_posts(request):
         "bread_crumb_2_url": "/blog/posts",
     }
 
-    return render(request, 'pages/all_posts.html', context)
+    return render(request, 'blog/all_posts.html', context)
 
 
 def post(request):
@@ -26,4 +26,4 @@ def post(request):
         "bread_crumb_3_url": "/blog/post",
     }
 
-    return render(request, 'pages/post.html', context)
+    return render(request, 'blog/post.html', context)

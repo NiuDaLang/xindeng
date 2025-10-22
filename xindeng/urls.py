@@ -27,10 +27,14 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("store/", include('store.urls')),
     path("accounts/", include('accounts.urls')),
+    path("carts/", include('carts.urls')),
+    path("orders/", include('orders.urls')),
     path("contact/", views.contact, name="contact"),
     path("blog/", include('blog.urls')),
     path("error/404/", views.error_404, name="error_404"),
     path("error/500/", views.error_500, name="error_500"),
+    path("about/", views.about, name="about"),
+    path("collaboration/", views.collaboration, name="collaboration"),
     path("test/", views.test, name="test"),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

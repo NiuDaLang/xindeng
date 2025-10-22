@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <!-- BANNER -->
+    <div class="relative mt-16 w-full">
+        {% include 'includes/banner.html' %}
+    </div>
+
+    <!-- MAINT -->
+    <div class="w-full text-center p-10">
+        <h1>關於店主</h1>
+        <ul>
+            <li>文字介紹</li>
+            <li>
+                圖片/視頻介紹
+                <ul>
+                    <li>作品圖片</li>
+                    <li>客戶反饋</li>
+                    <li>活動圖片</li>
+                    <li>創作過程</li>
+                    <li>等等</li>
+                </ul>
+            </li>
+            <li>願景</li>
+            <li>夢想</li>
+            <li>...</li>
+            
+        </ul>
+    </div>
+
+{% endblock %}
