@@ -5,7 +5,7 @@
         <div class="flex w-full">
             <!-- avatar -->
             <div class="avatar">
-                <div class="ring-primary ring-offset-base-100 w-12 rounded-full ring-2 ring-offset-2">
+                <div class="ring-secondary-content ring-offset-base-100 w-12 rounded-full ring-2 ring-offset-2">
                     <img src="https://img.daisyui.com/images/profile/demo/spiderperson@192.webp" />
                 </div>
             </div>
@@ -16,7 +16,7 @@
             </div>
         </div>
 
-        <!-- bg-[#FFCDE6]
+        <!-- bg-[#FFCDE6] <<< valentine - version
         bg-[#DBDBFF]
         bg-[#9DFFFF]
         bg-[#CEFF9F]
@@ -32,75 +32,75 @@
         <!-- dashboard menu -->
         <!-- <div class="relative my-10"> -->
             <!-- panels -->
-            <div class="my-10 grid grid-cols-2 w-full z-10 text-xs text-shadow-lg text-shadow-accent">
+            <div class="my-10 grid grid-cols-2 w-full z-10 text-xs text-shadow-lg text-shadow-success">
                 <!-- (1) main -->
                 <a href="{% url 'dashboard' %}" class="group">
-                    <div class="group-active:translate-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer rounded-tl-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFCDE6]">
+                    <div class="group-active:translate-0.5 group-hover:text-secondary-content duration-300 ease-out cursor-pointer rounded-tl-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-info">
                         <i class="fa-solid fa-pen-to-square"></i>
                         <p>管理主頁</p>
                     </div>
                 </a>
                 <!-- (2) profile -->
                 <a href="{% url 'member_profile' %}" class="group">
-                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer rounded-tr-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#DBDBFF]">
+                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-secondary-content duration-300 ease-out cursor-pointer rounded-tr-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-info-content">
                         <i class="fa-solid fa-address-card"></i>
                         <p>會員檔案</p>
                     </div>
                 </a>
                 <!-- (3) address book -->
                 <a href="{% url 'addresses' %}" class="group">
-                    <div class="group-active:translate-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#9DFFFF]">
+                    <div class="group-active:translate-0.5 group-hover:text-secondary-content duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-base-content">
                         <i class="fa-solid fa-location-dot"></i>
                         <p>配送地址簿</p>
                     </div>
                 </a>
                 <!-- (4) orders -->
                 <a href="{% url 'orders' %}" class="group">
-                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#CEFF9F]">
+                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-secondary-content duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-base-300">
                         <i class="fa-solid fa-clipboard"></i>
                         <p>購物紀錄</p>
                     </div>
                 </a>
                 <!-- (5) my perks -->
-                <a href="" class="group">
-                    <div class="group-active:translate-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFCE9E]">
+                <a href="{% url 'coupons' %}" class="group">
+                    <div class="group-active:translate-0.5 group-hover:text-secondary-content duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-success">
                         <i class="fa-solid fa-tags"></i>
                         <p>優惠券</p>
                     </div>
                 </a>
                 <!-- (6) wallet -->
-                <a href="" class="group">
-                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFFFCC]">
+                <a href="{% url 'vouchers' %}" class="group">
+                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-secondary-content duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-success-content">
                         <i class="fa-solid fa-piggy-bank"></i>
-                        <p>錢包</p>
+                        <p>禮品券</p>
                     </div>
                 </a>
                 <!-- (7) customer hotline -->
                 <a href="{% url 'help' %}" class="group">
-                    <div class="group-active:translate-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#D5FFEA]">
+                    <div class="group-active:translate-0.5 group-hover:text-secondary-content duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-warning-content">
                         <i class="fa-solid fa-comments"></i>
                         <p>客服熱線</p>
                     </div>
                 </a>
                 <!-- (8) wish list -->
-                <a href="" class="group">
-                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-primary duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFBDFF]">
+                <a href="{% url 'wishlist' %}" class="group">
+                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-secondary-content duration-300 ease-out cursor-pointer py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-warning">
                         <i class="fa-solid fa-list"></i>
                         <p>未來購物清單</p>
                     </div>
                 </a>
                 <!-- (9) collections -->
-                <a href="" class="group">
-                    <div class="group-active:translate-0.5 group-hover:text-primary duration-300 ease-out rounded-bl-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#FFD6EA]">
+                <a href="{% url 'favorites' %}" class="group">
+                    <div class="group-active:translate-0.5 group-hover:text-secondary-content duration-300 ease-out rounded-bl-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-error">
                         <i class="fa-solid fa-heart"></i>
                         <p>收藏</p>
                     </div>
                 </a>
                 <!-- (10) 3D design -->
-                <a href="" class="group">
-                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-primary duration-300 ease-out rounded-br-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-[#bdf796]">
+                <a href="{% url 'threed' %}" class="group">
+                    <div class="group-active:-translate-x-0.5 group-active:translate-y-0.5 group-hover:text-secondary-content duration-300 ease-out rounded-br-[2vw] py-5 grid-span-1 text-center flex flex-col items-center text-primary-content bg-error-content">
                         <i class="fa-solid fa-palette"></i>
-                        <p>3D作品自創</p>
+                        <p>3D場景</p>
                     </div>
                 </a>
             </div>
@@ -112,7 +112,7 @@
             <div class="w-full relative pinup">
                 <h3 class="absolute z-10 top-1/2 left-1/2 -translate-1/2">手繪入門課<br>～第一天～</h3>
                 <i class="z-10 fa-solid fa-map-pin absolute left-1/2 top-1 -translate-1/2 text-error"></i>
-                <img src="/media/hero/tulip.svg" alt="" class="z-10 w-full border-2 border-accent -rotate-3">
+                <img src="/media/hero/tulip.svg" alt="" class="z-10 w-full border-2 border-secondary-content -rotate-3">
                 <!-- <img src="/media/hero/lavendar.svg" class="rounded-box" /> -->
             </div>        
         </div>
@@ -131,14 +131,14 @@
             display: block;
         }
         .pinup::before {
-            border: 2px solid var(--color-secondary);
+            border: 2px solid var(--color-success);
             transform: rotate(0);
             z-index: -10;
             /* background-color: var(--color-secondary-content); */
             background-color: transparent;
         }
         .pinup::after {
-            border: 2px solid var(--color-success-content);
+            border: 2px solid var(--color-accent-content);
             transform: rotate(5deg) translateY(-5px);
             z-index: -9;
             /* background-color: var(--color-success); */

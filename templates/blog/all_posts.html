@@ -13,7 +13,7 @@
         <!-- LEFT: tabs - name of each tab group should be unique -->
         <div class="col-span-2 relative">
             <!-- search icon -->
-            <button class="absolute right-2 top-0 btn btn-ghost btn-circle">
+            <button class="absolute right-2 top-0 btn btn-ghost btn-circle" onclick="blog_search.showModal()">
                 <a href="#">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /> </svg>
                 </a>
@@ -139,7 +139,7 @@
                 <!-- posts -->
                 <div class="tab-content bg-base-100 border-base-300 p-6">
                     <!-- post cards -->
-                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-warning-content">
                         <div class="card-body w-2/3">
                             <div class="flex justify-left">
                                 <h2 class="card-title">作品背後的故事</h2>
@@ -158,7 +158,7 @@
                         </figure>
                     </a>
                     <div class="divider"></div>
-                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-warning-content">
                         <div class="card-body w-2/3">
                             <div class="flex justify-left">
                                 <h2 class="card-title">作品背後的故事</h2>
@@ -177,7 +177,7 @@
                         </figure>
                     </a>
                     <div class="divider"></div>
-                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-warning-content">
                         <div class="card-body w-2/3">
                             <div class="flex justify-left">
                                 <h2 class="card-title">作品背後的故事</h2>
@@ -196,7 +196,7 @@
                         </figure>
                     </a>
                     <div class="divider"></div>
-                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-warning-content">
                         <div class="card-body w-2/3">
                             <div class="flex justify-left">
                                 <h2 class="card-title">作品背後的故事</h2>
@@ -215,7 +215,7 @@
                         </figure>
                     </a>
                     <div class="divider"></div>
-                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-warning-content">
                         <div class="card-body w-2/3">
                             <div class="flex justify-left">
                                 <h2 class="card-title">作品背後的故事</h2>
@@ -248,7 +248,7 @@
                 </label>
                 <div class="tab-content bg-base-100 border-base-300 p-6">
                     <!-- post cards -->
-                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-accent">
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-error-content">
                         <div class="card-body w-2/3">
                             <div class="flex justify-left">
                                 <h2 class="card-title">作品背後的故事</h2>
@@ -267,7 +267,7 @@
                         </figure>
                     </a>
                     <div class="divider"></div>
-                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-accent">
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-error-content">
                         <div class="card-body w-2/3">
                             <div class="flex justify-left">
                                 <h2 class="card-title">作品背後的故事</h2>
@@ -286,7 +286,7 @@
                         </figure>
                     </a>
                     <div class="divider"></div>
-                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-accent">
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-error-content">
                         <div class="card-body w-2/3">
                             <div class="flex justify-left">
                                 <h2 class="card-title">作品背後的故事</h2>
@@ -305,7 +305,7 @@
                         </figure>
                     </a>
                     <div class="divider"></div>
-                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-accent">
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-error-content">
                         <div class="card-body w-2/3">
                             <div class="flex justify-left">
                                 <h2 class="card-title">作品背後的故事</h2>
@@ -324,7 +324,7 @@
                         </figure>
                     </a>
                     <div class="divider"></div>
-                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-accent">
+                    <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-error-content">
                         <div class="card-body w-2/3">
                             <div class="flex justify-left">
                                 <h2 class="card-title">作品背後的故事</h2>
@@ -349,7 +349,6 @@
                     </button>
 
                 </div>
-        
             </div>
         </div>
 
@@ -357,5 +356,43 @@
         {% include 'includes/blog_sidebar.html' %}
     </div>
 
+    <!-- add new 【MODAL】-->
+    <div class="relative card w-full min-h-[5rem] justify-center items-center ">
+        <!-- modal -->
+        <dialog id="blog_search" class="modal">
+            <div class="modal-box bg-info-content relative">
+                <div class="modal-action py-[2rem] px-[3rem]">
+                    <!-- form -->
+                    <form action="" method="GET" class="flex gap-1">
+                        <label class="w-full input">
+                            <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <g
+                                stroke-linejoin="round"
+                                stroke-linecap="round"
+                                stroke-width="2.5"
+                                fill="none"
+                                stroke="currentColor"
+                                >
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.3-4.3"></path>
+                                </g>
+                            </svg>
+                            <input type="search" class="grow w-full" placeholder="搜索筆記" />
+                            <kbd class="kbd kbd-sm">⌘</kbd>
+                            <kbd class="kbd kbd-sm">K</kbd>
+                        </label>  
+                        <button class="btn btn-secondary" type="submit">Search</button>              
+                    </form>
+                    <!-- close button -->
+                    <form method="dialog">
+                        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+                    </form>
+                </div>
+            </div>
+        </dialog>
+    </div>
+
+
 </main>
+
 {% endblock %}

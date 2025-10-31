@@ -187,7 +187,7 @@
                 <!-- form -->
                 <form action="{% url 'addresses' %}" method="POST" class="w-full text-center">
                     {% csrf_token %}
-                    <div class="w-full flex flex-col gap-2 py-5 border-b-1 border-dashed border-primary-content ">
+                    <div class="w-full flex flex-col gap-2 py-5">
                         <!-- first name -->
                         <label class="input input-border flex w-full items-center gap-2">
                             <i class="fa-solid fa-person"></i>
@@ -200,7 +200,7 @@
                         </label>
                         <!-- mobile number -->
                         <div class="join">
-                            <select class="select rounded-l-4xl w-[6rem]" required>
+                            <select class="select rounded-l-lg w-[6rem]" required>
                                 <option disabled selected>
                                     🌏
                                 <option>🇦🇺 +61</option>

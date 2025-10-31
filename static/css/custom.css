@@ -30,7 +30,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-primary);
+    color: var(--color-primary-content);
     top: 50%;
     transform: translateY(-50%);
 }
@@ -166,20 +166,21 @@ label:hover ~ input:checked ~ label
 /* ##### dashboard hero frame ##### */
 .reel {
   display: block;
-  background: var(--color-base-content);
-  border: 14px dotted var(--color-secondary-content);
+  background: var(--color-neutral-content);
+  border: 14px dotted var(--color-base-content);
   line-height: 1;
   padding: 30px 10px;
 }
 
 /* ##### dashboard bubble scene ##### */
 .bubble-wrapper {
-  background: linear-gradient(180deg, var(--color-base-100), 5%, var(--color-base-200), 50%, var(--color-base-content));
+  background: linear-gradient(180deg, var(--color-base-100), 5%, var(--color-base-200), 50%, var(--color-base-300));
 }
 .bubble-wrapper div {
   height: 60px;
   width: 60px;
-  border: 2px solid rgba(255, 255, 255, 0.7);
+  border: 2px solid rgba(0, 178, 254, 0.7);
+  /* border: 2px solid rgba(255, 255, 255, 0.7); */
   border-radius: 50px;
   position: absolute;
 }
@@ -187,7 +188,8 @@ label:hover ~ input:checked ~ label
   height: 10px;
   width: 10px;
   border-radius: 50px;
-  background: rgba(255, 255, 255, 0.5);
+  /* background: rgba(255, 255, 255, 0.5); */
+  background: var(--color-info);
   position: absolute;
   top: 20%;
   right: 20%;
@@ -291,6 +293,122 @@ input[type="number"] {
 
 /* Selection Color */
 body::selection {
-  color: var(--color-neutral);
-  background-color: var(--color-accent);
+  color: var(--color-info-content);
+  background-color: var(--color-primary-content);
 }
+
+/* Sweet Alert */
+.swal2-popup {
+  z-index: 10000;
+}
+
+/* Barcode */
+.libre-barcode-128-regular {
+  font-family: "Libre Barcode 128", system-ui;
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Coupon */
+.coupon {
+  width: 400px;
+  height: 200px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: auto;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5));
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  text-transform: uppercase;
+}
+.coupon::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -15%;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  overflow: hidden;
+}
+.coupon1::before {
+  right: 0;
+  background-image: 
+    url(/static/hero/purpleFlower.svg);
+}
+.coupon2::before {
+  right: 0;
+  background-image:
+    url(/static/hero/tulip.svg);
+}
+.coupon3::before {
+  right: 0;
+  background-image:
+    url(/static/hero/lavendar.svg);
+}
+
+.coupon > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.left {
+  width: 20%;
+  border-right: 2px dashed rgba(0, 0, 0, 0.13);
+}
+.left div {
+  transform: rotate(-90deg);
+  white-space: nowrap;
+  font-weight: bold;
+}
+.center {
+  flex-grow: 1;
+  text-align: center;
+}
+.right {
+  width: 120px;
+  background-image: radial-gradient(
+    circle at 100% 50%,
+    transparent 25px,
+    #fff 26px
+  );
+}
+.right div {
+  font-weight: 400;
+}
+.center h2 {
+  background: #000;
+  color: gold;
+  padding: 0 10px;
+  font-size: 1.5rem;
+  white-space: nowrap;
+}
+.center h3 {
+  font-size: 2.15rem;
+}
+.center small {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+@media screen and (max-width:500px){
+  .coupon {
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .left div {
+    transform: rotate(0deg);
+  }
+  .right div {
+    transform: rotate(0deg);
+  }
+}
+
+.firework_gl {
+  /* width: 100%;
+  height: 100dvh; */
+  outline: none;
+  margin-top: 65px;
+}
+

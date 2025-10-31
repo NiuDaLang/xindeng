@@ -5,7 +5,7 @@
 @reference
 @apply
 @custom-variant */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@200..900&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@200..900&display=swap'); */
 @import "./custom.css";
 @import "tailwindcss";
 
@@ -13,7 +13,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 @plugin "daisyui" {
    /* themes: valentine --default, aqua --prefersdark, cupcake; */
-    themes: all;
+    themes: silk --default;
  }
 
 @utility container {
@@ -62,7 +62,7 @@
 /*<weight>: Use a value from 200 to 900
 <uniquifier>: Use a unique and descriptive class name*/
 
-.noto-serif-tc-extralight {
+/* .noto-serif-tc-extralight {
   font-family: "Noto Serif TC", serif;
   font-optical-sizing: auto;
   font-weight: 200;
@@ -109,4 +109,131 @@
   font-optical-sizing: auto;
   font-weight: 900;
   font-style: normal;
+} */
+
+
+/* 中文 */
+/* <weight>: Use a value from 100 to 900 */
+/* <uniquifier>: Use a unique and descriptive class name */
+.noto-sans-tc-100 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 100;
+  font-style: normal;
+}
+.noto-sans-tc-200 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 200;
+  font-style: normal;
+}
+.noto-sans-tc-300 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+}
+.noto-sans-tc-400 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+.noto-sans-tc-500 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+}
+.noto-sans-tc-600 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+}
+.noto-sans-tc-700 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 700;
+  font-style: normal;
+}
+.noto-sans-tc-800 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: normal;
+}
+.noto-sans-tc-900 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 900;
+  font-style: normal;
+}
+
+/* 英文 */
+/* <weight>: Use a value from 200 to 900 */
+/* // <uniquifier>: Use a unique and descriptive class name */
+.zalando-sans-200 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 200;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-300 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-400 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-500 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-600 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-700 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 700;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-800 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-900 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 900;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
 }

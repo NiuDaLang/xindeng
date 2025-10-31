@@ -20,32 +20,46 @@
     <div class="flex flex-col gap-5 w-5/7">
         <!-- stats -->
         <div class="stats shadow w-full">
-            <div class="stat">
-                <a href="" class="cursor-pointer stat-figure text-secondary text-2xl">
+            <a href="{% url 'orders' %}" class="stat">
+                <div class="cursor-pointer stat-figure text-secondary-content text-2xl">
                     <i class="fa-solid fa-circle-info"></i>
-                </a>
+                </div>
                 <div class="stat-title">已購寶貝件數</div>
-                <div class="stat-value">3&nbsp;件</div>
-                <div class="stat-desc">2025年</div>
-            </div>
+                <div class="stat-value">
+                    3&nbsp;件
+                    <div class="stat-desc font-light">2025年</div>
+                </div>
+            </a>
 
-            <div class="stat">
-                <a href="" class="cursor-pointer stat-figure text-secondary text-2xl">
+            <a href="{% url 'vouchers' %}" class="stat">
+                <div class="cursor-pointer stat-figure text-secondary-content text-2xl">
                     <i class="fa-solid fa-coins"></i>
-                </a>
-                <div class="stat-title">錢包積分幣</div>
-                <div class="stat-value">50</div>
-                <div class="stat-desc">RMB</div>
-            </div>
+                </div>
+                <div class="stat-title">禮品券總額</div>
+                <div>
+                    <div class="stat-value">
+                        50
+                        <div class="stat-desc font-light">RMB</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="stat-value">
+                        200
+                        <div class="stat-desc font-light">HKD</div>
+                    </div>
+                </div>
+            </a>
 
-            <div class="stat">
-                <a href="" class="cursor-pointer stat-figure text-secondary text-2xl">
+            <a href="{% url 'help' %}" class="stat">
+                <div  class="cursor-pointer stat-figure text-secondary-content text-2xl">
                     <i class="fa-solid fa-envelope"></i>
-                </a>
-                <div class="stat-title">未讀訊息</div>
-                <div class="stat-value">17</div>
-                <div class="stat-desc">17 / 39</div>
-            </div>
+                </div>
+                <div class="stat-title">未讀客服訊息</div>
+                <div class="stat-value">
+                    17則
+                    <div class="stat-desc font-light">17 / 39</div>
+                </div>
+            </a>
         </div>
 
         <!-- latest order status -->
@@ -166,7 +180,7 @@
         <!-- if no latest order, display a bubble scene -->
         <div class="divider text-2xl">如果目前沒有進行中訂單👇</div>
         <div class="relative bubble-wrapper rounded-2xl shadow w-full h-80">
-            <h2 class="text-base-100 absolute left-1/2 top-1/2 -translate-1/2 text-2xl">
+            <h2 class="text-neutral-content absolute left-1/2 top-1/2 -translate-1/2 text-2xl">
                 <i class="fa-solid fa-clipboard-list"></i>
                 目前暫無未完訂單
             </h2>

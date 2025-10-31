@@ -53,3 +53,45 @@ def error_404(request):
 
 def error_500(request):
     return render(request, 'errors/500.html', status=500)
+
+
+def search(request):
+    context = {
+        "main_title": "XXX的搜尋結果",
+        "sub_title": "搜尋",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "搜尋",
+        "bread_crumb_3": "XXX",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/search",
+        "bread_crumb_3_url": "/search",
+    }
+    return render(request, 'pages/search_results.html', context)
+
+
+def tag(request):
+    context = {
+        "main_title": "與XXX相關的內容",
+        "sub_title": "標籤",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "標籤",
+        "bread_crumb_3": "XXX",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/tag",
+        "bread_crumb_3_url": "/tag",
+    }
+    return render(request, 'pages/tag_results.html', context)
+
+
+def archive(request):
+    context = {
+        "main_title": "存檔紀錄",
+        "sub_title": "查詢過去的筆記記錄",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "存檔",
+        "bread_crumb_3": "xx-xx-xx~xx-xx-xx",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/archive",
+        "bread_crumb_3_url": "/archive",
+    }
+    return render(request, 'pages/archive_results.html', context)

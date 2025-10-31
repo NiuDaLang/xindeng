@@ -1,0 +1,189 @@
+{% extends 'accounts/dashboard_base.html' %}
+
+{% block accounts_content %}
+<!-- hero -->
+<div class="relative w-full h-[14rem]">
+    <img src="/media/hero/red_leaves.jpeg" alt="" class="reel -z-1 absolute left-0 top-0 h-full w-full object-cover">
+    <div class="absolute top-[47%] left-[20%]">
+        <h2 class="text-5xl text-primary-content">霜降</h2>
+    </div>
+    <div class="absolute right-8 bottom-12 text-right text-primary-content">
+        <div id="dynamic-date"></div>
+        <div id="dynamic-clock"></div>
+    </div>
+</div>
+
+
+<!-- products collection -->
+<div class="grid grid-cols-2 gap-8 my-10">
+    <!-- NO-1 -->
+    <div class="card col-span-1 bg-base-100 shadow-sm">
+        <figure class="relative">
+            <a href="{% url 'product' %}" class="w-full h-full group transition-all duration-5000 ease-in-out">
+                <img
+                class=""
+                src="/media/hero/lavendar.svg"
+                alt="Shoes" />
+                <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
+                </div>
+                <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
+            </a>
+        </figure>
+        <div class="card-body">
+            <p class="card-title">
+                <i class="fa-solid fa-tag"></i>
+                產品名稱
+                <span class="badge badge-secondary">新上架</span>
+            </p>
+            <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
+            <!-- price -->
+            <div class="card-title">
+                <i class="fa-solid fa-money-check-dollar"></i>
+                <form action="" method="POST">
+                    <select class="select w-20">
+                        <option selected class="text-opacity-50">RMB</option>
+                        <option>HKD</option>
+                        <option>TWD</option>
+                        <option>USD</option>
+                        <option>JPY</option>
+                    </select>   
+                </form>
+                <i>500.00</i>
+            </div>
+            <!-- labels -->
+            <div class="card-actions justify-end">
+                <div class="badge badge-outline text-xs">Fashion</div>
+                <div class="badge badge-outline text-xs">Products</div>
+            </div>
+        </div>
+    </div>
+    <!-- NO-2 -->
+    <div class="card col-span-1 bg-base-100 shadow-sm">
+        <figure class="relative">
+            <a href="{% url 'product' %}" class="w-full h-full group transition-all duration-5000 ease-in-out">
+                <img
+                class=""
+                src="/media/hero/tulip.svg"
+                alt="Shoes" />
+                <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
+                </div>
+                <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
+            </a>
+        </figure>
+        
+        <div class="card-body">
+            <p class="card-title">
+                <i class="fa-solid fa-tag"></i>
+                產品名稱
+                <!-- <span class="badge badge-secondary"></span> -->
+            </p>
+            <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
+            <!-- price -->
+            <div class="card-title">
+                <i class="fa-solid fa-money-check-dollar"></i>
+                <form action="" method="POST">
+                    <select class="select">
+                        <option selected class="text-opacity-50">RMB</option>
+                        <option>HKD</option>
+                        <option>TWD</option>
+                        <option>USD</option>
+                        <option>JPY</option>
+                    </select>   
+                </form>
+                <i>500.00</i>
+            </div>
+            <!-- labels -->
+            <div class="card-actions justify-end">
+                <div class="badge badge-outline text-xs">Fashion</div>
+                <div class="badge badge-outline text-xs">Products</div>
+            </div>
+        </div>
+    </div>
+    <!-- NO-3 -->
+    <div class="card col-span-1 bg-base-100 shadow-sm">
+        <figure class="relative">
+            <a href="{% url 'product' %}" class="w-full h-full group transition-all duration-5000 ease-in-out">
+                <img
+                class=""
+                src="/media/hero/purpleFlower.svg"
+                alt="Shoes" />
+                <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
+                </div>
+                <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
+            </a>
+        </figure>
+
+        <div class="card-body">
+            <p class="card-title">
+                <i class="fa-solid fa-tag"></i>
+                產品名稱
+                <!-- <span class="badge badge-secondary">新上架</span> -->
+            </p>
+            <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
+            <!-- price -->
+            <div class="card-title">
+                <i class="fa-solid fa-money-check-dollar"></i>
+                <form action="" method="POST">
+                    <select class="select">
+                        <option selected class="text-opacity-50">RMB</option>
+                        <option>HKD</option>
+                        <option>TWD</option>
+                        <option>USD</option>
+                        <option>JPY</option>
+                    </select>   
+                </form>
+                <i>500.00</i>
+            </div>
+            <!-- labels -->
+            <div class="card-actions justify-end">
+                <div class="badge badge-outline text-xs">Fashion</div>
+                <div class="badge badge-outline text-xs">Products</div>
+            </div>
+        </div>
+    </div>
+    <!-- NO-4 -->
+    <div class="card col-span-1 bg-base-100 shadow-sm">
+        <figure class="relative">
+            <a href="{% url 'product' %}" class="w-full h-full group transition-all duration-5000 ease-in-out">
+                <img
+                class=""
+                src="/media/hero/lavendar.svg"
+                alt="Shoes" />
+                <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
+                </div>
+                <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
+            </a>
+        </figure>
+
+        <div class="card-body">
+            <p class="card-title">
+                <i class="fa-solid fa-tag"></i>
+                產品名稱
+                <span class="badge badge-error">人气！</span>
+            </p>
+            <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
+            <!-- price -->
+            <div class="card-title">
+                <i class="fa-solid fa-money-check-dollar"></i>
+                <form action="" method="POST">
+                    <select class="select">
+                        <option selected class="text-opacity-50">RMB</option>
+                        <option>HKD</option>
+                        <option>TWD</option>
+                        <option>USD</option>
+                        <option>JPY</option>
+                    </select>   
+                </form>
+                <i>500.00</i>
+            </div>
+            <!-- labels -->
+            <div class="card-actions justify-end">
+                <div class="badge badge-outline text-xs">Fashion</div>
+                <div class="badge badge-outline text-xs">Products</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

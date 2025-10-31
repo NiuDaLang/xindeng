@@ -1,0 +1,189 @@
+{% extends 'accounts/dashboard_base.html' %}
+
+{% block accounts_content %}
+<!-- hero -->
+<div class="relative w-full h-[14rem]">
+    <img src="/media/hero/red_leaves.jpeg" alt="" class="reel -z-1 absolute left-0 top-0 h-full w-full object-cover">
+    <div class="absolute top-[47%] left-[20%]">
+        <h2 class="text-5xl text-primary-content">霜降</h2>
+    </div>
+    <div class="absolute right-8 bottom-12 text-right text-primary-content">
+        <div id="dynamic-date"></div>
+        <div id="dynamic-clock"></div>
+    </div>
+</div>
+
+<ul class="mt-10 list bg-base-200 rounded-box shadow-md mb-20 text-secondary">
+                
+    <li class="flex gap-3 p-3">
+        <div class="flex flex-col flex-grow justify-center">
+            <!-- top -->
+            <div class="flex justify-between items-center mb-3">
+                <!-- item-name -->
+                <div class="list-col-grow">
+                    <div>Dio Lupa</div>
+                    <div class="text-xs uppercase font-semibold opacity-60">Remaining Reason</div>
+                </div>
+                <!-- item-quantity -->
+                <div class="flex w-28 h-4/5 border-primary ">
+                    <div class="shadow rounded-3xl">
+                        <div class="flex items-center h-full p-5">
+                            <div class="stat-title text-success font-black">存貨: 0件</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- item-unit_price -->
+                <div class="text-right text-base-content pr-5">
+                    RMB 80.88
+                </div>
+            </div>
+
+            <!-- bottom -->
+            <div class="flex gap-5">
+                <!-- image -->
+                <div class="md:size-38 aspect-square"><img class="w-full h-full rounded-box object-cover" src="/media/hero/lavendar.svg"/></div>
+
+                <div class="flex w-full">
+                    <!-- details -->
+                    <div class="text-[12px] w-3/5 pr-10">
+                        <div><b>發貨地：</b>中國</div>
+                        <div><b>顏色：</b>橙色</div>
+                        <div><b>尺寸/規格：</b>含2026日历最新版</div>
+                    </div>
+                    <!-- option buttons -->
+                    <div class="flex flex-wrap w-2/5 gap-3 content-center p-2">
+                        <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="放入購物車">
+                            <button class="btn btn-outline btn-primary"><i class="fa-solid fa-cart-plus"></i></i></button>
+                        </div>
+                        <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品">
+                            <button class="btn btn-outline btn-error"><i class="w-full fa-solid fa-trash"></i></button>
+                        </div>
+                        <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="線上分享該產品">
+                            <button class="btn btn-outline btn-success"><i class="fa-solid fa-share-from-square"></i></button>
+                        </div>
+                        <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品">
+                            <button class="btn btn-outline btn-secondary"><i class="w-full fa-solid fa-bookmark"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </li>
+    <div class="divider pl-1/10"></div>
+
+    <li class="flex gap-3 p-3">
+        <div class="flex flex-col flex-grow justify-center">
+            <!-- top -->
+            <div class="flex justify-between items-center mb-3">
+                <!-- item-name -->
+                <div class="list-col-grow">
+                    <div>Dio Lupa</div>
+                    <div class="text-xs uppercase font-semibold opacity-60">Remaining Reason</div>
+                </div>
+                <!-- item-quantity -->
+                <div class="flex w-28 h-4/5 border-primary ">
+                    <div class="shadow rounded-3xl">
+                        <div class="flex items-center h-full p-5">
+                            <div class="stat-title text-error font-black">目前無貨</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- item-unit_price -->
+                <div class="text-right text-base-content pr-5">
+                    RMB 80.88
+                </div>
+            </div>
+
+            <!-- bottom -->
+            <div class="flex gap-5">
+                <!-- image -->
+                <div class="md:size-38 aspect-square"><img class="w-full h-full rounded-box object-cover" src="/media/hero/tulip.svg"/></div>
+
+                <div class="flex w-full">
+                    <!-- details -->
+                    <div class="text-[12px] w-3/5 pr-10">
+                        <div><b>發貨地：</b>中國</div>
+                        <div><b>顏色：</b>橙色</div>
+                        <div><b>尺寸/規格：</b>含2026日历最新版</div>
+                    </div>
+                    <!-- option buttons -->
+                    <div class="flex flex-wrap w-2/5 gap-3 content-center p-2">
+                        <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="放入購物車">
+                            <button class="btn btn-outline btn-primary"><i class="fa-solid fa-cart-plus"></i></i></button>
+                        </div>
+                        <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品">
+                            <button class="btn btn-outline btn-error"><i class="w-full fa-solid fa-trash"></i></button>
+                        </div>
+                        <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="線上分享該產品">
+                            <button class="btn btn-outline btn-success"><i class="fa-solid fa-share-from-square"></i></button>
+                        </div>
+                        <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品">
+                            <button class="btn btn-outline btn-secondary"><i class="w-full fa-solid fa-bookmark"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </li>
+    <div class="divider pl-1/10"></div>
+
+    <li class="flex gap-3 p-3">
+        <!-- # -->
+        <!-- <div class="flex-grow-0 text-4xl font-thin opacity-30 tabular-nums">01</div> -->
+        <div class="flex flex-col flex-grow justify-center">
+            <!-- top -->
+            <div class="flex justify-between items-center mb-3">
+                <!-- item-name -->
+                <div class="list-col-grow">
+                    <div>Dio Lupa</div>
+                    <div class="text-xs uppercase font-semibold opacity-60">Remaining Reason</div>
+                </div>
+                <!-- item-quantity -->
+                <div class="flex w-28 h-4/5 border-primary ">
+                    <div class="shadow rounded-3xl">
+                        <div class="flex items-center h-full p-5">
+                            <div class="stat-title text-warning font-black">存貨: 1件</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- item-unit_price -->
+                <div class="text-right text-base-content pr-5">
+                    RMB 80.88
+                </div>
+            </div>
+
+            <!-- bottom -->
+            <div class="flex gap-5">
+                <!-- image -->
+                <div class="md:size-38 aspect-square"><img class="w-full h-full rounded-box object-cover" src="/media/hero/purpleFlower.svg"/></div>
+
+                <div class="flex w-full">
+                    <!-- details -->
+                    <div class="text-[12px] w-3/5 pr-10">
+                        <div><b>發貨地：</b>中國</div>
+                        <div><b>顏色：</b>橙色</div>
+                        <div><b>尺寸/規格：</b>含2026日历最新版</div>
+                    </div>
+                    <!-- option buttons -->
+                    <div class="flex flex-wrap w-2/5 gap-3 content-center p-2">
+                        <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="放入購物車">
+                            <button class="btn btn-outline btn-primary"><i class="fa-solid fa-cart-plus"></i></i></button>
+                        </div>
+                        <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品">
+                            <button class="btn btn-outline btn-error"><i class="w-full fa-solid fa-trash"></i></button>
+                        </div>
+                        <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="線上分享該產品">
+                            <button class="btn btn-outline btn-success"><i class="fa-solid fa-share-from-square"></i></button>
+                        </div>
+                        <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品">
+                            <button class="btn btn-outline btn-secondary"><i class="w-full fa-solid fa-bookmark"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </li>
+    <div class="mb-6"></div>
+</ul>
+
+{% endblock %}

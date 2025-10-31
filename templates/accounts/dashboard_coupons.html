@@ -1,0 +1,86 @@
+{% extends 'accounts/dashboard_base.html' %}
+
+{% block accounts_content %}
+<!-- hero -->
+<div class="relative w-full h-[14rem]">
+    <img src="/media/hero/red_leaves.jpeg" alt="" class="reel -z-1 absolute left-0 top-0 h-full w-full object-cover">
+    <div class="absolute top-[47%] left-[20%]">
+        <h2 class="text-5xl text-primary-content">霜降</h2>
+    </div>
+    <div class="absolute right-8 bottom-12 text-right text-primary-content">
+        <div id="dynamic-date"></div>
+        <div id="dynamic-clock"></div>
+    </div>
+</div>
+
+
+<ul class="mt-10 p-5 list bg-base-200 rounded-box inset-shadow-sm mb-20 text-secondary gap-5">
+    <li class="coupon coupon1">
+        <div class="left text-center">
+            <div>Enjoy Your Gift<br/>尋寶開心</div>
+        </div>
+        <div class="center">
+            <div>
+                <h2>95折 <i class="fa-solid fa-ticket"></i>優惠券</h2>
+                <h3>5% OFF</h3>
+                <div class="p-1 text-secondary-content text-shadow-2xs text-shadow-primary">
+                    <b>有效至 2026-1-31</b>
+                    <small class="block pb-1">僅使用一次</small>
+                </div>
+            </div>
+        </div>
+        <div class="right flex flex-col justify-center items-start">
+            <div class="-rotate-90 text-center">
+            <!-- <div class=""> -->
+                <div class="libre-barcode-128-regular text-3xl -mb-3">87878521112</div>
+                <div class="text-center text-[0.8rem]">請在結帳時輸入<span class="font-black">87878521112</span></div>
+            </div>
+        </div>
+    </li>
+    <li class="coupon coupon2">
+        <div class="left text-center">
+            <div>Enjoy Your Gift<br/>尋寶開心</div>
+        </div>
+        <div class="center">
+            <div>
+                <h2>9折 <i class="fa-solid fa-bag-shopping"></i>優惠券</h2>
+                <h3>10% OFF</h3>
+                <div class="p-1 text-secondary-content text-shadow-2xs text-shadow-primary">
+                    <b>有效至 2026-3-31</b>
+                    <small class="block pb-1">僅使用一次</small>
+                </div>
+            </div>
+        </div>
+        <div class="right flex flex-col justify-center items-start">
+            <div class="-rotate-90 text-center">
+            <!-- <div class=""> -->
+                <div class="libre-barcode-128-regular text-3xl -mb-3">87878521112</div>
+                <div class="text-center text-[0.8rem]">請在結帳時輸入<span class="font-black">87878528882</span></div>
+            </div>
+        </div>
+    </li>
+    <li class="coupon coupon3">
+        <div class="left text-center">
+            <div>Enjoy Your Gift<br/>尋寶開心</div>
+        </div>
+        <div class="center">
+            <div>
+                <h2>85折 <i class="fa-solid fa-cake-candles"></i>優惠券</h2>
+                <h3>15% OFF</h3>
+                <div class="p-1 text-secondary-content text-shadow-2xs text-shadow-primary">
+                    <b>有效至 2026-1-31</b>
+                    <small class="block pb-1">僅使用一次</small>
+                </div>
+            </div>
+        </div>
+        <div class="right flex flex-col justify-center items-start">
+            <div class="-rotate-90 text-center">
+            <!-- <div class=""> -->
+                <div class="libre-barcode-128-regular text-3xl -mb-3">87878521112</div>
+                <div class="text-center text-[0.8rem]">請在結帳時輸入<span class="font-black">87878528882</span></div>
+            </div>
+        </div>
+    </li>
+</ul>
+
+{% endblock %}

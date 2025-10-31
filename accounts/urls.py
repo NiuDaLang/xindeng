@@ -13,5 +13,11 @@ urlpatterns = [
     path("dashboard/orders/", views.orders, name="orders"),
     path("dashboard/orders/order", views.order, name="order"),
     path("dashboard/help/", views.help, name="help"),
+    path("dashboard/favorites/", views.favorites, name="favorites"),
+    path("dashboard/wishlist/", views.wishlist, name="wishlist"),
+    path("dashboard/coupons/", views.coupons, name="coupons"),
+    path("dashboard/vouchers/", views.vouchers, name="vouchers"),
+    path("dashboard/threed/", views.threed, name="threed"),
 
+    path("dashboard/threed/firework", views.firework, name="firework"),
 ] 

@@ -118,3 +118,93 @@ def help(request):
     }
 
     return render(request, "accounts/dashboard_help.html", context)
+
+
+def wishlist(request):
+    user = request.user
+
+    context = {
+        "main_title": f"您好,{user}!",
+        "sub_title": "XXXXX XXXXX",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "會員",
+        "bread_crumb_3": "未來購物清單",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/accounts/dashboard",
+        "bread_crumb_3_url": "/accounts/dashboard/wishlist",
+    }
+
+    return render(request, "accounts/dashboard_wishlist.html", context)
+
+
+def favorites(request):
+    user = request.user
+
+    context = {
+        "main_title": f"您好,{user}!",
+        "sub_title": "XXXXX XXXXX",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "會員",
+        "bread_crumb_3": "收藏",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/accounts/dashboard",
+        "bread_crumb_3_url": "/accounts/dashboard/favorites",
+    }
+
+    return render(request, "accounts/dashboard_favorites.html", context)
+
+
+def coupons(request):
+    user = request.user
+
+    context = {
+        "main_title": f"您好,{user}!",
+        "sub_title": "XXXXX XXXXX",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "會員",
+        "bread_crumb_3": "優惠券",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/accounts/dashboard",
+        "bread_crumb_3_url": "/accounts/dashboard/coupons",
+    }
+
+    return render(request, "accounts/dashboard_coupons.html", context)
+
+
+def vouchers(request):
+    user = request.user
+
+    context = {
+        "main_title": f"您好,{user}!",
+        "sub_title": "XXXXX XXXXX",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "會員",
+        "bread_crumb_3": "禮品券",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/accounts/dashboard",
+        "bread_crumb_3_url": "/accounts/dashboard/vouchers",
+    }
+
+    return render(request, "accounts/dashboard_vouchers.html", context)
+
+
+def threed(request):
+    user = request.user
+
+    context = {
+        "main_title": f"您好,{user}!",
+        "sub_title": "XXXXX XXXXX",
+        "bread_crumb_1": "首頁",
+        "bread_crumb_2": "會員",
+        "bread_crumb_3": "3D場景",
+        "bread_crumb_1_url": "/",
+        "bread_crumb_2_url": "/accounts/dashboard",
+        "bread_crumb_3_url": "/accounts/dashboard/threed",
+    }
+
+    return render(request, "accounts/dashboard_threed.html", context)
+
+
+def firework(request):
+
+    return render(request, "accounts/three/firework.html")

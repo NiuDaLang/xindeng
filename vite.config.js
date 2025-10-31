@@ -1,6 +1,7 @@
 import { defineConfig } from "vite"
 import { resolve } from "path"
 import tailwindcss from '@tailwindcss/vite'
+import glsl from 'vite-plugin-glsl'
 
 
 export default defineConfig({
@@ -22,6 +23,7 @@ export default defineConfig({
   },
   plugins: [
     tailwindcss(),
+    glsl(),
   ],
   // server: {
   //   hmr: false, // Disable HMR

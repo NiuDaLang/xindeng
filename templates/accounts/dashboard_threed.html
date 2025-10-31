@@ -1,0 +1,53 @@
+{% extends 'accounts/dashboard_base.html' %}
+
+{% block accounts_content %}
+<!-- hero -->
+<div class="relative w-full h-[14rem]">
+    <img src="/media/hero/red_leaves.jpeg" alt="" class="reel -z-1 absolute left-0 top-0 h-full w-full object-cover">
+    <div class="absolute top-[47%] left-[20%]">
+        <h2 class="text-5xl text-primary-content">霜降</h2>
+    </div>
+    <div class="absolute right-8 bottom-12 text-right text-primary-content">
+        <div id="dynamic-date"></div>
+        <div id="dynamic-clock"></div>
+    </div>
+</div>
+
+<!-- orders -->
+<div class="grid grid-cols-2 gap-4 my-5">
+    <!-- 煙花 -->
+    <div class="card bg-base-100 w-full shadow-sm">
+        <figure class="px-10 pt-10">
+            <img
+            src="/media/three/firework/hanabi_demo.gif"
+            alt="Shoes"
+            class="rounded-xl" />
+        </figure>
+        <div class="card-body items-center text-center">
+            <h2 class="card-title">煙花綻放</h2>
+            <p>不回飽同更天家我勿語，木示愛竹兒音、兌下一助貓几又羊，尼松有京她從</p>
+            <div class="card-actions">
+            <a href="{% url 'firework' %}" class="btn btn-primary">點燃煙花</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 花草 -->
+    <div class="card bg-base-100 w-full shadow-sm">
+        <figure class="px-10 pt-10">
+            <img
+            src="/media/hero/tulip.svg"
+            alt="Shoes"
+            class="rounded-xl" />
+        </figure>
+        <div class="card-body items-center text-center">
+            <h2 class="card-title">煙花綻放</h2>
+            <p>不回飽同更天家我勿語，木示愛竹兒音、兌下一助貓几又羊，尼松有京她從</p>
+            <div class="card-actions">
+            <button class="btn btn-primary">點燃煙花</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

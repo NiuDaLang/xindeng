@@ -35,6 +35,8 @@ urlpatterns = [
     path("error/500/", views.error_500, name="error_500"),
     path("about/", views.about, name="about"),
     path("collaboration/", views.collaboration, name="collaboration"),
-    path("test/", views.test, name="test"),
+    path("search/", views.search, name="search"),
+    path("tag/", views.tag, name="tag"),
+    path("archive/", views.archive, name="archive"),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

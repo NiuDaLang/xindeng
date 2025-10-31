@@ -12,11 +12,17 @@
   "description": "",
   "devDependencies": {
     "daisyui": "^5.1.29",
-    "vite": "^7.1.9"
+    "vite": "^7.1.9",
+    "vite-plugin-glsl": "^1.5.4"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
+    "cally": "^0.8.0",
+    "gsap": "^3.13.0",
+    "lil-gui": "^0.21.0",
+    "sweetalert2": "^11.26.3",
     "swiper": "^12.0.2",
-    "tailwindcss": "^4.1.14"
+    "tailwindcss": "^4.1.14",
+    "three": "^0.180.0"
   }
 }

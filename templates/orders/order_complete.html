@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- BANNER -->
+<div class="relative mt-16 w-full">
+    {% include 'includes/banner.html' %}
+</div>
+
+<!-- MAIN -->
+<main class="px-[max(1rem,5vw)] py-10 min-h-[calc(100dvh-200px)]">
+        <!-- progress -->
+    <ul class="timeline w-full justify-center">
+        <li>
+            <div class="timeline-start timeline-box">購物車</div>
+            <div class="timeline-middle">
+                <i class="fa-solid fa-circle-check text-success"></i>
+            </div>
+            <hr class="bg-success-content"/>
+        </li>
+        <li>
+            <hr class="bg-success-content"/>
+            <div class="timeline-start timeline-box">配送訊息</div>
+            <div class="timeline-middle">
+                <i class="fa-solid fa-circle-check text-success"></i>
+            </div>
+            <hr class="bg-success-content"/>
+        </li>
+        <li>
+            <hr class="bg-success-content" />
+            <div class="timeline-start timeline-box">支付</div>
+            <div class="timeline-middle">
+                <i class="fa-solid fa-circle-check text-success"></i>
+            </div>
+            <hr class="bg-success-content" />
+        </li>
+        <li>
+            <hr class="bg-success-content"/>
+            <div class="timeline-start timeline-box">支付完成</div>
+            <div class="timeline-middle">
+                <i class="fa-solid fa-circle-check text-success"></i>
+            </div>
+            <!-- <hr /> -->
+        </li>
+    </ul>
+
+    <div class="w-full border border-base-300 rounded-2xl p-5 text-center">
+        <!-- receipt -->
+        <div class="box zigzag p-15 text-center">
+            <!-- check mark -->
+            <i class="m-auto w-full text-success fa-solid fa-circle-check fa-6x"></i>
+            <!-- payment confirmation -->
+            <h2 class="text-4xl font-black my-5">支付完成！</h2>
+            <h4 class="text-1xl">
+                我們已經收到您的付款，非常感謝！
+                <br/>
+                詳細帳單已發送至您的郵箱xxx@xxxxx.com,請注意查收。
+            </h4>
+
+            <div class="divider"></div>
+            <!-- details -->
+            <div class="w-full flex flex-col justify-between">
+                <!-- product 1 -->
+                <div class="w-full grid grid-cols-8">
+                    <span class="col-span-1 text-left">2 X</span>
+                    <span class="col-span-4 text-left">product ABC</span>
+                    <span class="col-span-3 font-bold text-right">$200</span>
+                </div>
+                <!-- product 2 -->
+                <div class="w-full grid grid-cols-8">
+                    <span class="col-span-1 text-left">1 X</span>
+                    <span class="col-span-4 text-left">product DEF</span>
+                    <span class="col-span-3 font-bold text-right">$50</span>
+                </div>
+                <!-- product 3 -->
+                <div class="w-full grid grid-cols-8 border-b-2 border-primary">
+                    <span class="col-span-1 text-left">2 X</span>
+                    <span class="col-span-4 text-left">product GHI</span>
+                    <span class="col-span-3 font-bold text-right">$500</span>
+                </div>
+                <!-- subtotal -->
+                <div class="w-full flex justify-end font-bold text-lg">
+                    小計： RMB 750  
+                </div>
+                <!-- delivery -->
+                <div class="w-full flex justify-end font-bold">
+                    郵寄費用： RMB 50  
+                </div>
+                <!-- discount -->
+                <div class="w-full flex justify-end font-bold">
+                    減免優惠： -RMB 50
+                </div>
+                <!-- gift voucher -->
+                <div class="w-full flex justify-end font-bold">
+                    代金券： -RMB 50  
+                </div>
+                <!-- payment received -->
+                <div class="w-full flex justify-end font-black text-lg">
+                    總支付金額： RMB 750
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .box {
+            display:inline-grid;
+            place-content:center;
+            aspect-ratio:1;
+        }
+        .zigzag {
+            background: conic-gradient(from -45deg at bottom, var(--color-base-300) 90deg, transparent 0) 50%/17px 100%;
+        }
+    </style>
+
+</main>
+
+{% endblock %}

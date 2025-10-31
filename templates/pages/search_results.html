@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <!-- BANNER -->
+    <div class="relative mt-16 w-full">
+        {% include 'includes/banner.html' %}
+    </div>
+
+    <!-- MAIN -->
+    <main class="px-[max(1rem,5vw)] lg:px-[max(2rem,10vw)] xl:px-[max(3rem,20vw)] py-20 min-h-[calc(100dvh-200px)]">
+
+        <div class="grid grid-cols-3 gap-8">
+            <!-- LEFT: tabs - name of each tab group should be unique -->
+            <div class="col-span-3 relative">
+                <!-- tabs -->
+                <div class="tabs tabs-lift">
+                    <!-- tab-1 products -->
+                    <label class="tab w-1/3 items-center">
+                        <input type="radio" name="blog_tab" checked="checked" />
+                        <i class="fa-solid fa-bag-shopping"></i>
+                        寶貝 - 【2】件
+                    </label>
+                    <!-- products -->
+                    <div class="tab-content bg-base-100 border-base-300 p-6">
+                        <div class="grid md:grid-cols-2 gap-8 my-5">
+                            <!-- NO-1 -->
+                            <div class="card bg-base-100 shadow-sm">
+                                <figure class="relative">
+                                    <a href="{% url 'product' %}" class="w-full h-full group transition-all duration-5000 ease-in-out">
+                                        <img
+                                        class=""
+                                        src="/media/hero/lavendar.svg"
+                                        alt="Shoes" />
+                                        <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
+                                        </div>
+                                        <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
+                                    </a>
+                                </figure>
+                                <div class="card-body">
+                                    <p class="card-title">
+                                        <i class="fa-solid fa-tag"></i>
+                                        產品名稱
+                                        <span class="badge badge-secondary">新上架</span>
+                                    </p>
+                                    <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
+                                    <!-- price -->
+                                    <div class="card-title">
+                                        <i class="fa-solid fa-money-check-dollar"></i>
+                                        <form action="" method="POST">
+                                            <select class="select w-20">
+                                                <option selected class="text-opacity-50">RMB</option>
+                                                <option>HKD</option>
+                                                <option>TWD</option>
+                                                <option>USD</option>
+                                                <option>JPY</option>
+                                            </select>   
+                                        </form>
+                                        <i>500.00</i>
+                                    </div>
+                                    <!-- labels -->
+                                    <div class="card-actions justify-end">
+                                        <div class="badge badge-outline text-xs">Fashion</div>
+                                        <div class="badge badge-outline text-xs">Products</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- NO-2 -->
+                            <div class="card bg-base-100 shadow-sm">
+                                <figure class="relative">
+                                    <a href="{% url 'product' %}" class="w-full h-full group transition-all duration-5000 ease-in-out">
+                                        <img
+                                        class=""
+                                        src="/media/hero/tulip.svg"
+                                        alt="Shoes" />
+                                        <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
+                                        </div>
+                                        <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
+                                    </a>
+                                </figure>
+                                
+                                <div class="card-body">
+                                    <p class="card-title">
+                                        <i class="fa-solid fa-tag"></i>
+                                        產品名稱
+                                        <!-- <span class="badge badge-secondary"></span> -->
+                                    </p>
+                                    <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
+                                    <!-- price -->
+                                    <div class="card-title">
+                                        <i class="fa-solid fa-money-check-dollar"></i>
+                                        <form action="" method="POST">
+                                            <select class="select">
+                                                <option selected class="text-opacity-50">RMB</option>
+                                                <option>HKD</option>
+                                                <option>TWD</option>
+                                                <option>USD</option>
+                                                <option>JPY</option>
+                                            </select>   
+                                        </form>
+                                        <i>500.00</i>
+                                    </div>
+                                    <!-- labels -->
+                                    <div class="card-actions justify-end">
+                                        <div class="badge badge-outline text-xs">Fashion</div>
+                                        <div class="badge badge-outline text-xs">Products</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            
+                    <!-- tab-2 diary posts -->
+                    <label class="tab w-1/3 items-center">
+                        <input type="radio" name="blog_tab"/>
+                        <i class="fa-solid fa-book"></i>
+                        店主日記 - 【5】篇
+                    </label>
+                    <!-- posts -->
+                    <div class="tab-content bg-base-100 border-base-300 p-6">
+                        <!-- post cards -->
+                        <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                            <div class="card-body w-2/3">
+                                <div class="flex justify-left">
+                                    <h2 class="card-title">作品背後的故事</h2>
+                                </div>
+                                <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                    示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                    送香或造念斗左地父彩太黃。
+                                </p>
+                                <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                            </div>
+                            <figure class="w-1/3">
+                                <img
+                                class="object-cover"
+                                src="/media/hero/purpleFlower.svg"
+                                alt="tulip drawing image" />
+                            </figure>
+                        </a>
+                        <div class="divider"></div>
+                        <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                            <div class="card-body w-2/3">
+                                <div class="flex justify-left">
+                                    <h2 class="card-title">作品背後的故事</h2>
+                                </div>
+                                <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                    示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                    送香或造念斗左地父彩太黃。
+                                </p>
+                                <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                            </div>
+                            <figure class="w-1/3">
+                                <img
+                                class="object-cover"
+                                src="/media/hero/tulip.svg"
+                                alt="tulip drawing image" />
+                            </figure>
+                        </a>
+                        <div class="divider"></div>
+                        <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                            <div class="card-body w-2/3">
+                                <div class="flex justify-left">
+                                    <h2 class="card-title">作品背後的故事</h2>
+                                </div>
+                                <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                    示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                    送香或造念斗左地父彩太黃。
+                                </p>
+                                <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                            </div>
+                            <figure class="w-1/3">
+                                <img
+                                class="object-cover"
+                                src="/media/hero/lavendar.svg"
+                                alt="tulip drawing image" />
+                            </figure>
+                        </a>
+                        <div class="divider"></div>
+                        <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                            <div class="card-body w-2/3">
+                                <div class="flex justify-left">
+                                    <h2 class="card-title">作品背後的故事</h2>
+                                </div>
+                                <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                    示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                    送香或造念斗左地父彩太黃。
+                                </p>
+                                <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                            </div>
+                            <figure class="w-1/3">
+                                <img
+                                class="object-cover"
+                                src="/media/hero/purpleFlower.svg"
+                                alt="tulip drawing image" />
+                            </figure>
+                        </a>
+                        <div class="divider"></div>
+                        <a href="" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-secondary">
+                            <div class="card-body w-2/3">
+                                <div class="flex justify-left">
+                                    <h2 class="card-title">作品背後的故事</h2>
+                                </div>
+                                <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
+                                    示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
+                                    送香或造念斗左地父彩太黃。
+                                </p>
+                                <small>2025-12-1 | <i class="fa-solid fa-location-dot"></i>Beijing, China</small>
+                            </div>
+                            <figure class="w-1/3">
+                                <img
+                                class="object-cover"
+                                src="/media/hero/tulip.svg"
+                                alt="tulip drawing image" />
+                            </figure>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+
+{% endblock %}
