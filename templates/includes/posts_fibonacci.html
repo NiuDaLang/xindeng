@@ -1,0 +1,246 @@
+{% block content %}
+{% load static %}
+
+<!-- json data from backend -->
+{{ posts_json|json_script:"posts-data-container" }}
+
+
+
+<!-- fibonacci wrapper -->
+<div class="relative flex w-full min-h-64">
+    <!-- Arc Buttons -->
+    <div class="absolute top-10 left-10">
+        <div id="arc-container" class="relative w-[100px] h-[100px] overflow-visible">
+            <!-- TRIGGER: Added cursor-pointer and w-12/h-12 -->
+            <button type="button" id="trigger-btn" 
+                class="absolute inset-0 m-auto z-50 w-12 h-12 flex items-center justify-center bg-amber-400 hover:bg-amber-600 hover:text-white rounded-full shadow-lg transition-all duration-500 cursor-pointer focus:outline-none">
+                <svg id="trigger-icon-box" class="w-6 h-6 transition-all duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+            </button>
+
+            <!-- ARC BUTTONS (w-12) -->
+            <button data-post-id="0" class="img_btn group btn btn-circle w-24 h-24 absolute inset-0 m-auto opacity-0 scale-50 pointer-events-none z-60 overflow-hidden p-0 transition-all duration-500 cursor-pointer">
+                <img class="w-full h-full object-cover rounded-full transition-transform duration-300 group-hover:scale-150" 
+                    src="{{ posts.0.featured_image.url }}" alt="Post 0">
+            </button>
+
+            <button data-post-id="1" class="img_btn group btn btn-circle w-24 h-24 absolute inset-0 m-auto opacity-0 scale-50 pointer-events-none z-60 overflow-hidden p-0 transition-all duration-500 delay-[75ms] cursor-pointer">
+                <img class="w-full h-full object-cover rounded-full transition-transform duration-300 group-hover:scale-150" 
+                    src="{{ posts.1.featured_image.url }}" alt="Post 1">
+            </button>
+
+            <button data-post-id="2" class="img_btn group btn btn-circle w-24 h-24 absolute inset-0 m-auto opacity-0 scale-50 pointer-events-none z-60 overflow-hidden p-0 transition-all duration-500 delay-[150ms] cursor-pointer">
+                <img class="w-full h-full object-cover rounded-full transition-transform duration-300 group-hover:scale-150" 
+                    src="{{ posts.2.featured_image.url }}" alt="Post 2">
+            </button>
+
+            <button data-post-id="3" class="img_btn group btn btn-circle w-24 h-24 absolute inset-0 m-auto opacity-0 scale-50 pointer-events-none z-60 overflow-hidden p-0 transition-all duration-500 delay-[225ms] cursor-pointer">
+                <img class="w-full h-full object-cover rounded-full transition-transform duration-300 group-hover:scale-150" 
+                    src="{{ posts.3.featured_image.url }}" alt="Post 3">
+            </button>
+        </div>
+    </div>
+
+    <!-- 34 -->
+    <div id="post_0" class="relative w-[61.82%] aspect-square">
+        <p class="absolute bottom-[4.25rem] right-5 flex flex-col gap-5 text-right text-base-100 text-shadow-lg/30 ml-[20%] mr-5 mb-5">
+            <!-- title -->
+            <span class="post_title font-semibold text-3xl line-clamp-2">{{ posts.0.title }}</span>
+            <!-- short description -->
+            <span class="post_sd font-medium text-[0.9rem] line-clamp-4">{{ posts.0.short_description }}</span>
+        </p>
+        <!-- image -->
+        <img class="w-full h-full object-cover border-4 border-amber-50 transition-opacity duration-500" style="border-top-left-radius: 100%;" src="{{ posts.0.featured_image.url }}" alt="">
+        <!-- read button -->
+        <a class="absolute right-[2px] bottom-[2px] w-[3rem] h-[3rem] hover:text-secondary-content duration-500 transition-colors bg-amber-50 flex justify-center items-center" href="{{ posts.0.get_url }}"><i class="fa-solid fa-book-open fa-lg"></i></a>
+    </div>
+    <div class="w-[38.18%] flex flex-col ">
+        <!-- 21 -->
+        <div id="post_1" class="relative w-full aspect-square">
+            <p class="absolute bottom-[2.8rem] left-2 flex flex-col gap-4 text-left text-base-100 text-shadow-lg/30 mr-[20%] ml-4 mb-4">
+                <!-- title -->
+                <span class="post_title font-semibold text-[20px] line-clamp-2">{{ posts.1.title }}</span>
+                <!-- short description -->
+                <span class="post_sd font-medium text-[0.7rem] line-clamp-4">{{ posts.1.short_description }}</span>
+            </p>
+            <!-- image -->
+            <img class="w-full h-full object-cover border-4 border-amber-100 transition-opacity duration-500" style="border-top-right-radius: 100%;" src="{{ posts.1.featured_image.url }}" alt="">
+            <!-- read button -->
+            <a class="absolute left-[2px] bottom-[2px] w-[2rem] h-[2rem] hover:text-secondary-content duration-500 transition-colors bg-amber-100 flex justify-center items-center" href="{{ posts.1.get_url }}"><i class="fa-solid fa-book-open"></i></a>
+        </div>
+        <div class="flex flex-row-reverse">
+            <!-- 13 -->
+            <div id="post_2" class="relative w-[61.9%] aspect-square">
+                <p class="absolute top-[1rem] left-3 flex flex-col gap-2 text-left text-base-100 text-shadow-lg/30 mr-[20%] ml-1 mt-4">
+                    <!-- title -->
+                    <span class="post_title font-semibold text-[15px] line-clamp-2">{{ posts.2.title }}</span>
+                    <!-- short description -->
+                    <span class="post_sd font-medium text-[0.65rem] line-clamp-3">{{ posts.2.short_description }}</span>
+                </p>
+                <!-- image -->
+                <img class="w-full h-full object-cover border-4 border-amber-200 transition-opacity duration-500" style="border-bottom-right-radius: 100%;" src="{{ posts.2.featured_image.url }}" alt="">
+                <!-- read button -->
+                <a class="absolute left-[2px] top-[2px] w-[1.75rem] h-[1.75rem] hover:text-secondary-content duration-500 transition-colors bg-amber-200 flex justify-center items-center" href="{{ posts.2.get_url }}"><i class="fa-solid fa-book-open fa-sm"></i></a>
+            </div>
+            <div class="w-[38.1%] flex flex-col-reverse">
+                <!-- 8 -->
+                <div id="post_3" class="relative w-full aspect-square">
+                    <p class="absolute top-[1rem] right-2 flex flex-col text-right text-base-100 text-shadow-lg/30 ml-[12%] mt-2">
+                        <!-- title -->
+                        <span class="post_title font-semibold text-[12px] line-clamp-1">{{ posts.3.title }}</span>
+                        <!-- short description -->
+                        <span class="post_sd font-medium text-[9px] line-clamp-2">{{ posts.3.short_description }}</span>
+                    </p>
+                    <!-- image -->
+                    <img class="w-full h-full object-cover border-4 border-amber-300 transition-opacity duration-500" style="border-bottom-left-radius: 100%;" src="{{ posts.3.featured_image.url }}" alt="">
+                    <!-- read button -->
+                    <a class="absolute right-[2px] top-[2px] w-[1.35rem] h-[1.35rem] hover:text-secondary-content duration-500 transition-colors bg-amber-300 flex justify-center items-center" href="{{ posts.3.get_url }}"><i class="fa-solid fa-book-open fa-xs"></i></a>
+                </div>
+                <div class="flex">
+                    <!-- 5 -->
+                    <div class="w-[62.5%] aspect-square" style="border-top-left-radius: 100%;">
+                        <!-- image -->
+                        <img id="small_img_0" class="w-full h-full border-4 border-amber-400 object-cover transition-opacity duration-500" style="border-top-left-radius: 100%;" src="{{ posts.0.featured_image.url }}" alt="">
+                    </div>
+                    <div class="w-[37.5%] flex flex-col">
+                        <!-- 3 -->
+                        <div class="aspect-square" style="border-top-right-radius: 100%;">
+                            <!-- image -->
+                            <img id="small_img_1" class="w-full h-full object-cover border-4 border-amber-500 transition-opacity duration-500" style="border-top-right-radius: 100%;" src="{{ posts.1.featured_image.url }}" alt="">
+                        </div>
+                        <div class="flex flex-row-reverse">
+                            <!-- 2 -->
+                            <div class="w-[66.67%] aspect-square" style="border-bottom-right-radius: 100%;">
+                                <!-- image -->
+                                <img id="small_img_2" class="w-full h-full object-cover border-4 border-amber-600 transition-opacity duration-500" style="border-bottom-right-radius: 100%;" src="{{ posts.2.featured_image.url }}" alt="">
+                            </div>
+                            <div class="w-[33.33%] flex flex-col-reverse">
+                                <!-- 1 -->
+                                <div class="h-1/2 aspect-square" style="border-bottom-left-radius: 100%;">
+                                    <!-- image -->
+                                    <img id="small_img_3" class="w-full h-full object-cover border-4 border-amber-700 transition-opacity duration-500" style="border-bottom-left-radius: 100%;" src="{{ posts.3.featured_image.url }}" alt="">
+                                </div>
+                                <!-- 0 -->
+                                <div class="h-1/2 aspect-square bg-transparent">
+                                    <svg viewBox="0 0 129 129" version="1.1">
+                                        <g id="logo_no_circle" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <g transform="translate(12.000000, 11.000000)" fill="currentColor" stroke="currentColor">
+                                                <path d="M0.806743419,18.6850471 C2.35842359,5.79186952 28.7287195,-6.61874642 28.7287195,22.2244217 C28.7287195,40.1082649 33.7321612,38.2584403 41.4071435,38.2584403 C49.9847112,38.2584403 51.5085488,29.5876912 51.5085488,24.417156 C51.5085488,10.1154135 74.5481299,2.53916568 74.5481299,27.6296948 C74.5481299,52.7202239 77.469216,72.4571377 73.690136,93.3297995 C69.9110559,114.202461 53.9904309,108.83018 50.2945916,99.467417 C46.5987524,90.1046536 51.0526609,76.1074913 50.2945916,63.9677109 C49.5365223,51.8279305 35.6840423,50.2620231 30.5021238,60.2385963 C25.3202052,70.2151696 30.5021238,86.1008541 26.1412222,99.467417 C21.7803206,112.83398 7.2034507,108.058226 3.51623761,100.961303 C-0.170975477,93.8643801 -0.744936754,31.5782246 0.806743419,18.6850471 Z" id="路径-246"></path>
+                                                <circle cx="96.3640293" cy="9.5" r="9.5"></circle>
+                                            </g>
+                                        </g>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+const posts_data = JSON.parse(document.getElementById('posts-data-container')?.textContent);
+console.log(posts_data)
+
+const container = document.getElementById('arc-container');
+const trigger = document.getElementById('trigger-btn');
+const iconBox = document.getElementById('trigger-icon-box');
+const arcButtons = document.querySelectorAll('.img_btn');
+
+const post_0 = document.getElementById('post_0')
+const post_1 = document.getElementById('post_1')
+const post_2 = document.getElementById('post_2')
+const post_3 = document.getElementById('post_3')
+const posts = [post_0, post_1, post_2, post_3]
+
+const sm_img_0 = document.getElementById('small_img_0')
+const sm_img_1 = document.getElementById('small_img_1')
+const sm_img_2 = document.getElementById('small_img_2')
+const sm_img_3 = document.getElementById('small_img_3')
+const sm_imgs = [sm_img_0, sm_img_1, sm_img_2, sm_img_3]
+
+// Toggle Menu
+trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = container.classList.toggle('menu-open');
+    
+    // Rotate Plus to X
+    iconBox.style.transform = isOpen ? 'rotate(45deg)' : 'rotate(0deg)';
+
+    const dist = 120; // 2.5x Trigger diameter
+
+    arcButtons.forEach((btn, index) => {
+        if (isOpen) {
+            let tx = 0, ty = 0;
+            // Diagonals
+            if (index === 0) { tx = dist; ty = -dist; } 
+            if (index === 1) { tx = dist; ty = dist;  } 
+            if (index === 2) { tx = -dist; ty = dist; } 
+            if (index === 3) { tx = -dist; ty = -dist;} 
+
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
+            btn.style.transform = `translate(${tx}px, ${ty}px) scale(1)`;
+        } else {
+            btn.style.opacity = '0';
+            btn.style.pointerEvents = 'none';
+            btn.style.transform = `translate(0, 0) scale(0.5)`;
+        }
+    });
+});
+
+// Arc Button Clicks
+arcButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const clickedId = parseInt(e.currentTarget.dataset.postId);
+        
+        // Define the new order based on which button was clicked
+        let post_order = [];
+        if (clickedId === 0) post_order = [0, 1, 2, 3];
+        if (clickedId === 1) post_order = [1, 0, 2, 3];
+        if (clickedId === 2) post_order = [2, 0, 1, 3];
+        if (clickedId === 3) post_order = [3, 0, 1, 2];
+
+        // Loop through your 4 display divs
+        posts.forEach((postDiv, i) => {
+            const img = postDiv.querySelector("img");
+            const anchor = postDiv.querySelector("a");
+            const title = postDiv.querySelector(".post_title")
+            const short_description = postDiv.querySelector(".post_sd")
+            const targetDataIndex = post_order[i]; // This maps the clicked logic to the data
+            const data = posts_data[targetDataIndex];
+
+            if (img && data) {
+                // 1. Start Fade Out
+                img.classList.add('opacity-0');
+                sm_imgs[i].classList.add('opacity-0');
+
+                // 2. Wait for fade out to complete before swapping source
+                setTimeout(() => {
+                    img.src = data.featured_image;
+                    img.alt = data.title;
+                    title.textContent = data.title;
+                    short_description.textContent = data.short_description
+                    sm_imgs[i].src = data.featured_image;
+                    sm_imgs[i].alt = data.title;
+                    
+                    // Update the "Read Button" link too
+                    if(anchor) anchor.href = data.url; 
+
+                    // 3. Fade back in once the source is assigned
+                    img.onload = () => {
+                        img.classList.remove('opacity-0');
+                        sm_imgs[i].classList.remove('opacity-0');
+                    };
+                }, 250); // Half of your 500ms duration
+            }
+        });
+    });
+});
+
+</script>
+
+{% endblock %}

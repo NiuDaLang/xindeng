@@ -1,0 +1,9 @@
+
+<form hx-post="{% url 'apply_offer' %}" 
+      hx-swap="none" 
+      class="join w-full"
+>
+    {% csrf_token %}
+    <input type="text" name="code" class="input input-bordered join-item w-full" placeholder="Offer Code｜優惠碼" required>
+    <button type="submit" class="btn btn-primary join-item">Apply｜適用</button>
+</form>

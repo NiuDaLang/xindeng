@@ -1,0 +1,114 @@
+{% load humanize %}
+<div {% if is_htmx_update %}id="wishlist_wrapper" hx-swap-oob="true"{% endif %}>
+    {% if wishlist %}
+        {% for item in wishlist %}
+            <div id="wishlist-item-{{ item.product_variation.id }}"
+                class="flex flex-col items-center gap-4 p-4 bg-slate-900 rounded-xl border border-white/5 shadow-lg"
+            >
+                <!-- Top -->
+                <div class="w-full flex justify-between items-center mb-3">
+                    <!-- item-name -->
+                    <div class="flex-2">
+                        <h3 class="text-white font-bold">{{ item.product_variation.product.product_name }}</h3>
+                        <p class="text-slate-400 text-xs">{{ item.product_variation.get_sku }}</p>
+                    </div>
+                    <!-- real-time item-quantity -->
+                    <div class="flex-1" 
+                        hx-get="{% url 'check_stock' item.product_variation.id %}" 
+                        hx-trigger="load, every 30s"
+                    >
+                        {% with var=item.product_variation %}
+                            {{ var.wishlist_item_id|default:item.pk }}
+                            {% include 'accounts/partials/stock_badge.html' with variation=var %}
+                        {% endwith %}
+                    </div>
+                    <!-- item-unit-price -->
+                    <div class="flex-1 text-white text-right pr-5">
+                        CNY {{ item.product_variation.price|floatformat:2|intcomma }}
+                    </div>
+                </div>
+                <!-- Bottom -->
+                <div class="flex gap-2 w-full">
+                    <!-- image -->
+                    <a href="{{ item.product_variation.product.get.url}}" class="md:size-38 aspect-square">
+                        <img class="w-full h-full rounded-box object-cover" src="{{ item.product_variation.images.url }}" alt="{{ item.product_variation.product.product_name }}">
+                    </a>
+                    <!-- details -->
+                    <div class="text-[11px] w-max pr-10 text-white flex-1">
+                        <div><b>Stock｜當前庫存|：&nbsp;</b>{{item.product_variation.stock}}</div>
+                        <div><b>From｜發貨地：&nbsp; </b>中國</div>
+                        <div><b>Size｜尺寸：&nbsp;</b>{% if item.product_variation.size is not "" %}{{item.product_variation.size}}{% else %}--{% endif %}</div>
+                        <div><b>Color｜顏色：&nbsp;</b>{% if item.product_variation.color is not "" %}{{item.product_variation.color}}{% else %}--{% endif %}</div>
+                        <div><b>Type｜種類：&nbsp;</b>{% if item.product_variation.type is not "" %}{{item.product_variation.type}}{% else %}--{% endif %}</div>
+                        <div><b>Shipping Cost｜配送費用：&nbsp;</b>{% if item.with_shipping %}含|Included{% else %}不含|Not included{% endif %}</div>
+                    </div>
+        
+                    <!-- buttons -->
+                    <div class="flex flex-col gap-1 flex-1 items-center justify-center">
+                        <!-- move to cart -->
+                        <button type="button"
+                                id="add_wish_to_cart_btn_{{ item.pk }}"
+                                class="w-full btn btn-sm btn-primary"             
+                                hx-get="{% url 'add_to_cart_qty' item.product_variation.pk 'wishlist' %}"
+                                hx-target="#change_qty_wrapper"
+                                hx-trigger="click consume"
+                                onclick="my_modal_3.showModal()"
+                        >
+                            {% if variation.stock <= 0 and variation.is_available %}Sold Out｜已售罄{% else %}Move to Cart｜轉入購物車{% endif %}
+                        </button>
+                
+                        <!-- delete wish -->
+                        <button type="button" 
+                                class="w-full btn btn-sm btn-error btn-outline"
+                                hx-post="{% url 'delete_wishlist_item' item.pk %}"
+                                hx-vals='{"source": "dashboard"}'
+                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                hx-target="#wishlist-item-{{ item.product_variation.id }}"
+                                hx-trigger="confirmed"
+                                hx-swap="delete"
+                                onclick="confirmAction(
+                                    button=this,
+                                    title='Are you sure?｜您確定嗎？',
+                                    html=`This item will be removed from your wishlist!<br>此寶貝將從您的購物清單中移除！`,
+                                    icon='warning',
+                                    show_cancel=true,
+                                    confirm_btn_color='#d33',
+                                    cancel_btn_color='#3085d6',
+                                    confirm_btn_text='Yes, remove it!｜確定移除！',
+                                    cancel_btn_text='Cancel｜取消',
+                                )"
+                        >
+                            Delete｜刪除該產品
+                        </button>
+                        
+                        <!-- add to favorites -->
+                        {% if user.is_authenticated %}
+                        <button type="button"
+                                class="w-full btn btn-sm btn-ghost text-amber-500"
+                                hx-post="{% url 'add_to_favorite' item.product_variation.pk %}"
+                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                hx-swap="none"
+                        >
+                            Add to Favorite｜加入收藏
+                        </button>
+                        {% endif %}
+        
+                        <!-- Share SNS -->
+                        <button class="w-full btn btn-sm btn-outline btn-success"
+                                data-title="Hṛdayadīpa (हृदयदीप) - {{ item.product_variation.product.product_name }}"
+                                data-text="{{ item.product_variation.get_sku }}"
+                                data-link="{{ request.build_absolute_uri }}"
+                                hx-on:click="share_link(this.getAttribute('data-title'), this.getAttribute('data-text'), this.getAttribute('data-link'))"
+                        >
+                            Share｜分享
+                        </button>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <h2 class="h2shadow col-span-2 mx-auto text-center mb-2">您的購物清單是空的 | Your wishlist is empty.</h2>
+        {% endfor %}
+    {% else %}
+        <h2 class="h2shadow col-span-2 mx-auto text-center mb-2">您的購物清單是空的 | Your wishlist is empty.</h2>
+    {% endif %}
+</div>

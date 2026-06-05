@@ -1,0 +1,25 @@
+<!-- <div id="offer-form-wrapper" hx-swap-oob="true" class="flex items-center justify-between p-3 bg-success/10 border border-success rounded-lg">
+    <span class="text-success font-medium">Code: <strong>{{ active_code }} ({{perk_code}})</strong> Applied!</span>
+    <button hx-post="{% url 'reset_offer' %}" 
+        hx-vals='{"csrfmiddlewaretoken": "{{ csrf_token }}"}'
+        hx-swap="none" 
+        class="btn btn-sm btn-ghost text-error h-auto py-2 min-h-0">
+        <div class="flex items-center gap-2">
+            <span>✕</span>
+            <span>Reset<br>重置</span>
+        </div> 
+    </button>
+</div> -->
+
+<div id="offer-form-wrapper" {% if is_oob %}hx-swap-oob="true"{% endif %} class="flex items-center justify-between p-3 bg-success/10 border border-success rounded-lg">
+    <span class="text-success font-medium">Code: <strong>{{ active_code }} ({{ perk_code }})</strong> Applied!</span>
+    <button hx-post="{% url 'reset_offer' %}" 
+        hx-vals='{"csrfmiddlewaretoken": "{{ csrf_token }}"}'
+        hx-swap="none" 
+        class="btn btn-sm btn-ghost text-error h-auto py-2 min-h-0">
+        <div class="flex items-center gap-2">
+            <span>✕</span>
+            <span>Reset<br>重置</span>
+        </div> 
+    </button>
+</div>

@@ -1,0 +1,9 @@
+<!-- main res -->
+<div id="cart_summary">
+    <div class="border-t-4 border-double border-base-300"></div>
+    <div class="text-right text-md text-base-content font-normal p-3">
+        Sub-Total｜寶貝金額小計
+        <small id="cart_items_quantity_total">(Total｜總 <b>{{new_cart_total_count}}</b> item{% if new_cart_total_count > 1 %}s{% endif %}｜件)</small>
+        :&nbsp;<span id="cart_items_sub_total" class="font-semibold">CNY {{ formatted_new_cart_grand_total }}</span>
+    </div>
+</div>

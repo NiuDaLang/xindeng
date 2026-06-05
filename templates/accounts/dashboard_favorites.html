@@ -1,189 +1,108 @@
-{% extends 'accounts/dashboard_base.html' %}
+{% load humanize %}
+<title>{{ page_title }}</title>
 
-{% block accounts_content %}
-<!-- hero -->
-<div class="relative w-full h-[14rem]">
-    <img src="/media/hero/red_leaves.jpeg" alt="" class="reel -z-1 absolute left-0 top-0 h-full w-full object-cover">
-    <div class="absolute top-[47%] left-[20%]">
-        <h2 class="text-5xl text-primary-content">霜降</h2>
+<div id="dashboard_favorites" class="subpage">
+    <!-- hero -->
+    <div class="dashboard_hero w-full min-h-72 rounded-2xl text-white relative flex justify-center items-center">
+        <!-- season & date -->
+        <div class="flex flex-col z-10 p-5">
+            {% if solar_term %}
+                <div class="solar-timeline">
+                    <div class="flex flex-col">
+                        <span id="solar_term" class="text-4xl">{{ solar_term }}</span>
+                        <span id="solar_term_en" class="text-[16px]">{{ solar_term_en }}</span>
+                    </div>
+                    {% if next_solar_term %}
+                    <div class="solar-arrow-container">
+                        <div class="solar-arrow"></div>
+                    </div>
+                    <div class="flex flex-col">
+                        <span id="next_solar_term" class="text-4xl">{{ next_solar_term }}</span>
+                        <span id="next_solar_term_en" class="text-[16px]">{{ next_solar_term_en }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+            <span id="dynamic-date" hx-preserve="true" class="text-sm text-center"></span>
+        </div>
+        <!-- clock -->
+        <div id="persistent-analog-clock" hx-preserve="true" class="flex justify-end z-10">
+            <div class="relative z-0 bg-transparent">
+                <div class="absolute inset-0 -z-10 bg-[#1b5ac63f] blur-md rounded-full"></div>
+                <div class="clock z-10">
+                    <div class="clock__second"></div>
+                    <div class="clock__minute"></div>
+                    <div class="clock__hour"></div>
+                    <div class="clock__axis"></div>
+                    <section class="clock__indicator" style="--i: 1"></section>
+                    <section class="clock__indicator" style="--i: 2"></section>
+                    <section class="clock__indicator" style="--i: 3"></section>
+                    <section class="clock__indicator" style="--i: 4"></section>
+                    <section class="clock__indicator" style="--i: 5"></section>
+                    <section class="clock__indicator" style="--i: 6"></section>
+                    <section class="clock__indicator" style="--i: 7"></section>
+                    <section class="clock__indicator" style="--i: 8"></section>
+                    <section class="clock__indicator" style="--i: 9"></section>
+                    <section class="clock__indicator" style="--i: 10"></section>
+                    <section class="clock__indicator" style="--i: 11"></section>
+                    <section class="clock__indicator" style="--i: 12"></section>
+                    <section class="clock__indicator" style="--i: 13"></section>
+                    <section class="clock__indicator" style="--i: 14"></section>
+                    <section class="clock__indicator" style="--i: 15"></section>
+                    <section class="clock__indicator" style="--i: 16"></section>
+                    <section class="clock__indicator" style="--i: 17"></section>
+                    <section class="clock__indicator" style="--i: 18"></section>
+                    <section class="clock__indicator" style="--i: 19"></section>
+                    <section class="clock__indicator" style="--i: 20"></section>
+                    <section class="clock__indicator" style="--i: 21"></section>
+                    <section class="clock__indicator" style="--i: 22"></section>
+                    <section class="clock__indicator" style="--i: 23"></section>
+                    <section class="clock__indicator" style="--i: 24"></section>
+                    <section class="clock__indicator" style="--i: 25"></section>
+                    <section class="clock__indicator" style="--i: 26"></section>
+                    <section class="clock__indicator" style="--i: 27"></section>
+                    <section class="clock__indicator" style="--i: 28"></section>
+                    <section class="clock__indicator" style="--i: 29"></section>
+                    <section class="clock__indicator" style="--i: 30"></section>
+                    <section class="clock__indicator" style="--i: 31"></section>
+                    <section class="clock__indicator" style="--i: 32"></section>
+                    <section class="clock__indicator" style="--i: 33"></section>
+                    <section class="clock__indicator" style="--i: 34"></section>
+                    <section class="clock__indicator" style="--i: 35"></section>
+                    <section class="clock__indicator" style="--i: 36"></section>
+                    <section class="clock__indicator" style="--i: 37"></section>
+                    <section class="clock__indicator" style="--i: 38"></section>
+                    <section class="clock__indicator" style="--i: 39"></section>
+                    <section class="clock__indicator" style="--i: 40"></section>
+                    <section class="clock__indicator" style="--i: 41"></section>
+                    <section class="clock__indicator" style="--i: 42"></section>
+                    <section class="clock__indicator" style="--i: 43"></section>
+                    <section class="clock__indicator" style="--i: 44"></section>
+                    <section class="clock__indicator" style="--i: 45"></section>
+                    <section class="clock__indicator" style="--i: 46"></section>
+                    <section class="clock__indicator" style="--i: 47"></section>
+                    <section class="clock__indicator" style="--i: 48"></section>
+                    <section class="clock__indicator" style="--i: 49"></section>
+                    <section class="clock__indicator" style="--i: 50"></section>
+                    <section class="clock__indicator" style="--i: 51"></section>
+                    <section class="clock__indicator" style="--i: 52"></section>
+                    <section class="clock__indicator" style="--i: 53"></section>
+                    <section class="clock__indicator" style="--i: 54"></section>
+                    <section class="clock__indicator" style="--i: 55"></section>
+                    <section class="clock__indicator" style="--i: 56"></section>
+                    <section class="clock__indicator" style="--i: 57"></section>
+                    <section class="clock__indicator" style="--i: 58"></section>
+                    <section class="clock__indicator" style="--i: 59"></section>
+                    <section class="clock__indicator" style="--i: 60"></section>
+                </div>
+            </div>
+        </div>
+        <!-- bg img -->
+        <img src="/media/hero/red_leaves.jpeg" alt="" class="absolute left-0 top-0 w-full h-full rounded-4xl object-cover">
     </div>
-    <div class="absolute right-8 bottom-12 text-right text-primary-content">
-        <div id="dynamic-date"></div>
-        <div id="dynamic-clock"></div>
+    <!-- favorites collection -->
+    <div id="favorites_wrapper">
+        {% include 'accounts/partials/favorites_list.html' with favorites=favorites %}
     </div>
 </div>
 
-
-<!-- products collection -->
-<div class="grid grid-cols-2 gap-8 my-10">
-    <!-- NO-1 -->
-    <div class="card col-span-1 bg-base-100 shadow-sm">
-        <figure class="relative">
-            <a href="{% url 'product' %}" class="w-full h-full group transition-all duration-5000 ease-in-out">
-                <img
-                class=""
-                src="/media/hero/lavendar.svg"
-                alt="Shoes" />
-                <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
-                </div>
-                <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
-            </a>
-        </figure>
-        <div class="card-body">
-            <p class="card-title">
-                <i class="fa-solid fa-tag"></i>
-                產品名稱
-                <span class="badge badge-secondary">新上架</span>
-            </p>
-            <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
-            <!-- price -->
-            <div class="card-title">
-                <i class="fa-solid fa-money-check-dollar"></i>
-                <form action="" method="POST">
-                    <select class="select w-20">
-                        <option selected class="text-opacity-50">RMB</option>
-                        <option>HKD</option>
-                        <option>TWD</option>
-                        <option>USD</option>
-                        <option>JPY</option>
-                    </select>   
-                </form>
-                <i>500.00</i>
-            </div>
-            <!-- labels -->
-            <div class="card-actions justify-end">
-                <div class="badge badge-outline text-xs">Fashion</div>
-                <div class="badge badge-outline text-xs">Products</div>
-            </div>
-        </div>
-    </div>
-    <!-- NO-2 -->
-    <div class="card col-span-1 bg-base-100 shadow-sm">
-        <figure class="relative">
-            <a href="{% url 'product' %}" class="w-full h-full group transition-all duration-5000 ease-in-out">
-                <img
-                class=""
-                src="/media/hero/tulip.svg"
-                alt="Shoes" />
-                <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
-                </div>
-                <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
-            </a>
-        </figure>
-        
-        <div class="card-body">
-            <p class="card-title">
-                <i class="fa-solid fa-tag"></i>
-                產品名稱
-                <!-- <span class="badge badge-secondary"></span> -->
-            </p>
-            <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
-            <!-- price -->
-            <div class="card-title">
-                <i class="fa-solid fa-money-check-dollar"></i>
-                <form action="" method="POST">
-                    <select class="select">
-                        <option selected class="text-opacity-50">RMB</option>
-                        <option>HKD</option>
-                        <option>TWD</option>
-                        <option>USD</option>
-                        <option>JPY</option>
-                    </select>   
-                </form>
-                <i>500.00</i>
-            </div>
-            <!-- labels -->
-            <div class="card-actions justify-end">
-                <div class="badge badge-outline text-xs">Fashion</div>
-                <div class="badge badge-outline text-xs">Products</div>
-            </div>
-        </div>
-    </div>
-    <!-- NO-3 -->
-    <div class="card col-span-1 bg-base-100 shadow-sm">
-        <figure class="relative">
-            <a href="{% url 'product' %}" class="w-full h-full group transition-all duration-5000 ease-in-out">
-                <img
-                class=""
-                src="/media/hero/purpleFlower.svg"
-                alt="Shoes" />
-                <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
-                </div>
-                <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
-            </a>
-        </figure>
-
-        <div class="card-body">
-            <p class="card-title">
-                <i class="fa-solid fa-tag"></i>
-                產品名稱
-                <!-- <span class="badge badge-secondary">新上架</span> -->
-            </p>
-            <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
-            <!-- price -->
-            <div class="card-title">
-                <i class="fa-solid fa-money-check-dollar"></i>
-                <form action="" method="POST">
-                    <select class="select">
-                        <option selected class="text-opacity-50">RMB</option>
-                        <option>HKD</option>
-                        <option>TWD</option>
-                        <option>USD</option>
-                        <option>JPY</option>
-                    </select>   
-                </form>
-                <i>500.00</i>
-            </div>
-            <!-- labels -->
-            <div class="card-actions justify-end">
-                <div class="badge badge-outline text-xs">Fashion</div>
-                <div class="badge badge-outline text-xs">Products</div>
-            </div>
-        </div>
-    </div>
-    <!-- NO-4 -->
-    <div class="card col-span-1 bg-base-100 shadow-sm">
-        <figure class="relative">
-            <a href="{% url 'product' %}" class="w-full h-full group transition-all duration-5000 ease-in-out">
-                <img
-                class=""
-                src="/media/hero/lavendar.svg"
-                alt="Shoes" />
-                <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
-                </div>
-                <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
-            </a>
-        </figure>
-
-        <div class="card-body">
-            <p class="card-title">
-                <i class="fa-solid fa-tag"></i>
-                產品名稱
-                <span class="badge badge-error">人气！</span>
-            </p>
-            <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
-            <!-- price -->
-            <div class="card-title">
-                <i class="fa-solid fa-money-check-dollar"></i>
-                <form action="" method="POST">
-                    <select class="select">
-                        <option selected class="text-opacity-50">RMB</option>
-                        <option>HKD</option>
-                        <option>TWD</option>
-                        <option>USD</option>
-                        <option>JPY</option>
-                    </select>   
-                </form>
-                <i>500.00</i>
-            </div>
-            <!-- labels -->
-            <div class="card-actions justify-end">
-                <div class="badge badge-outline text-xs">Fashion</div>
-                <div class="badge badge-outline text-xs">Products</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-{% endblock %}

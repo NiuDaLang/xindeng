@@ -1,17 +1,30 @@
 {% extends 'base.html' %}
-
+{% load humanize %}
 {% block content %}
 <!-- BANNER -->
-<div class="relative mt-16 w-full">
+<div class="relative mt-[86px] w-full">
     {% include 'includes/banner.html' %}
 </div>
 
-<!-- MAIN -->
-<main class="px-[max(1rem,5vw)] py-10 min-h-[calc(100dvh-200px)]">
+<main class="px-[max(1rem,5vw)] py-10 min-h-[calc(100dvh-200px)] bg-base-100">
+    <!-- Context state vectors mapped cleanly for JS pipeline engines -->
+    {{ proforma_invoice_number|json_script:"proforma_invoice_number" }}
+    {{ foreign_currency_code|json_script:"foreign_currency_code" }}
+    {{ locked_rate|json_script:"locked_rate" }}
+    {{ country_code|json_script:"country_code" }}
+
+    <!-- Dynamic Session Expiry Banner Anchor -->
+    <div id="price-warning" class="w-full text-center hidden bg-warning text-warning-content font-semibold p-3 rounded-xl mb-6 text-xs shadow-md animate-pulse">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        Exchange rate has expired. <a href="{% url 'cart' %}" class="underline font-bold">Back to cart page</a> to recalculate.
+        <br>
+        兌換率已失效。煩請 <a href="{% url 'cart' %}" class="underline font-bold">返回購物車</a> 重新計算。
+    </div>
+
     <!-- progress -->
     <ul class="timeline w-full justify-center">
         <li>
-            <div class="timeline-start timeline-box">購物車</div>
+            <div class="timeline-start timeline-box text-center">Cart<br/>購物車</div>
             <div class="timeline-middle">
                 <i class="fa-solid fa-circle-check text-success"></i>
             </div>
@@ -19,7 +32,7 @@
         </li>
         <li>
             <hr class="bg-success-content"/>
-            <div class="timeline-start timeline-box">配送訊息</div>
+            <div class="timeline-start timeline-box text-center">Shipping Info<br/>配送訊息</div>
             <div class="timeline-middle">
                 <i class="fa-solid fa-circle-check text-success"></i>
             </div>
@@ -27,15 +40,15 @@
         </li>
         <li>
             <hr class="bg-success-content" />
-            <div class="timeline-start timeline-box">支付</div>
+            <div class="timeline-start timeline-box text-center">Confirm Order<br/>訂單確認</div>
             <div class="timeline-middle">
                 <i class="fa-solid fa-circle-check text-success"></i>
             </div>
-            <hr class="bg-success-content" />
+            <hr class="bg-success-content"/>
         </li>
         <li>
-            <hr class="bg-success-content"/>
-            <div class="timeline-start timeline-box">支付完成</div>
+            <hr class="bg-success-content" />
+            <div class="timeline-start timeline-box text-center">Payment Complete<br/>支付完成</div>
             <div class="timeline-middle">
                 <i class="fa-solid fa-circle-check text-base-300"></i>
             </div>
@@ -43,259 +56,446 @@
         </li>
     </ul>
 
-    <div class="w-full border border-base-300 rounded-2xl p-5">
-        <div class="flex w-full flex-col lg:flex-row">
-            <!-- LEFT - address -->
-            <div class="w-[58%] card bg-base-300 rounded-box p-3">
-                <h3 class="my-3 text-center font-bold"><i class="fa-solid fa-clipboard-check"></i>&nbsp;內容確認</h3>
-                <!-- delivery address -->
-                <div class="card w-full bg-base-100 card-sm shadow-sm rounded-2xl mb-5">
-                    <div class="flex flex-auto flex-col gap-0.5 text-[0.875rem]">
-                        <!-- heading -->
-                        <h2 class="card-title w-full text-primary-content bg-accent rounded-t-2xl p-2">配送地址</h2>
-                        <!-- details -->
-                        <div class="p-2">
-                            <p>收件人：Firstname Lastname</p>
-                            <p>地址: Address_1, Address_2, City, State, Country, ZIP#</p>
-                            <p>手機號碼：</p>
-                            <p>備注：不要郵寄發票</p>
-                            <div class="justify-end card-actions">
-                                <button class="btn btn-primary btn-sm">修改</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>                
-                <!-- payment method -->
-                <div class="card w-full bg-base-100 card-sm shadow-sm rounded-2xl mb-5">
-                    <div class="flex flex-auto flex-col gap-0.5 text-[0.875rem]">
-                        <!-- heading -->
-                        <h2 class="card-title w-full text-primary-content bg-accent rounded-t-2xl p-2">付款方式</h2>
-                        <!-- options -->
-                        <div class="p-2 flex gap-3">
-                            <label for="" class="flex items-center">
-                                <input type="radio" name="payment_selection" class="radio radio-xs" />
-                                <span>PayPal </span>
-                            </label>
-                            <label for="" class="flex items-center">
-                                <input type="radio" name="payment_selection" class="radio radio-xs" />
-                                <span>信用卡 </span>
-                            </label>
-                            <label for="" class="flex items-center">
-                                <input type="radio" name="payment_selection" class="radio radio-xs" />
-                                <span>微信 </span>
-                            </label>
-                        </div>
-
-                        <!-- NOTE -->
-                        <div class="m-2">*****備注：支付方式表格後期將進一步完善*****</div>
-                    </div>
+    <div class="flex flex-col lg:flex-row gap-8 w-full font-mono ">
+        <!-- ==========================================
+             LEFT COLUMN: RECEIPT SUMMARY & COURIER METRICS
+             ========================================== -->
+        <div class="w-full lg:w-[55%] flex flex-col gap-6">
+            <!-- Order Summary Card -->
+            <div class="card bg-base-200 p-6 rounded-2xl border border-base-300 shadow-sm">
+                <h3 class="font-bold text-sm uppercase mb-4 text-primary border-b border-base-content/10 pb-2">
+                    <i class="fa-solid fa-receipt"></i> Order Summary ｜ 訂單明細
+                </h3>
+                
+                <div class="overflow-x-auto w-full mb-4">
+                    <table class="table table-xs w-full">
+                        <thead>
+                            <tr class="border-b border-base-content/10">
+                                <th>Item | 商品</th>
+                                <th class="text-center">Qty | 數量</th>
+                                <th class="text-right">Subtotal | 小計</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart_items %}
+                            <tr class="border-b border-base-content/5">
+                                <td class="font-medium text-xs">{{ item.product_variation.product.product_name }}</td>
+                                <td class="text-center text-xs">{{ item.quantity }}</td>
+                                <!-- 💡 Safe and clean: Keeps the item table in pure base CNY -->
+                                <td class="text-right font-mono text-xs">CNY ¥ {{ item.subtotal|floatformat:2|intcomma }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <!-- products -->
-                <div class="card w-full bg-base-100 card-sm shadow-sm rounded-2xl mb-5">
-                    <div class="flex flex-auto flex-col gap-0.5 text-[0.875rem]">
-                        <!-- heading -->
-                        <h2 class="card-title w-full text-primary-content bg-accent rounded-t-2xl p-2">產品一覽</h2>
-                        <!-- products -->
 
-                        <!-- heading -->
-                        <div class="grid grid-cols-6 mt-3 text-center pb-2 font-bold">
-                            <!-- product description -->
-                            <div class="col-span-3 text-xs">
-                                Product
-                            </div>
-                            <!-- order stats -->
-                            <div class="col-span-1 text-xs">
-                                Qty
-                            </div>
-                            <div class="col-span-2 text-xs">
-                                Sub-Total
-                            </div>
-                        </div>
-                        <div class="divider mt-0 my-5"></div>
+<!-- Financial Ledger Overview Table -->
+<div class="border-t border-dashed border-base-content/20 pt-4 text-xs">
+    <table class="w-full table-fixed border-separate border-spacing-y-2">
+        <thead>
+            <tr class="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">
+                <th class="text-left font-bold pb-1">Description ｜ 項目</th>
+                <!-- Fixed, wider value columns to securely prevent single-line numeric wrapping drops -->
+                <th class="w-28 text-right font-bold pb-1">Base (CNY)</th>
+                <th class="w-32 text-right font-bold pb-1">Pay ({{ foreign_currency_code }})</th>
+            </tr>
+        </thead>
+        <tbody class="align-middle">
+            <!-- Subtotal -->
+            <tr class="font-sans">
+                <td class="text-left py-0.5">Subtotal ｜ 商品小計</td>
+                <td class="text-right font-mono text-base-content/50">¥{{ proforma_invoice.cart_total|floatformat:2|intcomma }}</td>
+                <td class="text-right font-mono font-semibold text-primary">
+                    {{ foreign_currency_symbol }}&nbsp;{{ proforma_invoice.cart_total_foreign|floatformat:2|intcomma }}
+                </td>
+            </tr>
 
-                        <!-- item list -->
-                        <div class="px-5">
-                            <!-- item 1 -->
-                            <div class="grid grid-cols-6 mb-5">
-                                <!-- product description -->
-                                <div class="col-span-1 pl-3">
-                                    <img src="/media/hero/lavendar.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
-                                </div>
-                                <div class="col-span-2 text-xs pl-2">
-                                    <span class="font-bold">Product Name</span>
-                                    <br/>
-                                    <span class="text-[10px]">Product Description</span>
-                                </div>
-                                <!-- order stats -->
-                                <div class="col-span-1 text-xs text-center">
-                                    1
-                                </div>
-                                <div class="col-span-2 text-xs text-right font-bold pr-3">
-                                    RMB 500
-                                    <br>
-                                    <small>單價：RMB 500</small>
-                                </div>
-                            </div>
+            <!-- Shipping -->
+            {% if display_mode != 'EPRODUCT_ONLY' and display_mode != 'VOUCHER_ONLY' %}
+            <tr class="font-sans">
+                <td class="text-left py-0.5">Shipping ｜ 運費</td>
+                <td class="text-right font-mono text-base-content/50">¥{{ proforma_invoice.shipping_cost|floatformat:2|intcomma }}</td>
+                <td class="text-right font-mono font-semibold text-primary">
+                    {{ foreign_currency_symbol }}&nbsp;{{ proforma_invoice.shipping_cost_amount_foreign|floatformat:2|intcomma }}
+                </td>
+            </tr>
+            {% endif %}
+            <!-- Discount Applied -->
+            {% if proforma_invoice.discount > 0 %}
+            <tr class="font-sans text-success">
+                <td class="text-left py-0.5">Discount Applied ｜ 優惠折抵</td>
+                <td class="text-right font-mono opacity-70">¥({{ proforma_invoice.discount|floatformat:2|intcomma }})</td>
+                <td class="text-right font-mono font-semibold">
+                    {% if is_integer %}
+                        {{ foreign_currency_symbol }}&nbsp;({{ proforma_invoice.discount_amount_foreign|floatformat:0|intcomma }})
+                    {% else %}
+                        {{ foreign_currency_symbol }}&nbsp;({{ proforma_invoice.discount_amount_foreign|floatformat:2|intcomma }})
+                    {% endif %}
+                </td>
+            </tr>
+            {% endif %}
+            
+            <!-- Voucher Subtracted -->
+            {% if proforma_invoice.voucher_applied > 0 %}
+            <tr class="font-sans text-success">
+                <td class="text-left py-0.5">Voucher Subtracted ｜ 現金券折抵</td>
+                <td class="text-right font-mono opacity-70">¥({{ proforma_invoice.voucher_applied|floatformat:2|intcomma }})</td>
+                <td class="text-right font-mono font-semibold">
+                    {% if is_integer %}
+                        {{ foreign_currency_symbol }}&nbsp;({{ proforma_invoice.applied_voucher_amount_foreign|floatformat:0|intcomma }})
+                    {% else %}
+                        {{ foreign_currency_symbol }}&nbsp;({{ proforma_invoice.applied_voucher_amount_foreign|floatformat:2|intcomma }})
+                    {% endif %}
+                </td>
+            </tr>
+            {% endif %}
 
-                            <!-- item 2 -->
-                            <div class="grid grid-cols-6 mb-5">
-                                <!-- product description -->
-                                <div class="col-span-1 pl-3">
-                                    <img src="/media/hero/tulip.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
-                                </div>
-                                <div class="col-span-2 text-xs pl-2">
-                                    <span class="font-bold">Product Name</span>
-                                    <br/>
-                                    <span class="text-[10px]">Product Description</span>
-                                </div>
-                                <!-- order stats -->
-                                <div class="col-span-1 text-xs text-center">
-                                    2
-                                </div>
-                                <div class="col-span-2 text-xs text-right font-bold pr-3">
-                                    RMB 1,200
-                                    <br>
-                                    <small>單價：RMB 600</small>
-                                </div>
-                            </div>
-
-                            <!-- item 3 -->
-                            <div class="grid grid-cols-6 mb-5">
-                                <!-- product description -->
-                                <div class="col-span-1 pl-3">
-                                    <img src="/media/hero/purpleFlower.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
-                                </div>
-                                <div class="col-span-2 text-xs pl-2">
-                                    <span class="font-bold">Product Name</span>
-                                    <br/>
-                                    <span class="text-[10px]">Product Description</span>
-                                </div>
-                                <!-- order stats -->
-                                <div class="col-span-1 text-xs text-center">
-                                    1
-                                </div>
-                                <div class="col-span-2 text-xs text-right font-bold pr-3">
-                                    RMB 300
-                                    <br>
-                                    <small>單價：RMB 300</small>
-                                </div>
-                            </div>
-
-                            <!-- item 4 -->
-                            <div class="grid grid-cols-6 mb-5">
-                                <!-- product description -->
-                                <div class="col-span-1 pl-3">
-                                    <img src="/media/hero/lavendar.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
-                                </div>
-                                <div class="col-span-2 text-xs pl-2">
-                                    <span class="font-bold">Product Name</span>
-                                    <br/>
-                                    <span class="text-[10px]">Product Description</span>
-                                </div>
-                                <!-- order stats -->
-                                <div class="col-span-1 text-xs text-center">
-                                    1
-                                </div>
-                                <div class="col-span-2 text-xs text-right font-bold pr-3">
-                                    RMB 500
-                                    <br>
-                                    <small>單價：RMB 500</small>
-                                </div>
-                            </div>
-
-                            <!-- item 5 -->
-                            <div class="grid grid-cols-6 mb-5">
-                                <!-- product description -->
-                                <div class="col-span-1 pl-3">
-                                    <img src="/media/hero/tulip.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
-                                </div>
-                                <div class="col-span-2 text-xs pl-2">
-                                    <span class="font-bold">Product Name</span>
-                                    <br/>
-                                    <span class="text-[10px]">Product Description</span>
-                                </div>
-                                <!-- order stats -->
-                                <div class="col-span-1 text-xs text-center">
-                                    2
-                                </div>
-                                <div class="col-span-2 text-xs text-right font-bold pr-3">
-                                    RMB 1,200
-                                    <br>
-                                    <small>單價：RMB 600</small>
-                                </div>
-                            </div>
-
-                            <!-- item 6 -->
-                            <div class="grid grid-cols-6 mb-5">
-                                <!-- product description -->
-                                <div class="col-span-1 pl-3">
-                                    <img src="/media/hero/purpleFlower.svg" alt="" class="rounded-md w-auto h-full aspect-video object-cover">
-                                </div>
-                                <div class="col-span-2 text-xs pl-2">
-                                    <span class="font-bold">Product Name</span>
-                                    <br/>
-                                    <span class="text-[10px]">Product Description</span>
-                                </div>
-                                <!-- order stats -->
-
-                                <div class="col-span-1 text-xs text-center">
-                                    1
-                                </div>
-                                <div class="col-span-2 text-xs text-right font-bold pr-3">
-                                    RMB 300
-                                    <br>
-                                    <small>單價：RMB 600</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="divider mt-0 my-5"></div>
-
-                    </div>
-                </div>                
+            <!-- Grand Total Due Row -->
+            <tr class="font-bold text-sm text-error border-t border-base-content/10">
+                <!-- Utilizing padding styles over table cells to mimic a perfect border separation layer -->
+                <td class="text-left font-bold pt-3 border-t border-base-content/10">Total Due ｜ 總計應付</td>
+                <td class="text-right font-mono text-xs opacity-60 font-normal pt-3 border-t border-base-content/10">¥{{ proforma_invoice.total_due|floatformat:2|intcomma }}</td>
+                <td class="text-right font-mono text-sm font-bold pt-3 border-t border-base-content/10">
+                    {{ foreign_currency_symbol }}&nbsp;{{ proforma_invoice.total_due_foreign|floatformat:2|intcomma }}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
             </div>
+            
 
-            <!-- MIDDLE -->
-            <div class="divider lg:divider-horizontal w-[2%]"></div>
-
-            <!-- RIGHT - items list -->
-            <div class="w-[40%] card bg-base-300 rounded-box p-3 ">
-                <h3 class="my-3 text-center font-bold"><i class="fa-solid fa-money-bill-wave"></i>&nbsp;付款</h3>
-                <!-- payment summary -->
-                <div class="card w-full bg-base-100 card-sm shadow-sm rounded-2xl mb-5">
-                    <div class="flex flex-auto flex-col gap-0.5 text-[0.875rem]">
-                        <!-- heading -->
-                        <h2 class="card-title w-full text-primary-content bg-accent rounded-t-2xl p-2">金額</h2>
-                        <!-- sub-total & other costs/discounts -->
-                        <div class="w-full text-right text-sm font-black px-8 mb-5 py-5">
-                            <!-- sub-total -->
-                            <div class="mb-3">小計 RMB 4,000</div>
-                            <!-- coupon -->
-                            <div class="text-info-content">優惠活動 (RMB -100)</div>
-                            <!-- gift voucher -->
-                            <div class="text-info-content">禮品券 (RMB -200)</div>
-                            <!-- postage & handling -->
-                            <div class="w-full border-b-2 border-double">配送費 RMB 50</div>
-                            <!-- Grand Total -->
-                            <div class="text-md mt-2 text-base">總計支付金額 RMB 3,750</div>
+            <!-- 💡 FIXED (A3): Dynamic Delivery & Contact Information Cards -->
+            <div class="card bg-base-200 p-6 rounded-2xl border border-base-300 shadow-sm text-xs space-y-4">
+                <h3 class="font-bold text-sm uppercase text-primary border-b border-base-content/10 pb-2">
+                    <i class="fa-solid fa-truck-ramp-box"></i> Delivery & Contact Info｜配送與聯絡詳情
+                </h3>
+                
+                <!-- General Customer Profile Header -->
+                <div class="space-y-1">
+                    <h4 class="font-bold text-base-content/60 uppercase text-[10px]">Customer｜客戶</h4>
+                    <div class="flex flex-col gap-3 bg-base-100 p-3 rounded-xl border border-base-300">
+                        <div>
+                            <strong>Buyer Name｜購買人姓名:</strong>
+                            {% if user.is_authenticated %}
+                                <span class="font-semibold"> {{ user.first_name }} {{ user.last_name }}</span>
+                            {% else %}
+                                <span class="font-semibold"> Guest｜有緣人</span>
+                            {% endif %}
                         </div>
+                        <div><strong>Contact Email｜聯絡信箱:</strong><span class="font-semibold"> {{ proforma_invoice.email }}</span></div>
+                        {% if user.is_authenticated and user.mobile_area and user.mobile_number %}
+                            <div class="md:col-span-2"><strong>Phone Number｜聯絡電話:</strong><span class="font-semibold"> ({{ user.mobile_area }}) {{ user.mobile_number }}</span></div>
+                        {% endif %}
+                    </div>                
+                </div>
+                <!-- Physical Recipient Info -->
+                {% if display_mode != 'EPRODUCT_ONLY' and display_mode != 'VOUCHER_ONLY' %}
+                <div class="space-y-1">
+                    <h4 class="font-bold text-base-content/60 uppercase text-[10px]">Recipient Information｜收件人訊息</h4>
+                    <div class="bg-base-100 p-3 rounded-xl border border-base-300 space-y-1">
+                        <div>Recipient Name｜收件人姓名:<span class="font-semibold"> {{ proforma_invoice.recipient_first_name }} {{ proforma_invoice.recipient_last_name }}</span></div>
+                        <div>Recipient Phone｜收件人聯絡電話:<span class="font-semibold"> {{ proforma_invoice.recipient_mobile_area }} {{ proforma_invoice.recipient_mobile_number }}</span></div>
                     </div>
                 </div>
+                {% endif %}
 
-                <!-- payment buttons -->
-                <div class="w-full flex flex-col gap-2">
-                    <button class="w-full btn btn-success">各類支付按鈕</button>
-                    <button class="w-full btn btn-secondary">各類支付按鈕</button>
+                <!-- Physical Address Block Summary -->
+                {% if display_mode != 'EPRODUCT_ONLY' and display_mode != 'VOUCHER_ONLY' %}
+                <div class="space-y-1">
+                    <h4 class="font-bold text-base-content/60 uppercase text-[10px]">Delivery Address｜配送地址</h4>
+                    <div class="bg-base-100 p-3 rounded-xl border border-base-300 space-y-1 font-semibold">
+                        <div>{{ proforma_invoice.address_line_1 }}</div>
+                        {% if proforma_invoice.address_line_2 %}<div>{{ proforma_invoice.address_line_2 }}</div>{% endif %}
+                        <div>{{ proforma_invoice.city }}, {{ proforma_invoice.state_province_region }}</div>
+                        <div>{{ proforma_invoice.get_country_display }} {% if proforma_invoice.postal_code %} {{ proforma_invoice.postal_code }}{% endif %}</div>
+                        {% if proforma_invoice.delivery_note %}
+                            <div class="mt-2 border-t border-dashed border-base-content/10 pt-2 text-base-content/70">
+                                <strong>Delivery Note｜配送備註:</strong> {{ proforma_invoice.delivery_note }}
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
+                {% endif %}
 
-                <!-- 繼續購物 -->
-                <button class="btn btn-accent btn-outline mb-3 my-10 py-5 text-[1.05rem]">
-                    <i class="fa-solid fa-person-walking-arrow-loop-left"></i>繼續購物
-                </button>
+                <!-- Recipient Gift Voucher Destination Details -->
+                {% if proforma_invoice.recipient_email %}
+                <div class="space-y-1">
+                    <h4 class="font-bold text-base-content/60 uppercase text-[10px]">Voucher Recipient Details｜禮券收件資訊</h4>
+                    <div class="bg-base-100 p-3 rounded-xl border border-base-300 space-y-1">
+                        <div><strong>Recipient's Email｜收件人電子郵件:</strong><span class="font-semibold"> {{ proforma_invoice.recipient_email }}</span></div>
+                        {% if proforma_invoice.gift_message %}
+                            <div class="mt-2 border-t border-dashed border-base-content/10 pt-2 text-base-content/70">
+                                <strong>Message｜祝福語句:</strong>
+                                <blockquote class="italic bg-base-200/50 p-2 rounded mt-1 font-sans font-semibold">"{{ proforma_invoice.gift_message }}"</blockquote>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
-    </div>
 
+        <!-- ==========================================
+             RIGHT COLUMN: BILINGUAL GATEWAYS SWITCHER
+             ========================================== -->
+        <div class="w-full lg:w-[45%] flex flex-col gap-4">
+            <!-- 💡 Ensure parent container remains naturally flexible -->
+            <div class="card bg-base-200 p-6 rounded-2xl border border-base-300 shadow-sm h-auto flex flex-col">
+                
+                <h3 class="font-bold text-sm uppercase mb-4 text-secondary border-b border-base-content/10 pb-2">
+                    <i class="fa-solid fa-wallet"></i> Payment Method ｜ 選擇支付方式
+                </h3>
+
+                <!-- 💡 FIXED: Added grid-rows-[auto_1fr] to force grid recalculation on text wrap -->
+                <div role="tablist" class="tabs tabs-border  w-full mb-2 h-auto grid grid-rows-[auto_1fr]">
+                    <!-- PORTAL 1: PayPal SDK Instant Gateway -->
+                    <input type="radio" name="payment_tabs" id="paypal_tab_input" role="tab" class="tab text-xs font-semibold whitespace-nowrap" aria-label="PayPal ｜ 線上即時支付" checked />
+
+                    <div role="tabpanel" id="paypal_panel" class="tab-content bg-base-100 border-base-300 rounded-box p-4 md:p-6 pb-8 mt-2 relative h-auto box-border min-h-0 w-full left-0 right-0 overflow-visible">
+                        {% if foreign_currency_code|upper == "CNY" %}
+                            <div class="alert alert-warning py-3 shadow-sm text-xs rounded-xl flex flex-col items-start gap-1 w-full">
+                                <div class="flex items-center gap-2 font-bold text-warning-content">
+                                    <i class="fa-solid fa-circle-exclamation fa-lg"></i>
+                                    <span>CNY Payments Limit ｜ 人民幣支付限制</span>
+                                </div>
+                                <p class="text-neutral-600 text-[11px] leading-relaxed">
+                                    Online checkout via PayPal is currently unavailable for CNY orders. Please toggle to the second tab to use Manual Bank Transfer or WeChat Pay options.
+                                    <br>
+                                    <span class="text-neutral-500">人民幣訂單暫不支援使用 PayPal 線上支付。請切換至隔壁分頁，使用「銀行轉帳與微信線下保留」完成您的訂單。</span>
+                                </p>
+                            </div>
+                        {% else %}
+                            <p class="text-[11px] text-base-content/70 mb-4">
+                                Instant processing connection. Digital items/vouchers will be dispatched immediately upon successful settlement.
+                                <br><span class="text-neutral-500">線上即時到賬確認，電子商品、禮券權限將在付款成功後隨即自動發送。</span>
+                            </p>
+                            
+                            <div id="paypal_btns" class="w-full min-h-[50px] flex justify-center items-center mb-4">
+                                <button id="paypal_action_trigger" hidden class="btn btn-primary flex gap-3 w-full max-w-xs font-bold uppercase rounded-xl h-auto py-2 min-h-0">
+                                    <span><i class="fa-brands fa-paypal fa-xl"></i></span>
+                                    <span>Pay with PayPal<br>使用PayPal支付</span>
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- PORTAL 2: Manual Bank Transfer 72h Hold Rules -->
+                    <input type="radio" name="payment_tabs" role="tab" class="tab text-xs font-semibold whitespace-nowrap" aria-label="Bank / WeChat ｜ 銀行轉帳與線下匯款" />
+                    
+                    <!-- <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-4 md:p-6 pb-8 mt-2 relative h-auto box-border min-h-0 w-full left-0 right-0 overflow-visible">
+                        <div class="alert alert-info py-2 shadow-sm text-xs mb-4 rounded-xl">
+                            <i class="fa-solid fa-clock"></i>
+                            <span>Items held secure for <strong>72 hours</strong>. ｜ 商品庫存將為您安全鎖定 <strong>72小時</strong>。</span>
+                        </div>
+                        <p class="text-[11px] text-base-content/70 mb-4">
+                            Detailed remittance bank coordinates and custom WeChat accounts collection codes will be instantly dispatched straight onto your primary inbox upon confirmation.
+                            <br><span class="text-neutral-500">確認保留後，詳細的銀行轉帳帳號以及微信支付帳密付款細節將會自動發送到您的電子信箱中。</span>
+                        </p>
+
+                        <form id="manual_hold_form" 
+                            class="w-full pb-4" 
+                            hx-post="{% url 'place_order' proforma_invoice_number %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="payment_method" value="BANK_TRANSFER">
+                            
+                            <button type="submit" id="manual_transfer_submit_btn" class="mx-auto btn btn-secondary flex gap-3 w-full max-w-xs font-bold uppercase rounded-xl h-auto py-2 min-h-0">
+                                <span><i class="fa-solid fa-paper-plane fa-xl"></i></span>
+                                <span>Confirm Hold<br>確認保留並取得轉帳明細</span>
+                            </button>
+                        </form>
+                    </div> -->
+
+                    <!-- PORTAL 2: Manual Bank Transfer 72h Hold Rules -->
+                    <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-4 md:p-6 pb-8 mt-2 relative h-auto box-border min-h-0 w-full left-0 right-0 overflow-visible">
+                        <div class="alert alert-info py-2 shadow-sm text-xs mb-4 rounded-xl">
+                            <i class="fa-solid fa-clock"></i>
+                            <span>Items held secure for <strong>72 hours</strong>. ｜ 商品庫存將為您安全鎖定 <strong>72小時</strong>。</span>
+                        </div>
+                        
+                        <p class="text-[11px] text-base-content/70 mb-4">
+                            Detailed remittance bank coordinates and custom WeChat accounts collection codes will be instantly dispatched straight onto your primary inbox upon confirmation.
+                            <br><span class="text-neutral-500">確認保留後，詳細的銀行轉帳帳號以及微信支付帳密付款細節將會自動發送到您的電子信箱中。</span>
+                        </p>
+
+                        <!-- ⚠️ ATTENTION / NOTICE BOX (CRITICAL FOR CROSS-BORDER TRANSFER COMPLIANCE) -->
+                        <div class="alert alert-error bg-error/10 border-error/20 text-error-content text-left text-[11px] leading-relaxed p-4 mb-5 rounded-xl border">
+                            <div class="flex gap-2 items-start">
+                                <i class="fa-solid fa-triangle-exclamation mt-0.5 text-error"></i>
+                                <div>
+                                    <strong class="text-xs block font-bold mb-1 uppercase tracking-wider">⚠️ Important International Wire Notice ｜ 跨境匯款重要提示</strong>
+                                    <p class="mb-1 text-base-content/90">
+                                        <strong>For Overseas Senders:</strong> Direct international transfers to Mainland Chinese bank accounts are subject to strict foreign exchange control audits. Please ensure your local bank supports outbound wire transfers to China, or select **PayPal/Credit Card** for an instant checkout experience.
+                                    </p>
+                                    <p class="text-neutral-500 font-medium">
+                                        <strong>境外匯款用戶提示：</strong> 直接匯款至中國大陸境內銀行帳戶受嚴格的外匯管制核查。請確保您的本地銀行支持向中國大陸跨境匯款，或建議您更換為 **PayPal / 信用卡** 進行即時安全支付。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- HTMX Form Processing Layer -->
+                        <form id="manual_hold_form" 
+                            class="w-full pb-4" 
+                            hx-post="{% url 'place_order' proforma_invoice_number %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="payment_method" value="BANK_TRANSFER">
+                            
+                            <button type="submit" id="manual_transfer_submit_btn" class="mx-auto btn btn-secondary flex gap-3 w-full max-w-xs font-bold uppercase rounded-xl h-auto py-2 min-h-0">
+                                <span><i class="fa-solid fa-paper-plane fa-xl"></i></span>
+                                <span>Confirm Hold<br>確認保留並取得轉帳明細</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    
+                </div>
+            </div>
+        </div>             
+    </div>
 </main>
 
+<script>
+// Ensure history cleaning listener attaches EXACTLY ONCE across HTMX window swaps
+if (!window.htmxHistoryScrubberAttached) {
+    document.body.addEventListener('htmx:beforeHistorySave', function(evt) {
+        const oobElements = document.querySelectorAll('[hx-swap-oob]');
+        oobElements.forEach(el => el.removeAttribute('hx-swap-oob'));
+        console.log(`🧹 Cleaned ${oobElements.length} OOB elements from history snapshot.`);
+    });
+    window.htmxHistoryScrubberAttached = true;
+}
+
+// 1. Core Timer Validation Loop Engine
+function checkPaymentCurrencyExpiry() {
+    if (Date.now() > window.checkoutTimer.expiryTime) {
+        window.checkoutTimer.currencyExpired = true;
+
+        // Reveal currency expiration warning banner across screen header
+        const warningElement = document.getElementById("price-warning");
+        if (warningElement) warningElement.classList.remove("hidden");
+
+        // Hard-lock interactive gateways immediately to protect original quote valuations
+        const paypalActionButton = document.getElementById("paypal_action_trigger");
+        const manualHoldFormButton = document.getElementById("manual_transfer_submit_btn");
+
+        if (paypalActionButton) {
+            paypalActionButton.setAttribute("disabled", "true");
+            paypalActionButton.style.pointerEvents = "none";
+            paypalActionButton.style.opacity = "0.3";
+        }
+        if (manualHoldFormButton) {
+            manualHoldFormButton.disabled = true;
+            manualHoldFormButton.classList.add("btn-disabled", "opacity-30");
+        }
+
+        // Drop running background interval task to limit memory overheads
+        if (window.checkoutTimer.intervalId) {
+            clearInterval(window.checkoutTimer.intervalId);
+        }
+        console.warn("🚨 Rate expiration threshold passed. Action containers securely isolated.");
+    }
+}
+
+// 2. Centralised View Entry Setup Orchestration
+function setupPlaceOrderLifecycle() {
+    window.checkoutTimer = window.checkoutTimer || {
+        expiryTime: 0,
+        currencyExpired: false,
+        intervalId: null
+    };
+
+    // Parse the strict millisecond epoch marker injected directly from your views context
+    const sessionExpiry = parseInt("{{ rate_expiry_timestamp|default:0 }}", 10);
+    
+    if (sessionExpiry && sessionExpiry > 0) {
+        window.checkoutTimer.expiryTime = sessionExpiry;
+        window.checkoutTimer.currencyExpired = Date.now() > window.checkoutTimer.expiryTime;
+        
+        if (window.checkoutTimer.intervalId) {
+            clearInterval(window.checkoutTimer.intervalId);
+        }
+        
+        // Polling loop interval matches your standard checkout speed metrics (5s checking pass)
+        window.checkoutTimer.intervalId = setInterval(checkPaymentCurrencyExpiry, 5000);
+        checkPaymentCurrencyExpiry();
+    }
+
+    // 💡 CALL THE GLOBAL EXPORTED BUNDLE METHOD SAFELY
+    if (document.getElementById("paypal_btns") && typeof window.initializePayPalSDK === "function") {
+        // Only trigger layout initialization if the rate is actively valid
+        if (!window.checkoutTimer.currencyExpired) {
+            window.initializePayPalSDK();
+        }
+    }
+}
+
+// Bind offline form submission guard explicitly to intercept manual transfers post-expiry
+const manualForm = document.getElementById("manual_hold_form");
+if (manualForm) {
+    manualForm.addEventListener("submit", function(e) {
+        if (window.checkoutTimer && window.checkoutTimer.currencyExpired) {
+            e.preventDefault();
+            alert("Rates lapsed. Transaction halted. ｜ 匯率過期，已攔截庫存鎖定程序。");
+        }
+    });
+}
+
+// Kick off initialization sequence matching DOM readiness state checks
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupPlaceOrderLifecycle);
+} else {
+    setupPlaceOrderLifecycle();
+}
+
+// Sync tracking across HTMX nodes swaps seamlessly without throwing missing selector quirks
+document.body.removeEventListener("htmx:afterProcessNode", window.placeOrderHtmxHandler);
+window.placeOrderHtmxHandler = function(evt) {
+    if (document.getElementById('paypal_btns')) {
+        setupPlaceOrderLifecycle();
+    }
+};
+document.body.addEventListener("htmx:afterProcessNode", window.placeOrderHtmxHandler);
+
+// Clean up running thread timing configurations upon leaving page targets to block code leakage
+document.body.addEventListener('htmx:beforeLeave', function cleanupPlaceOrderPage() {
+    if (window.checkoutTimer && window.checkoutTimer.intervalId) {
+        clearInterval(window.checkoutTimer.intervalId);
+        console.log("🧹 Cleaned place order currency background intervals.");
+    }
+    document.body.removeEventListener('htmx:beforeLeave', cleanupPlaceOrderPage);
+});
+
+// Ensure this event listener maps cleanly across window targets exactly once
+document.addEventListener("errorMssg", function(evt) {
+    console.log("📥 Error Signal Cleared. Intercepted Details:", evt.detail);
+    
+    const payload = evt.detail;
+
+    Swal.fire({
+        title: payload.title,
+        html: payload.text, // Supports bilingually stacked HTML line-breaks cleanly
+        icon: 'error',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+    }).then((result) => {
+        // 💡 REDIRECT ROUTING: If an explicit redirect destination parameter is provided, move the window
+        if (result.isConfirmed && payload.redirect_url) {
+            window.location.href = payload.redirect_url;
+        }
+    });
+});
+
+</script> 
 {% endblock %}
+
+
+<!-- If you are ready to move past the responsive CSS styles, tell me:
+Do you want to build out the place_order POST view next to handle saving the BANK_TRANSFER logic?
+Or shall we write the expiry script task that automatically returns items back to store stock inventory if the 72-hour period passes without a remittance? -->
+
+<!-- Get some well-deserved rest! Tomorrow, whenever you are ready to jump back in, just reply here. 
+We can dive straight into setting up your 72-hour BANK_TRANSFER backend processing view, 
+building out the remittance confirmation email architecture, or handling the automated inventory recovery tasks. -->

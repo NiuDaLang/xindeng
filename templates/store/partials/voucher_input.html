@@ -1,0 +1,18 @@
+{% load humanize %}
+<form hx-post="{% url 'apply_voucher' %}" 
+      hx-swap="none"
+      class="flex gap-2"
+>
+    {% csrf_token %}
+    <input type="number" 
+            name="voucher_amount" 
+            id="voucher_input_field"
+            min="0" step="0.01" 
+            max="{{ max_voucher_enterable|default_if_none:'0.00' }}" 
+            placeholder="Amount to use｜適用金額"
+            class="input input-bordered w-full"
+            {% if cash_voucher_balance == 0 %}disabled{% endif %}
+            required
+    >
+    <button type="submit" class="btn btn-secondary">Apply｜適用</button>
+</form>

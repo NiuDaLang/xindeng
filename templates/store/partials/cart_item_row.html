@@ -1,0 +1,204 @@
+{% load humanize %}
+
+{% if cart_items %}
+    <div class="list bg-base-200 rounded-box shadow-md mb-20 pt-5">
+        {% for item in cart_items %}
+            <div id="cart_item_{{item.id}}">
+                <div class="flex gap-3 p-3">
+                    <!-- # Counter -->
+                    <div class="cart_item_counter flex text-2xl -mt-[5px] font-thin opacity-30 tabular-nums">
+                        {% if forloop.counter < 10 %}<span>0</span>{% endif %}
+                        <span>{{forloop.counter}}</span>
+                    </div>
+                
+                    <!-- Details -->
+                    <div class="flex flex-col flex-grow justify-center">
+                        <div class="price_quantity flex items-start mb-3">
+                            <!-- item-name -->
+                            <a href="{{ item.product_variation.product.get_url }}" class="w-1/2">
+                                <div class="w-full text-[0.8rem] overflow-hidden text-ellipsis whitespace-nowrap">{{item.product_variation.product.product_name}}</div>
+                                <div class="w-full text-[0.6rem] uppercase font-semibold opacity-60 overflow-hidden text-ellipsis whitespace-nowrap">{{item.product_variation.get_sku}}</div>
+                            </a>
+                
+                            <!-- item-quantity (HTMX ENABLED) -->
+                            <form hx-post="{% url 'update_cart_item_qty' item.id %}" 
+                                hx-target="#cart_summary"
+                                class="flex w-[4.5rem] h-[2rem] border-primary text-xs">
+                                {% csrf_token %}
+                                <input type="number" 
+                                    id="quantity_input_{{item.id}}" 
+                                    name="quantity" 
+                                    class="qty w-[2.5rem] rounded-l-[0.8rem] border-y-1 border-l-1 focus:outline-none text-center bg-primary-content font-semibold" 
+                                    value="{{item.quantity}}"
+                                    readonly
+                                />
+                                <div class="flex flex-col justify-center w-[2rem] border-y-1 border-r-1 rounded-r-[0.8rem]">
+                                    <button type="submit" 
+                                        class="h-1/2 cursor-pointer border-l-1 border-b-1 border-base-300 rounded-tr-[0.8rem] hover:bg-base-300 active:scale-90 flex justify-center items-center"
+                                        onclick="let btn = document.getElementById('quantity_input_{{item.id}}'); if(btn.value < {{item.product_variation.stock}}) { btn.value++; btn.setAttribute('value', btn.value); }">
+                                        +
+                                    </button>
+
+                                    <button type="submit" 
+                                        class="h-1/2 cursor-pointer border-l-1 border-base-300 rounded-br-[0.8rem] hover:bg-base-300 active:scale-90 flex justify-center items-center"
+                                        onclick="let btn = document.getElementById('quantity_input_{{item.id}}'); if(btn.value > 1) { btn.value--; btn.setAttribute('value', btn.value); }">
+                                        -
+                                    </button>
+                                </div>
+                            </form>
+
+                            <!-- item-unit_price -->
+                            <div class="text-center w-[calc((50%-4rem)/2)] text-[0.8rem]">
+                                <div class="unit_price text-primary">CNY {{item.product_variation.price|floatformat:2|intcomma}}</div>
+                                <div class="text-error line-through text-[10px]">
+                                    {% if item.product_variation.original_price and item.product_variation.original_price > item.product_variation.price %}
+                                        CNY {{item.product_variation.original_price|floatformat:2|intcomma}}
+                                    {% endif %}
+                                </div>
+                            </div>
+                
+                            <!-- subtotal_price (Updated automatically because it's inside the hx-target) -->
+                            <div id="subtotal_{{item.id}}" class="text-right w-[calc((50%-4rem)/2)] text-[0.8rem] text-base-content font-semibold pr-3">
+                                CNY {{item.subtotal|floatformat:2|intcomma}}
+                            </div>
+                        </div>
+                
+                        <!-- bottom section (image, details, etc) remains the same -->
+                        <div class="flex gap-5">
+                            <div class="md:size-38 aspect-square">
+                                <a href="{{ item.product_variation.product.get_url }}">
+                                    <img class="w-full h-full rounded-box object-cover" src="{{ item.product_variation.images.url }}"/>
+                                </a>
+                            </div>
+                            
+                            <div class="flex w-full">
+                                <!-- details -->
+                                <div class="text-[11px] w-3/5 pr-10">
+                                    <div>
+                                        <b>Product Type｜商品形式：&nbsp;</b>
+                                        {% if item.product_variation.product.is_physical %}
+                                            <i class="fa-solid fa-box-open fa-sm"></i>&nbsp;Physical Product｜實體商品
+                                        {% else %}
+                                            <span class="text-info"><i class="fa-solid fa-download fa-sm"></i>&nbsp;eProduct｜電子商品</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if item.product_variation.product.is_physical %}
+                                        <div><b>Stock｜當前庫存：&nbsp;</b>{{item.product_variation.stock}}</div>
+                                        <div><b>From｜發貨地：&nbsp; </b>中國</div>
+                                        <div><b>Shipping Cost｜配送費用：&nbsp;</b>{% if item.with_shipping %}含|Included{% else %}不含|Not included{% endif %}</div>
+                                    {% endif %}
+                                    <div><b>Size｜尺寸：&nbsp;</b>{% if item.product_variation.size %}{{item.product_variation.size}}{% else %}--{% endif %}</div>
+                                    <div><b>Color｜顏色：&nbsp;</b>{% if item.product_variation.color %}{{item.product_variation.color}}{% else %}--{% endif %}</div>
+                                    <div><b>Type｜種類：&nbsp;</b>{% if item.product_variation.type %}{{item.product_variation.type}}{% else %}--{% endif %}</div>
+                                    <br>
+                                    <div>Please refer to your shipping email for specific details.<br>具體詳情請注意查收發貨郵件</div>
+                                </div>
+                                <!-- option buttons -->
+                                <div id="cart_item_options_{{item.pk}}" class="flex flex-wrap w-2/5 gap-3 content-center">
+                                    {% if user.is_authenticated %}
+                                    <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="以後購買｜Save for later">
+                                        <button type="button" 
+                                                class="btn btn-primary"
+                                                hx-post="{% url 'add_to_wishlist' item.pk %}"
+                                                hx-vals='{"variation_id": "{{ item.product_variation.id }}"}'
+                                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                                hx-swap="none"
+                                                hx-trigger="confirmed"
+                                                onclick="confirmAction(
+                                                    button=this,
+                                                    title='Are you sure?｜您確定嗎？',
+                                                    html=`This item will be moved to wishlist!<br>此寶貝將被移到購物清單中！`,
+                                                    icon='warning',
+                                                    show_cancel=true,
+                                                    confirm_btn_color='#d33',
+                                                    cancel_btn_color='#3085d6',
+                                                    confirm_btn_text='Yes, move it!｜確定轉移！',
+                                                    cancel_btn_text='Cancel｜取消',
+                                                )"
+                                        >
+                                            <i class="w-full fa-solid fa-list"></i>
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                    <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品｜Delete">
+                                        <button type="button" 
+                                                class="btn btn-error"
+                                                hx-post="{% url 'delete_cart_item' item.pk %}"
+                                                hx-vals='{"variation_id": "{{ item.product_variation.id }}"}'
+                                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                                hx-swap="none"
+                                                hx-trigger="confirmed"
+                                                onclick="confirmAction(
+                                                    button=this,
+                                                    title='Are you sure?｜您確定嗎？',
+                                                    html=`This item will be removed from your cart!<br>此寶貝將從您的購物車中移除！`,
+                                                    icon='warning',
+                                                    show_cancel=true,
+                                                    confirm_btn_color='#d33',
+                                                    cancel_btn_color='#3085d6',
+                                                    confirm_btn_text='Yes, remove it!｜確定移除！',
+                                                    cancel_btn_text='Cancel｜取消',
+                                                )"
+                                        >
+                                            <i class="w-full fa-solid fa-trash"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Share is usually a client-side action; if it's just a link, keep it simple -->
+                                    <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="分享｜Share">
+                                        <button type="button"
+                                                class="btn btn-success" 
+                                                data-title="Hṛdayadīpa (हृदयदीप) - {{ item.product_variation.product.product_name }}"
+                                                data-text="{{ item.product_variation.get_sku }}"
+                                                data-link="{{ request.build_absolute_uri }}"
+                                                hx-on:click="share_link(this.getAttribute('data-title'), this.getAttribute('data-text'), this.getAttribute('data-link'))"
+                                        >
+                                            <i class="fa-solid fa-share-from-square"></i>
+                                        </button>
+                                    </div>
+
+                                    {% if user.is_authenticated %}
+                                    <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="Add to favorite｜收藏該產品">
+                                        <button type="button" 
+                                                class="btn btn-secondary"
+                                                hx-post="{% url 'add_to_favorite' item.product_variation.pk %}"
+                                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                                hx-vals='{"list_type": "cart", "item_id": "{{ item.pk }}"}'
+                                                hx-swap="none">
+                                            <i class="w-full fa-solid fa-bookmark"></i>
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% if not forloop.last %}
+                    <div class="divider pl-1/10"></div>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <div id="cart_summary">
+            <div class="border-t-4 border-double border-base-300"></div>
+            <div class="text-right text-md text-base-content font-normal p-3">
+                Sub-Total｜寶貝金額小計
+                <small id="cart_items_quantity_total">(Total｜總 <b>{{cart_items_quantity}}</b> item{% if cart_items_quantity > 1 %}s{% endif %}｜件)</small>
+                :&nbsp;<span id="cart_items_sub_total" class="font-semibold">CNY {{cart_total }}</span>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div id="cart_empty_el" class="flex flex-col justify-center my-[5rem]">
+        <h2 class="h2shadow col-span-2 mx-auto text-center mb-2">YOUR CART IS EMPTY<br>您的購物車是空的</h2>
+        <a href="{% url 'products' category_slug='all' %}" 
+            class="btn btn-wide btn-outline btn-primary mx-auto font-light">
+            繼續選購 ｜ Continue Shopping
+        </a>
+    </div>
+{% endif %}
+
+
+
+

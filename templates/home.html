@@ -1,7 +1,8 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% load static %}
+{% load sekizai_tags %}
 {% block content %}
-    <div class="relative mt-16">
+    <div class="relative mt-[86px]">
         <!-- HERO -->
         {% include 'includes/hero.html' %}
 
@@ -11,23 +12,363 @@
         </div>
     </div>
 
+    <!-- BLOG / INFO -->
+    <div class="px-[max(1rem,5vw)] mt-30">
+        {% include 'includes/posts_fibonacci.html' %}
+    </div>
+
     <!-- HIGHLIGHTS -->
-    <div class="px-[max(1rem,5vw)] py-30">
+    <div class="px-[max(1rem,5vw)] pt-40 pb-10">
         {% include 'includes/highlights.html' %}
     </div>
 
     <!-- PRODUCTS SELECTION -->
-    <div class="px-[max(1rem,5vw)] pt-20 pb-30 bg-primary-content">
+    <div class="px-[max(1rem,5vw)] pt-20 pb-50">
         {% include 'includes/collection.html' %}
     </div>
 
     <!-- ABOUT -->
-    <div class="px-[max(1rem,5vw)] bg-[url(/static/hero/purpleFlower.svg)] bg-cover bg-center">
+    <div class="px-[max(1rem,5vw)] mb-50">
         {% include 'includes/about_section.html' %}
     </div>
 
-    <!-- MEMBERSHIP -->
-    <div class="px-[max(1rem,5vw)] py-30 bg-info-content">
-        {% include 'includes/member_section.html' %}
+    <!-- 2D SHOWCASE -->
+    <div class="-mb-[1px]">
+        {% include 'includes/two_d_canvas.html' %}
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // (1) Questionnaire color pick color change
+            const q_color_select = document.querySelector("#q-color-select")
+            q_color_select.addEventListener("change", (e) => {
+                const select = e.target
+                const selectOption = select.options[select.selectedIndex]
+                const selectedColor = selectOption.value
+                select.style.color = selectedColor
+            })
+
+            // (2) highlight svg animation
+            function shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+            
+            function showImage(){
+                mug_rack_img.classList.add("is_visible")
+                mug_rack_img.classList.remove("opacity-0")
+            }
+
+            function hideImage(){
+                if(!mug_rack_img.classList.contains("opacity-0")){
+                    mug_rack_img.classList.add("opacity-0")
+                }
+                if(mug_rack_img.classList.contains("is_visible")){
+                    mug_rack_img.classList.remove("is_visible")
+                }
+            }
+
+            const sleep = (ms, signal) => {
+                return new Promise((resolve, reject) => {
+                    const timer = setTimeout(resolve, ms);
+                    
+                    // If the signal is aborted, clear the timeout and reject the promise
+                    signal?.addEventListener('abort', () => {
+                        console.log("sleep abort")
+                        clearTimeout(timer);
+                        reject(new Error('Cancelled by user'));
+                    });
+                });
+            };
+
+            async function drawOneCup(cup, signal){
+                const cup_el = cup.cup
+                if(cup_el.classList.contains("opacity-0")){
+                    cup_el.classList.remove("opacity-0")
+                }
+                const cup_drawings = cup_el.querySelectorAll(".cup_drawing")
+                cup_drawings.forEach(cup_drawing => {
+                    if(!cup_drawing.classList.contains("is_visible")){
+                        cup_drawing.classList.add("is_visible")
+                    }
+                })
+                await sleep(cup.total_cup_drawing_time, signal)
+
+            }
+
+            const controllers = new Map();
+
+            async function drawCup(isIntersecting, cups_list, signal) {
+                const shuffled_cups = []
+                shuffled_order.map(order => {
+                    const cup = cups_list[order]
+                    const num_of_cup_drawings = cup.querySelectorAll(".cup_drawing").length
+                    const total_cup_drawing_time = cup_stroke_drawing_time * num_of_cup_drawings
+                    shuffled_cups.push({cup, total_cup_drawing_time})
+                })
+                if (isIntersecting) {
+                    try {
+                        await sleep(3000, signal);
+                        // 3. Perform your side effect (only if not aborted)
+                        for (const cup of shuffled_cups) {
+                            if (signal?.aborted) return
+
+                            await drawOneCup(cup, signal)
+
+                            if (signal?.aborted) return
+                        }
+                        await sleep(500, signal)
+                        showImage()
+                        
+                    } catch (err) {
+                        if (err.name === 'AbortError' || err.message === 'Cancelled by user') {
+                            console.log("Cleanly cancelled - no side effects applied.");
+                        }
+                    }
+                }
+            }
+            
+            function eraseCup(cups_array){
+                for(const cup of cups_array){
+                    if(!cup.classList.contains("opacity-0")){
+                        cup.classList.add("opacity-0")
+                    }
+                    const cup_drawings = cup.querySelectorAll(".cup_drawing")
+                    cup_drawings.forEach(cup_drawing => {
+                        if(cup_drawing.classList.contains("is_visible")){
+                            cup_drawing.classList.remove("is_visible")
+                        }
+                    })
+                }
+            }
+
+            const cups = [...document.querySelectorAll(".cup")];
+            const cup_order = Array.from({length: cups.length}, (_, i) => i)
+            const shuffled_order = shuffle(cup_order)
+            const cup_stroke_drawing_time = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cup_drawing_time')); // :root css
+
+            const options = {threshold: 0.3}; // x% of the element must be visible
+            
+            const observer = new IntersectionObserver((entries) => {
+                const mug_rack = document.querySelector("#mug_rack")
+                const mug_rack_img = document.querySelector("#mug_rack_img")
+                const frame = document.querySelector("#frame")
+                const frame_parts = [...document.querySelectorAll(".frame_part")]
+                const cups = document.querySelector("#cups")
+                const cups_list = [...document.querySelectorAll(".cup")]
+                const cup_drawings = [...document.querySelectorAll(".cup_drawing")]
+
+                if(cups_list.length != 0) {
+                    entries.forEach(entry => {
+                        const target = entry.target
+                        // If element is in view
+                        if(entry.isIntersecting){
+                            const controller = new AbortController()
+                            controllers.set(target, controller)
+
+                            // wait for 2 seconds before condition is deemed to be met
+                            target.timer = setTimeout(() => {
+                                // show frame
+                                if(frame.classList.contains("opacity-0")){
+                                    frame.classList.remove("opacity-0")
+                                }
+                                frame_parts.map(frame => {
+                                    if(!frame.classList.contains('is_visible')){
+                                        frame.classList.add("is_visible")
+                                    }
+                                })
+                                // show cups
+                                cups.style.opacity = 1
+                                if(cups.classList.contains("opacity-0")){
+                                    cups.classList.remove("opacity-0")
+                                }
+                                drawCup(true, cups_list, controller.signal)
+                            }, 300)
+                            
+                        } else {
+                            // If it leaves before 2 seconds, cancel the timer
+                            clearTimeout(target.timer)
+                            // hide frame
+                            if(!frame.classList.contains("opacity-0")){
+                                frame.classList.add("opacity-0")
+                            }
+                            frame_parts.map(frame => {
+                                if(frame.style.opacity == 1){frame.style.opacity = 0}
+                                if(frame.classList.contains("is_visible")){
+                                    frame.classList.remove("is_visible")
+                                }
+                            })
+                            // hide cups
+                            if(!cups.classList.contains("opacity-0")){
+                                cups.classList.add("opacity-0")
+                            }
+                            // Signal the drawing function to STOP immediately
+                            if(controllers.has(target)){
+                                controllers.get(target).abort()
+                                controllers.delete(target)
+                            }
+                            // cleanup/reset UI
+                            eraseCup(cups_list)
+                            hideImage()
+                        }
+                    })
+                }
+            }, options)
+
+            document.querySelectorAll("#highlight_svg_animation").forEach(el => observer.observe(el))            
+            
+            // (3) ABOUT section animation
+            class Pixel {
+                constructor(x, y, r, g, b, parent) {
+                    this.parent = parent;
+                    this.x = this.oldX = x;
+                    this.y = this.oldY = y;
+                    this.r = r;
+                    this.g = g;
+                    this.b = b;
+                    this.gravity = 0.1;
+                }
+                update() {
+                    let dx = this.x - this.parent.mouse.x;
+                    let dy = this.y - this.parent.mouse.y;
+                    
+                    // Your original fluid physics formula
+                    let shift = Math.pow(dx * dx + dy * dy, 0.6); 
+                    let angle = -Math.atan2(dy, dx);
+                    
+                    let moveX = (this.parent.size / shift) * Math.cos(angle);
+                    let moveY = (this.parent.size / shift) * Math.sin(angle);
+                    
+                    this.x += moveX + (this.oldX - this.x) * this.gravity;
+                    this.y += moveY + (this.oldY - this.y) * this.gravity;
+                }
+            }
+
+            const c = {
+                canvas: document.querySelector('#main_canvas'),
+                wrapper: document.querySelector('#canvas_wrapper'),
+                backup: document.querySelector('#canvas_backup'),
+                ctx: null,
+                pix: [],
+                step: 4,
+                mouse: { x: -1000, y: -1000 },
+                size: 0,
+
+                async main() {
+                    try {
+                        this.ctx = this.canvas.getContext("2d", { willReadFrequently: true });
+                        const img = new Image();
+                        img.src = "/static/images/canvas/dream.JPG";
+                        
+                        await new Promise((resolve, reject) => {
+                            img.onload = resolve;
+                            img.onerror = reject;
+                            if (img.complete) resolve();
+                        });
+                        this.init(img);
+                    } catch (err) {
+                        console.error("Canvas setup failed", err);
+                    }
+                },
+
+                init(img) {
+                    this.w = this.canvas.width = this.wrapper.clientWidth;
+                    this.h = this.canvas.height = this.wrapper.clientHeight;
+                    
+                    // 1. Maintain Original Aspect Ratio (Floating effect)
+                    let imgRatio = img.naturalWidth / img.naturalHeight;
+                    let drawW = this.w * 0.7; // Image takes up 70% of width
+                    let drawH = drawW / imgRatio;
+                    
+                    // If height is too tall for canvas, scale by height instead
+                    if (drawH > this.h * 0.7) {
+                        drawH = this.h * 0.7;
+                        drawW = drawH * imgRatio;
+                    }
+
+                    let offsetX = (this.w - drawW) / 2;
+                    let offsetY = (this.h - drawH) / 2;
+
+                    // 2. Adjust mouse sensitivity based on image size
+                    this.size = (drawW + drawH) * 8; 
+
+                    this.ctx.clearRect(0, 0, this.w, this.h);
+                    this.ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+                    
+                    const p = this.ctx.getImageData(0, 0, this.w, this.h).data;
+                    this.ctx.clearRect(0, 0, this.w, this.h);
+
+                    for (let y = 0; y < this.h; y += this.step) {
+                        for (let x = 0; x < this.w; x += this.step) {
+                            let i = (y * this.w + x) * 4;
+                            if (p[i + 3] > 0) {
+                                // 3. Pre-brighten colors here for performance
+                                let r = Math.min(255, p[i] * 1.3);
+                                let g = Math.min(255, p[i + 1] * 1.3);
+                                let b = Math.min(255, p[i + 2] * 1.3);
+                                this.pix.push(new Pixel(x, y, r, g, b, this));
+                            }
+                        }
+                    }
+
+                    this.canvas.style.opacity = "1";
+                    this.backup.style.display = "none";
+                    this.loop();
+                },
+
+                draw() {
+                    // Using ImageData is much faster for thousands of points
+                    let imgData = this.ctx.createImageData(this.w, this.h);
+                    let data = imgData.data;
+
+                    // Fill Background (#010f20)
+                    for (let i = 0; i < data.length; i += 4) {
+                        data[i] = 1; data[i + 1] = 15; data[i + 2] = 32; data[i + 3] = 255;
+                    }
+
+                    for (let p of this.pix) {
+                        p.update();
+                        let x = Math.floor(p.x);
+                        let y = Math.floor(p.y);
+
+                        if (x >= 0 && x < this.w && y >= 0 && y < this.h) {
+                            // Draw a small block based on step size to fill gaps
+                            for (let oy = 0; oy < this.step - 1; oy++) {
+                                for (let ox = 0; ox < this.step - 1; ox++) {
+                                    let curX = x + ox;
+                                    let curY = y + oy;
+                                    if (curX < this.w && curY < this.h) {
+                                        let idx = (curY * this.w + curX) * 4;
+                                        data[idx] = p.r;
+                                        data[idx + 1] = p.g;
+                                        data[idx + 2] = p.b;
+                                        data[idx + 3] = 255;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    this.ctx.putImageData(imgData, 0, 0);
+                },
+
+                loop() {
+                    this.draw();
+                    requestAnimationFrame(() => this.loop());
+                }
+            };
+
+            c.wrapper.addEventListener("mousemove", (e) => {
+                const rect = c.canvas.getBoundingClientRect();
+                c.mouse.x = e.clientX - rect.left;
+                c.mouse.y = e.clientY - rect.top;
+            });
+
+            c.main();
+
+        })
+    </script>
 {% endblock %}
+

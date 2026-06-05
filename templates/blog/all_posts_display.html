@@ -1,0 +1,395 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- BANNER -->
+<div class="relative mt-[67px] lg:mt-[86px] w-full">
+    {% include 'includes/banner.html' %}
+</div>
+<!-- MAIN -->
+<main class="px-[max(1rem,5vw)] lg:px-[max(2rem,10vw)] xl:px-[max(3rem,10vw)] pb-20 min-h-[calc(100dvh-200px)]">
+    <!-- Posts Display -->
+    <div class="w-full max-w-[1500px]">
+        <!-- block 1 -->
+        {% if available_posts|length != 1 %}
+        <div class="flex h-[6rem] sm:h-[3rem]">
+            <div class="w-1/6 h-full"></div>
+            <div class="{% if available_posts|length > 2 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+            <div class="post_card w-1/6 h-full"></div>
+            <div class="{% if available_posts|length > 3 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+            <div class="{% if available_posts|length > 1 %} post_card {% endif %} w-1/6 h-full"></div>
+            <div class="{% if available_posts|length > 4 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+        </div>
+        {% endif %}
+        <!-- block 2 post 1, 2 -->
+        <div class="relative w-full py-15">
+            <!-- grid -->
+            <div class="absolute flex flex-col left-0 top-0 w-full h-full">
+                <div class="w-full h-1/2 flex">
+                    <div class="w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 2 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                    <div class="post_card w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 3 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 1 %} post_card {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 4 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                </div>
+                <div class="w-full h-1/2 flex">
+                    <div class="w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 2 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 3 %} post_card {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 3 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 6 %} post_card {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 4 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                </div>
+            </div>
+            <!-- cards -->
+            <div class="flex justify-center gap-[4%] items-start">
+                <!-- left post 1 -->
+                <div class="w-1/2 flex justify-end z-10">
+                    <div class="aspect-video relative translate-x-1/5 sm:translate-x-0 translate-y-[50%] sm:translate-y-1/3 transition-[outline] rounded-2xl duration-200 ease-in-out outline-0 outline-transparent outline-offset-2 grid image-full w-[120%] shrink-0 sm:w-[60%] shadow-sm">
+                        <figure class="overflow-hidden rounded-2xl col-start-1 row-start-1 ">
+                            <img class="w-full h-full object-cover" src="{{ available_posts.0.featured_image.url }}" alt="{{ available_posts.0.title }}" />
+                        </figure>
+                        <div class="card-body col-start-1 row-start-1 relative text-white text-shadow-lg/30">
+                            <h2 class="text-[0.7rem] sm:text-[0.775rem] md:text-sm font-semibold line-clamp-2">{{ available_posts.0.title }}</h2>
+                            <p class="text-[0.6rem] sm:text-[0.65rem] md:text-xs line-clamp-3">{{ available_posts.0.short_description }}</p>
+                            <div class="card-actions justify-end">
+                                <a href="{{ available_posts.0.get_url }}" class="btn btn-xs btn-primary text-[0.65rem] sm:text-[0.75rem]">Read｜閱讀</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- right post 2 -->
+                <div class="w-1/2 flex justify-start">
+                    {% if available_posts|length > 1 %}
+                    <div class="ml-2 aspect-video relative -translate-x-[30%] sm:translate-x-0 -translate-y-[calc(50%+30px)] sm:-translate-y-1/4 transition-[outline] rounded-2xl duration-200 ease-in-out outline-0 outline-transparent outline-offset-2 grid image-full w-[120%] shrink-0 sm:w-[60%] shadow-sm">
+                        <figure class="overflow-hidden rounded-2xl col-start-1 row-start-1 ">
+                            <img class="w-full h-full object-cover" src="{{ available_posts.1.featured_image.url }}" alt="{{ available_posts.1.title }}" />
+                        </figure>
+                        <div class="card-body col-start-1 row-start-1 relative text-white text-shadow-lg/30">
+                            <h2 class="text-[0.7rem] sm:text-[0.775rem] md:text-sm font-semibold line-clamp-2">{{ available_posts.1.title }}</h2>
+                            <p class="text-[0.6rem] sm:text-[0.65rem] md:text-xs line-clamp-3">{{ available_posts.1.short_description }}</p>
+                            <div class="card-actions justify-end">
+                                <a href="{{ available_posts.1.get_url }}" class="btn btn-xs btn-primary text-[0.65rem] sm:text-[0.75rem]">Read｜閱讀</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% if available_posts|length > 2 %}
+        <!-- block 3 post 3, 4, 5 -->
+        <div class="relative w-full py-90 sm:py-10">
+            <!-- grid -->
+            <div class="absolute flex flex-col left-0 top-0 w-full h-full">
+                <div class="w-full h-1/2 flex">
+                    <div class="w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 2 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 5 %} post_card {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 3 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 6 %} post_card {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 4 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                </div>
+                <div class="w-full h-1/2 flex">
+                    <div class="w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 7 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 5 %} post_card {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 8 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 6 %} post_card {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 9 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                </div>
+            </div>
+            <!-- cards -->
+            <div class="flex w-full justify-between gap-3 items-center">
+                <!-- left post 3 -->
+                <div class="w-1/3 flex justify-center z-5">
+                    {% if available_posts|length > 2 %}
+                    <div class="flex flex-col translate-x-[100%] sm:translate-x-0 -translate-y-[100%] sm:translate-y-1/3 transition-[outline] rounded-2xl duration-200 ease-in-out outline-0 outline-transparent outline-offset-2 w-[160%] shrink-0 sm:w-[90%] lg:w-[85%] shadow-sm">
+                        <figure class="overflow-hidden rounded-t-2xl w-full">
+                            <img class="w-full aspect-video object-cover" src="{{ available_posts.2.featured_image.url }}" alt="{{ available_posts.2.title }}" />
+                        </figure>
+                        <div class="card-body relative text-neutral text-shadow-lg/10 bg-base-100">
+                            <h2 class="text-[0.7rem] sm:text-[0.775rem] md:text-sm font-semibold line-clamp-2">{{ available_posts.2.title }}</h2>
+                            <p class="text-[0.6rem] sm:text-[0.65rem] md:text-xs line-clamp-3">{{ available_posts.2.short_description }}</p>
+                            <div class="card-actions justify-end">
+                                <a href="{{ available_posts.2.get_url }}" class="btn btn-xs btn-primary text-[0.65rem] sm:text-[0.75rem]">Read｜閱讀</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- center post 4 -->
+                <div class="w-1/3 flex justify-center z-5">
+                    {% if available_posts|length > 3 %}
+                    <div class="flex flex-col -translate-x-[33%] sm:translate-x-0 translate-y-[10%] sm:translate-y-0 transition-[outline] rounded-2xl duration-200 ease-in-out outline-0 outline-transparent outline-offset-2 w-[160%] shrink-0 sm:w-[90%] lg:w-[85%] shadow-sm">
+                        <figure class="overflow-hidden rounded-t-2xl w-full">
+                            <img class="w-full aspect-video object-cover" src="{{ available_posts.3.featured_image.url }}" alt="{{ available_posts.3.title }}" />
+                        </figure>
+                        <div class="card-body relative text-neutral text-shadow-lg/10 bg-base-100">
+                            <h2 class="text-[0.7rem] sm:text-[0.775rem] md:text-sm font-semibold line-clamp-2">{{ available_posts.3.title }}</h2>
+                            <p class="text-[0.6rem] sm:text-[0.65rem] md:text-xs line-clamp-3">{{ available_posts.3.short_description }}</p>
+                            <div class="card-actions justify-end">
+                                <a href="{{ available_posts.3.get_url }}" class="btn btn-xs btn-primary text-[0.65rem] sm:text-[0.75rem]">Read｜閱讀</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- right post 5 -->
+                <div class="w-1/3 flex justify-center z-5">
+                    {% if available_posts|length > 4 %}
+                    <div class="flex flex-col -translate-x-[35%] sm:translate-x-0 translate-y-[115%] sm:-translate-y-1/3 transition-[outline] rounded-2xl duration-200 ease-in-out outline-0 outline-transparent outline-offset-2 w-[160%] shrink-0 sm:w-[90%] lg:w-[85%] shadow-sm">
+                        <figure class="overflow-hidden rounded-t-2xl w-full">
+                            <img class="w-full aspect-video object-cover" src="{{ available_posts.4.featured_image.url }}" alt="{{ available_posts.4.title }}" />
+                        </figure>
+                        <div class="card-body relative text-neutral text-shadow-lg/10 bg-base-100">
+                            <h2 class="text-[0.7rem] sm:text-[0.775rem] md:text-sm font-semibold line-clamp-2">{{ available_posts.4.title }}</h2>
+                            <p class="text-[0.6rem] sm:text-[0.65rem] md:text-xs line-clamp-3">{{ available_posts.4.short_description }}</p>
+                            <div class="card-actions justify-end">
+                                <a href="{{ available_posts.4.get_url }}" class="btn btn-xs btn-primary text-[0.65rem] sm:text-[0.75rem]">Read｜閱讀</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>            
+        </div>
+        {% endif %}
+        {% if available_posts|length > 5 %}
+        <!-- block 4 post 6, 7 -->
+        <div class="relative w-full py-30 sm:py-15">
+            <!-- grid -->
+            <div class="absolute flex flex-col left-0 top-0 w-full h-full">
+                <div class="w-full h-1/2 flex">
+                    <div class="w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 7 %} post_card_odd {% endif %}  w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 5 %} post_card {% endif %}  w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 8 %} post_card_odd {% endif %}  w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 6 %} post_card {% endif %}  w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 9 %} post_card_odd {% endif %}  w-1/6 h-full"></div>
+                </div>
+                <div class="w-full h-1/2 flex">
+                    <div class="w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 7 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 7 %} post_card_last {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 8 %} post_card_odd {% endif %}  w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 6 %} post_card_last {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 9 %} post_card_odd {% endif %}  w-1/6 h-full"></div>
+                </div>
+            </div>
+            <!-- cards -->
+            <div class="flex justify-center gap-[4%] items-start">
+                <!-- left post 6 -->
+                <div class="w-1/2 flex justify-end z-10">
+                    {% if available_posts|length > 5 %}
+                    <div class="aspect-video relative translate-x-[25%] sm:translate-x-0 -translate-y-[40%] sm:translate-y-1/3 transition-[outline] rounded-2xl duration-200 ease-in-out outline-0 outline-transparent outline-offset-2 grid image-full w-[120%] shrink-0 sm:w-[60%] shadow-sm">
+                        <figure class="overflow-hidden rounded-2xl col-start-1 row-start-1 ">
+                            <img class="w-full h-full object-cover" src="{{ available_posts.5.featured_image.url }}" alt="{{ available_posts.5.title }}" />
+                        </figure>
+                        <div class="card-body col-start-1 row-start-1 relative text-white text-shadow-lg/30">
+                            <h2 class="text-[0.7rem] sm:text-[0.775rem] md:text-sm font-semibold line-clamp-2">{{ available_posts.5.title }}</h2>
+                            <p class="text-[0.6rem] sm:text-[0.65rem] md:text-xs line-clamp-3">{{ available_posts.5.short_description }}</p>
+                            <div class="card-actions justify-end">
+                                <a href="{{ available_posts.5.get_url }}" class="btn btn-xs btn-primary text-[0.65rem] sm:text-[0.75rem]">Read｜閱讀</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- right post 7 -->
+                <div class="w-1/2 flex justify-start z-10">
+                    {% if available_posts|length > 6 %}
+                    <div class="ml-2 aspect-video relative -translate-x-[25%] sm:translate-x-0 translate-y-[75%] sm:-translate-y-1/4 transition-[outline] rounded-2xl duration-200 ease-in-out outline-0 outline-transparent outline-offset-2 grid image-full w-[120%] shrink-0 sm:w-[60%] shadow-sm">
+                        <figure class="overflow-hidden rounded-2xl col-start-1 row-start-1 ">
+                            <img class="w-full h-full object-cover" src="{{ available_posts.6.featured_image.url }}" alt="{{ available_posts.6.title }}" />
+                        </figure>
+                        <div class="card-body col-start-1 row-start-1 relative text-white text-shadow-lg/30">
+                            <h2 class="text-[0.7rem] sm:text-[0.775rem] md:text-sm font-semibold line-clamp-2">{{ available_posts.6.title }}</h2>
+                            <p class="text-[0.6rem] sm:text-[0.65rem] md:text-xs line-clamp-3">{{ available_posts.6.short_description }}</p>
+                            <div class="card-actions justify-end">
+                                <a href="{{ available_posts.6.get_url }}" class="btn btn-xs btn-primary text-[0.65rem] sm:text-[0.75rem]">Read｜閱讀</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% if available_posts|length > 7 %}
+        <!-- block 5 post 8, 9, 10 -->
+        <div class="relative w-full py-80 sm:py-10">
+            <!-- grid -->
+            <div class="absolute flex flex-col left-0 top-0 w-full h-full">
+                <div class="w-full h-1/3 sm:h-1/2 flex">
+                    <div class="w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 7 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 7 %} post_card_last {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 8 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 8 %} post_card_last {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 9 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                </div>
+                <div class="w-full h-1/3 sm:h-1/2 flex">
+                    <div class="w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 7 %} post_card_odd {% endif %} w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 9 %} post_card_last {% endif %} w-1/6 h-full"></div>
+                    <div class="w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 8 %} post_card_last {% endif %} w-1/6 h-full"></div>
+                    <div class="w-1/6 h-full"></div>
+                </div>
+                <div class="flex w-full h-1/3 sm:hidden">
+                    <div class="w-1/6 h-full"></div>
+                    <div class="w-1/6 h-full"></div>
+                    <div class="{% if available_posts|length > 9 %} mobile_bottom {% endif %} w-1/6 h-full"></div>
+                    <div class="w-1/6 h-full"></div>
+                    <div class="w-1/6 h-full"></div>
+                    <div class="w-1/6 h-full"></div>
+                </div>
+            </div>
+            <!-- cards -->
+            <div class="flex w-full justify-between gap-3 items-center">
+                <!-- left post 8 -->
+                <div class="w-1/3 flex justify-center z-5">
+                    {% if available_posts|length > 7 %}
+                    <div class="flex flex-col translate-x-[35%] sm:translate-x-0 -translate-y-[100%] sm:translate-y-1/3 transition-[outline] rounded-2xl duration-200 ease-in-out outline-0 outline-transparent outline-offset-2 w-[160%] shrink-0 sm:w-[90%] lg:w-[85%] shadow-sm">
+                        <figure class="overflow-hidden rounded-t-2xl w-full">
+                            <img class="w-full aspect-video object-cover" src="{{ available_posts.7.featured_image.url }}" alt="{{ available_posts.7.title }}" />
+                        </figure>
+                        <div class="card-body relative text-neutral text-shadow-lg/10 bg-base-100">
+                            <h2 class="text-[0.7rem] sm:text-[0.775rem] md:text-sm font-semibold line-clamp-2">{{ available_posts.7.title }}</h2>
+                            <p class="text-[0.6rem] sm:text-[0.65rem] md:text-xs line-clamp-3">{{ available_posts.7.short_description }}</p>
+                            <div class="card-actions justify-end">
+                                <a href="{{ available_posts.7.get_url }}" class="btn btn-xs btn-primary text-[0.65rem] sm:text-[0.75rem]">Read｜閱讀</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- center post 9 -->
+                <div class="w-1/3 flex justify-center z-5">
+                    {% if available_posts|length > 8 %}
+                    <div class="flex flex-col translate-x-[35%] sm:translate-x-0 translate-y-[15%] sm:translate-y-0 transition-[outline] rounded-2xl duration-200 ease-in-out outline-0 outline-transparent outline-offset-2 w-[160%] shrink-0 sm:w-[90%] lg:w-[85%] shadow-sm">
+                        <figure class="overflow-hidden rounded-t-2xl w-full">
+                            <img class="w-full aspect-video object-cover" src="{{ available_posts.8.featured_image.url }}" alt="{{ available_posts.8.title }}" />
+                        </figure>
+                        <div class="card-body relative text-neutral text-shadow-lg/10 bg-base-100">
+                            <h2 class="text-[0.7rem] sm:text-[0.775rem] md:text-sm font-semibold line-clamp-2">{{ available_posts.8.title }}</h2>
+                            <p class="text-[0.6rem] sm:text-[0.65rem] md:text-xs line-clamp-3">{{ available_posts.8.short_description }}</p>
+                            <div class="card-actions justify-end">
+                                <a href="{{ available_posts.8.get_url }}" class="btn btn-xs btn-primary text-[0.65rem] sm:text-[0.75rem]">Read｜閱讀</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- right post 10 -->
+                <div class="w-1/3 flex justify-center z-5">
+                    {% if available_posts|length > 9 %}
+                    <div class="flex flex-col translate-y-[135%] sm:-translate-y-1/3 -translate-x-[100%] sm:translate-x-0 transition-[outline] rounded-2xl duration-200 ease-in-out outline-0 outline-transparent outline-offset-2 w-[160%] shrink-0 sm:w-[90%] lg:w-[85%] shadow-sm">
+                        <figure class="overflow-hidden rounded-t-2xl w-full">
+                            <img class="w-full aspect-video object-cover" src="{{ available_posts.9.featured_image.url }}" alt="{{ available_posts.9.title }}" />
+                        </figure>
+                        <div class="card-body relative text-neutral text-shadow-lg/10 bg-base-100">
+                            <h2 class="text-[0.7rem] sm:text-[0.775rem] md:text-sm font-semibold line-clamp-2">{{ available_posts.9.title }}</h2>
+                            <p class="text-[0.6rem] sm:text-[0.65rem] md:text-xs line-clamp-3">{{ available_posts.9.short_description }}</p>
+                            <div class="card-actions justify-end">
+                                <a href="{{ available_posts.9.get_url }}" class="btn btn-xs btn-primary text-[0.65rem] sm:text-[0.75rem]">Read｜閱讀</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>            
+        </div>
+        {% endif %}
+        <!-- pagination -->
+        <div class="w-full text-center my-[10rem]">
+            {% if available_posts.has_other_pages %}
+                <ul class="join">
+                    {% if available_posts.has_previous %}
+                        <li class="join-item btn"><a href="?page={{ available_posts.previous_page_number }}">«</a></li>
+                        {% else %}
+                        <li class="join-item btn btn-disabled"><a href="#">«</a></li>
+                    {% endif %}
+                    <button class="join-item btn">{{ available_posts.number }} / {{ available_posts.paginator.num_pages }}</button>
+                    {% if available_posts.has_next %}
+                        <li class="join-item btn"><a href="?page={{ available_posts.next_page_number }}">»</a></li>
+                    {% else %}
+                        <li class="join-item btn btn-disabled"><a href="#">»</a></li>
+                    {% endif %}
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Search 【MODAL】-->
+    <div class="relative card w-full min-h-[5rem] justify-center items-center ">
+        <!-- modal -->
+        <dialog id="blog_search" class="modal">
+            <div class="modal-box bg-info-content relative">
+                <div class="modal-action py-[2rem] px-[3rem]">
+                    <!-- form -->
+                    <form action="" method="GET" class="flex gap-1">
+                        <label class="w-full input">
+                            <svg class="h-[1em] opacity-50" viewBox="0 0 24 24">
+                                <g
+                                  stroke-linejoin="round"
+                                  stroke-linecap="round"
+                                  stroke-width="2.5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                >
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.3-4.3"></path>
+                                </g>
+                            </svg>
+                            <input type="search" class="grow w-full" placeholder="Search Post｜搜索筆記" />
+                            <kbd class="kbd kbd-sm">⌘</kbd>
+                            <kbd class="kbd kbd-sm">K</kbd>
+                        </label>  
+                        <button class="btn btn-secondary" type="submit">Search｜搜索</button>              
+                    </form>
+                    <!-- close button -->
+                    <form method="dialog">
+                        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+                    </form>
+                </div>
+            </div>
+        </dialog>
+    </div>
+
+    <style>
+        @media screen and (min-width: 640px) {
+            .post_card_odd {
+                border-image-slice: 37; /* Adjust based on your PNG's thickness */
+                border-image-width: 5px;
+                border-image-outset: 0;
+                border-image-repeat: stretch repeat;
+                border-left: 10px solid transparent; 
+                border-image-source: url('/media/images/miscellaneous/string.png');
+            }
+        }
+        @media screen and (max-width: 639px){
+            .post_card_last, .mobile_bottom {
+                border-image-slice: 37; /* Adjust based on your PNG's thickness */
+                border-image-width: 5px;
+                border-image-outset: 0;
+                border-image-repeat: stretch repeat;
+                border-left: 10px solid transparent; 
+                border-image-source: url('/media/images/miscellaneous/string.png');
+            }
+        }
+        .post_card {
+            border-image-slice: 37; /* Adjust based on your PNG's thickness */
+            border-image-width: 5px;
+            border-image-outset: 0;
+            border-image-repeat: stretch repeat;
+            border-left: 10px solid transparent; 
+            border-image-source: url('/media/images/miscellaneous/string.png');
+        }
+    </style>
+
+</main>
+
+{% endblock %}

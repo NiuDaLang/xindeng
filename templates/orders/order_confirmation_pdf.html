@@ -1,0 +1,835 @@
+<!-- {% load django_vite %} -->
+{% load humanize %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ page_title }}{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128&family=Noto+Sans+TC:wght@100..900&family=Zalando+Sans:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
+    <!-- {% vite_hmr_client %}
+    {% vite_asset 'static/js/main.js' %} -->
+
+     <style>
+        /* Define the physical page size and margins */
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+            border: 15px solid #afafaf;
+            border-left-color: #838383;
+            border-right-color: #838383;
+            padding: 2rem 0;
+        }
+        /* Essential reset for the screen view and PDF conversion */
+        html {
+            background-color: #F7F5F2;
+            color: #686360;
+        }
+        body {
+            min-height: 100%;            
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        .noto-sans-tc-300 {
+            font-family: "Noto Sans TC", sans-serif;
+            font-weight: 300;
+            font-style: normal;
+        }
+
+        /* Container div with standard 96 DPI A4 width */
+        .order_info_container {
+            margin: 0 auto;
+            width: 210mm; /* Best practice to use physical units */
+            background: #fff;
+            padding: 2rem 3rem;
+            box-sizing: border-box;
+            border: 0 solid;
+        }
+        .form_header {
+            text-align: center;
+            display: flex;
+            align-items: center;
+        }
+        /* .logo_box {
+            height: 2.5rem;
+            width: 2.5rem;
+        } */
+        .logo_box { float: left; width: 40px; height: 40px; }
+        .w-full {
+            width: 100%;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        /* .object-cover {
+            object-fit: cover;
+        } */
+        .table-xs {
+            :not(thead, tfoot) tr {
+                font-size: 0.6875rem;
+            }
+        }
+        .rounded-md {
+            border-radius: 0.375rem;
+        }
+        .h-full {
+            height: 100%;
+        }
+        /* .shop_name {
+            margin-left: 0.5rem;
+            font-size: 1.25rem;
+            font-weight: 400;
+        } */
+        .shop_name { float: left; line-height: 40px; margin-left: 10px; }
+
+        .order_title {
+            margin: 2rem 0;
+            font-size: 2rem;
+            font-weight: 500;
+        }
+        .text-base-content {
+            color: #686360;
+        }
+        .greeting {
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        .section_title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 1rem 0;
+        }
+        .customer_contact {
+            margin: 2rem 0;
+        }
+        .form_footer{
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-top: 2rem;
+        }
+        .product_list{
+            margin-top: 1rem;
+            background-color: #e8e7e7;
+            padding: 1rem;
+        }
+        .order_item_row {
+            break-inside: avoid; /* Prevents a row from splitting across pages */
+        }
+        .section-margin-top {
+            margin-top: 3rem;
+        }
+        .border-b-1 {
+            border-bottom-style: solid;
+            border-bottom-width: 1px;
+        }
+        .px-1 {
+            padding-left: 0.25rem;
+            padding-right: 0.25rem;
+        }
+        .font-normal {
+            --tw-font-weight: 400;
+            font-weight: 400;
+        }
+        .details-text-size {
+            font-size: 0.95rem;
+        }
+        .mb-5 {
+            margin-bottom: calc(0.25rem * 5);
+        }
+        .bg-transparent {
+            background-color: transparent;
+        }
+        .table {
+            display: table;
+            font-size: 0.875rem;
+            position: relative;
+            width: 100%;
+            border-radius: 1rem;
+            text-align: left;
+        }
+        table {
+            text-indent: 0;
+            border-color: inherit;
+            border-collapse: collapse;
+            border-spacing: 2px;
+        }
+        th {
+            display: table-cell;
+            vertical-align: inherit;
+            font-weight: bold;
+            text-align: center;
+        }
+        .table-heading-size {
+            font-size: 0.8rem;
+        }
+        .text-base-content {
+            color: #656361;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .font-semibold{
+            --tw-font-weight: 600;
+            font-weight: 600;
+        }
+        .flex {
+            display: block;
+        }
+        .py-3 {
+            padding: calc(0.25rem * 3);
+        }
+        .w-half {
+            width: 50%;
+        }
+        .h-five-rem {
+            height: 5rem;
+        }
+        .ml-half-rem {
+            margin-left: 0.5rem;
+        }
+        .font-bold {
+            --tw-font-weight: 700;
+            font-weight: 700;
+        }
+        .text-ten-px {
+            font-size: 10px;
+        }
+        .divider {
+            display: flex;
+            height: calc(0.25rem * 4);
+            flex-direction: row;
+            align-items: center;
+            align-self: stretch;
+            white-space: nowrap;
+            margin: 0.5rem 0;
+            --divider-color: #68646054;
+        }
+        .divider::before,
+        .divider::after{
+                content: "";
+                height: calc(0.25rem * 0.5);
+                width: 100%;
+                flex-grow: 1;
+                background-color: #68646054;
+        }
+
+        .justify-end {
+            justify-content: flex-end;
+        }
+        /* .w-two-thirds {
+            width: 66%;
+        } */
+        .border-collapse {
+            border-collapse: collapse;
+        }
+        .table-fixed {
+            table-layout: fixed;
+        }      
+        .text-xs-four {
+            font-size: 0.75rem;
+            line-height: calc(0.25rem * 4);
+        }  
+        .table-xs {
+            padding: 0.25rem;
+            font-size: 0.75rem;
+        }
+        .w-description {
+            width: 42%;
+        }
+        .w-price {
+            width: 28%;
+        }
+        .table thead tr, 
+        .table tbody tr {
+            border-bottom: 2px solid #6864611a; /* Simplified Hex with alpha (approx 10%) */
+        }
+
+        /* Remove border from the last row manually since :not(:last-child) can be buggy in tables */
+        .table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .table thead,
+        .table tfoot {
+            white-space: nowrap;
+        }
+
+        .table-xs th,
+        .table-xs td {
+            padding: 0.25rem 0.5rem;
+        }
+
+        .table th, .table td { padding: 4px 8px; border-bottom: 1px solid #eee; }
+
+
+        thead {
+            display: table-header-group;
+            vertical-align: middle;
+            border-color: inherit;
+        }
+
+    .details-table { width: 100%; border-spacing: 1.5rem 0; margin-left: -1.5rem; }
+    .details-table td { border-bottom: 1px solid #ccc; padding: 0.25rem; width: 33%; vertical-align: bottom; }
+    .label-xs { font-size: 0.75rem; color: #666; }
+    .marker-highlight {
+        background-image: linear-gradient(to top, #ffff08, #ffff08);
+        background-repeat: no-repeat;
+        
+        /* 1. Control the thickness here (e.g., 8px high) */
+        background-size: 100% 8px; 
+        
+        /* 2. Control vertical position here (e.g., center, bottom, or 60%) */
+        background-position: left center; 
+    }
+
+    .barcode {
+        font-family: "Libre Barcode 128", system-ui;
+        font-weight: 400;
+        font-style: normal;
+    }
+
+    </style>
+</head>
+<body class="noto-sans-tc-300">
+    <div class="order_info_container">
+        <!-- header -->
+        <div class="form_header">
+            <div class="logo_box">
+                <!-- <img src="/static/images/miscellaneous/logo.png" alt="logo" class="w-full"> -->
+                <img src="{% static 'images/miscellaneous/logo.png' %}" alt="logo">
+            </div>
+            <div class="shop_name text-base-content">心燈｜Hṛdayadīpa (हृदयदीप)</div>
+        </div>
+        <!-- body -->
+        <div class="form_body">
+            <!-- title -->
+            <div class="order_title">訂單確認｜Order Confirmation&nbsp;&nbsp;<strong class="barcode">{{ order.order_number }}</strong></div>
+            <!-- greeting -->
+            <div class="greeting">
+                {% if user != None %}
+                    您好{{ order.user.username }}！｜Hello {{ order.user.username }}!
+                {% else %}
+                    您好{{ order.email }}!｜Hello {{ order.email }}!
+                {% endif %}
+            </div>
+            <br>
+            <!-- message -->
+            <div class="summary">
+                感謝您在本店購物！您的訂單號碼是<strong>{{ order.order_number }}</strong>。<br/>
+                Thank you for shopping with us! Your order number is <strong>{{ order.order_number }}</strong>.<br/>
+                <br>
+                {% if has_physical_products %}
+                    我們會在您的實體產品包裹發出時通知您。<br>
+                    We will notify you when your physical product(s) parcel(s) is/are dispatched.<br/>
+                {% else %}
+                    您的電子產品將透過另一封電子郵件發送給您。<br/>
+                    如果您收不到郵件，請及時聯繫我們。<br/>
+                    如果您已在我們這裡註冊，您也可以透過您的會員控制面板獲取您所購買的電子產品。<br/>
+                    會員登入鏈接：https://xindeng.com <br>
+                    Your e-product(s) will be sent to you via another email.<br/>
+                    Please notify us if you have issue receiving the email.<br/>
+                    If you have registered with us, you can also retrieve your e-product(s) via your member dashboard.<br/>
+                    Member login link: https://xindeng.com
+                {% endif %}
+                    <br>
+                    您的電子產品將透過另一封電子郵件發送給您。<br/>
+                    如果您收不到郵件，請及時聯繫我們。<br/>
+                    如果您已在我們這裡註冊，您也可以透過您的會員控制面板獲取您所購買的電子產品。<br/>
+                    會員登入鏈接：https://xindeng.com <br>
+                    Your e-product(s) will be sent to you via another email.<br/>
+                    Please notify us if you have issue receiving the email.<br/>
+                    If you have registered with us, you can also retrieve your e-product(s) via your member dashboard.<br/>
+                    Member login link: https://xindeng.com
+
+            </div>
+
+            <!-- 1. customer details -->
+            <div class="customer_contact order_item_row">
+                <div class="section_title section-margin-top">
+                    α 客戶訊息｜Customer Details
+                </div>
+                <!-- customer name / username -->
+                <table class="details-table mb-5" style="margin-left: 0.15rem;">
+                    {% if user != None %}
+                        <tr>
+                            <td>
+                                <div class="label-xs">名｜first name</div>
+                                <div class="details-text-size"><strong>{{ user.first_name }}</strong></div>
+                            </td>
+                            <td>
+                                <div class="label-xs">姓｜last name</div>
+                                <div class="details-text-size"><strong>{{ user.last_name }}</strong></div>
+                            </td>
+                            <td>
+                                <div class="label-xs">用戶名｜username</div>
+                                <div class="details-text-size"><strong>{{ user.username }}</strong></div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td>
+                                <div class="label-xs">名字｜name</div>
+                                <div class="px-1 font-normal details-text-size">訪客用戶｜Guest User</div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </table>
+                <!-- email & phone -->
+                <table class="details-table mb-5" style="margin-left: 0.15rem;">
+                    <tr>
+                        <td>
+                            <div class="label-xs">電郵｜email</div>
+                            <div class="details-text-size"><strong>{{ order.email }}</strong></div>
+                        </td>
+                        <td>
+                            <div class="label-xs">電話｜phone</div>
+                            <div class="details-text-size"><strong>{{ user.mobile_area }}&nbsp;{{ user.mobile_number }}</strong></div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 2. payment details -->
+            <div class="customer_contact order_item_row">
+                <div class="section_title section-margin-top">
+                    β 支付訊息｜Payment Details
+                </div>
+                <!-- payment method & transaction id -->
+                <table class="details-table mb-5" style="margin-left: 0.15rem;">
+                    <tr>
+                        <td>
+                            <div class="label-xs">支付方式｜payment method</div>
+                            <div class="details-text-size"><strong>{{ payment.get_payment_method }}</strong></div>
+                        </td>
+                        <td>
+                            <div class="label-xs">交易ID｜transaction id</div>
+                            <div class="details-text-size"><strong>{{ payment.payment_id }}</strong></div>
+                        </td>
+                    </tr>
+                </table>
+                <!-- payment currency & payment amount -->
+                <table class="details-table mb-5" style="margin-left: 0.15rem;">
+                    <tr>
+                        <td>
+                            <div class="label-xs">付款貨幣｜payment currency</div>
+                            <div class="details-text-size"><strong>{{ payment.currency }}</strong></div>
+                        </td>
+                        <td>
+                            <div class="label-xs">支付金額｜payment amount</div>
+                            <div class="details-text-size">
+                                <strong>
+                                    {{ currency_symbole }}
+                                    {% if foreign_currency_digit == 2 %}
+                                        {{ payment.amount_paid|floatformat:2|intcomma }}
+                                    {% elif foreign_currency_digit == 0 %}
+                                        {{ payment.amount_paid|floatformat:0|intcomma }}
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 3. shipping details -->
+            <div class="customer_contact order_item_row">
+                <div class="section_title section-margin-top">
+                    γ 寄件訊息｜Shipping Information
+                </div>
+                <!-- recipient name  -->
+                <table class="details-table mb-5" style="margin-left: 0.15rem;">
+                    <tr>
+                        <td>
+                            <div class="label-xs">收件人 姓｜recipient last name</div>
+                            <div class="details-text-size"><strong>{{ order.recipient_first_name }}</strong></div>
+                        </td>
+                        <td>
+                            <div class="label-xs">收件人 名｜recipient first name</div>
+                            <div class="details-text-size"><strong>{{ order.recipient_last_name }}</strong></div>
+                        </td>
+                        <td>
+                            <div class="label-xs">收件人電話｜recipient phone</div>
+                            <div class="details-text-size"><strong>{{ order.recipient_mobile_area }}&nbsp;{{ order.recipient_mobile_number }}</strong></div>
+                        </td>
+                    </tr>
+                </table>
+                <!-- street address -->
+                <table class="details-table mb-5" style="margin-left: 0.15rem;">
+                    <tr>
+                        <td>
+                            <div class="label-xs">街道地址｜street address</div>
+                            <div class="details-text-size">
+                                <strong>
+                                    {{ order.address_line_1 }}
+                                    {% if order.address_line_2 %}
+                                        ,&nbsp;
+                                        {{ order.address_line_2 }}
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <!-- city & state -->
+                <table class="details-table mb-5" style="margin-left: 0.15rem;">
+                    <tr>
+                        <td>
+                            <div class="label-xs">城市｜city</div>
+                            <div class="details-text-size"><strong>{{ order.city }}</strong></div>
+                        </td>
+                        <td>
+                            <div class="label-xs">省/縣/州｜province / stated</div>
+                            <div class="details-text-size"><strong>{{ order.state_province_region }}</strong></div>
+                        </td>
+                    </tr>
+                </table>
+                <!-- country & zip -->
+                <table class="details-table mb-5" style="margin-left: 0.15rem;">
+                    <tr>
+                        <td>
+                            <div class="label-xs">國家/地區｜country / region</div>
+                            <div class="details-text-size"><strong>{{ order.get_country_display }}</strong></div>
+                        </td>
+                        <td>
+                            <div class="label-xs">郵編｜postcode</div>
+                            <div class="details-text-size">
+                                <strong>
+                                    {% if order.postal_code %}
+                                        {{ order.postal_code }}
+                                    {% else %}
+                                        &nbsp;
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <!-- delivery note -->
+                <table class="details-table mb-5" style="margin-left: 0.15rem;">
+                    <tr>
+                        <td>
+                            <div class="label-xs">配送備注｜delivery note</div>
+                            <div class="details-text-size">
+                                <strong>
+                                    {% if order.delivery_note %}
+                                        {{ order.delivery_note }}
+                                    {% else %}
+                                        &nbsp;
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <!-- do not send invoice -->
+                <table class="details-table mb-5" style="margin-left: 0.15rem;">
+                    <tr>
+                        <td>
+                            <div class="label-xs">附上帳單?｜include invoice?</div>
+                            <div class="details-text-size">
+                                <strong>
+                                    {% if order.do_not_send_invoice == False %}
+                                        是，將帳單一起配送。｜Yes, include invoice with delivery.
+                                    {% else %}
+                                        不，不要將帳單一起配送。｜No, do NOT include invoice with delivery.
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 4. purchase details -->
+            <div class="order_item_row">
+                <div class="section_title section-margin-top">
+                    δ 訂單詳情｜Order Details
+                </div>
+                <div class="product_list">
+                    <!-- product_list -->
+                    <table class="table table-xs bg-transparent">
+                        <!-- head -->
+                        <thead class="table-heading-size text-base-content">
+                            <tr >
+                                <th></th>
+                                <th>商品｜Product</th>
+                                <th>價格｜Price</th>
+                                <th>數量｜Qty</th>
+                                <th>小計｜Sub-Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in order_products %}
+                                <tr class="order_item_row">
+                                    <th>{{ forloop.counter }}</th>
+                                    <td>
+                                        <table>
+                                            <tr>
+                                                <td>
+                                                    <div class="h-five-rem" style="width:7rem;">
+                                                        <img src="{{ product.product_variation.images.url }}" alt="" class="rounded-md w-full h-full">
+                                                    </td>
+                                                    </div>
+                                                <td>
+                                                    <span class="font-bold">{{ product.product_variation.product.product_name }}</span>
+                                                    <br/>
+                                                    <span class="text-ten-px">{{ product.product_variation.get_sku }}</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+
+
+                                        <!-- <div class="flex w-full py-3">
+                                            <div class="h-five-rem" style="width: 30%; margin-right: 1rem;">
+                                                <img src="{{ product.product_variation.images.url }}" alt="" class="rounded-md w-full h-full object-cover">
+                                            </div>
+                                            <div class="ml-half-rem]">
+                                                <span class="font-bold">{{ product.product_variation.product.product_name }}</span>
+                                                <br/>
+                                                <span class="text-ten-px">{{ product.product_variation.get_sku }}</span>
+                                            </div>
+                                        </div> -->
+                                    </td>
+                                    <td class="text-right">CNY ¥{{ product.product_variation.price|floatformat:2|intcomma }}</td>
+                                    <td class="text-center">{{ product.quantity }}</td>
+                                    <td class="font-semibold text-right">CNY ¥{{ product.get_subtotal|floatformat:2|intcomma }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="divider"></div>
+                    <!-- price summary -->
+                    <div class="flex justify-end">
+                        <table class="bg-transparent border-collapse table-fixed order_item_row" style="width: 100%;">
+                            <thead>
+                                <tr class="text-xs-four">
+                                    {% if payment.currency != "CNY" %}
+                                        <!-- 42% Width -->
+                                        <th class="w-description py-1 text-left"></th>
+                                        <!-- 28% Width -->
+                                        <th class="w-price py-1 text-right">CNY</th>
+                                        <!-- 28% Width -->
+                                        <th class="w-price py-1 text-right text-info-content">{{payment.currency}}</th>
+                                    {% elif payment.currency != "CNY" %}
+                                        <!-- 50% Width -->
+                                        <th class="w-half py-1 text-left"></th>
+                                        <!-- 50% Width -->
+                                        <th class="w-half py-1 text-right">CNY</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- products subtotal -->
+                                <tr class="font-normal text-xs-four">
+                                    <td class="py-1 text-left">商品小計｜Products</td>
+                                    <td class="py-1 mr-2 text-right">
+                                        <span id="products_subtotal_amount">
+                                            ¥{{ order.product_total|floatformat:2|intcomma }}
+                                        </span>
+                                    </td>
+                                    {% if payment.currency != "CNY" %}
+                                    <td class="py-1 text-right text-info-content">
+                                        <span id="products_subtotal_amount_foreign">
+                                            {% if foreign_currency_digit == 2 %}
+                                                {{ currency_symbole }}{{ proforma_invoice.cart_total_foreign|floatformat:2|intcomma }}
+                                            {% elif foreign_currency_digit == 0 %}
+                                                {{ currency_symbole }}{{ proforma_invoice.cart_total_foreign|floatformat:0|intcomma }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                <!-- shipping cost -->
+                                <tr class="font-normal text-xs-four">
+                                    <td class="py-1 text-left">運費｜Shipping</td>
+                                    <td class="py-1 mr-2 text-right">
+                                        <span id="shipping_cost_amount">
+                                            ¥{{ order.shipping_cost|floatformat:2|intcomma }}
+                                        </span>
+                                    </td>
+                                    {% if payment.currency != "CNY" %}
+                                    <td class="py-1 text-right text-info-content">
+                                        <span id="shipping_cost_amount_foreign">
+                                            {% if foreign_currency_digit == 2 %}
+                                                {{ currency_symbole }}{{ proforma_invoice.shipping_cost_amount_foreign|floatformat:2|intcomma }}
+                                            {% elif foreign_currency_digit == 0 %}
+                                                {{ currency_symbole }}{{ proforma_invoice.shipping_cost_amount_foreign|floatformat:0|intcomma }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                <!-- discount -->
+                                <tr class="font-normal text-xs-four">
+                                    <td class="py-1 text-left">優惠｜Discount</td>
+                                    <td class="py-1 mr-2 text-right">
+                                        <span id="discount_amount">
+                                            {% if order.discount != 0 %}-{% endif %}¥{{ order.discount|floatformat:2|intcomma }}
+                                        </span>
+                                    </td>
+                                    {% if payment.currency != "CNY" %}
+                                    <td class="py-1 text-right text-info-content">
+                                        <span id="discount_amount_foreign">
+                                            {% if foreign_currency_digit == 2 %}
+                                                {% if order.discount != 0 %}-{% endif %}{{ currency_symbole }}{{ proforma_invoice.discount_amount_foreign|floatformat:2|intcomma }}
+                                            {% elif foreign_currency_digit == 0 %}
+                                                {% if order.discount != 0 %}-{% endif %}{{ currency_symbole }}{{ proforma_invoice.discount_amount_foreign|floatformat:0|intcomma }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                <!-- tax -->
+                                <tr class="font-normal text-xs-four">
+                                    <td class="py-1 text-left">稅&通關費用｜Tax & Duty</td>
+                                    <td class="py-1 mr-2 text-right">
+                                        <span id="tax_amount">
+                                            ¥{{ proforma_invoice.tax|floatformat:2|intcomma }}
+                                        </span>
+                                    </td>
+                                    {% if payment.currency != "CNY" %}
+                                    <td class="py-1 text-right text-info-content">
+                                        <span id="tax_amount_foreign">
+                                            {% if foreign_currency_digit == 2 %}
+                                                {{ currency_symbole }}{{ proforma_invoice.tax_amount_foreign|floatformat:2|intcomma }}
+                                            {% elif foreign_currency_digit == 0 %}
+                                                {{ currency_symbole }}{{ proforma_invoice.tax_amount_foreign|floatformat:0|intcomma }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                <!-- cash voucher -->
+                                <tr class="font-normal text-xs-four">
+                                    <td class="py-1 text-left">禮品券｜Voucher</td>
+                                    <td class="py-1 mr-2 text-right">
+                                        <span id="cash_voucher_amount">
+                                            {% if order.discount != 0 %}-{% endif %}¥{{proforma_invoice.voucher_applied|floatformat:2|intcomma}}
+                                        </span>
+                                    </td>
+                                    {% if payment.currency != "CNY" %}
+                                    <td class="py-1 text-right text-info-content">
+                                        <span id="cash_voucher_amount_foreign">
+                                            {% if foreign_currency_digit == 2 %}
+                                                {% if order.discount != 0 %}-{% endif %}{{ currency_symbole }}{{ proforma_invoice.applied_voucher_amount_foreign|floatformat:2|intcomma }}
+                                            {% elif foreign_currency_digit == 0 %}
+                                                {% if order.discount != 0 %}-{% endif %}{{ currency_symbole }}{{ proforma_invoice.applied_voucher_amount_foreign|floatformat:0|intcomma }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                <!-- total amount -->
+                                <tr class="font-semibold table-heading-size">
+                                    <td class="py-1 text-left">總收款金額｜Total Received</td>
+                                    <td class="py-1 mr-2 text-right">
+                                        <span id="total_payable_amount">
+                                            ¥{{ proforma_invoice.total_due|floatformat:2|intcomma }}
+                                        </span>
+                                    </td>
+                                    {% if payment.currency != "CNY" %}
+                                    <td class="py-1 text-right text-info-content">
+                                        <span id="total_amount_foreign" class="marker-highlight">
+                                            {% if foreign_currency_digit == 2 %}
+                                                {{ currency_symbole }}{{ proforma_invoice.total_due_foreign|floatformat:2|intcomma }}
+                                            {% elif foreign_currency_digit == 0 %}
+                                                {{ currency_symbole }}{{ proforma_invoice.total_due_foreign|floatformat:0|intcomma }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        <div class="form_footer order_item_row">
+            若您有任何疑問，請隨時透過 admin@xindeng.com 聯絡我們。
+            <br>
+            If you have any further enquiries, please do not hesitate to contact us at admin@xindeng.com.
+            <br>
+            <br>
+            © 2024 心燈｜Hṛdayadīpa (हृदयदीप) All Rights Reserved.
+        </div>
+    </div>
+
+</body>
+</html>
+
+
+<!-- To implement automated PDF creation and email sending in 2026, you should pass the order's unique ID to your Celery task. This ensures the background worker fetches the latest data directly from the database, preventing concurrency issues. 
+
+1. The View Function (views.py)
+Trigger the task using .delay() immediately after saving the order.
+Note: We pass the order.pk or order_number instead of the full object, as Celery tasks must be JSON serializable.. 
+
+python
+def order_complete(request):
+    order_number = request.GET.get("order_number")
+    order = Order.objects.get(order_number=order_number, is_ordered=False)
+    order.is_ordered = True
+    order.save()
+
+    # Trigger the background task
+    from .tasks import send_invoice_email_task
+    send_invoice_email_task.delay(order.id) 
+
+    context = {'order': order}
+    return render(request, "order_complete.html", context)
+
+2. The Celery Task (tasks.py)
+In 2026, use EmailMessage or EmailMultiAlternatives to attach the PDF directly from memory without saving a physical file to your server first. 
+
+python
+from celery import shared_task
+from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
+from django.conf import settings
+from weasyprint import HTML
+from .models import Order
+
+@shared_task
+def send_invoice_email_task(order_id):
+    try:
+        order = Order.objects.get(id=order_id)
+        
+        # 1. Prepare Data for the Template
+        context = {'order': order}
+        html_content = render_to_string('invoices/invoice_pdf.html', context)
+
+        # 2. Generate PDF in Memory using WeasyPrint
+        # Use base_url to ensure WeasyPrint can find static images/CSS
+        pdf_file = HTML(string=html_content, base_url=settings.BASE_URL).write_pdf()
+
+        # 3. Create the Email
+        subject = f"Invoice for Order #{order.order_number}"
+        body = "Thank you for your order. Please find your invoice attached."
+        email = EmailMessage(
+            subject, 
+            body, 
+            settings.DEFAULT_FROM_EMAIL, 
+            [order.email]
+        )
+
+        # 4. Attach PDF from memory
+        # Arguments: filename, content, mimetype
+        email.attach(f'invoice_{order.order_number}.pdf', pdf_file, 'application/pdf')
+
+        # 5. Send
+        email.send()
+        
+    except Order.DoesNotExist:
+        pass # Handle log error here -->

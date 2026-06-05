@@ -1,0 +1,18 @@
+<!-- 1. The New Button (becomes the new target for the next click) -->
+<div id="load-more-container" class="flex justify-center p-4">
+    {% if has_more and not search_query %}
+        <button 
+            hx-get="{% url 'load_earlier_messages' %}?last_id={{ chat_messages.0.id }}&other_user_id={{ other_user.id }}&q={{ search_query|default:'' }}"
+            hx-target="#load-more-container"
+            hx-swap="outerHTML"
+            class="btn btn-ghost btn-xs text-primary-content"
+        >
+            Load Earlier Messages | 載入更早訊息
+            <span class="loading loading-dots loading-xs htmx-indicator"></span>
+        </button>
+    {% endif %}
+</div>
+
+{% for msg in chat_messages %}
+    {% include 'accounts/partials/new_chat_mssg.html' with new_message=msg %}
+{% endfor %}

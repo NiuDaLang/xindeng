@@ -1,0 +1,26 @@
+{% load humanize %}
+<div id="promo-container" class="space-y-6 mt-6">
+    <h2 class="text-[1.25rem] mb-5">Perks & Voucher｜優惠·現金券</h2>
+    <!-- Offer/Perk Code -->
+    <div id="offer-form-wrapper">
+        {% include 'store/partials/offer_input.html' %}
+    </div>
+
+    <!-- Cash Voucher -->
+    {% if user.is_authenticated %}
+    <div class="p-4 bg-base-200 rounded-xl">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-medium text-primary">Cash Voucher Balance<br>優惠·現金券餘額</span>
+            <span 
+                id="voucher-balance" 
+                class="badge badge-outline font-semibold"
+                >
+                CNY {{ cash_voucher_balance|floatformat:2|intcomma }}
+            </span>
+        </div>
+        <div id="voucher-form-wrapper">
+            {% include 'store/partials/voucher_input.html' %}
+        </div>
+    </div>
+    {% endif %}
+</div>

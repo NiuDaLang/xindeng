@@ -1,0 +1,11 @@
+<div id="shipping-section-wrapper" 
+    {% if is_oob %}hx-swap-oob="true"{% endif %}>
+    {% if has_physical_items %}
+        {% include 'store/partials/shipping_section.html' %}
+    {% else %}
+        <h2 class="text-[1.25rem] mb-5">Shipping｜配送</h2>
+        <div class="alert alert-info shadow-sm mb-4 justify-center">
+            <span>No shipping required for digital products.｜數位產品無需物流。</span>
+        </div>
+    {% endif %}                
+</div>

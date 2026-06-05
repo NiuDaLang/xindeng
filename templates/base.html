@@ -1,18 +1,39 @@
+{% load sekizai_tags %}
+{% load static %}
 {% load django_vite %}
-
 <!DOCTYPE html>
 <html lang="en" data-theme="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
-    <title>Document</title>
+    <title>{% block title %}{{ page_title }}{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128&family=Noto+Sans+TC:wght@100..900&family=Zalando+Sans:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">    {% vite_hmr_client %}
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128&family=Noto+Sans+TC:wght@100..900&family=Zalando+Sans:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/static/favicon/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/static/favicon/favicon.svg" />
+    <link rel="shortcut icon" href="/static/favicon/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/favicon/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Hṛdayadīpa" />
+    <link rel="manifest" href="/static/favicon/site.webmanifest" />
+    <!-- GOOGLE -->
+    <script>
+        (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t.toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.googleapis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Re-referencing: "+d[l]):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+            key: "{{GOOGLE_API_KEY|safe}}",
+            v: "weekly",
+        });
+    </script>
+
+    {% vite_hmr_client %}
+    {% render_block "meta" %}
+    <script src="{% static 'admin/js/vendor/jquery/jquery.min.js' %}"></script>
+    <script src="{% static 'admin/js/jquery.init.js' %}"></script>
     {% vite_asset 'static/js/main.js' %}
+
 </head>
-<body class=".noto-sans-tc-300">
+
+<body class="" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     {% include 'includes/header.html' %}
 
     {% block content %}
@@ -20,6 +41,7 @@
     <!-- =============== contents =============== -->
     
     {% endblock %}
+    {% render_block "js" %} 
 
 <!-- FOOTER -->
     {% include 'includes/footer.html' %}

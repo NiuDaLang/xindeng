@@ -1,0 +1,93 @@
+{% for address in user_addresses %}
+<div class="col-span-1 card" id="address-{{ address.pk }}">
+    <div class="card-body bg-base-300 rounded-2xl relative flex-grow-0 shadow-sm">
+        <div class="flex items-center gap-1 absolute top-[1rem] right-[2rem] ">
+            {% if address.is_default %}
+                <span class="badge badge-xs badge-warning">Default｜默認</span>
+            {% endif %}
+
+            {% if address.label == "home" %}
+                <i class="fa-solid fa-house-user" style="color: rgb(177, 151, 252);"></i>
+            {% endif %}
+
+            {% if address.label == "work" %}
+                <i class="fa-solid fa-building-user" style="color: rgb(116, 192, 252);"></i>
+            {% endif %}
+
+            {% if address.label == "school" %}
+                <i class="fa-solid fa-school" style="color: rgb(99, 230, 190);"></i>
+            {% endif %}
+        </div>
+        <!-- address details -->
+        <div class="collapse collapse-arrow join-item">
+            <input type="checkbox"/>
+            <div class="collapse-title pb-[8px] font-semibold">
+                <ul class="flex flex-col gap-2 text-xs">
+                    <li>
+                        <i class="fa-solid fa-person-arrow-down-to-line"></i>
+                        <span class="font-bold">&nbsp;&nbsp;{% if address.recipient_first_name %}{{ address.recipient_first_name }},{% endif %}</span>
+                        <span class="font-bold">&nbsp;{% if address.recipient_last_name %}{{ address.recipient_last_name }}{% endif %}</span>
+                    </li>
+                    <li class="opacity-100">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                        <span>&nbsp;&nbsp;{% if address.address_line_1 %}{{ address.address_line_1 }}{% endif %}</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="collapse-content text-sm my-0">
+                <ul class="flex flex-col gap-2 text-xs ">
+                    <li>
+                        <i class="fa-solid fa-map-location"></i>
+                        <span>&nbsp;&nbsp;{% if address.address_line_2 %}{{ address.address_line_2 }}{% endif %}</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-tree-city"></i>
+                        <span>&nbsp;&nbsp;{% if address.city %}{{ address.city }}{% endif %}</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-map"></i>
+                        <span>&nbsp;&nbsp;{% if address.state_province_region %}{{ address.state_province_region }}{% endif %}</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-globe"></i>
+                        <span>&nbsp;&nbsp;{% if address.country %}{{ address.country }}{% endif %}</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-envelopes-bulk"></i>
+                        <span>&nbsp;&nbsp;{% if address.postal_code %}{{ address.postal_code }}{% endif %}</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                        <span>
+                            &nbsp;&nbsp;{% if address.mobile_area %}{{ address.mobile_area }}{% endif %}
+                            &nbsp;{% if address.mobile_number %}{{ address.mobile_number }}{% endif %}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <!-- Buttons -->
+        <div class="flex gap-3">
+            <!-- submit button -->
+            <button 
+                class="w-1/2 btn btn-info"
+                hx-get="{% url 'edit_address' address.pk %}"
+                hx-target="#modal_content_area"
+                hx-trigger="click"
+                onclick="my_modal_2.showModal(), setTimeout(() => initRegionLogic('update_address_form'), 100)"
+            >
+                Update｜更&nbsp;改
+            </button>
+            <!-- delete button -->
+            <button 
+                class="w-1/2 btn btn-outline btn-error"
+                hx-post="{% url 'delete_address' address.pk %}"
+                hx-target="#address-list-container"
+                hx-trigger="confirmed"
+                onclick="confirmDelete(this)"
+            >
+                Delete｜刪&nbsp;除
+            </button>
+        </div>
+    </div>
+</div>
+{% endfor %}

@@ -1,0 +1,2732 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+{% block content %}
+
+<!-- BANNER -->
+<div class="relative mt-16 w-full">
+    {% include 'includes/banner.html' %}
+</div>
+
+<!-- MAIN -->
+<main class="px-[max(1rem,5vw)] py-20 min-h-[calc(100dvh-200px)]">
+    {{ user.is_authenticated|json_script:"user-auth-status" }}
+    {{ foreign_currency_decimal_place|json_script:"foreign_currency_decimal_place" }}
+    <!-- progress -->
+    <ul class="timeline w-full justify-center">
+        <li>
+            <div class="timeline-start timeline-box text-center">Cart<br/>購物車</div>
+            <div class="timeline-middle">
+                <i class="fa-solid fa-circle-check text-success"></i>
+            </div>
+            <hr class="bg-success-content"/>
+        </li>
+        <li>
+            <hr class="bg-success-content"/>
+            <div class="timeline-start timeline-box text-center">Order Details<br/>訂單詳情</div>
+            <div class="timeline-middle">
+                <i class="fa-solid fa-circle-check text-base-300"></i>
+            </div>
+            <hr />
+        </li>
+        <li>
+            <hr />
+            <div class="timeline-start timeline-box text-center">Confirm Order<br/>訂單確認</div>
+            <div class="timeline-middle">
+                <i class="fa-solid fa-circle-check text-base-300"></i>
+            </div>
+            <hr />
+        </li>
+        <li>
+            <hr />
+            <div class="timeline-start timeline-box text-center">Payment Complete<br/>支付完成</div>
+            <div class="timeline-middle">
+                <i class="fa-solid fa-circle-check text-base-300"></i>
+            </div>
+        </li>
+    </ul>
+
+    <!-- details -->
+    <div class="grid grid-cols-3 gap-8">
+        <!-- LEFT - ITEM LISTS DETAILS -->
+        <div class="col-span-2">
+            <!-- cart items -->
+            <div id="cart_wrapper">
+                <h2 class="text-[1.25rem] mb-5">您的購物車｜Your Cart</h2>
+                {% if cart_items|length != 0  %}
+                <ul id="cart_items_wrapper" class="list bg-base-200 rounded-box shadow-md mb-20" data-cart="{{cart.cart_id}}">
+                    {% for item in cart_items %}           
+                    <li id="cart_item_{{item.product_variation_id}}" class="flex gap-3 p-3">
+                        <!-- # Counter -->
+                        <div class="cart_item_counter flex text-2xl -mt-[5px] font-thin opacity-30 tabular-nums">
+                            {% if forloop.counter < 10 %}<span>0</span>{% endif %}
+                            <span>{{forloop.counter}}</span>
+                        </div>
+    
+                        <!-- Details -->
+                        <div class="flex flex-col flex-grow justify-center">
+                            <!-- top -->
+                            <div class="price_quantity flex items-start mb-3">
+                                <!-- item-name -->
+                                <a id="cart_item_product_link_{{item.product_variation_id}}" href="{{ item.product_variation.product.get_url }}" class="w-1/2">
+                                    <div id="cart_item_product_name_{{item.product_variation_id}}" class="w-full text-[0.8rem] overflow-hidden text-ellipsis whitespace-nowrap">{{item.product_variation.product.product_name}}</div>
+                                    <div class="w-full text-[0.6rem] uppercase font-semibold opacity-60  overflow-hidden text-ellipsis whitespace-nowrap">{{item.sku}}</div>
+                                </a>
+                                <!-- item-quantity -->
+                                <form id="change_quantity_form_{{item.product_variation_id}}" method="POST" class="flex w-[4.5rem] h-[2rem] border-primary text-xs">
+                                    {% csrf_token %}
+                                    <input type="number" 
+                                        id="quantity_input_{{item.product_variation.id}}" 
+                                        name="quantity_input_{{item.product_variation.id}}" 
+                                        class="qty w-[2.5rem] rounded-l-[0.8rem] border-y-1 border-l-1 focus:outline-none text-center bg-primary-content font-semibold quantity_input" 
+                                        value="{{item.quantity}}"
+                                        min="1" 
+                                        max="{{item.product_variation.stock}}"
+                                    />
+                                    <div class="flex flex-col justify-center w-[2rem] border-y-1 border-r-1 rounded-r-[0.8rem]">
+                                        <button type="submit" class="h-1/2 cursor-pointer border-l-1 border-b-1 border-base-300 rounded-tr-[0.8rem] hover:bg-base-300 active:scale-90 active:text-primary-content transition-transform flex justify-center items-center" id="plus_btn_{{item.product_variation.id}}">
+                                            +
+                                        </button>
+                                        <button type="submit" class="h-1/2 cursor-pointer border-l-1 border-base-300 rounded-br-[0.8rem] hover:bg-base-300 active:scale-90 active:text-primary-content transition-transform flex justify-center items-center" id="minus_btn_{{item.product_variation.id}}">
+                                            -
+                                        </button>
+                                    </div>
+                                </form>
+                                <!-- item-unit_price -->
+                                <div class="text-center w-[calc((50%-4rem)/2)] text-[0.8rem]">
+                                    <div class="unit_price text-primary" data-value="{{ item.product_variation.price }}">CNY {{item.product_variation.price|floatformat:2|intcomma}}</div>
+                                    <div class="text-error line-through text-[10px]">
+                                        {% if item.product_variation.original_price is not None and item.product_variation.original_price > item.product_variation.price %}
+                                            CNY {{item.product_variation.original_price|floatformat:2|intcomma}}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <!-- subtotal_price -->
+                                <div id="subtotal_price_{{item.product_variation_id}}"  class="text-right w-[calc((50%-4rem)/2)] text-[0.8rem] text-base-content font-semibold pr-3">CNY {{item.subtotal|floatformat:2|intcomma}}</div>
+                            </div>
+        
+                            <!-- bottom -->
+                            <div class="flex gap-5">
+                                <!-- image -->
+                                <div class="md:size-38 aspect-square"><a href="{{ item.product_variation.product.get_url }}"><img class="w-full h-full rounded-box object-cover" src="{{item.product_variation.images.url}}"/></a></div>
+    
+                                <div class="flex w-full">
+                                    <!-- details -->
+                                    <div class="text-[11px] w-3/5 pr-10">
+                                        <div><b>當前庫存|Stock：&nbsp;</b>{{item.product_variation.stock}}</div>
+                                        <div><b>發貨地|From：&nbsp; </b>中國</div>
+                                        <div><b>尺寸|Size：&nbsp;</b>{% if item.product_variation.size %}{{item.product_variation.size}}{% else %}--{% endif %}</div>
+                                        <div><b>顏色|Color：&nbsp;</b>{% if item.product_variation.color %}{{item.product_variation.color}}{% else %}--{% endif %}</div>
+                                        <div><b>種類|Type：&nbsp;</b>{% if item.product_variation.type %}{{item.product_variation.type}}{% else %}--{% endif %}</div>
+                                        <div><b>配送費用|Shipping Cost:&nbsp;</b>{% if item.with_shipping %}含|Included{% else %}不含|Not included{% endif %}</div>
+                                        <div>具體詳情請注意查收發貨郵件</div>
+                                        <div class="flex items-center">
+                                            <i class="fa-solid fa-gift"></i>
+                                            不需寄帳單&nbsp;
+                                            <input type="checkbox" class="checkbox checkbox-primary checkbox-xs" />
+                                        </div>
+                                    </div>
+                                    <!-- option buttons -->
+                                    <form id="cart_item_options_form_{{item.product_variation_id}}" method="POST" class="flex flex-wrap w-2/5 gap-3 content-center">
+                                        {% csrf_token %}
+                                        {% if user.is_authenticated %}
+                                        <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="以後購買｜Save for later">
+                                            <button type="submit" id="option_add_to_wishlist" class="btn btn-primary"><i class="w-full fa-solid fa-list"></i></button>
+                                        </div>
+                                        {% endif %}
+                                        <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品｜Delete">
+                                            <button type="submit" id="option_delete_cart_item" class="btn btn-error"><i class="w-full fa-solid fa-trash"></i></button>
+                                        </div>
+                                        <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="分享｜Share">
+                                            <button type="submit" id="option_share_cart_item" class="btn btn-success"><i class="fa-solid fa-share-from-square"></i></button>
+                                        </div>
+                                        {% if user.is_authenticated %}
+                                        <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品｜Add to favorite">
+                                            <button type="submit" id="option_add_to_favorite" class="btn btn-secondary"><i class="w-full fa-solid fa-bookmark"></i></button>
+                                        </div>
+                                        {% endif %}
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                        {% if not forloop.last %}
+                            <div id="divider_{{item.product_variation_id}}"  class="divider pl-1/10"></div>
+                        {% endif %}
+                    {% endfor %}
+    
+                    <div class="border-t-4 border-double border-base-300"></div>
+                    <div class="text-right text-md text-base-content font-normal p-3">
+                        寶貝金額小計|Sub-Total
+                        <small id="cart_items_quantity_total">(總|Total <b>{{ quantity }}</b>件|item{% if quantity > 1 %}s{% endif %})</small>
+                        :&nbsp;<span id="cart_items_sub_total" data-value="{{total}}" class="font-semibold">CNY {{total|floatformat:2|intcomma}}</span>
+                    </div>
+                </ul>
+                {% else %}
+                <div id="cart_empty_el" class="flex flex-col justify-center my-[5rem]">
+                    <h2 class="h2shadow col-span-2 mx-auto text-center mb-2">購物車是空的 | CART IS EMPTY</h2>
+                    <a href="{% url 'products' category_slug='all' %}" class="btn btn-wide btn-outline btn-primary mx-auto font-light">繼續選購 ｜ Continue Shopping</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- json data from backend -->
+            {{ cart_items_json|json_script:"cartitems-data-container" }}
+            {{ wishlist_json|json_script:"wishlist-data-container" }}
+            
+            <!-- wish-list items -->
+            <div id="wishlist_wrapper">
+                {% if wishlist is not None %}
+                <h2 class="text-[1.25rem] mb-5">未來購物清單｜Wishlist</h2>
+                <ul id="wishlist_wrapper_ul" class="list bg-base-300 rounded-box shadow-md mb-20 text-secondary">
+                    <br>
+                    {% for item in wishlist %}
+                        <li id="wish_item_{{item.product_variation_id}}" class="flex gap-3 p-3">
+                            <div class="flex flex-col flex-grow justify-center">
+                                <!-- top -->
+                                <div class="flex justify-between items-center mb-3">
+                                    <!-- item-name -->
+                                    <a id="wish_item_product_link_{{item.product_variation_id}}" href="{{ item.product_variation.product.get_url }}" class="list-col-grow">
+                                        <div id="wish_item_product_name_{{item.product_variation_id}}" >{{ item.product_variation.product.product_name }}</div>
+                                        <div class="text-xs uppercase font-semibold opacity-60">{{ item.sku }}</div>
+                                    </a>
+                                    <!-- item-quantity -->
+                                    <div class="flex w-28 h-4/5 border-primary ">
+                                        <div class="shadow rounded-3xl">
+                                            <div class="flex items-center h-full p-5">
+                                                {% if item.stock > 1 %}
+                                                <div class="stat-title text-success font-black">存貨｜Stock: {{ item.stock }}件</div>
+                                                {% elif item.stock == 1 %}
+                                                <div class="stat-title text-warning font-black">僅剩｜Last: 1件</div>
+                                                {% elif item.stock == 0 %}
+                                                <div class="stat-title text-error font-black">缺貨｜Out of Stock</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- item-unit_price -->
+                                    <div class="text-right text-base-content pr-5">
+                                        CNY {{item.product_variation.price|floatformat:2|intcomma}}
+                                    </div>
+                                </div>
+            
+                                <!-- bottom -->
+                                <div class="flex gap-5">
+                                    <!-- image -->
+                                    <a href="{{ item.product_variation.product.get_url }}" class="md:size-38 aspect-square"><img class="w-full h-full rounded-box object-cover" src="{{item.product_variation.images.url}}"/></a>
+
+                                    <div class="flex w-full">
+                                        <!-- details -->
+                                        <div class="text-[12px] w-3/5 pr-10">
+                                            <div><b>發貨地：</b>中國</div>
+                                            <div><b>顏色：</b>橙色</div>
+                                            <div><b>尺寸/規格：</b>含2026日历最新版</div>
+                                        </div>
+                                        <!-- option buttons -->
+                                        <form id="wishlist_item_options_form_{{item.product_variation_id}}" class="flex flex-wrap w-2/5 gap-3 content-center p-2">
+                                            {% csrf_token %}
+                                            <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="轉入購物車｜Move to cart">
+                                                <button {% if item.stock == 0 %} disabled {% endif %} id="option_add_wish_to_cart" class="btn btn-outline btn-primary"><i class="fa-solid fa-cart-plus"></i></i></button>
+                                            </div>
+                                            <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品｜Delete">
+                                                <button id="option_delete_wish" class="btn btn-outline btn-error"><i class="w-full fa-solid fa-trash"></i></button>
+                                            </div>
+                                            <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="分享｜Share">
+                                                <button id="option_share_wish_link" class="btn btn-outline btn-success"><i class="fa-solid fa-share-from-square"></i></button>
+                                            </div>
+                                            <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品｜Favorite">
+                                                <button id="option_add_wish_to_favorite" class="btn btn-outline btn-secondary"><i class="w-full fa-solid fa-bookmark"></i></button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        {% if not forloop.last %}
+                            <div id="divider_{{item.product_variation_id}}" class="divider pl-1/10"></div>
+                        {% endif %}
+                    {% endfor %}
+                    <br>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- RIGHT - PAYMENT CALCULATIONS -->
+        <div class="col-span-1">
+            <!-- cost estimate form -->
+            <fieldset class="fieldset bg-primary-content border-base-300 rounded-box w-full border p-4">
+                <form id="estimate_shipping_charge" method="POST" autocomplete="off">
+                    {% csrf_token %}
+                    <div class="text-left text-neutral text-base font-extrabold">運費計算｜Shipping Charge</div>
+                    {% if user.is_authenticated and addresses%}
+                        <label class="flex gap-2 cursor-pointer items-center">
+                            <input type="radio" name="shipping_selection" class="radio radio-sm theme-controller" value="default"/>
+                            <i class="fa-solid fa-a"></i>選擇目的地｜Select destination
+                        </label>
+                    {% endif %}
+                    <!-- Destination -->
+                    <div class="tabs tabs-lift">
+                        <!-- WORLD -->
+                        <input type="radio" name="zone" value="global" id="radio_tab1" class="tab" aria-label="地球村|🌏" data-is_checked="true" checked />
+                        <div class="tab-content bg-base-100 border-base-300 p-6">
+                            <label for="global_select" class="label mb-2">送至|Ship to</label>
+                            <select id="global_select" name="global" class="select w-full destination_input">
+                                <option value="" disabled selected>🌏 請選擇|Please select</option>
+                                {% for destination in global_destinations %}
+                                    <option value="{{destination.0}}">{{ destination.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!-- GREATER CHINA -->
+                        <input type="radio" name="zone" value="greater_china" id="radio_tab2" class="tab" aria-label="港澳台|🇭🇰🇲🇴🇹🇼" data-is_checked="false"/>
+                        <div class="tab-content bg-base-100 border-base-300 p-6">
+                            <label for="greater_china_select" class="label mb-2">送至|Ship to</label>
+                            <select id="greater_china_select" name="greater_china" class="select w-full destination_input">
+                                <option value="" disabled selected>🇭🇰🇲🇴🇹🇼 請選擇|Please select</option>
+                                {% for destination in greater_china_destinations %}
+                                    <option value="{{destination.0}}">{{ destination.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!-- MAINLAND CHINA -->
+                        <input type="radio" name="zone" value="china" id="radio_tab3" class="tab" aria-label="中國大陸|🇨🇳" data-is_checked="false"/>
+                        <div class="tab-content bg-base-100 border-base-300 p-6">
+                            <label for="china_select" class="label mb-2">送至|Ship to</label>
+                            <select id="china_select" name="china" class="select w-full destination_input">
+                                <option value="" disabled selected>🇨🇳 請選擇|Please select</option>
+                                {% for destination in mainland_china_destinations %}
+                                    <option value="{{destination.0}}">{{ destination.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                <!-- addresses to choose -->
+                    {% if user.is_authenticated and addresses %}
+                        <div class="divider">OR</div>
+                        <!-- Radio Button -->
+                        <label class="flex gap-2 cursor-pointer items-center">
+                            <input type="radio" name="shipping_selection" class="radio radio-sm theme-controller" value="address_book"/>
+                            <i class="fa-solid fa-b"></i>使用通訊錄地址｜From Address Book
+                        </label>
+                        <div id="address_options_wrapper">
+                            <div class="col-span-1 card">
+                                <div class="card-body bg-base-300 rounded-2xl relative flex-grow-0 shadow-sm">
+                                    {% if addresses|length > 1 %}
+                                        {% if default_address %}
+                                        <div id="address_display_{{default_address.id}}" class="relative collapse collapse-arrow join-item">
+                                            <!-- address label -->
+                                            <div id="default_add_label_{{default_address.id}}" value="{{default_address.label}}" class="absolute top-[0rem] right-[0.5rem] z-1">
+                                                {% if default_address.label == "home" %}
+                                                    <i class="text-secondary-content fa-solid fa-house"></i>
+                                                {% elif default_address.label == "work" %}
+                                                    <i class="text-info-content fa-regular fa-building"></i>
+                                                {% elif default_address.label == "school" %}
+                                                    <i class="text-success fa-solid fa-school"></i>
+                                                {% endif %}
+                                            </div>
+                                            <!-- default mark -->
+                                            <span id="default_sign_{{default_address.id}}" class="absolute top-[0rem] left-[0.5rem] badge badge-xs badge-warning">默認地址｜Default Address</span>
+                                            <!-- collapse btn -->
+                                            <input id="address_collapse_btn" type="checkbox"/>
+                                            <!-- address details -->
+                                            <div class="collapse-title pb-[8px] font-semibold">
+                                                <ul class="flex flex-col gap-2 text-xs">
+                                                    <li>
+                                                        <i class="fa-solid fa-map-location-dot"></i>
+                                                        <span id="default_add_line_1_{{default_address.pk}}">&nbsp;&nbsp;{{default_address.address_line_1}}</span>
+                                                    </li>
+                                                    <li id="address_2" class="opacity-50">
+                                                        {% if default_address.address_line_2 %}
+                                                        <i class="fa-solid fa-map-location"></i>
+                                                        {% endif %}
+                                                        <span id="default_add_line_2_{{default_address.pk}}">
+                                                            {% if default_address.address_line_2 %}
+                                                            &nbsp;&nbsp;{{default_address.address_line_2}}
+                                                            {% endif %}
+                                                        </span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            <div class="collapse-content text-sm font-semibold {% if default_address.address_line_2 %} my-0 {% else %} -my-2{% endif %}">
+                                                <ul class="flex flex-col gap-2 text-xs ">
+                                                    <li>
+                                                        <i class="fa-solid fa-tree-city"></i>
+                                                        <span id="default_add_city_{{default_address.pk}}">&nbsp;&nbsp;{{default_address.city}}</span>
+                                                    </li>
+                                                    <li>
+                                                        <i class="fa-solid fa-map"></i>
+                                                        <span id="default_add_state_{{default_address.pk}}" data-value="{{default_address.state_province_region}}">&nbsp;&nbsp;{{default_address.state_province_region}}</span>
+                                                    </li>
+                                                    <li>
+                                                        <i class="fa-solid fa-globe"></i>
+                                                        <span id="default_add_country_{{default_address.pk}}" data-value="{{default_address.country}}">&nbsp;&nbsp;{{default_address.get_country_display}}</span>
+                                                    </li>
+                                                    <li>
+                                                        <i class="fa-solid fa-envelopes-bulk"></i>
+                                                        <span id="default_add_post_code_{{default_address.pk}}">
+                                                            {% if default_address.postal_code %}
+                                                                &nbsp;&nbsp;{{default_address.postal_code}}
+                                                            {% endif %}
+                                                        </span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        {% elif not default_address %}
+                                        <div id="address_display_{{addresses.0.id}}" class="collapse collapse-arrow join-item">
+                                            <!-- address_label -->
+                                            <div id="default_add_label_{{addresses.0.id}}" value="{{addresses.0.label}}" class="absolute top-[0rem] right-[0.5rem] z-1">
+                                                {% if addresses.0.label == "home" %}
+                                                    <i class="text-secondary-content fa-solid fa-house"></i>
+                                                {% elif addresses.0.label == "work" %}
+                                                    <i class="text-info-content fa-regular fa-building"></i>
+                                                {% elif addresses.0.label == "school" %}
+                                                    <i class="text-success fa-solid fa-school"></i>
+                                                {% endif %}
+                                            </div>
+                                            <!-- collapse btn -->
+                                            <input id="address_collapse_btn" type="checkbox"/>
+                                            <!-- address details -->
+                                            <div class="collapse-title pb-[8px] font-semibold">
+                                                <ul class="flex flex-col gap-2 text-xs">
+                                                    <li>
+                                                        <i class="fa-solid fa-map-location-dot"></i>
+                                                        <span id="default_add_line_1_{{addresses.0.pk}}">&nbsp;&nbsp;{{addresses.0.address_line_1}}</span>
+                                                    </li>
+                                                    <li id="address_2" class="opacity-50">
+                                                        {% if addresses.0.address_line_2 %}
+                                                        <i class="fa-solid fa-map-location"></i>
+                                                        {% endif %}
+                                                        <span id="default_add_line_2_{{addresses.0.pk}}">
+                                                            {% if addresses.0.address_line_2 %}
+                                                            &nbsp;&nbsp;{{addresses.0.address_line_2}}
+                                                            {% endif %}
+                                                        </span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            <div class="collapse-content text-sm font-semibold {% if addresses.0.address_line_2 %} my-0 {% else %} -my-2{% endif %}">
+                                                <ul class="flex flex-col gap-2 text-xs ">
+                                                    <li>
+                                                        <i class="fa-solid fa-tree-city"></i>
+                                                        <span id="default_add_city_{{addresses.0.pk}}">&nbsp;&nbsp;{{addresses.0.city}}</span>
+                                                    </li>
+                                                    <li>
+                                                        <i class="fa-solid fa-map"></i>
+                                                        <span id="default_add_state_{{addresses.0.pk}}" data-value="{{addresses.0.state_province_region}}">&nbsp;&nbsp;{{addresses.0.state_province_region}}</span>
+                                                    </li>
+                                                    <li>
+                                                        <i class="fa-solid fa-globe"></i>
+                                                        <span id="default_add_country_{{addresses.0.pk}}" data-value="{{addresses.0.country}}">&nbsp;&nbsp;{{addresses.0.get_country_display}}</span>
+                                                    </li>
+                                                    <li>
+                                                        <i class="fa-solid fa-envelopes-bulk"></i>
+                                                        <span id="default_add_post_code_{{addresses.0.pk}}">
+                                                            {% if addresses.0.postal_code %}
+                                                                &nbsp;&nbsp;{{addresses.0.postal_code}}
+                                                            {% endif %}
+                                                        </span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        <!-- Open the modal using ID.showModal() method -->
+                                        <button type="button" class="btn btn-primary btn-block" onclick="change_address_modal.showModal()">更&nbsp;&nbsp;&nbsp;換｜Change</button>
+                                        <dialog id="change_address_modal" class="modal">
+                                            <!-- Use flex-col and overflow-hidden to contain the scrollable section -->
+                                            <div class="modal-box p-0 flex flex-col max-h-[60vh] w-11/12 max-w-2xl">
+                                                <!-- Header Block: Fixed at top -->
+                                                <div class="p-6 border-b bg-base-100 shrink-0">
+                                                    <h3 class="font-bold text-lg">更換地址｜Change Address</h3>
+                                                    <p class="text-sm opacity-60">請選擇配送地址｜Please select shipping location</p>
+                                                </div>
+
+                                                <!-- Contents: Scrollable middle section -->
+                                                <div class="p-6 overflow-y-auto grow bg-base-200/30">
+                                                    {% for address in addresses %}
+                                                    <div id="address_option_{{address.id}}" class="grid grid-cols-7 items-center relative">
+                                                        <!-- select Radio -->
+                                                        <input id="default_address_input_{{address.id}}" type="radio" name="default_address" class="col-span-1 radio">
+                                                        <!-- label -->
+                                                        <div id="add_label_{{address.id}}" value="{{address.label}}" class="absolute top-[2rem] right-[1rem] z-1">
+                                                            {% if address.label == "home" %}
+                                                                <i class="text-secondary-content fa-solid fa-house"></i>
+                                                            {% elif address.label == "work" %}
+                                                                <i class="text-info-content fa-regular fa-building"></i>
+                                                            {% elif address.label == "school" %}
+                                                                <i class="text-success fa-solid fa-school"></i>
+                                                            {% endif %}
+                                                        </div>
+                                                        <!-- details -->
+                                                        <div class="col-span-6 card my-3">
+                                                            <div class="card-body bg-base-300 rounded-2xl relative flex-grow-0 shadow-sm pt-[1rem]">
+                                                                <!-- default mark -->
+                                                                {% if address.is_default %}
+                                                                <span id="add_default_sign_{{address.pk}}" class="absolute top-[1rem] left-[1rem] badge badge-xs badge-warning">
+                                                                        默認地址｜Default Address
+                                                                </span>
+                                                                {% endif %}
+                                                                <!-- details -->
+                                                                <ul class="flex flex-col gap-2 text-xs mt-5">
+                                                                    <li>
+                                                                        <i class="fa-solid fa-map-location-dot"></i>
+                                                                        <span id="add_line_1_{{address.pk}}">&nbsp;&nbsp;{{address.address_line_1}}</span>
+                                                                    </li>
+                                                                    <li>
+                                                                        {% if address.address_line_2 %}
+                                                                        <i class="fa-solid fa-map-location"></i>
+                                                                        {% endif %}
+                                                                        <span id="add_line_2_{{address.pk}}">
+                                                                            {% if address.address_line_2 %}
+                                                                            &nbsp;&nbsp;{{address.address_line_2}}
+                                                                            {% endif %}
+                                                                        </span>
+                                                                    </li>
+                                                                    <li class="-my-1"></li>
+                                                                    <li>
+                                                                        <i class="fa-solid fa-tree-city"></i>
+                                                                        <span id="add_city_{{address.pk}}">&nbsp;&nbsp;{{address.city}}</span>
+                                                                    </li>
+                                                                    <li>
+                                                                        <i class="fa-solid fa-map"></i>
+                                                                        <span id="add_state_{{address.pk}}" data-value="{{address.state_province_region}}">&nbsp;&nbsp;{{address.state_province_region}}</span>
+                                                                    </li>
+                                                                    <li>
+                                                                        <i class="fa-solid fa-globe"></i>
+                                                                        <span id="add_country_{{address.pk}}" data-value="{{address.country}}">&nbsp;&nbsp;{{address.get_country_display}}</span>
+                                                                    </li>
+                                                                    <li>
+                                                                        <i class="fa-solid fa-envelopes-bulk"></i>
+                                                                        <span id="add_post_code_{{address.pk}}">
+                                                                            {% if address.postal_code %}
+                                                                                &nbsp;&nbsp;{{address.postal_code}}
+                                                                            {% endif %}
+                                                                        </span>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+
+                                                <!-- Action Buttons: Fixed at bottom -->
+                                                <div class="p-4 border-t bg-base-100 modal-action m-0 shrink-0">
+                                                    <button id="apply_default_address_btn" type="button" class="btn">適用｜Apply</button>
+                                                    <button type="button" class="btn" command="close" commandfor="change_address_modal">取消｜Cancel</button>
+                                                </div>
+                                            </div>
+                                        </dialog>
+                                    {% elif addresses|length == 1 %}
+                                    <div id="single_address_display_{{addresses.0.id}}">
+                                        <div id="single_address_label_display_{{addresses.0.id}}" class="absolute top-3 right-3 z-1">
+                                            {% if addresses.0.label == "home" %}
+                                                <i class="text-secondary-content fa-solid fa-house"></i>
+                                            {% elif addresses.0.label == "work" %}
+                                                <i class="text-info-content fa-regular fa-building"></i>
+                                            {% elif addresses.0.label == "school" %}
+                                                <i class="text-success-content fa-solid fa-school"></i>
+                                            {% endif %}
+                                        </div>
+                                        <ul class="flex flex-col gap-2 text-xs">
+                                            <li>
+                                                <i class="fa-solid fa-map-location-dot"></i>
+                                                <span id="default_add_line_1">&nbsp;&nbsp;{{addresses.0.address_line_1}}</span>
+                                            </li>
+                                            <li>
+                                                {% if addresses.0.address_line_2 %}
+                                                <i class="fa-solid fa-map-location"></i>
+                                                {% endif %}
+                                                <span id="default_add_line_2">
+                                                    {% if addresses.0.address_line_2 %}
+                                                    &nbsp;&nbsp;{{addresses.0.address_line_2}}
+                                                    {% endif %}
+                                                </span>
+                                            </li>
+                                            <li class="-my-1"></li>
+                                            <li>
+                                                <i class="fa-solid fa-tree-city"></i>
+                                                <span id="default_add_city">&nbsp;&nbsp;{{addresses.0.city}}</span>
+                                            </li>
+                                            <li>
+                                                <i class="fa-solid fa-map"></i>
+                                                <span id="default_add_state" data-value="{{addresses.0.state_province_region}}">&nbsp;&nbsp;{{addresses.0.state_province_region}}</span>
+                                            </li>
+                                            <li>
+                                                <i class="fa-solid fa-globe"></i>
+                                                <span id="default_add_country" data-value="{{addresses.country}}">&nbsp;&nbsp;{{addresses.0.get_country_display}}</span>
+                                            </li>
+                                            <li>
+                                                <i class="fa-solid fa-envelopes-bulk"></i>
+                                                <span id="default_add_post_code">
+                                                    {% if addresses.0.postal_code %}
+                                                        &nbsp;&nbsp;{{addresses.0.postal_code}}
+                                                    {% endif %}
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    <button id="shipping_charge_submit_btn" type="submit" class="w-full btn btn-soft btn-primary mt-4 tooltip tooltip-primary before:text-[10px] disabled:text-base-content disabled:opacity-80" data-tip="最終金額將基於訂單配送地址">運費計算｜Calculate Shipping</button>
+                </form>
+
+                <!-- calculated delivery cost -->
+                    <div id="shipping_cost_display" data-value="0" data-checked="false" class="my-3 w-full rounded-4xl outline-2 outline-dotted py-2 text-center text-sm">
+                        運費估算 - 待定
+                    </div>
+                    <div class="divider"></div>
+                
+                <!-- offer coupon -->
+                <form id="discount_code_form" data-type="" data-action="apply" method="POST" autocomplete="off">
+                    {% csrf_token %}
+                    <label class="label" for="discount_code_input">優惠券代碼|Offer Code</label>
+                    <div class="input flex w-full">
+                        <input id="discount_code_input" type="text" name="discount_code" class="w-4/5 text-xs" placeholder="Please enter offer code｜請輸入優惠碼"/>
+                        <button id="discount_submit_btn" type="submit" class="w-1/5 text-center cursor-pointer text-[0.5rem] badge badge-soft badge-primary">適用|Apply</button>
+                    </div>
+                </form>
+
+                <!-- gift voucher -->
+                <form id="cash_voucher_form" data-type="apply" autocomplete="off">
+                    {% if not user.is_authenticated %}
+                        <label id="cash_voucher_balance" data-value="0" class="label">請<a class="text-accent -ml-1 -mr-1" href="{% url 'login' %}">登入</a>後查詢禮品券餘額|Please<a class="text-accent -ml-1 -mr-1" href="{% url 'login' %}">Login</a> to retreive</label>
+                    {% else %}
+                        <label id="cash_voucher_balance" for="cash_voucher_amount_input" data-value="{{ cash_vouchers_total_balance }}" class="label">禮品券餘額|Voucher Balance: CNY {{ cash_vouchers_total_balance|floatformat:2|intcomma }}</label>
+                    {% endif %}
+                    
+                    <div class="input flex w-full">
+                        {% if not user.is_authenticated %}
+                            <input id="cash_voucher_amount_input" data-value="0" type="number" class="w-4/5 text-xs" disabled placeholder="請登入後查詢餘額|Please log in to retreive" />
+                        {% else %}
+                            {% if not cash_vouchers_total_balance > 0 %} 
+                                <input id="cash_voucher_amount_input" data-value="0" type="number" class="w-4/5 text-xs" disabled placeholder="當前餘額為零|Current balance is 0" />
+                                {% else %}
+                                <input id="cash_voucher_amount_input" data-value="0" type="number" min="0" step="0.01" name="voucher_applied" class="w-4/5 text-xs" placeholder="請輸入所需金額|Please enter amount" />
+                                <button id="cash_voucher_submit_btn" type="submit" class="w-1/5 text-center cursor-pointer text-[0.5rem] badge badge-soft badge-primary">適用|Apply</button>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </form>
+                <div class="divider"></div>
+
+                <table class="w-full bg-transparent border-collapse table-fixed">
+                    <thead>
+                        <tr>
+                            <!-- 50% Width -->
+                            <th class="w-[32%] py-1 text-left"></th>
+                            <!-- 25% Width -->
+                            <th class="w-[32%] py-1 text-right">CNY</th>
+                            <!-- 25% Width -->
+                            <th class="w-[36%] py-1 text-right text-info-content">
+                                <form id="select_currency_form" method="POST" autocomplete="off">
+                                    {% csrf_token %}
+                                    <select id="select_currency_input" name="select_currency" class="focus:outline-none focus:ring-0 focus:border-transparent">
+                                        {% for currency_code in currency_selection %}
+                                            <option {% if request.currency == currency_code %}
+                                                        selected
+                                                    {% elif not request.currency %}
+                                                        {% if currency_code == "HKD" %}
+                                                            selected
+                                                        {% endif %}
+                                                    {% endif %} 
+                                                    value="{{ currency_code }}" >{{ currency_code }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- products subtotal -->
+                        <tr class="font-normal">
+                            <td class="py-1 text-left text-xs/4">商品小計<br>Products</td>
+                            <td class="py-1 mr-2 text-right">
+                                <!-- &#165; -->
+                                <span id="products_subtotal_amount" data-value="{{ total }}" data-currency="CNY" class="currency-display">
+                                    {{ cart_total|floatformat:2|intcomma }}
+                                </span>
+                            </td>
+                            <td class="py-1 text-right text-info-content">
+                                <span class="currency-display" id="products_subtotal_amount_foreign" 
+                                    data-value="{{ total_in_target_currency }}" data-currency="{{ foreign_currency_code }}">
+                                    {{ total_in_target_currency }}
+                                </span>
+                            </td>
+                        </tr>
+                        <!-- shipping cost -->
+                        <tr class="font-normal">
+                            <td class="py-1 text-left text-xs/4">運費<br>Shipping</td>
+                            <td class="py-1 mr-2 text-right">
+                                <!-- &#165; -->
+                                <span id="shipping_cost_amount" data-value="0"  data-currency="CNY" class="currency-display">
+                                    0.00
+                                </span>
+                            </td>
+                            <td class="py-1 text-right text-info-content">
+                                <!-- <span class="foreign_currency_locale">{{foreign_currency_symbol}}</span> -->
+                                <span id="shipping_cost_amount_foreign" data-value="0" data-currency="{{ foreign_currency_code }}" class="currency-display">
+                                    0.00
+                                </span>
+                            </td>
+                        </tr>
+                        <!-- discount -->
+                        <tr class="font-normal">
+                            <td class="py-1 text-left text-xs/4">優惠<br>Discount</td>
+                            <td class="py-1 mr-2 text-right">
+                                <!-- &#165; -->
+                                <span id="discount_amount" data-value="0" data-currency="CNY" class="currency-display">
+                                    0.00
+                                </span>
+                            </td>
+                            <td class="py-1 text-right text-info-content">
+                                <!-- <span class="foreign_currency_locale">{{foreign_currency_symbol}}</span> -->
+                                <span id="discount_amount_foreign" data-value="0" data-currency="{{ foreign_currency_code }}" class="currency-display">
+                                    0.00
+                                </span>
+                            </td>
+                        </tr>
+                        <!-- tax -->
+                        <tr class="font-normal">
+                            <td class="py-1 text-left text-xs/4">稅&通關费用<br>Tax & Duty</td>
+                            <td class="py-1 mr-2 text-right">
+                                <!-- &#165; -->
+                                <span id="tax_amount" data-value="0" data-currency="CNY" class="currency-display">
+                                    0.00
+                                </span>
+                            </td>
+                            <td class="py-1 text-right text-info-content">
+                                <!-- <span class="foreign_currency_locale">{{foreign_currency_symbol}}</span> -->
+                                <span id="tax_amount_foreign" data-value="0" data-currency="{{ foreign_currency_code }}" class="currency-display">
+                                    0.00
+                                </span>
+                            </td>
+                        </tr>
+                        <!-- cash voucher -->
+                        <tr class="font-normal">
+                            <td class="py-1 text-left text-xs/4">禮品券<br>Voucher</td>
+                            <td class="py-1 mr-2 text-right">
+                                <!-- &#165; -->
+                                <span id="cash_voucher_amount" data-value="0" data-currency="CNY" class="currency-display">
+                                    0.00
+                                </span>
+                            </td>
+                            <td class="py-1 text-right text-info-content">
+                                <!-- <span class="foreign_currency_locale">{{foreign_currency_symbol}}</span> -->
+                                <span id="cash_voucher_amount_foreign" data-value="0" data-currency="{{ foreign_currency_code }}" class="currency-display">
+                                    0.00
+                                </span>
+                            </td>
+                        </tr>
+                        <!-- total amount -->
+                        <tr class="font-semibold text-[0.8rem]">
+                            <td class="py-1 text-left text-xs/4">總支付金額<br>Total Due</td>
+                            <td class="py-1 mr-2 text-right">
+                                <!-- &#165; -->
+                                <span id="total_amount" data-value="{% if cart_items|length != 0 %}{{total}}{% else %}0.00{% endif %}" data-currency="CNY" class="currency-display">
+                                    {% if cart_items|length != 0 %}{{total|floatformat:2|intcomma}}{% else %}0.00{% endif %}
+                                </span>
+                            </td>
+                            <td class="py-1 text-right text-info-content">
+                                <span class="currency-display" id="total_amount_foreign"
+                                    data-value="{{ total_in_target_currency }}" data-currency="{{ foreign_currency_code }}">
+                                    {{ total_in_target_currency }}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- exchange rate expiry warning -->
+                <p id="locked_exchange_rate" data-value="{{ locked_rate|floatformat:4|intcomma }}" data-locale="{{foreign_currency_locale}}">*兌換率｜Exchange Rate：{{ locked_rate|floatformat:4|intcomma }} <br/>(店內匯率 - 24小時有效｜Store Exchange Rate - Valid for 24hrs)</p>
+                <p>**非人民幣金額可能因進位而略有不同｜Minor rounding differences may occur for non-CNY currency.</p>
+                <div id="price-warning" data-value="{{ locked_rate|floatformat:4|intcomma }}" class="hidden bg-yellow-100 p-2">
+                    兌換率 <strong>{{ locked_rate|floatformat:4|intcomma }}</strong> 已失效。請<a href="." class="underline font-semibold">更新頁面</a>重新計算。
+                    <br>
+                    Exchange rate <strong>{{ locked_rate|floatformat:4|intcomma }}</strong> has expired. <a href="." class="underline font-semibold">Refresh page</a> to recalculate.
+                </div>
+
+                <!-- go to pay -->
+                <button id="checkout_btn" class="btn btn-primary mt-4 tooltip tooltip-primary before:text-[10px] disabled:text-base-content disabled:opacity-80" disabled>去結算｜Checkout</button>
+
+                <!-- payment methods -->
+                <div class="flex justify-around fill-primary stroke-primary">
+                    <!-- visa -->
+                    <svg width="48" height="48" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" xml:space="preserve">
+                        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                        <g id="SVGRepo_iconCarrier"> 
+                            <g> 
+                                <g> 
+                                    <path d="M503.915,153.88c4.467,0,8.085-3.619,8.085-8.084v-31.459c0-20.619-16.775-37.394-37.395-37.394H37.395 C16.775,76.943,0,93.718,0,114.337v283.325c0,20.62,16.775,37.395,37.395,37.395h437.209c20.62,0,37.395-16.776,37.395-37.395 V172.026c0-4.465-3.618-8.084-8.084-8.084s-8.084,3.62-8.084,8.084V357.8H16.168V153.88H503.915z M16.168,114.337 c0-11.704,9.522-21.226,21.227-21.226h437.209c11.705,0,21.227,9.522,21.227,21.226v23.375H16.168V114.337z M495.832,373.968 v23.693c0,11.705-9.522,21.227-21.227,21.227H37.395c-11.705,0-21.227-9.522-21.227-21.227v-23.693H495.832z"></path> 
+                                </g> 
+                            </g> 
+                            <g> 
+                                <g> 
+                                    <path d="M247.995,187.737c-1.536-1.821-3.796-2.872-6.179-2.872h-34.488c-2.956,0-5.589,1.599-7,4.038 c-0.061-0.103-0.113-0.212-0.18-0.315c-1.496-2.271-4.032-3.638-6.752-3.638h-36.501c-3.328,0-6.315,2.039-7.528,5.138 l-24.222,61.892l-10.738-51.509c-0.026-0.125-0.055-0.249-0.087-0.372c-1.836-7.107-7.231-15.711-22.504-16.352 c-0.112-0.004-0.225-0.006-0.338-0.006H38.099c-3.893,0-7.234,2.774-7.947,6.602l-0.475,2.551 c-0.787,4.224,1.867,8.327,6.043,9.339c10.152,2.461,19.59,5.898,28.17,10.187c-0.216,1.205-0.163,2.467,0.196,3.694 L94.93,321.538c1.008,3.446,4.169,5.814,7.759,5.814c0.003,0,0.006,0,0.01,0l36.469-0.042c3.227-0.004,6.143-1.926,7.418-4.891 l50.504-117.497l-19.27,113.073c-0.4,2.348,0.255,4.753,1.791,6.573c1.536,1.819,3.796,2.869,6.177,2.869h34.431 c3.94,0,7.305-2.84,7.969-6.723l21.597-126.403C250.186,191.962,249.532,189.558,247.995,187.737z M91.299,199.91 c6.153,0.289,6.83,2.175,7.321,4.052l3.25,15.591c-7.757-7.554-16.819-14.157-26.984-19.643H91.299z M133.828,311.148 l-25.086,0.028L86.688,235.8c12.059,11.415,21.261,24.052,25.218,33.117l3.455,12.49c0.928,3.353,3.899,5.738,7.375,5.918 c3.472,0.18,6.676-1.885,7.945-5.128l31.731-81.079h18.709L133.828,311.148z M213.4,311.269h-18.032l18.783-110.236h18.083 L213.4,311.269z"></path> 
+                                </g> 
+                            </g> 
+                            <g>
+                                <g> 
+                                    <path d="M469.205,317.059l-27.773-125.725c-0.818-3.704-4.101-6.34-7.893-6.34h-26.607c-4.618,0-18.672,0-25.435,15.286 l-33.29,75.362c-0.845-16.501-11.834-29.368-33.527-39.267c-4.477-2.167-12.429-6.022-14.455-8.29 c0.99-0.939,4.271-2.826,11.405-2.826c0.041,0,0.083-0.001,0.124-0.001c10.163-0.147,17.358,2.155,22.471,4.193l2.933,1.345 c2.284,1.048,4.922,0.973,7.145-0.2c2.222-1.173,3.77-3.312,4.194-5.788l4.674-27.384c0.652-3.825-1.505-7.575-5.142-8.934 c-7.072-2.642-18.662-5.789-33.716-5.789c-38.786,0-66.055,20.444-66.313,49.692c-0.301,25.473,26.181,37.747,34.9,41.789 c11.678,5.375,12.972,7.63,13.113,8.022c0,0.001,0.011,0.051,0.008,0.213c-0.017,1.741-5.277,4.326-12.508,4.326 c-12.799,0-19.124-1.755-29.21-5.951l-4.274-1.963c-2.282-1.048-4.925-0.974-7.146,0.196c-2.223,1.173-3.773,3.311-4.196,5.788 l-4.84,28.325c-0.626,3.664,1.326,7.282,4.732,8.77c9.985,4.363,26.288,7.264,41.536,7.391c0.023,0,0.045,0,0.068,0 c19.474,0,36.143-4.586,48.203-13.262c1.054-0.758,2.054-1.558,3.03-2.375l-1.091,2.469c-1.105,2.5-0.872,5.39,0.62,7.679 c1.493,2.291,4.04,3.671,6.773,3.671h36.211c3.363,0,6.375-2.083,7.563-5.228c0.042-0.112,3.037-8.039,5.215-13.759 c3.775,0.004,8.951,0.01,14.3,0.016c6.376,0.006,13,0.014,17.807,0.018c1.254,5.65,2.737,12.484,2.759,12.583 c0.806,3.718,4.096,6.369,7.9,6.369h31.97c0.005,0,0.014,0,0.02,0c4.466,0,8.084-3.618,8.084-8.084 C469.547,318.583,469.428,317.8,469.205,317.059z M280.214,313.13c-11.338-0.098-21.985-1.897-29.281-3.989l1.965-11.503 c9.408,3.565,17.411,5.273,30.615,5.273c16.762,0,28.553-8.36,28.675-20.288c0.178-11.699-10.554-17.616-22.506-23.119 c-17.768-8.236-25.637-16.537-25.514-26.943c0.175-19.836,20.796-33.691,50.145-33.691c8.934,0,16.371,1.346,21.736,2.77 l-1.817,10.65c-5.83-1.826-13.228-3.335-22.662-3.198c-19.02,0.022-27.709,9.786-27.748,18.881 c-0.128,11.371,11.009,16.759,23.9,22.998c0.057,0.027,0.114,0.054,0.17,0.08c21.584,9.827,24.275,19.542,24.207,26.901 C331.886,299.643,312.005,313.121,280.214,313.13z M435.982,311.313c-0.988-4.514-2.242-10.193-2.838-12.719 c-0.861-3.65-4.119-6.228-7.869-6.228c-2.659,0-13.792-0.013-24.251-0.023c-9.275-0.011-18.023-0.021-19.874-0.021 c-3.328,0-6.314,2.038-7.527,5.136c-0.849,2.169-3.435,8.984-5.279,13.855h-18.216l46.158-104.495 c1.694-3.831,3.721-5.655,10.647-5.655h20.112l24.331,110.15H435.982z"></path> 
+                                </g> 
+                            </g> 
+                            <g> 
+                                <g> 
+                                    <path d="M427.548,272.807c-1.384-6.313-7.952-36.476-7.953-36.477l-2.337-10.901c-0.755-3.525-3.752-6.122-7.348-6.37 c-3.602-0.242-6.922,1.915-8.154,5.302c-1.057,2.911-2.663,7.061-3.623,9.54c-0.316,0.818-0.622,1.61-0.872,2.389l-0.032-0.013 c-0.109,0.28-10.881,28.138-13.698,35.304c-0.978,2.488-0.662,5.299,0.843,7.51c1.509,2.209,4.01,3.532,6.683,3.532h28.595 c2.448,0,4.764-1.109,6.299-3.017C427.486,277.699,428.073,275.198,427.548,272.807z M402.882,266.454 c1.392-3.587,2.908-7.498,4.309-11.115c0.813,3.733,1.664,7.641,2.422,11.115H402.882z"></path> 
+                                </g> 
+                            </g> 
+                        </g>
+                    </svg>
+                    <!-- master card -->
+                    <svg width="48" height="48"  version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                        <g id="SVGRepo_iconCarrier"> 
+                            <g> 
+                                <g> 
+                                    <path d="M503.916,153.88c4.466,0,8.084-3.62,8.084-8.084v-31.459c0-20.619-16.775-37.394-37.393-37.394H37.393 C16.775,76.942,0,93.718,0,114.336v283.326c0,20.62,16.775,37.395,37.393,37.395h437.212c20.619,0,37.393-16.776,37.393-37.395 V172.024c0-4.465-3.619-8.084-8.084-8.084s-8.084,3.62-8.084,8.084v225.637c0,11.705-9.522,21.227-21.225,21.227H37.393 c-11.703,0-21.225-9.522-21.225-21.227V114.336c0-11.704,9.522-21.226,21.225-21.226h437.212c11.703,0,21.225,9.522,21.225,21.226 v31.459C495.832,150.26,499.45,153.88,503.916,153.88z"></path> 
+                                </g> 
+                            </g> 
+                            <g> 
+                                <g> 
+                                    <path d="M387.84,171.529c-12.455,0.001-24.669,3.702-35.016,10.5c-10.344-6.798-22.558-10.5-35.013-10.5 c-35.137,0-63.722,28.587-63.722,63.724c0,35.136,28.586,63.721,63.722,63.721c12.458,0,24.672-3.7,35.013-10.499 c10.345,6.798,22.559,10.499,35.016,10.499c35.137,0,63.722-28.585,63.722-63.721C451.562,200.115,422.976,171.529,387.84,171.529 z M317.811,282.805c-26.221,0-47.553-21.332-47.553-47.552c0-26.222,21.333-47.556,47.553-47.556 c7.875,0,15.403,1.869,22.178,5.463l-0.001,0.001c-0.025,0.028-0.047,0.058-0.072,0.086c-0.694,0.789-1.362,1.596-2.014,2.416 c-0.217,0.273-0.424,0.552-0.636,0.829c-0.454,0.59-0.899,1.185-1.33,1.789c-0.226,0.318-0.449,0.637-0.67,0.959 c-0.412,0.599-0.811,1.205-1.2,1.817c-0.196,0.308-0.397,0.615-0.587,0.927c-0.458,0.746-0.897,1.503-1.323,2.267 c-0.098,0.177-0.205,0.349-0.302,0.527c-0.514,0.943-1.001,1.9-1.467,2.868c-0.127,0.265-0.244,0.535-0.367,0.801 c-0.331,0.714-0.652,1.431-0.956,2.157c-0.146,0.348-0.285,0.698-0.425,1.05c-0.267,0.67-0.523,1.346-0.766,2.026 c-0.127,0.356-0.255,0.71-0.377,1.068c-0.254,0.75-0.49,1.507-0.717,2.268c-0.083,0.278-0.174,0.554-0.252,0.834 c-0.293,1.038-0.563,2.084-0.803,3.139c-0.046,0.204-0.082,0.411-0.127,0.614c-0.186,0.856-0.359,1.716-0.51,2.583 c-0.064,0.362-0.117,0.725-0.174,1.09c-0.114,0.728-0.218,1.457-0.307,2.19c-0.047,0.388-0.093,0.775-0.133,1.164 c-0.078,0.756-0.139,1.514-0.191,2.275c-0.024,0.345-0.053,0.69-0.07,1.036c-0.056,1.099-0.093,2.202-0.093,3.311 s0.036,2.212,0.093,3.311c0.017,0.347,0.047,0.692,0.07,1.038c0.052,0.76,0.112,1.518,0.191,2.272 c0.04,0.39,0.085,0.779,0.133,1.167c0.089,0.732,0.193,1.461,0.306,2.186c0.057,0.364,0.111,0.73,0.175,1.093 c0.151,0.861,0.322,1.717,0.508,2.57c0.045,0.209,0.082,0.419,0.129,0.627c0.24,1.053,0.509,2.098,0.802,3.133 c0.081,0.286,0.174,0.566,0.258,0.85c0.224,0.755,0.459,1.505,0.71,2.249c0.123,0.362,0.252,0.721,0.382,1.081 c0.242,0.675,0.496,1.345,0.761,2.01c0.141,0.355,0.282,0.71,0.43,1.062c0.302,0.72,0.62,1.431,0.949,2.138 c0.126,0.273,0.245,0.548,0.375,0.818c0.465,0.966,0.951,1.921,1.464,2.862c0.099,0.182,0.208,0.359,0.308,0.54 c0.424,0.76,0.86,1.512,1.316,2.255c0.192,0.313,0.391,0.62,0.589,0.929c0.39,0.612,0.789,1.219,1.201,1.818 c0.22,0.32,0.441,0.638,0.666,0.954c0.434,0.608,0.883,1.207,1.339,1.801c0.209,0.272,0.413,0.548,0.627,0.816 c0.665,0.836,1.347,1.662,2.057,2.467c0.01,0.011,0.018,0.023,0.028,0.033c0.002,0.002,0.004,0.004,0.005,0.008 C333.216,280.937,325.687,282.805,317.811,282.805z M365.296,237.748c-0.014,0.264-0.038,0.526-0.055,0.789 c-0.039,0.567-0.083,1.133-0.142,1.696c-0.031,0.303-0.069,0.604-0.106,0.905c-0.066,0.529-0.139,1.055-0.222,1.58 c-0.047,0.3-0.095,0.599-0.148,0.898c-0.097,0.548-0.207,1.092-0.322,1.634c-0.056,0.261-0.107,0.523-0.167,0.781 c-0.168,0.725-0.352,1.447-0.554,2.161c-0.019,0.068-0.034,0.137-0.054,0.204c-0.224,0.785-0.473,1.561-0.737,2.33 c-0.078,0.225-0.164,0.447-0.245,0.672c-0.195,0.542-0.398,1.083-0.612,1.618c-0.109,0.269-0.222,0.536-0.336,0.803 c-0.208,0.489-0.423,0.976-0.647,1.457c-0.125,0.269-0.251,0.539-0.382,0.806c-0.239,0.49-0.489,0.975-0.746,1.458 c-0.127,0.239-0.25,0.481-0.382,0.718c-0.33,0.595-0.675,1.182-1.029,1.763c-0.069,0.112-0.131,0.227-0.2,0.338 c-0.43,0.69-0.88,1.368-1.345,2.035c-0.132,0.189-0.272,0.372-0.406,0.559c-0.342,0.474-0.688,0.946-1.048,1.409 c-0.184,0.237-0.374,0.469-0.563,0.703c-0.329,0.407-0.664,0.811-1.007,1.208c-0.207,0.239-0.415,0.476-0.626,0.712 c-0.127,0.141-0.261,0.278-0.39,0.418c-0.128-0.139-0.262-0.275-0.388-0.416c-0.212-0.236-0.421-0.475-0.63-0.716 c-0.341-0.396-0.674-0.796-1.001-1.201c-0.191-0.236-0.383-0.472-0.569-0.711c-0.355-0.456-0.696-0.921-1.033-1.388 c-0.139-0.194-0.285-0.384-0.421-0.58c-0.464-0.665-0.912-1.341-1.34-2.028c-0.076-0.121-0.143-0.246-0.218-0.366 c-0.349-0.572-0.689-1.15-1.013-1.735c-0.135-0.243-0.261-0.489-0.39-0.734c-0.252-0.476-0.5-0.955-0.736-1.439 c-0.134-0.273-0.262-0.548-0.39-0.824c-0.22-0.474-0.431-0.953-0.636-1.435c-0.116-0.275-0.234-0.549-0.345-0.826 c-0.211-0.525-0.409-1.055-0.6-1.588c-0.084-0.233-0.174-0.464-0.254-0.698c-0.263-0.767-0.51-1.54-0.734-2.322 c-0.023-0.08-0.041-0.162-0.064-0.241c-0.197-0.703-0.379-1.411-0.544-2.125c-0.061-0.263-0.113-0.529-0.169-0.794 c-0.115-0.538-0.224-1.077-0.32-1.62c-0.054-0.302-0.102-0.606-0.15-0.909c-0.082-0.522-0.155-1.044-0.22-1.57 c-0.038-0.304-0.076-0.607-0.107-0.912c-0.058-0.56-0.102-1.124-0.141-1.689c-0.018-0.265-0.042-0.529-0.056-0.795 c-0.043-0.828-0.069-1.659-0.069-2.494c0-0.835,0.027-1.665,0.069-2.494c0.014-0.266,0.038-0.53,0.056-0.796 c0.039-0.565,0.083-1.129,0.141-1.689c0.031-0.305,0.069-0.608,0.107-0.912c0.065-0.526,0.138-1.049,0.22-1.57 c0.047-0.304,0.096-0.607,0.15-0.909c0.096-0.543,0.205-1.082,0.32-1.62c0.056-0.265,0.108-0.53,0.169-0.794 c0.165-0.713,0.346-1.42,0.543-2.122c0.023-0.081,0.041-0.164,0.064-0.245c0.224-0.78,0.471-1.553,0.734-2.321 c0.081-0.236,0.171-0.468,0.255-0.702c0.192-0.531,0.389-1.061,0.599-1.585c0.112-0.278,0.23-0.553,0.346-0.828 c0.204-0.481,0.415-0.958,0.635-1.431c0.128-0.277,0.258-0.553,0.391-0.827c0.236-0.483,0.482-0.96,0.734-1.435 c0.13-0.246,0.258-0.494,0.392-0.737c0.324-0.585,0.663-1.162,1.012-1.734c0.074-0.122,0.142-0.247,0.218-0.368 c0.428-0.688,0.876-1.362,1.34-2.029c0.135-0.194,0.278-0.382,0.416-0.573c0.338-0.471,0.683-0.939,1.039-1.398 c0.183-0.236,0.373-0.469,0.562-0.702c0.33-0.409,0.666-0.814,1.011-1.213c0.204-0.236,0.41-0.472,0.619-0.705 c0.128-0.143,0.263-0.28,0.393-0.422c0.131,0.142,0.267,0.281,0.398,0.426c0.207,0.231,0.411,0.463,0.613,0.697 c0.346,0.4,0.683,0.806,1.014,1.217c0.189,0.233,0.378,0.466,0.562,0.702c0.356,0.458,0.7,0.926,1.038,1.396 c0.138,0.192,0.282,0.38,0.417,0.575c0.463,0.665,0.911,1.34,1.339,2.026c0.08,0.127,0.151,0.259,0.23,0.387 c0.345,0.565,0.68,1.135,1,1.713c0.137,0.248,0.266,0.499,0.399,0.749c0.25,0.471,0.495,0.944,0.728,1.423 c0.135,0.277,0.266,0.556,0.396,0.836c0.218,0.47,0.428,0.944,0.631,1.421c0.118,0.278,0.237,0.555,0.349,0.835 c0.209,0.521,0.405,1.047,0.596,1.575c0.086,0.237,0.178,0.473,0.26,0.711c0.263,0.765,0.509,1.536,0.733,2.315 c0.026,0.088,0.045,0.179,0.07,0.267c0.194,0.694,0.374,1.393,0.537,2.096c0.061,0.267,0.114,0.538,0.171,0.806 c0.114,0.535,0.222,1.071,0.318,1.611c0.054,0.302,0.102,0.606,0.15,0.909c0.082,0.522,0.155,1.044,0.22,1.57 c0.038,0.304,0.075,0.608,0.107,0.913c0.058,0.56,0.102,1.123,0.141,1.688c0.018,0.265,0.042,0.53,0.056,0.797 c0.043,0.828,0.069,1.659,0.069,2.493C365.366,236.089,365.339,236.919,365.296,237.748z M387.841,282.805 c-7.876,0-15.405-1.868-22.18-5.462c0.002-0.002,0.003-0.004,0.004-0.005c0.011-0.012,0.021-0.025,0.031-0.038 c0.707-0.803,1.388-1.627,2.052-2.461c0.217-0.273,0.424-0.551,0.636-0.827c0.453-0.59,0.898-1.184,1.329-1.787 c0.23-0.32,0.454-0.643,0.677-0.968c0.406-0.592,0.801-1.191,1.187-1.797c0.202-0.317,0.406-0.632,0.603-0.951 c0.445-0.726,0.872-1.463,1.287-2.205c0.111-0.197,0.23-0.391,0.337-0.59c0.51-0.936,0.994-1.885,1.456-2.846 c0.136-0.282,0.26-0.57,0.391-0.855c0.321-0.695,0.635-1.394,0.931-2.101c0.151-0.36,0.295-0.723,0.44-1.086 c0.262-0.658,0.512-1.318,0.751-1.984c0.132-0.366,0.264-0.733,0.389-1.103c0.248-0.732,0.479-1.471,0.7-2.213 c0.088-0.295,0.184-0.589,0.268-0.885c0.292-1.033,0.559-2.072,0.799-3.12c0.05-0.217,0.087-0.437,0.135-0.654 c0.183-0.843,0.354-1.69,0.502-2.543c0.065-0.368,0.119-0.737,0.177-1.107c0.113-0.721,0.216-1.445,0.305-2.173 c0.047-0.391,0.093-0.783,0.134-1.175c0.078-0.752,0.139-1.508,0.19-2.266c0.024-0.348,0.053-0.695,0.071-1.044 c0.056-1.098,0.093-2.201,0.093-3.309c0-1.108-0.036-2.212-0.093-3.311c-0.018-0.347-0.047-0.692-0.071-1.038 c-0.052-0.76-0.112-1.519-0.191-2.273c-0.04-0.39-0.085-0.778-0.133-1.166c-0.089-0.732-0.193-1.461-0.306-2.186 c-0.057-0.365-0.111-0.731-0.175-1.094c-0.151-0.865-0.323-1.722-0.509-2.577c-0.045-0.206-0.081-0.413-0.128-0.618 c-0.24-1.054-0.51-2.1-0.803-3.137c-0.08-0.281-0.17-0.558-0.254-0.839c-0.226-0.759-0.462-1.514-0.716-2.264 c-0.121-0.357-0.249-0.711-0.376-1.066c-0.245-0.681-0.5-1.358-0.769-2.03c-0.139-0.35-0.278-0.7-0.424-1.047 c-0.305-0.729-0.627-1.449-0.96-2.164c-0.122-0.264-0.237-0.53-0.363-0.792c-0.466-0.97-0.955-1.928-1.47-2.875 c-0.092-0.168-0.193-0.332-0.287-0.5c-0.431-0.774-0.876-1.54-1.341-2.297c-0.186-0.304-0.38-0.601-0.572-0.902 c-0.397-0.623-0.803-1.241-1.222-1.85c-0.213-0.311-0.429-0.621-0.649-0.928c-0.443-0.62-0.899-1.231-1.365-1.836 c-0.202-0.262-0.398-0.526-0.603-0.785c-0.678-0.854-1.373-1.694-2.096-2.515c6.776-3.594,14.305-5.463,22.179-5.463 c26.222,0,47.555,21.334,47.555,47.556C435.394,261.474,414.061,282.805,387.841,282.805z"></path> </g> </g> <g> <g> <path d="M169.658,312.565H66.715c-4.466,0-8.084,3.62-8.084,8.084c0,4.466,3.618,8.084,8.084,8.084h102.943 c4.466,0,8.084-3.618,8.084-8.084C177.743,316.183,174.124,312.565,169.658,312.565z"></path> </g> </g> <g> <g> <path d="M169.658,346.279H66.715c-4.466,0-8.084,3.619-8.084,8.084c0,4.466,3.618,8.084,8.084,8.084h102.943 c4.466,0,8.084-3.618,8.084-8.084C177.743,349.898,174.124,346.279,169.658,346.279z"></path> 
+                                    </g> 
+                                </g> 
+                                <g> 
+                                    <g> 
+                                        <path d="M161.611,177.449H73.794c-8.36,0-15.162,6.802-15.162,15.161v68.436c-0.001,8.36,6.802,15.162,15.162,15.162h87.817 c8.36,0,15.162-6.802,15.162-15.162V192.61C176.773,184.25,169.971,177.449,161.611,177.449z M94.168,260.039H74.799v-11.36 h19.369V260.039z M94.168,232.51H74.799v-11.364h19.369V232.51z M94.168,204.977H74.799v-11.36h19.369V204.977z M160.604,260.039 h-50.268v-66.421h0.001h18.682v46.977c0,4.465,3.618,8.084,8.084,8.084h23.501V260.039z M160.604,232.51h-15.417v-11.364h15.417 V232.51z M160.604,204.977h-15.417v-11.36h15.417V204.977z"></path> 
+                                    </g> 
+                                </g> 
+                            </g>
+                    </svg>
+                    <!-- paypal -->
+                    <svg width="48" height="48" viewBox="0 -140 780 780" xmlns="http://www.w3.org/2000/svg">
+                        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                        <g id="SVGRepo_iconCarrier"> 
+                            <path d="M55 15h670c22.091 0 40 17.909 40 40v391c0 22.092-17.909 40-40 40H55c-22.092 0-40-17.908-40-40V55c0-22.091 17.908-40 40-40z" fill="none" stroke-width="30"></path> 
+                            <g> 
+                                <path d="M168.379 169.853c-8.399-5.774-19.359-8.668-32.88-8.668H83.153c-4.145 0-6.435 2.073-6.87 6.215L55.018 300.883c-.221 1.311.107 2.51.981 3.6.869 1.092 1.962 1.635 3.271 1.635h24.864c4.361 0 6.758-2.068 7.198-6.215l5.888-35.986c.215-1.744.982-3.162 2.291-4.254 1.308-1.09 2.944-1.803 4.907-2.13 1.963-.324 3.814-.487 5.562-.487 1.743 0 3.814.11 6.217.327 2.397.218 3.925.324 4.58.324 18.756 0 33.478-5.285 44.167-15.866 10.684-10.577 16.032-25.243 16.032-44.004 0-12.867-4.202-22.191-12.597-27.974zm-26.99 40.08c-1.094 7.635-3.926 12.649-8.506 15.049-4.581 2.403-11.124 3.598-19.629 3.598l-10.797.327 5.563-35.007c.434-2.397 1.851-3.597 4.252-3.597h6.218c8.72 0 15.049 1.257 18.975 3.761 3.924 2.51 5.233 7.801 3.924 15.869zM720.793 161.185h-24.207c-2.406 0-3.822 1.2-4.254 3.6l-21.266 136.099-.328.654c0 1.096.436 2.127 1.311 3.109.867.98 1.963 1.471 3.27 1.471h21.594c4.139 0 6.43-2.068 6.871-6.215L725.05 166.09v-.325c-.001-3.053-1.423-4.58-4.257-4.58zM428.31 213.856c0-1.088-.439-2.126-1.305-3.106-.875-.981-1.859-1.474-2.945-1.474h-25.193c-2.404 0-4.366 1.096-5.889 3.271l-34.679 51.04-14.395-49.075c-1.095-3.487-3.492-5.236-7.197-5.236h-24.541c-1.093 0-2.074.492-2.941 1.474-.875.98-1.309 2.019-1.309 3.106 0 .44 2.127 6.871 6.379 19.303 4.252 12.435 8.832 25.849 13.74 40.245 4.908 14.393 7.469 22.031 7.688 22.898-17.886 24.43-26.826 37.517-26.826 39.259 0 2.838 1.416 4.254 4.253 4.254h25.192c2.398 0 4.36-1.088 5.889-3.27l83.427-120.399c.435-.433.652-1.193.652-2.29zM662.887 209.276H638.02c-3.055 0-4.904 3.6-5.557 10.798-5.678-8.721-16.031-13.088-31.084-13.088-15.703 0-29.066 5.89-40.076 17.668-11.016 11.778-16.521 25.631-16.521 41.551 0 12.871 3.761 23.121 11.284 30.752 7.525 7.639 17.613 11.451 30.266 11.451 6.324 0 12.758-1.311 19.301-3.926 6.543-2.617 11.664-6.105 15.379-10.469 0 .219-.223 1.199-.656 2.943-.439 1.748-.654 3.059-.654 3.926 0 3.494 1.414 5.234 4.254 5.234h22.576c4.137 0 6.541-2.068 7.193-6.215l13.416-85.39c.215-1.309-.113-2.507-.982-3.599-.876-1.089-1.963-1.636-3.272-1.636zm-42.695 64.453c-5.561 5.453-12.268 8.178-20.119 8.178-6.328 0-11.449-1.742-15.377-5.234-3.928-3.484-5.891-8.283-5.891-14.395 0-8.065 2.727-14.886 8.18-20.447 5.447-5.562 12.215-8.343 20.285-8.343 6.102 0 11.174 1.8 15.213 5.397 4.031 3.6 6.053 8.563 6.053 14.889-.001 7.851-2.782 14.505-8.344 19.955zM291.231 209.276h-24.865c-3.058 0-4.908 3.6-5.563 10.798-5.889-8.721-16.25-13.088-31.081-13.088-15.704 0-29.065 5.89-40.078 17.668-11.016 11.778-16.521 25.631-16.521 41.551 0 12.871 3.763 23.121 11.288 30.752 7.525 7.639 17.61 11.451 30.262 11.451 6.104 0 12.433-1.311 18.975-3.926 6.543-2.617 11.778-6.105 15.704-10.469-.875 2.617-1.309 4.908-1.309 6.869 0 3.494 1.417 5.234 4.253 5.234h22.574c4.141 0 6.543-2.068 7.198-6.215l13.413-85.39c.215-1.309-.111-2.507-.981-3.599-.873-1.089-1.963-1.636-3.269-1.636zm-42.696 64.615c-5.563 5.35-12.382 8.016-20.447 8.016-6.329 0-11.4-1.742-15.214-5.234-3.819-3.484-5.726-8.283-5.726-14.395 0-8.065 2.725-14.886 8.18-20.447 5.449-5.562 12.211-8.343 20.284-8.343 6.104 0 11.175 1.8 15.214 5.397 4.032 3.6 6.052 8.563 6.052 14.889 0 8.07-2.781 14.779-8.343 20.117zM540.036 169.853c-8.398-5.774-19.355-8.668-32.879-8.668H455.14c-4.365 0-6.766 2.073-7.199 6.215l-21.264 133.483c-.221 1.311.105 2.51.98 3.6.867 1.092 1.963 1.635 3.271 1.635h26.826c2.617 0 4.361-1.416 5.234-4.252l5.891-37.949c.215-1.744.98-3.162 2.289-4.254 1.309-1.09 2.943-1.803 4.908-2.13 1.963-.324 3.813-.487 5.563-.487 1.742 0 3.814.11 6.213.327 2.4.218 3.93.324 4.58.324 18.76 0 33.48-5.285 44.168-15.866 10.687-10.577 16.03-25.243 16.03-44.004.001-12.867-4.2-22.191-12.594-27.974zm-33.533 53.82c-4.799 3.271-11.998 4.906-21.592 4.906l-10.471.327 5.564-35.007c.432-2.397 1.848-3.597 4.252-3.597h5.887c4.797 0 8.613.218 11.453.653 2.832.439 5.561 1.799 8.178 4.089 2.619 2.29 3.926 5.618 3.926 9.979 0 9.162-2.402 15.376-7.197 18.65z"></path> 
+                            </g> 
+                        </g>
+                    </svg>
+                    <!-- wechat pay -->
+                    <svg width="40" height="40" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <g id="SVGRepo_iconCarrier"> 
+                            <g> 
+                                <path d="M19.145 8.993l-9.799 5.608-.07.046a.646.646 0 0 1-.3.068.655.655 0 0 1-.58-.344l-.046-.092-1.83-3.95c-.024-.046-.024-.092-.024-.138 0-.184.139-.321.324-.321.07 0 .14.023.209.069l2.155 1.515c.162.092.348.161.556.161a.937.937 0 0 0 .348-.069l8.275-3.648C16.934 6.273 14.634 5.2 12 5.2c-4.42 0-7.9 3.022-7.9 6.6 0 1.366.5 2.673 1.432 3.781.048.057.12.137.214.235a4 4 0 0 1 1.101 3.102l-.025.297.716-.436a4 4 0 0 1 2.705-.536c.212.033.386.059.52.076.406.054.82.081 1.237.081 4.42 0 7.9-3.022 7.9-6.6 0-.996-.27-1.95-.755-2.807zM6.192 21.943a1 1 0 0 1-1.526-.932l.188-2.259a2 2 0 0 0-.55-1.551A6.993 6.993 0 0 1 4 16.868C2.806 15.447 2.1 13.695 2.1 11.8c0-4.75 4.432-8.6 9.9-8.6s9.9 3.85 9.9 8.6-4.432 8.6-9.9 8.6c-.51 0-1.01-.033-1.499-.098a23.61 23.61 0 0 1-.569-.084 2 2 0 0 0-1.353.268l-2.387 1.456z"></path> 
+                            </g> 
+                        </g>
+                    </svg>
+                    <!-- alipay -->
+                    <svg width="48" height="48" viewBox="0 -139.5 750 750" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                        <g id="SVGRepo_iconCarrier"> 
+                            <desc>Created with Sketch.</desc> 
+                            <defs> </defs> 
+                            <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"> 
+                                <g id="Alipay" class="fill-primary" fill-rule="nonzero"> 
+                                    <path d="M40,30 C34.4771525,30 30,34.4771525 30,40 L30,431 C30,436.522847 34.4771525,441 40,441 L710,441 C715.522847,441 720,436.522847 720,431 L720,40 C720,34.4771525 715.522847,30 710,30 L40,30 Z M40,0 L710,0 C732.09139,-3.55271368e-15 750,17.90861 750,40 L750,431 C750,453.09139 732.09139,471 710,471 L40,471 C17.90861,471 3.55271368e-15,453.09139 0,431 L0,40 C-3.55271368e-15,17.90861 17.90861,3.55271368e-15 40,0 Z" id="Rectangle-path"> </path> 
+                                    <g id="Logo" transform="translate(54.000000, 143.000000)"> 
+                                        <path d="M45.460353,100.349396 C40.6592864,100.949379 32.2574197,102.749327 27.456353,106.949206 C13.053153,119.548841 21.4550197,141.7482 50.861553,141.7482 C67.665286,141.7482 84.46902,130.948512 97.671953,114.148997 C78.467686,105.149258 62.86422,98.549448 45.460353,100.349396 Z" id="Shape"> </path> 
+                                        <path d="M153.034,115.796653 C180.04,124.796393 186.041333,125.396375 186.041333,125.396375 L186.041333,29.39915 C186.041333,13.199618 172.8384,0 156.034667,0 L30.0066667,0 C13.8030667,0 0,13.199618 0,29.39915 L0,155.395508 C0,171.59504 13.2029333,184.794658 30.0066667,184.794658 L156.034667,184.794658 C172.238267,184.794658 186.041333,171.59504 186.041333,155.395508 L186.041333,154.195543 C186.041333,154.195543 138.030667,134.396115 113.4252,122.396462 C97.2216,142.19589 76.216933,154.795525 54.012,154.795525 C16.8037333,154.795525 4.2009333,122.396462 22.2049333,101.397069 C25.8057333,96.597208 32.4072,92.397329 42.6094667,89.997399 C58.2129333,86.397503 83.418533,92.397329 106.823733,100.197104 C111.024667,92.397329 114.625467,83.997572 117.026,74.997832 L44.4098667,74.997832 L44.4098667,67.79804 L81.618133,67.79804 L81.618133,53.398456 L36.008,53.398456 L36.008,46.198665 L81.618133,46.198665 L81.618133,27.599202 C81.618133,27.599202 81.618133,24.599289 84.6188,24.599289 L102.6228,24.599289 L102.6228,46.798647 L147.6328,46.798647 L147.6328,53.398456 L102.6228,53.398456 L102.6228,66.598075 L139.230933,66.598075 C135.630133,80.997659 130.228933,94.197277 123.627467,105.596948 C135.630133,109.796826 145.8324,113.396722 153.034,115.796653 Z M271.688933,43.612532 L311.297733,129.410052 L290.293067,129.410052 L279.490667,106.610711 L247.083467,106.610711 L236.281067,129.410052 L222.478,129.410052 L262.686933,46.012463 C262.686933,46.012463 263.8872,43.612532 266.287733,43.612532 C268.088133,43.612532 271.688933,43.612532 271.688933,43.612532 Z M250.684267,98.810937 L275.889867,98.810937 L263.287067,71.811717 L250.684267,98.810937 Z M338.132267,130.092791 L318.928,130.092791 L318.928,48.49515 C318.928,46.095219 320.128267,44.895254 323.128933,44.895254 L338.132267,44.895254 L338.132267,130.092791 Z M374.140267,129.534187 L354.936,129.534187 L354.936,67.735973 C354.936,65.336042 356.136267,64.136077 359.136933,64.136077 L374.140267,64.136077 L374.140267,129.534187 Z M397.621934,65.418799 L410.224734,65.418799 L410.224734,71.418625 C412.625267,69.618677 415.025801,67.818729 418.026467,67.218747 C421.027134,66.018781 424.027801,65.418799 428.228734,65.418799 C432.429667,65.418799 436.030467,66.018781 439.031134,67.818729 C442.631934,69.618677 445.032467,71.418625 447.433001,74.418539 C449.833534,77.418452 451.633934,80.418365 452.834201,84.018261 C454.034467,87.618157 454.634601,91.218053 454.634601,95.417932 C454.634601,100.817775 454.034467,105.617637 452.234067,109.817515 C450.433667,114.017394 448.633267,118.217272 445.632601,121.217186 C442.631934,124.217099 439.631267,127.217012 435.430334,129.01696 C431.229401,130.816908 427.028467,131.416891 422.227401,131.416891 L415.625934,131.416891 C413.825534,131.416891 412.025134,130.816908 410.224734,130.216926 L410.224734,151.816301 L391.020467,151.816301 L391.020467,73.218573 C390.420334,65.418799 393.421001,65.418799 397.621934,65.418799 Z M410.224734,112.217446 C410.224734,114.017394 410.224734,115.217359 410.824867,116.417325 C411.425001,117.61729 412.025134,118.817255 413.225401,120.01722 C414.425667,121.217186 415.625934,121.817168 416.826201,122.417151 C418.026467,123.017134 419.826867,123.017134 421.627267,123.017134 C423.427667,123.017134 424.627934,122.417151 426.428334,121.217186 C427.628601,120.01722 429.429001,118.817255 430.029134,116.417325 C430.629267,114.017394 431.829534,112.217446 432.429667,109.217533 C433.029801,106.217619 433.629934,103.817689 433.629934,100.217793 C433.629934,96.017914 433.629934,92.418018 433.029801,89.418105 C432.429667,86.418192 431.829534,84.018261 430.629267,81.61833 C429.429001,79.818382 428.228734,78.018434 427.028467,76.818469 C425.828201,75.618504 424.027801,75.018521 422.227401,75.018521 C421.027134,75.018521 419.826867,75.018521 418.626601,75.618504 C417.426334,76.218486 416.226067,76.818469 415.625934,77.418452 C414.425667,78.018434 413.825534,79.2184 412.625267,79.818382 C411.425001,81.018348 410.824867,81.61833 410.224734,82.818296 L410.224734,112.217446 Z M491.252,65.418799 C496.053067,65.418799 499.653867,66.018781 503.254667,66.618764 C506.255333,67.218747 509.256,68.418712 511.656533,70.21866 C514.057067,72.018608 515.257333,73.818556 516.4576,75.618504 C517.657867,78.018434 518.258,80.418365 518.258,82.818296 L518.258,130.216926 L499.053733,130.216926 L499.053733,125.417064 C497.853467,126.61703 496.6532,127.217012 496.053067,127.816995 C494.8528,128.416978 493.652533,129.01696 492.452267,129.616943 C491.252,130.216926 490.051733,130.816908 488.251333,130.816908 C486.450933,131.416891 484.650533,131.416891 482.850133,131.416891 C479.849467,131.416891 477.448933,130.816908 475.0484,130.216926 C472.647867,129.616943 470.847467,128.416978 469.047067,126.61703 C467.246667,125.417064 466.0464,123.617116 465.446267,121.217186 C464.846133,119.417238 464.246,117.017307 464.246,114.617377 C464.246,112.217446 464.846133,109.817515 465.446267,108.017567 C466.0464,106.217619 467.8468,104.417671 469.047067,102.617723 C470.247333,100.817775 472.647867,99.61781 474.448267,98.417845 C476.8488,97.217879 478.6492,96.017914 481.649867,94.817949 C484.0504,93.617984 486.450933,93.018001 489.4516,91.818036 C491.852133,91.218053 494.8528,90.018088 497.253333,89.418105 L499.653867,88.818122 L499.653867,82.218313 C499.653867,80.418365 499.653867,78.618417 499.053733,76.818469 C498.4536,75.618504 497.853467,74.418539 497.253333,73.218573 C496.6532,72.618591 495.452933,71.418625 494.8528,71.418625 C493.652533,70.818643 492.452267,70.818643 491.252,70.818643 C491.252,70.818643 481.049733,70.818643 472.047733,78.618417 L467.8468,72.018608 C466.0464,73.218573 476.8488,65.418799 491.252,65.418799 Z M497.853467,97.217879 C496.053067,97.817862 494.252667,99.017827 492.452267,100.217793 C490.651867,101.417758 488.851467,102.617723 487.051067,103.817689 C485.250667,105.017654 484.0504,106.217619 483.450267,108.017567 C482.25,109.217533 482.25,111.017481 482.25,112.217446 C482.25,113.417411 482.25,114.617377 482.850133,115.817342 C483.450267,117.017307 483.450267,117.61729 484.0504,118.817255 C484.650533,120.01722 485.250667,120.01722 485.8508,120.617203 C486.450933,121.217186 487.051067,121.217186 488.251333,121.217186 C490.051733,121.217186 491.252,120.617203 493.0524,120.01722 C494.8528,118.817255 496.6532,117.61729 498.4536,116.417325 L498.4536,97.217879 L497.853467,97.217879 Z M544.406667,151.216319 L531.803867,151.216319 L531.203733,139.816648 C531.203733,139.816648 546.8072,140.416631 551.608267,134.416804 C553.408667,132.016874 554.608933,125.417064 554.608933,125.417064 L523.402,65.418799 L544.406667,65.418799 L564.211067,104.417671 L581.614933,65.418799 L595.418,65.418799 L563.610933,136.216752 C562.410667,138.616683 557.6096,151.216319 544.406667,151.216319 Z" id="Shape"> </path> 
+                                        <ellipse id="Oval" cx="364.602" cy="46.5" rx="9.602" ry="8.5"> </ellipse> 
+                                        <polygon id="Shape" points="614.879 15.31 608.278 15.31 608.278 14.11 622.681 14.11 622.681 15.31 616.08 15.31 616.08 33.909 614.279 33.909 614.279 15.31"> </polygon> 
+                                        <path d="M625.596133,14.109937 L627.996667,14.109937 L632.1976,25.509607 L633.998,29.709486 C634.598133,28.509521 635.198267,26.709573 635.7984,25.509607 L639.999333,14.109937 L642.399867,14.109937 L642.399867,34.509347 L639.999333,34.509347 L639.999333,21.909712 L639.999333,16.509868 L638.198933,21.309729 L633.998,33.309382 L632.797733,33.309382 L628.5968,21.309729 L626.7964,16.509868 L626.7964,21.909712 L626.7964,34.509347 L624.996,34.509347 L624.996,14.109937 L625.596133,14.109937 Z" id="Shape"> </path> 
+                                    </g> 
+                                </g> 
+                            </g> 
+                        </g>
+                    </svg>
+                </div>
+            </fieldset>
+            <!-- recommended items -->
+            <div class="my-10">
+                <h2 class="text-[1.25rem] mb-5">猜您喜歡</h2>
+                <!-- NO-1 -->
+                <div class="my-3 card bg-base-100 shadow-sm">
+                    <figure class="relative">
+                        <a href="" class="w-full h-full group transition-all duration-5000 ease-in-out">
+                            <img
+                            class=""
+                            src="/media/hero/lavendar.svg"
+                            alt="Shoes" />
+                            <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
+                            </div>
+                            <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
+                        </a>
+                    </figure>
+                    <div class="card-body">
+                        <p class="card-title">
+                            <i class="fa-solid fa-tag"></i>
+                            產品名稱
+                            <span class="badge badge-secondary">新上架</span>
+                        </p>
+                        <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
+                        <!-- price -->
+                        <div class="card-title">
+                            <i class="fa-solid fa-money-check-dollar"></i>
+                            <form action="" method="POST">
+                                <select class="select w-20">
+                                    <option selected class="text-opacity-50">RMB</option>
+                                    <option>HKD</option>
+                                    <option>TWD</option>
+                                    <option>USD</option>
+                                    <option>JPY</option>
+                                </select>   
+                            </form>
+                            <i>500.00</i>
+                        </div>
+                        <!-- labels -->
+                        <div class="card-actions justify-end">
+                            <div class="badge badge-outline text-xs">Fashion</div>
+                            <div class="badge badge-outline text-xs">Products</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- NO-2 -->
+                <div class="my-3 card bg-base-100 shadow-sm">
+                    <figure class="relative">
+                        <a href="" class="w-full h-full group transition-all duration-5000 ease-in-out">
+                            <img
+                            class=""
+                            src="/media/hero/tulip.svg"
+                            alt="Shoes" />
+                            <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
+                            </div>
+                            <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
+                        </a>
+                    </figure>
+                    
+                    <div class="card-body">
+                        <p class="card-title">
+                            <i class="fa-solid fa-tag"></i>
+                            產品名稱
+                            <!-- <span class="badge badge-secondary"></span> -->
+                        </p>
+                        <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
+                        <!-- price -->
+                        <div class="card-title">
+                            <i class="fa-solid fa-money-check-dollar"></i>
+                            <form action="" method="POST">
+                                <select class="select">
+                                    <option selected class="text-opacity-50">RMB</option>
+                                    <option>HKD</option>
+                                    <option>TWD</option>
+                                    <option>USD</option>
+                                    <option>JPY</option>
+                                </select>   
+                            </form>
+                            <i>500.00</i>
+                        </div>
+                        <!-- labels -->
+                        <div class="card-actions justify-end">
+                            <div class="badge badge-outline text-xs">Fashion</div>
+                            <div class="badge badge-outline text-xs">Products</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script >
+document.addEventListener('DOMContentLoaded', (event) => {
+    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ BACKEND DATA ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
+    // parse json
+    const cart_items_data = JSON.parse(document.getElementById('cartitems-data-container')?.textContent);
+    const wishlist_data = JSON.parse(document.getElementById('wishlist-data-container')?.textContent) ;
+
+    // Convert the JSON data into a list format
+    const cart_items_data_list = Object.entries(cart_items_data)
+    const wishlist_data_list = Object.entries(wishlist_data)
+
+    // User authentication
+    const isLoggedIn = JSON.parse(document.getElementById('user-auth-status').textContent)
+
+    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ BASIC SETUP ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
+    // Element Refs
+    const change_address_modal_el = check_element_exist(document, "#change_address_modal")
+    const cart_wrapper_el = document.querySelector("#cart_wrapper")
+    let quantity_input_els = check_elements_exist(document, ".quantity_input")
+    const wishlist_wrapper_el = check_element_exist(document, "#wishlist_wrapper")
+
+    // Shipping Cost Section
+    const zone_tabs = [...document.querySelectorAll("input[name='zone']")]
+    const shipping_charge_form = document.querySelector("#estimate_shipping_charge")
+    const destination_inputs = [...document.querySelectorAll(".destination_input")]
+    const shipping_charge_submit_btn = document.querySelector("#shipping_charge_submit_btn")
+    const shipping_cost_display_el = document.querySelector("#shipping_cost_display")
+    const address_2_el = check_element_exist(document, "#address_2")
+
+    // Discount Section
+    const discount_code_form = document.querySelector("#discount_code_form")
+    const discount_code_input_el = document.querySelector("#discount_code_input")
+    const discount_submit_btn = document.querySelector("#discount_submit_btn")
+
+    // Voucher Section
+    const cash_voucher_form = document.querySelector("#cash_voucher_form")
+    const cash_voucher_balance_el = document.querySelector("#cash_voucher_balance")
+    const initial_balance = Number(cash_voucher_balance_el.dataset.value)
+    const cash_voucher_amount_input = document.querySelector("#cash_voucher_amount_input")
+    const cash_voucher_submit_btn_el = document.querySelector("#cash_voucher_submit_btn")
+
+    // Final Calculation - Base Currency
+    const products_subtotal_amount_el = document.querySelector("#products_subtotal_amount")
+    const shipping_cost_amount_el = document.querySelector("#shipping_cost_amount")
+    const discount_amount_el = document.querySelector("#discount_amount")
+    const cash_voucher_amount_el = document.querySelector("#cash_voucher_amount")
+    const tax_amount_el = document.querySelector("#tax_amount")
+    const total_amount_el = document.querySelector("#total_amount")
+
+    let foreign_currency_decimal_place = JSON.parse(document.getElementById('foreign_currency_decimal_place').textContent)
+    console.log("foreign_currency_decimal_place: ", foreign_currency_decimal_place)
+
+
+    // Final Calculation - Foreign Currency
+    const select_currency_input_el = document.querySelector("#select_currency_input")
+    const products_subtotal_amount_foreign_el = document.querySelector("#products_subtotal_amount_foreign")
+    const shipping_cost_amount_foreign_el = document.querySelector("#shipping_cost_amount_foreign")
+    const discount_amount_foreign_el = document.querySelector("#discount_amount_foreign")
+    const tax_amount_foreign_el = document.querySelector("#tax_amount_foreign")
+    const cash_voucher_amount_foreign_el = document.querySelector("#cash_voucher_amount_foreign")
+    const total_amount_foreign_el = document.querySelector("#total_amount_foreign")
+    const locked_exchange_rate_el = document.querySelector("#locked_exchange_rate")
+    let locked_exchange_rate = document.querySelector("#locked_exchange_rate").dataset.value
+    let foreign_currency_locale = document.querySelector("#locked_exchange_rate").dataset.locale
+    let foreign_currency_code = select_currency_input_el.value
+
+    const currencyElements = document.querySelectorAll('.currency-display');
+
+    // Checkout Btn
+    const checkout_btn = document.querySelector("#checkout_btn")
+
+    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ FUNCTIONS ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
+    // Clculate Total Payable
+    function calculate_total_payable () {
+        const cart_items_sub_total_el = check_element_exist(document, "#cart_items_sub_total")
+        let total_payable = 0
+        if(cart_items_sub_total_el) {
+            els = [cart_items_sub_total_el, shipping_cost_amount_el, discount_amount_el, tax_amount_el, cash_voucher_amount_el]
+            els.map((el, index) => {
+                let amount;
+                if(el){
+                    if(el.id==="discount_amount" || el.id==="cash_voucher_amount"){
+                        amount = - Number(el.dataset.value)
+                    } else {
+                        amount = Number(el.dataset.value)
+                    }
+                    if(!isNaN(amount)){
+                        total_payable += amount
+                    }
+                    total_payable = Number(total_payable.toFixed(2))
+                }
+            })
+        }
+        return total_payable
+    }
+
+    function calculate_total_payable_foreign() {
+        const cart_items_sub_total_el = check_element_exist(document, "#cart_items_sub_total")
+        let total_payable_foreign = 0
+        if(cart_items_sub_total_el) {
+            els = [products_subtotal_amount_foreign_el, shipping_cost_amount_foreign_el, discount_amount_foreign_el, tax_amount_foreign_el, cash_voucher_amount_foreign_el]
+            els.map((el, index) => {
+                let amount;
+                if(el){
+                    if(el.id==="discount_amount_foreign" || el.id==="cash_voucher_amount_foreign"){
+                        amount = - Number(el.dataset.value)
+                    } else {
+                        amount = Number(el.dataset.value)
+                    }
+                    if(!isNaN(amount)){
+                        total_payable_foreign += amount
+                    }
+                    total_payable_foreign = Number(total_payable_foreign.toFixed(foreign_currency_decimal_place))
+                }
+            })
+        }
+        return total_payable_foreign
+    }
+
+    function reset_destination_inputs() {
+        shipping_cost_display_el.classList.add("outline-dotted", "outline-dotted")
+        shipping_cost_display_el.classList.remove("bg-info", "outline-double", "outline-(--color-info-content)", "font-semibold")
+        shipping_cost_display_el.innerText = `運費估算 - 待定`
+        shipping_cost_display_el.dataset.value = 0
+        shipping_cost_display_el.dataset.checked = false
+        shipping_charge_submit_btn.innerText = "運費計算｜Calculate Shipping"
+        shipping_charge_submit_btn.disabled = false
+        // reset shipping_cost_amount
+        shipping_cost_amount_el.dataset.value = 0
+        format_currency(shipping_cost_amount_el, 0, "CNY")
+        shipping_cost_amount_foreign_el.dataset.value = 0
+        format_currency(shipping_cost_amount_foreign_el, 0, foreign_currency_code)
+
+        checkout_btn.disabled = true
+    }
+
+    // Get current product(s) subtotal
+    function get_cart_items_sub_total(){
+        let sub_total = 0
+        const cart_items_sub_total_el = check_element_exist(document, "#cart_items_sub_total")
+        if(cart_items_sub_total_el){
+            sub_total += cart_items_sub_total_el.dataset.value
+        }
+        return Number(sub_total)
+    }
+
+    // Update product sub_total
+    function update_cart_items_sub_total (cart_items_quantity_total_el, cart_items_sub_total_el, sub_total_quantity, sub_total_amount, sub_total_target_currency){
+        // update in-cart product(s) quantity
+        cart_items_quantity_total_el.innerHTML = `(總|Total <b>${sub_total_quantity}</b>件|item${sub_total_quantity > 1 ? "s)" : ")"}`
+        // update in-cart product(s)) sub-total
+        cart_items_sub_total_el.dataset.value = sub_total_amount
+        format_currency(cart_items_sub_total_el, sub_total_amount, "CNY")
+        // update products_subtotal_amount
+        products_subtotal_amount_el.dataset.value = sub_total_amount
+        format_currency(products_subtotal_amount_el, sub_total_amount, "CNY")
+        products_subtotal_amount_foreign_el.dataset.value = sub_total_target_currency
+        format_currency(products_subtotal_amount_foreign_el, sub_total_target_currency, foreign_currency_code)
+    }
+
+    // update voucher amount
+    function update_voucher(){
+        if (isLoggedIn) {
+            // update max voucher possible
+            max_voucher_input()
+
+            // if cart has item(s), check if payable is less than currently amount in voucher input
+            const cart_items_sub_total_el = check_element_exist(document, "#cart_items_sub_total")
+
+            if(cart_items_sub_total_el) {
+                const payable = Number(cart_items_sub_total_el.dataset.value) + Number(shipping_cost_amount_el.dataset.value) + Number(tax_amount_el.dataset.value) - Number(discount_amount_el.dataset.value)
+                const voucher_amount_input = cash_voucher_amount_input.dataset.value
+                // reduce the voucher amount to max amount
+                if(voucher_amount_input > payable){
+                    // update voucher applicable
+                    const updated_applied_voucher = cash_voucher_amount_input.max
+                    cash_voucher_amount_input.dataset.value = Number(updated_applied_voucher)
+                    cash_voucher_amount_input.placeholder = `已使用|Applied CNY${formatter.format(updated_applied_voucher)}`
+                    
+                    // update voucher balance
+                    cash_voucher_balance_el.innerText = `禮品券餘額|Voucher Balance: CNY ${formatter.format(initial_balance - updated_applied_voucher)}`
+        
+                    // update cash_voucher_amount
+                    cash_voucher_amount_el.dataset.value = updated_applied_voucher
+                    format_currency(cash_voucher_amount_el, -updated_applied_voucher, "CNY")
+
+                    if(calculate_total_payable() == 0){
+                        const payable_foreign_currency = Number(Number(products_subtotal_amount_foreign_el.dataset.value) + Number(shipping_cost_amount_foreign_el.dataset.value) - Number(discount_amount_foreign_el.dataset.value) + Number(tax_amount_foreign_el.dataset.value)).toFixed(foreign_currency_decimal_place)
+                        cash_voucher_amount_foreign_el.dataset.value = payable_foreign_currency
+                        format_currency(cash_voucher_amount_foreign_el, -payable_foreign_currency, foreign_currency_code)
+                    } else {
+                        cash_voucher_amount_foreign_el.dataset.value = Number(updated_applied_voucher * locked_exchange_rate).toFixed(foreign_currency_decimal_place)
+                        format_currency(cash_voucher_amount_foreign_el, Number(-updated_applied_voucher * locked_exchange_rate).toFixed(foreign_currency_decimal_place), foreign_currency_code)
+                    }
+                } else {
+                    return
+                }
+            }
+        }
+    }
+
+    // Reset Cost Summary Section
+    async function reset_cost_summary_section(cart_el=null, shipping_el=null, discount_el=null, voucher_el=null, subtotal_foreign=null) {
+        const sub_total = get_cart_items_sub_total()
+        if(sub_total > 0){
+            if(cart_el){
+                // (0) update products total
+                products_subtotal_amount_el.dataset.value = sub_total
+                format_currency(products_subtotal_amount_el, sub_total, "CNY")
+                products_subtotal_amount_foreign_el.dataset.value = subtotal_foreign
+                format_currency(products_subtotal_amount_foreign_el, subtotal_foreign, foreign_currency_code)
+
+                // (1) shipping section - update shipping cost if destination is already entered    
+                if(shipping_cost_display_el.dataset.checked === "true"){
+                    let updated_shipping_cost, data;
+                    // get default select values for all cases
+                    const shippingFormData = Object.fromEntries(new FormData(shipping_charge_form))
+                    const tab_selected = zone_tabs.filter(tab => tab.checked)
+                    const zone_selected = shippingFormData.zone
+                    const destination = shippingFormData[tab_selected[0].value]
+
+                    // (a) user.is_authenticated && addresses && user chooses to use address
+                    if(document.querySelector('input[name="shipping_selection"]:checked')?.value === "address_book"){
+                        const address_display_el = document.querySelector("[id*='address_display_']")
+                        const address_id = address_display_el.id.split("_").at(-1)
+                        // re-calculate based on current cart and shipping destination
+                        data = await calculate_shipping_cost("address_book", address_id)
+                    } else {
+                        // re-calculate based on default destination selection
+                        data = await calculate_shipping_cost("default")
+                    }
+                    updated_shipping_cost = Number(data.total_cost.standard).toFixed(2)
+                    shipping_cost_amount_el.dataset.value = updated_shipping_cost
+                    format_currency(shipping_cost_amount_el, updated_shipping_cost, "CNY")
+                    shipping_cost_amount_foreign_el.dataset.value = Number(updated_shipping_cost * locked_exchange_rate).toFixed(foreign_currency_decimal_place)
+                    format_currency(shipping_cost_amount_foreign_el, updated_shipping_cost * locked_exchange_rate, foreign_currency_code)
+                }
+    
+                // (2) discount section - update if discount is already enetered
+                if(discount_amount_el.dataset.value != "0"){
+                    // check if the new cart sub-total is eligible for discount
+                    // make sure if fixed amount off, it would always be less than min_spending_requirement!
+                    const min_spending_requirement = Number(discount_code_form.dataset.min_spending)
+                    if(sub_total >= min_spending_requirement &&  discount_code_input_el.value !== ''){
+                        // update discount amount
+                        const discount_type = discount_code_form.dataset.type
+                        if(discount_type === "percentage"){
+                            const updated_discount_amount = sub_total * discount_code_form.dataset.value / 100
+                            discount_amount_el.dataset.value = updated_discount_amount
+                            format_currency(discount_amount_el, -updated_discount_amount, "CNY")
+                            discount_amount_foreign_el.dataset.value = Number(updated_discount_amount * locked_exchange_rate).toFixed(foreign_currency_decimal_place)
+                            format_currency(discount_amount_foreign_el, Number(-updated_discount_amount * locked_exchange_rate).toFixed(foreign_currency_decimal_place), foreign_currency_code)
+                        }
+                    } else if (sub_total < min_spending_requirement) {
+                        // discount no longer available
+                        Swal.fire({
+                            icon: "error",
+                            title: `抱歉，目前消費額低於${discount_code_input_el.value.toUpperCase()}的優惠條件\n（滿CNY ${formatter.format(min_spending_requirement)}以上產品消費）`,
+                            text: `Sorry, you have not reached the CNY ${formatter.format(min_spending_requirement)} threshold to enjoy the ${discount_code_input_el.value.toUpperCase()} offer`,
+                        })
+                        discount_code_input_el.removeAttribute("disabled")
+                        discount_amount_el.dataset.value = 0
+                        format_currency(discount_amount_el, 0, "CNY")
+                        discount_amount_foreign_el.dataset.value = 0
+                        format_currency(discount_amount_foreign_el, 0, foreign_currency_code)
+                        discount_code_input_el.value = ""
+                        discount_submit_btn.innerText = "適用|Apply"
+                    }
+                }
+                
+                // (3) cash voucher section
+                // update max voucher value
+                max_voucher_input()
+                if (Number(cash_voucher_balance_el.dataset.value) !== initial_balance){   
+                    update_voucher()
+                }
+            } else if(shipping_el) {
+                max_voucher_input()
+                // (0) voucher section - if already entered, update according to the latest payable
+                if (Number(cash_voucher_balance_el.dataset.value) !== initial_balance){    
+                    update_voucher()
+                }
+            } else if(discount_el) {
+                // (0) voucher section - if already entered, update according to the latest payable
+                max_voucher_input()
+                if (Number(cash_voucher_balance_el.dataset.value) !== initial_balance){    
+                    update_voucher()
+                }
+            }
+            // update total amount
+            const total_payable = calculate_total_payable()
+            const total_payable_foreign = calculate_total_payable_foreign()
+            total_amount_el.dataset.value = total_payable
+            format_currency(total_amount_el, total_payable, "CNY")
+
+            total_amount_foreign_el.dataset.value = total_payable_foreign
+            format_currency(total_amount_foreign_el, total_payable_foreign, foreign_currency_code)
+            
+            // activate checkout button if shipping cost is filled
+            if(shipping_cost_display_el.dataset.checked === "true"){
+                checkout_btn.disabled = false
+            } else {
+                checkout_btn.disabled = true
+            }
+        } else {
+            // (0) shipping reset
+            zone_tabs.map(zone => {
+                if(zone.value === "global"){
+                    zone.dataset.is_checked = 'true'
+                    zone.checked = true
+                } else {
+                    zone.dataset.is_checked = 'false'
+                    zone.checked = false
+                }
+            })
+            destination_inputs.map(input => input.selctedIndex = 0)
+            reset_destination_inputs()
+
+            // (1) product subtotal amount set to null
+            products_subtotal_amount_el.dataset.value = sub_total
+            format_currency(products_subtotal_amount_el, sub_total, "CNY")
+            products_subtotal_amount_foreign_el.dataset.value = Number(sub_total * locked_exchange_rate).toFixed(foreign_currency_decimal_place)
+            format_currency(products_subtotal_amount_foreign_el, Number(sub_total * locked_exchange_rate).toFixed(foreign_currency_decimal_place), foreign_currency_code)
+            
+            // (2) discount reset
+            reset_discount_form()
+
+            // (3) voucher reset
+            reset_cash_voucher_form()
+
+            // (4) total amount reset
+            const total_payable = calculate_total_payable()
+            total_amount_el.dataset.value = total_payable
+            format_currency(total_amount_el, total_payable, "CNY")
+            const total_payable_foreign = calculate_total_payable_foreign()
+            total_amount_foreign_el.dataset.value = total_payable_foreign
+            format_currency(total_amount_foreign_el, total_payable_foreign, foreign_currency_code)
+            
+            // (5) checkout button
+            checkout_btn.disabled = true
+        }
+    }
+
+    // Cash Voucher Init - set max input
+    function max_voucher_input () {
+        if (isLoggedIn) {
+            let max_voucher_input_amount = 0
+            const cart_items_sub_total_el = check_element_exist(document, "#cart_items_sub_total")
+            if(cart_items_sub_total_el) {
+                let cart_total = Number(cart_items_sub_total_el.dataset.value)
+                let shipping_amount = Number(shipping_cost_amount_el.dataset.value)
+                let discount_amount = Number(discount_amount_el.dataset.value)
+                let payable_before_voucher = Number((cart_total + shipping_amount - discount_amount).toFixed(2))
+                max_voucher_input_amount = Math.min(initial_balance, payable_before_voucher)
+            }
+            cash_voucher_amount_input.max = Number(max_voucher_input_amount.toFixed(2))
+            return Number(max_voucher_input_amount.toFixed(2))
+        }
+    }
+
+    // change quantity and submit function
+    function change_quantity(delta, this_el) {
+        const sku_id = this_el.id.split("_").at(-1)
+        const quantity_input = document.querySelector(`#quantity_input_${sku_id}`)
+        const plus_btn = document.querySelector(`#plus_btn_${sku_id}`)
+        const minus_btn = document.querySelector(`#minus_btn_${sku_id}`)
+
+        // 1. Get current value and ensure it's a number
+        let current_quantity = parseInt(quantity_input.value, 10)
+        if (isNaN(current_quantity)) current_quantity = 0
+
+        // 2. Calculate new value
+        let new_quantity = current_quantity + delta
+
+        // Optional: enforce min/max limits here if necessary
+        const min_value = parseInt(quantity_input.min, 10)
+        const max_value = parseInt(quantity_input.max, 10)
+        if (new_quantity < min_value) {new_quantity = min_value}
+        if (new_quantity > max_value) {new_quantity = max_value}
+
+        // 3. Update the input value
+        quantity_input.value = new_quantity;
+
+        // 4. Update buttons's style
+        toggle_btns(quantity_input, plus_btn, minus_btn)
+    }
+
+    // handle change quantity
+    async function handle_change_quantity(e, sku_id, form){
+        // Access the element that initiated the submit action
+        const clickedButton = e.submitter;
+        const calculate_method = clickedButton.id.split("_").at(0)
+        if(calculate_method === "plus"){change_quantity(1, clickedButton)} 
+        else if(calculate_method === "minus"){change_quantity(-1, clickedButton)}
+
+        const formData = new FormData(form)
+        formData.append("exchange_rate", locked_exchange_rate)
+        body=formData
+
+        const url = `/carts/change_quantity/${sku_id}`
+        try{
+            // 1st fetch(): get changed quantity info
+            const data = await post_and_fetch_data(url, {'X-Requested-With': 'XMLHttpRequest'}, body)
+
+            // update header cart details
+            updateHeaderCartDetails(data.cart_items_count, formatter.format(data.cart_items_sub_total), data.cart_items)
+
+            // update product_variation's price sub-total
+            const subtotal_price_el = document.querySelector(`#subtotal_price_${sku_id}`)
+            subtotal_price_el.innerText = `CNY ${formatter.format(data.cart_item_json.subtotal)}`
+
+            // update in-cart product(s) quantity & amount
+            const cart_items_quantity_total_el = document.querySelector("#cart_items_quantity_total")
+            const cart_items_sub_total_el = document.querySelector("#cart_items_sub_total")
+            update_cart_items_sub_total(cart_items_quantity_total_el, cart_items_sub_total_el, data.cart_items_count, data.cart_items_sub_total, data.cart_items_sub_total_target_currency)
+
+            // reset cost summary section
+            reset_cost_summary_section(cart_el=cart_items_sub_total_el, shipping_el=null, discount_el=null, voucher_el=null, subtotal_foreign=data.cart_items_sub_total_target_currency)
+
+        } catch(error) {
+            console.error('An error occurred:', error.message);
+        }
+    }
+ 
+    // activate & disactivate plus/minus btns
+    function toggle_btns (quantity_input, plus_btn, minus_btn) {
+        if(quantity_input.value === quantity_input.max){
+            plus_btn.classList.remove("hover:bg-base-300", "active:scale-90", "active:text-primary-content")
+            plus_btn.setAttribute('disabled', '')
+        } else {
+            plus_btn.removeAttribute('disabled')
+            if(!plus_btn.classList.contains("hover:bg-base-300", "active:scale-90", "active:text-primary-content")){
+                plus_btn.classList.add("hover:bg-base-300", "active:scale-90", "active:text-primary-content")
+            }
+        }
+        if(quantity_input.value === quantity_input.min || quantity_input.value === 1){
+            minus_btn.classList.remove("hover:bg-base-300", "active:scale-90", "active:text-primary-content")
+            minus_btn.setAttribute('disabled', '')
+        } else {
+            minus_btn.removeAttribute('disabled')
+            if(!minus_btn.classList.contains("hover:bg-base-300", "active:scale-90", "active:text-primary-content")){
+                minus_btn.classList.add("hover:bg-base-300", "active:scale-90", "active:text-primary-content")
+            }
+        }
+    }
+
+    // Delete Cart item
+    function delete_cart_item(cart_item_el, sku_id) {
+        // locate cart items wrapper element
+        const cart_items_wrapper_el = document.querySelector("#cart_items_wrapper")
+
+        // delete cart_item
+        cart_item_el.remove()
+        
+        // delete divider for that item, if exists
+        const divider_element = check_element_exist(cart_wrapper_el, `#divider_${sku_id}`)
+        if(divider_element) divider_element.remove()
+
+        // remaining list items
+        const cart_items_li_els = cart_wrapper_el.querySelectorAll("li") // can be empty Node array
+        
+        // if all cart_items have been deleted, replace with "CART EMPTY"
+        if(cart_items_li_els.length === 0) {
+            // create new element for CART EMPTY
+            const cart_empty_el = document.createElement('div');
+            cart_empty_el.id = 'cart_empty_el';
+            cart_empty_el.classList.add("flex", "flex-col", "justify-center", "my-[5rem]")
+            cart_empty_el.innerHTML = `
+                <h2 class="h2shadow col-span-2 mx-auto text-center mb-2">購物車是空的 | CART IS EMPTY</h2>
+                <a href="{% url 'products' category_slug='all' %}" class="btn btn-wide btn-outline btn-primary mx-auto font-light">繼續選購 ｜ Continue Shopping</a>
+            `;
+            cart_empty_el.classList.add("h2shadow", "col-span-2", "mx-auto", "my-[5rem]", "text-center")
+            cart_items_wrapper_el.replaceWith(cart_empty_el)
+        
+        // if cart still has items inside
+        } else if (cart_items_li_els.length > 0) {
+            // get the last cart_item
+            const last_cart_item = cart_items_wrapper_el.querySelector('li:last-of-type');
+            const last_cart_item_id = last_cart_item.id.replace("cart_item_", "") 
+            // check if its next sibling is a divider, if so, delete it
+            const last_divider = last_cart_item.nextElementSibling;
+            if(last_divider && last_divider.id === `divider_${last_cart_item_id}`) {
+                last_divider.remove()
+            }
+
+            // if cart still has cart_item(s) inside, reorder the COUNTER numbers
+            // get a list of all <li> within cart_items_wrapper_el
+            const remaining_counter_els = [...cart_items_wrapper_el.querySelectorAll(".cart_item_counter")]
+            remaining_counter_els.map((counter_el, index) => { // 0(1), 1(2), 2(3), 3(4), 4(5), ...
+                const firstSpan = counter_el.querySelector('span:first-child')
+                let secondSpan = counter_el.querySelector('span:nth-child(2)')
+                if(index < 9) {
+                    firstSpan.innerText = 0 // 0(1) - 8(9)
+                    if(secondSpan){
+                        secondSpan.innerText = index + 1
+                    } else {
+                        secondSpan = document.createElement('span')
+                        firstSpan.after(secondSpan)
+                        secondSpan.innerText = index + 1
+                    }
+                } else if (index === 9){ // 9(10)
+                    firstSpan.innerText = 1 
+                    if(secondSpan){
+                        secondSpan.innerText = 0
+                    } else {
+                        secondSpan = document.createElement('span')
+                        firstSpan.after(secondSpan)
+                        secondSpan.innerText = 0
+                    }
+                } else if(index > 9) { //10(11) ~
+                    firstSpan.innerText = index + 1
+                    if(secondSpan){secondSpan.remove()}                             
+                }
+            })
+        }
+    }
+
+    // Move Cart Item to Wishlist
+    function add_wishlist_item(wish_item_object, ul_el, sku_id, first_el=false) {
+        let stock;
+        if(wish_item_object.stock > 1) {
+            stock = `<div class="stat-title text-success font-black">存貨｜Stock: ${wish_item_object.stock}件</div>`
+        } else if (wish_item_object.stock == 1) {
+            stock = `<div class="stat-title text-warning font-black">僅剩｜Last: 1件</div>`
+        } else if (wish_item_object.stock == 0) {
+            stock = `<div class="stat-title text-error font-black">缺貨｜Out of Stock</div>`
+        }
+
+        // HTML
+        const divider_html = `<div id="divider_${sku_id}" class='divider pl-1/10'></div>`
+        const new_wishlist_item_html = `
+            <li id="wish_item_${sku_id}" class="flex gap-3 p-3">
+                <div class="flex flex-col flex-grow justify-center">
+                    <!-- top -->
+                    <div class="flex justify-between items-center mb-3">
+                        <!-- item-name -->
+                        <a id="wish_item_product_link_${sku_id}" href="${wish_item_object.product_url}" class="list-col-grow">
+                            <div id="wish_item_product_name_${sku_id}">${wish_item_object.product_name}</div>
+                            <div class="text-xs uppercase font-semibold opacity-60">${wish_item_object.sku}</div>
+                        </a>
+                        <!-- item-quantity -->
+                        <div class="flex w-28 h-4/5 border-primary ">
+                            <div class="shadow rounded-3xl">
+                                <div class="flex items-center h-full p-5">
+                                    ${stock}
+                                </div>
+                            </div>
+                        </div>
+                        <!-- item-unit_price -->
+                        <div class="text-right text-base-content pr-5">
+                            CNY ${formatter.format(wish_item_object.price)}
+                        </div>
+                    </div>
+
+                    <!-- bottom -->
+                    <div class="flex gap-5">
+                        <!-- image -->
+                        <a href="${wish_item_object.product_url}" class="md:size-38 aspect-square"><img class="w-full h-full rounded-box object-cover" src="${wish_item_object.variation_img_url}"/></a>
+
+                        <div class="flex w-full">
+                            <!-- details -->
+                            <div class="text-[12px] w-3/5 pr-10">
+                                <div><b>發貨地：</b>中國</div>
+                                <div><b>顏色：</b>橙色</div>
+                                <div><b>尺寸/規格：</b>含2026日历最新版</div>
+                            </div>
+                            <!-- option buttons -->
+                            <form id="wishlist_item_options_form_${sku_id}" class="flex flex-wrap w-2/5 gap-3 content-center p-2">
+                                {% csrf_token %}
+                                <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="放入購物車｜Add to cart">
+                                    <button ${stock == 0 && disabled} id="option_add_wish_to_cart" class="btn btn-outline btn-primary"><i class="fa-solid fa-cart-plus"></i></i></button>
+                                </div>
+                                <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品｜Delete">
+                                    <button id="option_delete_wish" class="btn btn-outline btn-error"><i class="w-full fa-solid fa-trash"></i></button>
+                                </div>
+                                <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="分享｜Share">
+                                    <button id="option_share_wish_link" class="btn btn-outline btn-success"><i class="fa-solid fa-share-from-square"></i></button>
+                                </div>
+                                <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品｜Favorite">
+                                    <button id="option_add_to_favorite" class="btn btn-outline btn-secondary"><i class="w-full fa-solid fa-bookmark"></i></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            ${!first_el ? divider_html : ""}
+        `
+                
+        // Insert the HTML string into the DOM
+        ul_el.insertAdjacentHTML('afterbegin', new_wishlist_item_html);
+    }
+    
+    // Handle Cart Options
+    async function handle_cart_options(e, sku_id, form){
+        const clickedButton = e.submitter;
+        const method = clickedButton.id.replace("option_", "")
+        const url = `/carts/${method}/${sku_id}`
+        const formData = new FormData(form)
+        formData.append("exchange_rate", locked_exchange_rate)
+        body=formData
+
+        const messages = {
+            delete_cart_item: {
+                ask: {
+                    title: "確定刪除？｜Delete this item?", 
+                    text: "您也可以轉到未來購買清單喔！｜You can also move it to wishlist.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#78c8ff",
+                    cancelButtonColor: "#ff7b7a",
+                    confirmButtonText: "確定刪除！｜Yes, delete it!",
+                },
+                result: {
+                    title: "已刪除｜Deleted!",
+                    text: "已從購物車中刪除｜Deleted from the cart!",
+                    icon: "success",
+                }
+            },
+            add_to_wishlist: {
+                ask: {
+                    title: "確定轉入未來購物清單？｜Move to wishlist?", 
+                    text: "未來購物清單也可從會員頁面查詢！｜You can check your wishlist from dashboard.",
+                    icon: "info",
+                    showCancelButton: true,
+                    confirmButtonColor: "#78c8ff",
+                    cancelButtonColor: "#ff7b7a",
+                    confirmButtonText: "確定！｜Yes!",
+                },
+                result: {
+                    title: "完成！｜Completed",
+                    text: "已轉入未來購物清單｜Moved to wishlist!",
+                    icon: "success",
+                }
+            },
+            add_to_favorite: {
+                added: {
+                    position: "top-end",
+                    icon: "success",
+                    title: "已收藏！｜Added to favorite list!",
+                    showConfirmButton: false,
+                    timer: 1500
+                },
+                already_exists: {
+                    position: "top-end",
+                    icon: "info",
+                    title: "已在您的收藏清單中！｜Already included in your favorite list!",
+                    showConfirmButton: false,
+                    timer: 1500
+                }
+            }
+        }
+
+        if (method === "add_to_wishlist" || method === "delete_cart_item") {
+            const confirmResponse = await Swal.fire(messages[method].ask)
+            if (confirmResponse.isConfirmed){
+                const data = await post_and_fetch_data(url, {'X-Requested-With': 'XMLHttpRequest'}, formData)
+                console.log("data: ", data)
+                const wish_item_data = data.wish_item_json
+                const cart_item_el = document.querySelector(`#cart_item_${sku_id}`)
+
+                // update header
+                updateHeaderCartDetails(data.cart_items_count, formatter.format(data.cart_items_sub_total), data.cart_items)
+
+                // (a) delete option & (b) move to wishlist
+                delete_cart_item(cart_item_el, sku_id)
+
+                // (b) buy later - wish list
+                if(method==="add_to_wishlist"){
+                    let wishlist_wrapper_ul_el = check_element_exist(document, "#wishlist_wrapper_ul")
+                    const wish_item_object = {
+                        product_url: wish_item_data.product_url,
+                        product_name: wish_item_data.product_name,
+                        sku: wish_item_data.sku,
+                        stock: wish_item_data.stock,
+                        price: wish_item_data.price,
+                        variation_img_url: wish_item_data.image,
+                        cart_items_count: data.cart_items_count,
+                        cart_items_sub_total: data.cart_items_sub_total,
+                    }
+                    // update Wishlist <ul>
+                    if(wishlist_wrapper_ul_el){
+                        // if wishlist already exist, place the added item to the top of the list
+                        add_wishlist_item(wish_item_object, wishlist_wrapper_ul_el, sku_id, first_el=false)
+                    } else {
+                        // if wishlist doesn't exist, Element the whole element
+                        // (1) create <h2> header
+                        const wishlist_wrapper_header_el = document.createElement('h2')
+                        wishlist_wrapper_header_el.classList.add("text-[1.25rem]", "mb-5" )
+                        wishlist_wrapper_header_el.innerText = "未來購物清單｜Wishlist"
+                        // (2) create <ul> element
+                        wishlist_wrapper_ul_el = document.createElement('ul')
+                        wishlist_wrapper_ul_el.id = "wishlist_wrapper_ul"
+                        wishlist_wrapper_ul_el.classList.add("list", "bg-base-300", "rounded-box", "shadow-md", "mb-20", "text-secondary")
+                        // (3) append (1) and (2) to wrapper element
+                        wishlist_wrapper_el.appendChild(wishlist_wrapper_header_el)
+                        wishlist_wrapper_el.appendChild(wishlist_wrapper_ul_el)
+                        // (4) insert item
+                        add_wishlist_item(wish_item_object, wishlist_wrapper_ul_el, sku_id, first_el=true)
+                    }
+                    // wishlist option methods
+                    const wish_item_options_form = document.querySelector(`#wishlist_item_options_form_${sku_id}`)
+                    wish_item_options_form.addEventListener("submit", function(e){
+                        e.preventDefault()
+                        handle_wishlist_options(e, sku_id, this)
+                    })
+                }
+
+                // Update Cart's subtotals if Cart still exist
+                const cart_items_wrapper_el = document.querySelector("#cart_items_wrapper")
+                const cart_items_quantity_total_el = document.querySelector("#cart_items_quantity_total")
+                const cart_items_sub_total_el = document.querySelector("#cart_items_sub_total")
+                if(cart_items_wrapper_el) {
+                    update_cart_items_sub_total(cart_items_quantity_total_el, cart_items_sub_total_el, data.cart_items_count, data.cart_items_sub_total, data.cart_items_sub_total_target_currency)
+                }data
+                reset_cost_summary_section(cart_el=cart_items_sub_total_el, shipping_el=null, discount_el=null, voucher_el=null, subtotal_foreign=data.cart_items_sub_total_target_currency)
+                await Swal.fire(messages[method].result)
+            }
+        } else if (method === "add_to_favorite") {
+            const data = await post_and_fetch_data(url, {'X-Requested-With': 'XMLHttpRequest'}, formData)
+
+
+            if(data.result){
+                Swal.fire(messages[method].added)
+            } else {
+                {Swal.fire(messages[method].already_exists)}
+            }
+        } else if (method === "share_cart_item"){
+            const cart_items_wrapper_el = document.querySelector("#cart_items_wrapper")
+            const product_name_el = cart_items_wrapper_el.querySelector(`#cart_item_product_name_${sku_id}`)
+            const product_name = product_name_el.innerText
+            const product_link_a_tag = cart_items_wrapper_el.querySelector(`#cart_item_product_link_${sku_id}`)
+            const product_url = `${product_link_a_tag.href}`
+            share_link(
+                `Hṛdayadīpa (हृदयदीप) - ${product_name} | Check out this gem!｜看看這件寶貝！`,
+                '', 
+                product_url
+            )
+        }        
+    }
+    
+    // Move wishlist item to cart
+    function add_wish_to_cart(sku_id, counter_index, new_cart_item_object, wish_item_el, last_li_el=null, last_li_el_id=null, cart_id=null) {
+        // HTML
+        const new_cart_item_html = `
+            <li id="cart_item_${sku_id}" class="flex gap-3 p-3">
+                <!-- # Counter -->
+                <div class="cart_item_counter flex text-2xl -mt-[5px] font-thin opacity-30 tabular-nums">
+                    <span>${counter_index}</span>
+                </div>
+
+                <!-- Details -->
+                <div class="flex flex-col flex-grow justify-center">
+                    <!-- top -->
+                    <div class="price_quantity flex items-start mb-3">
+                        <!-- item-name -->
+                        <a id="cart_item_product_link_${sku_id}" href="${new_cart_item_object.product_url}" class="w-1/2">
+                            <div class="w-full text-[0.8rem] overflow-hidden text-ellipsis whitespace-nowrap">${new_cart_item_object.product_name}</div>
+                            <div class="w-full text-[0.6rem] uppercase font-semibold opacity-60  overflow-hidden text-ellipsis whitespace-nowrap">${new_cart_item_object.sku}</div>
+                        </a>
+                        <!-- item-quantity -->
+                        <form id="change_quantity_form_${sku_id}" method="POST" class="flex w-[4.5rem] h-[2rem] border-primary text-xs">
+                            {% csrf_token %}
+                            <input type="number" 
+                                id="quantity_input_${sku_id}" 
+                                name="quantity_input_${sku_id}" 
+                                class="qty w-[2.5rem] rounded-l-[0.8rem] border-y-1 border-l-1 focus:outline-none text-center bg-primary-content font-semibold quantity_input" 
+                                value="1" 
+                                min="1" 
+                                max="${new_cart_item_object.stock}" 
+                            />
+                            <div class="flex flex-col justify-center w-[2rem] border-y-1 border-r-1 rounded-r-[0.8rem]">
+                                <button type="submit" class="h-1/2 cursor-pointer border-l-1 border-b-1 border-base-300 rounded-tr-[0.8rem] hover:bg-base-300 active:scale-90 active:text-primary-content transition-transform flex justify-center items-center" id="plus_btn_${sku_id}">
+                                    +
+                                </button>
+                                <button type="submit" class="h-1/2 cursor-pointer border-l-1 border-base-300 rounded-br-[0.8rem] hover:bg-base-300 active:scale-90 active:text-primary-content transition-transform flex justify-center items-center" id="minus_btn_${sku_id}">
+                                    -
+                                </button>
+                            </div>
+                        </form>
+                        <!-- item-unit_price -->
+                        <div class="text-center w-[calc((50%-4rem)/2)] text-[0.8rem]">
+                            <div class="unit_price text-primary" data-value="${new_cart_item_object.price}">CNY ${formatter.format(new_cart_item_object.price)}</div>
+                            <div class="text-error line-through text-[10px]">
+                                    CNY ${formatter.format(new_cart_item_object.original_price)}
+                            </div>
+                        </div>
+                        <!-- subtotal_price -->
+                        <div id="subtotal_price_${sku_id}" class="text-right w-[calc((50%-4rem)/2)] text-[0.8rem] text-base-content font-semibold pr-3">CNY ${formatter.format(new_cart_item_object.subtotal)}</div>
+                    </div>
+
+                    <!-- bottom -->
+                    <div class="flex gap-5">
+                        <!-- image -->
+                        <div class="md:size-38 aspect-square"><a href="${new_cart_item_object.product_url}"><img class="w-full h-full rounded-box object-cover" src="${new_cart_item_object.product_variation_img_src}"/></a></div>
+
+                        <div class="flex w-full">
+                            <!-- details -->
+                            <div class="text-[11px] w-3/5 pr-10">
+                                <div><b>當前庫存|Stock：&nbsp;</b>${new_cart_item_object.stock}</div>
+                                <div><b>發貨地|From：&nbsp; </b>中國</div>
+                                <div><b>尺寸|Size：&nbsp;</b>${new_cart_item_object.size}</div>
+                                <div><b>顏色|Color：&nbsp;</b>${new_cart_item_object.color}</div>
+                                <div><b>種類|Type：&nbsp;</b>${new_cart_item_object.type}</div>
+                                <div><b>配送費用|Shipping Cost:&nbsp;</b>${new_cart_item_object.with_shipping ? "含|Included" : "不含|Not included"}</div>
+                                <div>具體詳情請注意查收發貨郵件</div>
+                                <div class="flex items-center">
+                                    <i class="fa-solid fa-gift"></i>
+                                    不需寄帳單&nbsp;
+                                    <input type="checkbox" class="checkbox checkbox-primary checkbox-xs" />
+                                </div>
+                            </div>
+                            <!-- option buttons -->
+                            <form id="cart_item_options_form_${sku_id}" method="POST" class="flex flex-wrap w-2/5 gap-3 content-center">
+                                {% csrf_token %}
+                                {% if user.is_authenticated %}
+                                <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="以後購買｜Save for later">
+                                    <button type="submit" id="option_add_to_wishlist" class="btn btn-primary"><i class="w-full fa-solid fa-list"></i></button>
+                                </div>
+                                {% endif %}
+                                <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品｜Delete">
+                                    <button type="submit" id="option_delete_cart_item" class="btn btn-error"><i class="w-full fa-solid fa-trash"></i></button>
+                                </div>
+                                <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="分享｜Share">
+                                    <button type="submit" id="option_share_cart_item" class="btn btn-success"><i class="fa-solid fa-share-from-square"></i></button>
+                                </div>
+                                {% if user.is_authenticated %}
+                                <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品｜Add to favorite">
+                                    <button type="submit" id="option_add_to_favorite" class="btn btn-secondary"><i class="w-full fa-solid fa-bookmark"></i></button>
+                                </div>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </li>
+        `
+        
+        const new_cart_item_with_divider_html = `
+            <div id="divider_${last_li_el_id}" class="divider pl-1/10"></div>
+            ${new_cart_item_html}
+        `
+        
+        const new_subtotal_item_html = `
+            <div class="border-t-4 border-double border-base-300"></div>
+            <div class="text-right text-md text-base-content font-normal p-3">
+                寶貝金額小計|Sub-Total
+                <small id="cart_items_quantity_total">
+                    (總|Total <b>${new_cart_item_object.cart_items_count}</b>件|item${new_cart_item_object.cart_items_count > 1 ? "s)" : ")"}
+                </small>
+                :&nbsp;<span id="cart_items_sub_total" data-value="${new_cart_item_object.cart_items_sub_total}" class="font-semibold">CNY ${formatter.format(new_cart_item_object.cart_items_sub_total)}</span>
+            </div>        
+        `
+
+        // Insert the HTML string into the DOM & Update Subtotal Nums in Cart
+        if(last_li_el) {
+            last_li_el.insertAdjacentHTML('afterend', new_cart_item_with_divider_html);
+            const cart_items_quantity_total_el = document.querySelector("#cart_items_quantity_total")
+            const cart_items_sub_total_el = document.querySelector("#cart_items_sub_total")
+            update_cart_items_sub_total (cart_items_quantity_total_el, cart_items_sub_total_el, new_cart_item_object.cart_items_count, new_cart_item_object.cart_items_sub_total, new_cart_item_object.sub_total_target_currency)
+        } else {
+            // create a cart_wrapper_el and replace with the cart_empty_el
+            const cart_items_wrapper_el = document.createElement('ul')
+            cart_items_wrapper_el.id = "cart_items_wrapper"
+            cart_items_wrapper_el.classList.add("list", "bg-base-200", "rounded-box", "shadow-md", "mb-20")
+            cart_items_wrapper_el.dataset.cart = cart_id
+            const cart_empty_el = document.querySelector("#cart_empty_el")
+            cart_empty_el.replaceWith(cart_items_wrapper_el)
+            cart_items_wrapper_el.insertAdjacentHTML('afterbegin', new_cart_item_html)
+            cart_items_wrapper_el.insertAdjacentHTML('beforeend', new_subtotal_item_html)
+        }
+    }
+
+    // Handle Wishlist Options
+    async function handle_wishlist_options(e, sku_id, form){
+        const submit_button = e.submitter
+        const method = submit_button.id.replace("option_", "")
+        const wish_item_el = document.querySelector(`#wish_item_${sku_id}`)
+
+        const url = `/carts/${method}/${sku_id}`
+        const formData = new FormData(form)
+        formData.append("exchange_rate", locked_exchange_rate)
+        body=formData
+
+        const messages = {
+            delete_wish: {
+                ask: {
+                    title: "確定刪除？｜Delete this item?", 
+                    text: "也可以先收藏再刪除喔！｜You can also add it to your favorite.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#78c8ff",
+                    cancelButtonColor: "#ff7b7a",
+                    confirmButtonText: "確定刪除！｜Yes, delete it!",
+                },
+                result: {
+                    title: "已刪除｜Deleted!",
+                    text: "已從未來購物清單中刪除｜Deleted from your wishlist!",
+                    icon: "success",
+                }
+            },
+            add_wish_to_cart: {
+                ask: {
+                    title: "確定轉移至購物車中？｜Move this item to your cart?", 
+                    text: "",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#78c8ff",
+                    cancelButtonColor: "#ff7b7a",
+                    confirmButtonText: "確定！｜Yes!",
+                },
+                added_to_cart: {
+                    title: "完成！｜Completed",
+                    text: "已轉入購物車！｜Moved to your cart!",
+                    icon: "success",
+                },
+                out_of_stock: {
+                    title: "抱歉！｜Sorry!",
+                    text: "暫時缺貨！｜Currently Out of Stock!",
+                    icon: "error",
+                },
+                already_in_cart: {
+                    title: "完成！｜Completed",
+                    text: "已在您的購物車中！｜Already placed in your cart!",
+                    icon: "info",
+                }
+            },
+            add_wish_to_favorite: {
+                added: {
+                    position: "top-end",
+                    icon: "success",
+                    title: "已收藏！｜Added to favorite list!",
+                    showConfirmButton: false,
+                    timer: 1500
+                },
+                already_exists: {
+                    position: "top-end",
+                    icon: "info",
+                    title: "已在您的收藏清單中！｜Already included in your favorite list!",
+                    showConfirmButton: false,
+                    timer: 1500
+                }
+            }
+        }
+
+        if (method === "add_wish_to_cart" || method === "delete_wish") {
+            const confirmResponse = await Swal.fire(messages[method].ask)
+            if(confirmResponse.isConfirmed){
+                const data = await post_and_fetch_data(url, {"X-Requested-With": "XMLHttpRequest"}, formData)
+                const new_cart_item_data = data.new_cart_item_json
+                console.log("data after add wish: ", data.cart_id)
+
+                // (a) delete option & (b) move wish to cart
+                delete_wish(wishlist_wrapper_el, wish_item_el, sku_id)
+                
+                // (b) add/move wish to cart
+                if(method === "add_wish_to_cart") {
+                    const new_cart_item_object = {
+                        product_url: new_cart_item_data.product_url,
+                        product_name: new_cart_item_data.product_name,
+                        sku: new_cart_item_data.sku,
+                        size: new_cart_item_data.size,
+                        color: new_cart_item_data.color,
+                        type: new_cart_item_data.type,
+                        stock: new_cart_item_data.stock,
+                        price: new_cart_item_data.price,
+                        original_price: new_cart_item_data.original_price,
+                        subtotal: new_cart_item_data.subtotal,
+                        product_variation_img_src: new_cart_item_data.product_variation_img_src,
+                        cart_items_count: data.cart_items_count,
+                        cart_items_sub_total: data.cart_items_sub_total,
+                        with_shipping: data.with_shipping,
+                        sub_total_target_currency: data.cart_items_sub_total_target_currency
+                    }
+                    // add wish to cart
+                    if(check_element_exist(document, "#cart_items_wrapper")) {
+                        // if cart already has item(s), locate the last <li> element and its id
+                        cart_items_wrapper_el = document.querySelector("#cart_items_wrapper")
+                        let last_li_el = cart_items_wrapper_el.querySelector('li:last-of-type')
+                        let last_li_el_id = last_li_el.id.replace("cart_item_", "")
+                        let counter_index = cart_items_wrapper_el.querySelectorAll('li').length + 1
+
+                        // add the wish_item after the <li> element with info details
+                        add_wish_to_cart(sku_id, counter_index, new_cart_item_object, wish_item_el, last_li_el=last_li_el, last_li_el_id=last_li_el_id, cart_id=null)
+                    } else {
+                        // if there is no cart / empty
+                        add_wish_to_cart(sku_id, "01", new_cart_item_object, wish_item_el, last_li_el=null, last_li_el_id=null, cart_id=data.cart_id)
+                    }
+
+                    // update cart info on header
+                    updateHeaderCartDetails(data.cart_items_count, formatter.format(data.cart_items_sub_total), data.cart_items)
+
+                    // new_cart_item change quantity method
+                    const quantity_input = document.querySelector(`#quantity_input_${sku_id}`)
+                    const plus_btn = document.querySelector(`#plus_btn_${sku_id}`)
+                    const minus_btn = document.querySelector(`#minus_btn_${sku_id}`)
+                    toggle_btns(quantity_input, plus_btn, minus_btn)
+
+                    // set Quantity Change method to new cart item
+                    const change_quantity_form = document.querySelector(`#change_quantity_form_${sku_id}`)
+                    const quantity_input_name = `quantity_input_${sku_id}`
+                    change_quantity_form.addEventListener('submit', function(e) {
+                        e.preventDefault()
+                        handle_change_quantity(e, sku_id, this)
+                    })
+
+                    // set options to new cart item
+                    const cart_item_options_form = document.querySelector(`#cart_item_options_form_${sku_id}`)
+                    cart_item_options_form.addEventListener('submit', function(e) {
+                        e.preventDefault()
+                        handle_cart_options(e, sku_id, this)
+                    })
+
+                    // reset cost summary section
+                    const cart_items_sub_total_el = document.querySelector("#cart_items_sub_total")
+                    reset_cost_summary_section(cart_el=cart_items_sub_total_el, shipping_el=null, discount_el=null, voucher_el=null, subtotal_foreign=data.cart_items_sub_total_target_currency)
+
+                    if(data.status === "added_to_cart") {Swal.fire(messages[method].added_to_cart)} 
+                    else if(data.status === "out_of_stock") {Swal.fire(messages[method].out_of_stock)} 
+                    else if(data.status === "already_in_cart") {Swal.fire(messages[method].already_in_cart)}
+                }
+            }
+        } else if (method === "add_wish_to_favorite") {
+            const data = await post_and_fetch_data(url, {'X-Requested-With': 'XMLHttpRequest'}, formData)
+
+            if(data.result){ Swal.fire(messages[method].added)} 
+            else {Swal.fire(messages[method].already_exists)}
+
+        } else if (method === "share_wish_link") {
+            const product_name_el = wish_item_el.querySelector(`#wish_item_product_name_${sku_id}`)
+            const product_name = product_name_el.innerText
+            const product_link_a_tag = wish_item_el.querySelector(`#wish_item_product_link_${sku_id}`)
+            const product_url = `${product_link_a_tag.href}`
+            share_link(
+                `Hṛdayadīpa (हृदयदीप) - ${product_name} | Check out this gem!｜看看這件寶貝！`,
+                '', 
+                product_url
+            )
+        }    
+    }
+
+    // calculate shipping cost
+    async function calculate_shipping_cost (source, address_id=null){
+        // extract data - cart_info
+        const cart_items_wrapper_el = document.querySelector("#cart_items_wrapper")
+        const cart_items_sub_total_el = document.querySelector("#cart_items_sub_total")
+        const items_list = [...cart_items_wrapper_el.querySelectorAll("li")]
+        const cart_items = []
+        items_list.map(item => {
+            const id = item.id.replace("cart_item_", "")
+            const quantity = item.querySelector(`#quantity_input_${id}`).value
+            cart_items.push({id, quantity})
+        })
+
+        // prepare post method info
+        const url = "/carts/calculate_shipping/"
+        let headers, body
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        if(source === "default") {
+            const formData = new FormData(shipping_charge_form)
+            const tab_selected = zone_tabs.filter(tab => tab.checked)
+            formData.append("cart_items", JSON.stringify(cart_items));
+            formData.append("destination_source", "default")
+            
+            const formDataObject = Object.fromEntries(new FormData(shipping_charge_form))
+            const zone_selected = formDataObject.zone
+            const destination = formDataObject[tab_selected[0].value]
+
+            headers = {'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrftoken,}
+            body = formData
+
+        } else if(source === "address_book") {
+            headers = {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken,}
+            body = JSON.stringify({
+                "cart_items": cart_items,
+                "destination_source": "address_book",
+                "address_id": address_id
+            })
+        }
+        const data = await post_and_fetch_data(url, headers, body)
+        console.log('data: ', data)
+
+        if(data.destination === null && data.zone === null){
+            Swal.fire({
+                icon: "error",
+                title: "請選擇目的地",
+                text: "Please select the destination!",
+            })
+            return false
+        } else if(data.cart_items === null){
+            Swal.fire({
+                icon: "error",
+                title: "購物車是空的喔...",
+                text: "Cart is Empty...!",
+            })
+            return false
+        } else if(Number(data.total_cost.standard) === 0 && Number(data.total_cost.economy) === 0) {
+            Swal.fire({
+                icon: "error",
+                title: "抱歉，該地區目前無寄費訊息...",
+                text: "Sorry, shipping info for this area is curreing unavailable...",
+                footer: '<a style="color: var(--color-error); font-weight: 700;" href="/contact"><u>Please contac us directly for assistance.</u></a>'
+            })
+            return false
+        } else {
+            if(data.total_cost.standard !== '0') {
+                update_shipping_info(data)
+            }
+        }
+
+        return data
+    }
+
+    async function handle_calculate_shipping_cost (e){
+        e.preventDefault()
+        let data
+
+        // check if the cart is empty
+        if(!check_element_exist(document, "#cart_items_wrapper")){
+            Swal.fire({
+                icon: "error",
+                title: "購物車是空的喔...",
+                text: "Cart is Empty...!",
+            })
+        } else {
+            // if member with address(es)
+            if(check_element_exist(document, "#address_options_wrapper")){
+                // check which type of destination is given -- newly select OR -- from address book   
+                const selected_destination_source = document.querySelector('input[name="shipping_selection"]:checked')?.value;
+                if(selected_destination_source){
+                    // if it is from address book, get the id
+                    if(selected_destination_source === "default") {
+                        data = await calculate_shipping_cost("default")
+                        if(data) {
+                            let shipping_cost = Number(data.total_cost.standard).toFixed(2)
+                            shipping_cost_amount_el.dataset.value = shipping_cost
+                            format_currency(shipping_cost_amount_el, shipping_cost, "CNY")
+                            shipping_cost_amount_foreign_el.dataset.value = Number(shipping_cost * locked_exchange_rate).toFixed(foreign_currency_decimal_place)
+                            format_currency(shipping_cost_amount_foreign_el, Number(shipping_cost * locked_exchange_rate).toFixed(foreign_currency_decimal_place), foreign_currency_code)
+                        }                      
+                    } else if (selected_destination_source === "address_book") {
+                        const default_add_country_el = document.querySelector("[id^='default_add_country']")
+                        const address_id = default_add_country_el.id.replace("default_add_country_", "")
+    
+                        data = await calculate_shipping_cost("address_book", address_id)
+                        if(data) {
+                            let shipping_cost = Number(data.total_cost.standard).toFixed(2)
+                            shipping_cost_amount_el.dataset.value = shipping_cost
+                            format_currency(shipping_cost_amount_el, shipping_cost, "CNY")
+                            shipping_cost_amount_foreign_el.dataset.value = Number(shipping_cost * locked_exchange_rate).toFixed(foreign_currency_decimal_place)
+                            format_currency(shipping_cost_amount_foreign_el, Number(shipping_cost * locked_exchange_rate).toFixed(foreign_currency_decimal_place), foreign_currency_code)
+                        }   
+                    } 
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "請選擇 - A:目的地 或 B:地址",
+                        text: "Please select either A or B",
+                    })
+                }
+            } else {
+                data = await calculate_shipping_cost("default")
+                if(data) {
+                    let shipping_cost = Number(data.total_cost.standard).toFixed(2)
+                    shipping_cost_amount_el.dataset.value = shipping_cost
+                    format_currency(shipping_cost_amount_el, shipping_cost, "CNY")
+                    shipping_cost_amount_foreign_el.dataset.value = Number(shipping_cost * locked_exchange_rate).toFixed(foreign_currency_decimal_place)
+                    format_currency(shipping_cost_amount_foreign_el, Number(shipping_cost * locked_exchange_rate).toFixed(foreign_currency_decimal_place), foreign_currency_code)
+                }                      
+            }
+        }
+        
+        reset_cost_summary_section(cart_el=null, shipping_el=shipping_cost_amount_el, discount_el=null, voucher_el=null)
+        return data
+    }
+
+    function update_shipping_info(data){
+        const destination = data.destination
+        let shipping_cost = Number(data.total_cost.standard).toFixed(2)
+        shipping_charge_submit_btn.innerText = `📦 送至|to ${destination}`
+        shipping_charge_submit_btn.disabled = true
+        shipping_cost_display_el.classList.remove("outline-dotted", "outline-dotted")
+        shipping_cost_display_el.classList.add("bg-info", "outline-double", "outline-(--color-info-content)", "font-semibold")
+        shipping_cost_display_el.innerText = `CNY ¥${shipping_cost}`
+        // format_currency(shipping_cost_display_el, shipping_cost, "CNY")
+        shipping_cost_display_el.dataset.value = shipping_cost
+        shipping_cost_display_el.dataset.checked = true
+        shipping_charge_submit_btn.classList.remove("outline-dashed")
+    }
+
+    // apply discount
+    async function apply_discount(e){
+        e.preventDefault()
+        const cart_items_wrapper_el = check_element_exist(document, "#cart_items_wrapper")
+        // if cart is empty, return
+        if(!cart_items_wrapper_el) {
+            Swal.fire({
+                icon: "error",
+                title: `抱歉，您的購物車是空的...`,
+                text: `Sorry, your cart is empty...`,
+            })
+            discount_code_input_el.value = ''
+            return
+        }
+        
+        const action = discount_code_form.dataset.action
+        if(action === "apply"){
+            const url = "/carts/apply_discount/"
+            const formData = new FormData(this)
+            const data = await post_and_fetch_data(url, {'X-Requested-With': 'XMLHttpRequest'}, formData)
+
+            if(data.is_valid){
+                const discount_type = data.discount_type
+                const discount_value = Number(data.discount_value)
+                const cart_sub_total = products_subtotal_amount_el.dataset.value
+                const min_spending_requirement = data.min_spending_requirement
+                
+                discount_code_form.dataset.value = discount_value
+                discount_code_form.dataset.min_spending = min_spending_requirement
+                
+                let discount_amount = 0
+
+                // check min_spending requirement
+                if(products_subtotal_amount_el.dataset.value >= min_spending_requirement){
+                    // if dicsount is % type
+                    if(discount_type === "percentage"){
+                        discount_code_form.dataset.type = "percentage"
+                        discount_amount = Number((cart_sub_total * discount_value/100).toFixed(2))
+                    } else if(discount_type === "fixed_amount"){
+                    // if discount is $$ OFF type
+                        discount_code_form.dataset.type = "fixed_amount"
+                        discount_amount = discount_value
+                    }
+                    // update discount_amount
+                    discount_amount_el.dataset.value = discount_amount
+                    // discount_amount_el.innerText = `(${formatter.format(discount_amount)})`
+                    format_currency(discount_amount_el, -discount_amount, "CNY")
+                    // discount_amount_foreign_el.innerText = `(${formatter.format(Number(discount_amount * locked_exchange_rate).toFixed(2))})`
+                    discount_amount_foreign_el.dataset.value = Number(discount_amount * locked_exchange_rate).toFixed(foreign_currency_decimal_place)
+                    // discount_amount_foreign_el.innerText = `(${currencyFormatter(Number(discount_amount * locked_exchange_rate).toFixed(2), select_currency_input.value, )})`
+                    format_currency(discount_amount_foreign_el, Number(-discount_amount * locked_exchange_rate).toFixed(foreign_currency_decimal_place), foreign_currency_code)
+                    // disable input
+                    discount_code_input_el.setAttribute('disabled', '')
+                    // change discount form status
+                    discount_code_form.dataset.action = "cancel"
+                    discount_submit_btn.innerText = "取消|Cancel"
+                    
+                    Swal.fire({
+                        title: "輸入成功|Code Validated!",
+                        text: data.description,
+                        imageUrl: data.featured_image,
+                        imageWidth: 400,
+                        imageHeight: 200,
+                        imageAlt: "Custom image"
+                    })
+                } else {
+                    // min_spending not met
+                    Swal.fire({
+                        icon: "error",
+                        title: `抱歉，此優惠僅限於\n滿CNY ${formatter.format(min_spending_requirement)}以上消費...`,
+                        text: `Sorry, you must reach the CNY ${formatter.format(min_spending_requirement)} threshold to enjoy this offer...`,
+                    })
+
+                    reset_discount_form()
+                }
+            } else {
+                Swal.fire({
+                    icon: "error",
+                    title: "抱歉，此優惠碼無效...",
+                    text: "Sorry, this code is not valid...",
+                })
+                reset_discount_form()
+            }
+            
+        } else if(action === "cancel") {
+            reset_discount_form()
+        }
+
+        reset_cost_summary_section(cart_el=null, shipping_el=null, discount_el=discount_amount_el, voucher_el=null)
+    }
+
+    function reset_discount_form() {
+        discount_code_form.dataset.action = "apply"
+        discount_submit_btn.innerText = "適用|Apply"
+        discount_code_input_el.value = ''
+        discount_code_input_el.removeAttribute('disabled')
+        discount_amount_el.dataset.value = 0
+        // discount_amount_el.innerText = `${formatter.format(0)}`
+        format_currency(discount_amount_el, 0, "CNY")
+        discount_amount_foreign_el.dataset.value = 0
+        // discount_amount_foreign_el.innerText = `${currencyFormatter(0, foreign_currency_code, foreign_currency_locale)}`
+        format_currency(discount_amount_foreign_el, 0, foreign_currency_code)
+    }
+
+    // apply cash voucher
+    function apply_cash_voucher(e) {
+        e.preventDefault()
+        if(e.target.dataset.type === "apply"){
+            // update cash voucher amount
+            const voucher_applied = e.target.elements.voucher_applied.value
+            // if empty input or invalid
+            if(!voucher_applied){
+                Swal.fire({
+                    icon: "error",
+                    title: "請輸入正確金額~",
+                    text: "Please enter a valid amount~",
+                })
+                return
+            } else {
+                // update cash_voucher_amount
+                cash_voucher_amount_el.dataset.value = voucher_applied
+                // cash_voucher_amount_el.innerText = `(${formatter.format(voucher_applied)})`
+                format_currency(cash_voucher_amount_el, -voucher_applied, "CNY")
+                if(calculate_total_payable() == 0){
+                    const payable_foreign_currency = calculate_total_payable_foreign()
+                    cash_voucher_amount_foreign_el.dataset.value = payable_foreign_currency
+                    format_currency(cash_voucher_amount_foreign_el, -payable_foreign_currency, foreign_currency_code)
+                } else {
+                    cash_voucher_amount_foreign_el.dataset.value = Number(voucher_applied * locked_exchange_rate).toFixed(foreign_currency_decimal_place)
+                    // cash_voucher_amount_foreign_el.innerText = `(${currencyFormatter(Number(voucher_applied * locked_exchange_rate).toFixed(2), foreign_currency_code, foreign_currency_locale)})`
+                    format_currency(cash_voucher_amount_foreign_el, Number(-voucher_applied * locked_exchange_rate).toFixed(foreign_currency_decimal_place), foreign_currency_code)
+                }
+                
+                // replace apply適用 button WITH 重置密碼reset button
+                cash_voucher_submit_btn_el.innerText = "重置|Reset"
+                cash_voucher_form.dataset.type = "reset"
+                // reflect current voucher balance
+                const remaining_cash_voucher_balance = initial_balance - Number(voucher_applied)
+                cash_voucher_balance_el.dataset.value = remaining_cash_voucher_balance.toFixed(2)
+                cash_voucher_balance_el.innerText = `禮品券餘額|Voucher Balance: CNY ${formatter.format(cash_voucher_balance_el.dataset.value)}`
+                // disable cash_voucher_amount_input & nulled
+                cash_voucher_amount_input.setAttribute('disabled', '')
+                cash_voucher_amount_input.value = ''
+                cash_voucher_amount_input.dataset.value = Number(voucher_applied)
+                cash_voucher_amount_input.placeholder = `已使用|Applied CNY${formatter.format(voucher_applied)}`
+            }
+        } else if(e.target.dataset.type === "reset") {
+            reset_cash_voucher_form()
+        }
+
+        reset_cost_summary_section(cart_el=null, shipping_el=null, discount_el=null, voucher_el=null)
+    }
+
+    function reset_cash_voucher_form(){
+        if (isLoggedIn) {
+            // revert back
+            cash_voucher_amount_el.dataset.value = 0
+            // cash_voucher_amount_el.innerText = `${formatter.format(0)}`
+            format_currency(cash_voucher_amount_el, 0, "CNY")
+            cash_voucher_amount_foreign_el.dataset.value = 0
+            // cash_voucher_amount_foreign_el.innerText = `${currencyFormatter(0, foreign_currency_code, foreign_currency_locale)}`
+            format_currency(cash_voucher_amount_foreign_el, 0, foreign_currency_code)
+            // enable cash_voucher_amount_input
+            cash_voucher_amount_input.removeAttribute('disabled')
+            cash_voucher_amount_input.placeholder = "請輸入所需金額|Please enter amount"
+            // reflect current voucher balance
+            cash_voucher_balance_el.dataset.value = initial_balance
+            cash_voucher_balance_el.innerText = `禮品券餘額|Voucher Balance: CNY ${formatter.format(initial_balance)}`
+            // // reset max amount for input
+            // cash_voucher_amount_input.max = initial_balance
+            max_voucher_input()
+            // replace 重置reset button button WITH apply適用
+            cash_voucher_submit_btn_el.innerText = "適用|Apply"
+            cash_voucher_form.dataset.type = "apply"
+        }
+    }
+
+    // go to checkout page
+    async function checkout(){
+        // (1) store form info into Proforma Invoice
+        const cart_items_wrapper_el = check_element_exist(document, "#cart_items_wrapper")
+        const cart_id = cart_items_wrapper_el ? cart_items_wrapper_el.dataset.cart : null
+        const zone_tab_selected = zone_tabs.filter(tab => tab.checked)[0].value
+        const default_destination = document.querySelector(`select[name=${zone_tab_selected}]`).value
+
+        let selected_destination_source = "default"
+        let address_id = null
+        // if user is authenticated & has address(es)
+        if(check_element_exist(document, "#address_options_wrapper")) {
+            selected_destination_source = document.querySelector('input[name="shipping_selection"]:checked')?.value
+            const default_add_country_el = document.querySelector("[id^='default_add_country']")
+            address_id = default_add_country_el.id.replace("default_add_country_", "")
+        }
+        
+        const proforma_info = {
+            cart_id: cart_id,
+            cart_total: products_subtotal_amount_el.dataset.value,
+            destination_source: selected_destination_source,
+            default_zone: zone_tab_selected,
+            default_destination: default_destination,
+            address_id: address_id,
+            shipping_cost_amount: shipping_cost_amount_el.dataset.value,
+            offer_code: discount_code_input_el.value,
+            discount_amount: discount_amount_el.dataset.value,
+            applied_voucher_amount: cash_voucher_amount_el.dataset.value,
+            tax_amount: tax_amount_el.dataset.value,
+            total_due: total_amount_el.dataset.value,
+            
+            cart_total_foreign: products_subtotal_amount_foreign_el.dataset.value,
+            shipping_cost_amount_foreign: shipping_cost_amount_foreign_el.dataset.value,
+            discount_amount_foreign: discount_amount_foreign_el.dataset.value,
+            tax_amount_foreign: tax_amount_foreign_el.dataset.value,
+            applied_voucher_amount_foreign: cash_voucher_amount_foreign_el.dataset.value,
+            total_due_foreign: total_amount_foreign_el.dataset.value,
+            locked_exchange_rate: locked_exchange_rate,
+        }
+        const url = `/carts/checkout_info/?currency=${foreign_currency_code}`
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const headers = {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken,}
+        const body = JSON.stringify(proforma_info)
+        const data = await post_and_fetch_data(url, headers, body)
+        console.log("data: ", data)
+
+        // (2) Once Ajax comes back with OK, navigate to /carts/checkout/
+        window.location.href = `/carts/checkout/?cart_id=${data.cart_id}`
+    }
+
+    // change default address for member
+    function change_default_address(default_add_label_el, default_add_line_1_el, default_add_line_2_el, default_add_city_el, default_add_state_el, default_add_country_el, default_add_post_code_el){
+        const selected_input_el = address_option_els.filter(el => el.checked)[0]
+        const selected_address_id = selected_input_el.id.replace("default_address_input_", "")
+        const selected_el = check_element_exist(document, `#address_option_${selected_address_id}`)
+
+        const selected_add_label_el = selected_el.querySelector("[id*='add_label_']")
+        const selected_add_line_1_el = selected_el.querySelector("[id*='add_line_1_']")
+        const selected_add_line_2_el = selected_el.querySelector("[id*='add_line_2_']")
+        const selected_add_city_el = selected_el.querySelector("[id*='add_city_']")
+        const selected_add_state_el = selected_el.querySelector("[id*='add_state_']")
+        const selected_add_country_el = selected_el.querySelector("[id*='add_country_']")
+        const selected_add_post_code_el = selected_el.querySelector("[id*='add_post_code_']")
+
+        address_display_el.id = `address_display_${selected_address_id}`
+        default_add_label_el.innerHTML = selected_add_label_el.innerHTML
+        default_add_label_el.id = `default_add_label_${selected_address_id}`
+        default_add_line_1_el.innerText = selected_add_line_1_el.innerText
+        default_add_line_1_el.id = `default_add_line_1_${selected_address_id}`
+        default_add_line_2_el.innerText = selected_add_line_2_el.innerText
+        default_add_line_2_el.id = `default_add_line_2_${selected_address_id}`
+        default_add_city_el.innerText = selected_add_city_el.innerText
+        default_add_city_el.id = `default_add_city_${selected_address_id}`
+        default_add_state_el.innerText = selected_add_state_el.innerText
+        default_add_state_el.id = `default_add_state_${selected_address_id}`
+        default_add_country_el.innerText = selected_add_country_el.innerText
+        default_add_country_el.id = `default_add_country_${selected_address_id}`
+        default_add_post_code_el.innerText = selected_add_post_code_el.innerText
+        default_add_post_code_el.id = `default_add_post_code_${selected_address_id}`      
+
+        // default sign
+        const default_sign_el = check_element_exist(document, "[id^='default_sign_']")
+        if(default_sign_el){
+            const default_address_id = default_sign_el.id.replace("default_sign_", "")
+            if(selected_address_id != default_address_id){
+                default_sign_el.hidden = true
+            } else {
+                default_sign_el.hidden = false
+            }
+        }
+    }
+
+    // check foreign currency rate expiry
+    function check_foreign_currency_expiry() {
+        if (Date.now() > expiryTime) {
+            document.getElementById('price-warning').classList.remove('hidden');
+            // disable the 'Pay' button
+            checkout_btn.disabled = true
+        }                                                       
+    } 
+
+    // update foreign currency
+    async function  update_foreign_currency(e){
+        e.preventDefault()
+        foreign_currency_code = e.target.value
+        const integer_currencies = ["JPY", "KRW", "TWD", "VND", "CLP"]
+        if(integer_currencies.includes(foreign_currency_code)){
+            foreign_currency_decimal_place = 0
+        } else {
+            foreign_currency_decimal_place = 2
+        }
+        const response = await fetch(`/carts/set_currency/?code=${foreign_currency_code}`)
+        const select_currency_res_data = await response.json(); // Now this will successfully parse
+        
+        if(response.ok){
+            const updated_locked_rate = await fetch(`/carts/get_or_lock_checkout_rate_api/?code=${foreign_currency_code}`)
+            const updated_locked_rate_data = await updated_locked_rate.json()
+            // update exchange_rate
+            locked_exchange_rate = updated_locked_rate_data.locked_rate
+            foreign_currency_locale = updated_locked_rate_data.locked_rate_locale
+            locked_exchange_rate_el.innerText = `*兌換率｜Exchange Rate：${updated_locked_rate_data.locked_rate}\n(店內匯率 - 24小時有效｜Store Exchange Rate - Valid for 24hrs)`
+            // If Cart exists
+            if(check_element_exist(document, "#cart_items_wrapper")){
+                // update product subtotal amount
+                const price_unit_wrappers = [...document.querySelectorAll(".price_quantity")]
+                let sub_total_foreign = 0
+                price_unit_wrappers.forEach((el) => {
+                    const quantity = el.querySelector(".qty").value
+                    const unit_price = el.querySelector(".unit_price").dataset.value
+                    sub_total_foreign += Number(Number(quantity * unit_price * locked_exchange_rate).toFixed(foreign_currency_decimal_place))
+                    console.log("digit: ", foreign_currency_decimal_place)
+                    console.log("sub_total_foreign: ", el.id, ": ", Number(Number(quantity * unit_price * locked_exchange_rate).toFixed(foreign_currency_decimal_place)))
+                })
+                products_subtotal_amount_foreign_el.dataset.currency = foreign_currency_code
+                products_subtotal_amount_foreign_el.dataset.value = sub_total_foreign
+                format_currency(products_subtotal_amount_foreign_el, sub_total_foreign, foreign_currency_code)
+                
+                // update shipping cost amount
+                shipping_cost_amount_foreign_el.dataset.currency = foreign_currency_code
+                shipping_cost_amount_foreign_el.dataset.value = Number(shipping_cost_amount_el.dataset.value * locked_exchange_rate).toFixed(foreign_currency_decimal_place)
+                format_currency(shipping_cost_amount_foreign_el, Number(shipping_cost_amount_el.dataset.value * locked_exchange_rate).toFixed(foreign_currency_decimal_place), foreign_currency_code)
+
+                // update discount amount
+                discount_amount_foreign_el.dataset.currency = foreign_currency_code
+                discount_amount_foreign_el.dataset.value = Number(discount_amount_el.dataset.value * locked_exchange_rate).toFixed(foreign_currency_decimal_place)
+                format_currency(discount_amount_foreign_el, Number(- discount_amount_el.dataset.value * locked_exchange_rate).toFixed(foreign_currency_decimal_place), foreign_currency_code)
+
+                // update tax amount
+                tax_amount_foreign_el.dataset.currency = foreign_currency_code
+                tax_amount_foreign_el.dataset.value = Number(tax_amount_el.dataset.value * locked_exchange_rate).toFixed(foreign_currency_decimal_place)
+                format_currency(tax_amount_foreign_el, Number(tax_amount_el.dataset.value * locked_exchange_rate).toFixed(foreign_currency_decimal_place), foreign_currency_code)
+
+                // update applied voucher amount
+                cash_voucher_amount_foreign_el.dataset.currency = foreign_currency_code
+                if(calculate_total_payable() == 0){
+                    const payable_foreign_currency = Number(products_subtotal_amount_foreign_el.dataset.value) + Number(shipping_cost_amount_foreign_el.dataset.value) - Number(discount_amount_foreign_el.dataset.value) + Number(tax_amount_foreign_el.dataset.value)
+
+                    cash_voucher_amount_foreign_el.dataset.value = payable_foreign_currency
+                    format_currency(cash_voucher_amount_foreign_el, Number(-payable_foreign_currency).toFixed(foreign_currency_decimal_place), foreign_currency_code)
+                } else {
+                    cash_voucher_amount_foreign_el.dataset.value = Number(cash_voucher_amount_el.dataset.value * locked_exchange_rate).toFixed(foreign_currency_decimal_place)
+                    format_currency(cash_voucher_amount_foreign_el, Number(- cash_voucher_amount_el.dataset.value * locked_exchange_rate).toFixed(foreign_currency_decimal_place), foreign_currency_code)
+                }
+
+                // update total due
+                const total_due_foreign = Number(products_subtotal_amount_foreign_el.dataset.value) + Number(shipping_cost_amount_foreign_el.dataset.value) - Number(discount_amount_foreign_el.dataset.value) + Number(tax_amount_foreign_el.dataset.value) - Number(cash_voucher_amount_foreign_el.dataset.value)
+                total_amount_foreign_el.dataset.currency = foreign_currency_code
+                total_amount_foreign_el.dataset.value = total_due_foreign
+                format_currency(total_amount_foreign_el, total_due_foreign, foreign_currency_code)
+            }
+        }
+
+    }
+
+
+    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ INIT SETUPS ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
+    zone_tabs.forEach(zone => {
+        zone.addEventListener("click", function(){
+            if(this.dataset.is_checked !== 'true'){
+                const destination_select = destination_inputs.filter(input => input.name === zone.value)
+                destination_select[0].selectedIndex = 0;
+                shipping_charge_submit_btn.disabled = false
+            }
+            zone_tabs.map(tab => {
+                tab.dataset.is_checked = 'false'
+                tab.checked = false
+            })
+            this.dataset.is_checked='true'
+            this.checked = true
+        })
+
+        zone.addEventListener("change", reset_destination_inputs)
+    })
+
+    destination_inputs.forEach(input => {
+        input.addEventListener("change", reset_destination_inputs)
+    })
+
+    max_voucher_input()
+
+    checkout_btn.addEventListener("click", checkout)
+
+    const address_collapse_btn = check_element_exist(document,"#address_collapse_btn")
+    if(address_collapse_btn) {
+        address_collapse_btn.addEventListener("click", () => {
+            if(address_collapse_btn.checked){
+                address_2_el.classList.remove("opacity-50")
+            } else {
+                address_2_el.classList.add("opacity-50")
+            }
+        })
+    }
+
+    // if user has registered address - single
+    const single_address_display_el = check_element_exist(document, "[id^='single_address_display_']") // where only ONE address available
+    
+    // enable address selection (for multiple options)
+    const address_display_el = check_element_exist(document, "[id^='address_display_']") // when multiple addresses available
+    const address_option_els = check_elements_exist(document, "[id^='default_address_input_']") // radio buttons for multiple addresses list
+
+    if(address_display_el){
+        // observe change in address_display element
+        const observer = new MutationObserver((mutationsList) => {
+            for (const mutation of mutationsList) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'id') {
+                    console.log(`ID changed from "${mutation.oldValue}" to "${mutation.target.id}"`);
+                    reset_destination_inputs()
+                }
+            }
+        });
+        observer.observe(address_display_el, {
+            attributes: true,
+            attributeFilter: ['id'], // Targeted optimization
+            attributeOldValue: true  // Allows access to the previous ID
+        });  
+
+        // refs
+        const default_address_id = address_display_el 
+                    ? address_display_el.id.replace("address_display_", "")
+                    : single_address_display_el.replace("single_address_display_")
+        const default_add_label_el = address_display_el.querySelector("[id*='add_label_']")
+        const default_add_line_1_el = address_display_el.querySelector("[id*='add_line_1_']")
+        const default_add_line_2_el = address_display_el.querySelector("[id*='add_line_2_']")
+        const default_add_city_el = address_display_el.querySelector("[id*='add_city_']")
+        const default_add_state_el = address_display_el.querySelector("[id*='add_state_']")
+        const default_add_country_el = address_display_el.querySelector("[id*='add_country_']")
+        const default_add_post_code_el = address_display_el.querySelector("[id*='add_post_code_']")
+
+
+        // check if multiple addresses are available
+        if(address_option_els) {
+            const apply_default_address_btn = check_element_exist(document, "#apply_default_address_btn")
+            // when apply default button is clicked, the checked radio button's address will be displayed 
+            apply_default_address_btn.addEventListener("click", (e) => {
+                change_default_address(default_add_label_el, default_add_line_1_el, default_add_line_2_el, default_add_city_el, default_add_state_el, default_add_country_el, default_add_post_code_el)
+
+                // close dialog modal
+                change_address_modal_el.close()
+            })
+        }
+        // mark checked radio with selected option after re-open
+        address_option_els.map(el => {
+            if(el.id.replace("default_address_input_", "") == default_address_id){
+                el.checked = true
+            }
+        })
+    }
+
+    // format foreign currency
+    currencyElements.forEach(el => {
+        const value = parseFloat(el.dataset.value);
+        const currencyCode = el.dataset.currency || 'HKD'; // Default to USD if missing
+
+        format_currency(el, value, currencyCode)
+    });
+
+    // refresh page for exchange rate update
+    const lockedAt = new Date("{{ request.session.locked_at }}");
+    console.log("lockedAt: ", lockedAt)
+    // const expiryTime = lockedAt.getTime() + (24 * 60 * 60 * 1000);
+    const expiryTime = lockedAt.getTime() + (2 * 60 * 1000);
+
+    setInterval(check_foreign_currency_expiry, 5000); // Check every minute
+
+    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ CART ITEMS & WISHLIST ITEMS ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
+    // limit quantity inputs enterable values (max & min quantity)
+    quantity_input_els.forEach((quantity_input_el) => {
+        quantity_input_el.addEventListener('change', function() {
+            let currentValue = parseInt(this.value, 10); // Get the value as an integer
+            if (isNaN(currentValue)) {
+                // Handle cases where the input is empty or not a number
+                this.value = this.min; 
+            } else if (currentValue < this.min) {
+                // Cap the value at the minimum
+                this.value = this.min;
+            } else if (currentValue > this.max) {
+                // Cap the value at the maximum
+                this.value = this.max;
+            }
+        });
+    })
+
+    // loop through all cart-items and methods to each quantity input
+    cart_items_data_list.map(cart_item => {
+        const sku_id = cart_item[0]
+
+        // (0) Init status for buttons
+        const quantity_input = document.querySelector(`#quantity_input_${sku_id}`)
+        const plus_btn = document.querySelector(`#plus_btn_${sku_id}`)
+        const minus_btn = document.querySelector(`#minus_btn_${sku_id}`)
+
+        toggle_btns(quantity_input, plus_btn, minus_btn)
+
+        // (1) Quantity Change
+        const change_quantity_form = document.querySelector(`#change_quantity_form_${sku_id}`)
+        const quantity_input_name = `quantity_input_${sku_id}`
+        change_quantity_form.addEventListener('submit', function(e) {
+            e.preventDefault()
+            handle_change_quantity(e, sku_id, this)
+        })
+
+        // (2) Options
+        const cart_item_options_form = document.querySelector(`#cart_item_options_form_${sku_id}`)
+        cart_item_options_form.addEventListener('submit', function(e) {
+            e.preventDefault()
+            handle_cart_options(e, sku_id, this)
+        })
+    })
+
+    // loop through all wishlist-items's option methods
+    wishlist_data_list.map(wish_item => {
+        const sku_id = wish_item[0]
+
+        // Option methods
+        const wish_item_options_form = document.querySelector(`#wishlist_item_options_form_${sku_id}`)
+        wish_item_options_form.addEventListener("submit", function(e){
+            e.preventDefault()
+            handle_wishlist_options(e, sku_id, this)
+        })
+    })
+
+    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ CALCULATE SHIPPING COST ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
+    shipping_charge_form.addEventListener("submit", handle_calculate_shipping_cost)
+    shipping_charge_form.addEventListener("change", reset_destination_inputs)
+
+    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ APPLY DISCOUNT ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
+    discount_code_form.addEventListener("submit", apply_discount)
+
+    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ CALCULATE TAX ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
+    // if checkout button is activated, start calculation
+    // then, if any of the [products, shipping, discount] amount changes, re-calculate
+    // allocate shipping according to HS% of total product
+
+    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ APPLY CASH VOUCHER ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
+    cash_voucher_form.addEventListener("submit", apply_cash_voucher)
+    
+    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ CHANGE FOREIGN CURRENCY ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
+    select_currency_input_el.addEventListener("change", update_foreign_currency)
+})
+</script>
+
+{% endblock %}
+
+<!-- How to incorporate a Cookie acceptance alert with SWAL on arrival to the site? -->
+<!-- To incorporate a cookie acceptance alert using SweetAlert2 (SWAL) in 2026, 
+ you must ensure the alert only appears for new visitors and respects modern privacy standards 
+ like GDPR (requiring an explicit "Reject" option). 
+
+1. The Implementation Logic
+Since you are already using cookies for currency preferences, you can use a specific cookie 
+(e.g., cookie_consent) to track whether the user has interacted with the alert. 
+Step 1: Check for existing consent
+On page load, use a helper function to check if the cookie_consent cookie exists.  -->
+
+
+<!-- Javascript
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+} -->
+
+<!-- Step 2: Trigger the SWAL Alert
+If the cookie is missing, trigger a persistent SWAL alert. 
+To meet 2026 compliance standards, provide balanced "Accept" and "Reject" options.  -->
+
+<!-- javascript
+document.addEventListener("DOMContentLoaded", function() {
+    if (!getCookie("cookie_consent")) {
+        Swal.fire({
+            title: 'Cookie Consent',
+            text: "We use cookies to improve your experience and store your preferred currency.",
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Accept All',
+            cancelButtonText: 'Reject Non-Essential',
+            allowOutsideClick: false, // Ensures they must interact with the choice
+            footer: '<a href="/privacy-policy">Learn more about our policy</a>'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // User accepted all
+                document.cookie = "cookie_consent=accepted; max-age=31536000; path=/; SameSite=Lax";
+            } else {
+                // User rejected non-essential; only allow strictly necessary cookies
+                document.cookie = "cookie_consent=rejected; max-age=31536000; path=/; SameSite=Lax";
+            }
+        });
+    }
+}); -->
+
+<!-- 2. 2026 Best Practices for Cookie Alerts
+Equal Visibility: The "Reject" button must be just as prominent as the "Accept" button.
+No Auto-Consent: Scrolling or staying on the page does not constitute consent in 2026.
+Persistence: Setting the max_age to one year (31,536,000 seconds) is the standard renewal timeframe.
+Accessibility: Use allowOutsideClick: false carefully; ensure the alert is 
+keyboard-navigable for WCAG 2.2 compliance. 
+
+3. Integrating with your Currency Feature
+If a user clicks "Reject", you should avoid setting the user_currency cookie unless you classify it 
+as a "strictly necessary" functional cookie for the site to work. 
+If you treat it as a personalization cookie, you must wait for the "Accept" signal 
+before saving their currency preference.  -->
+
+
+

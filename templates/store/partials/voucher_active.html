@@ -1,0 +1,15 @@
+{% load humanize %}
+<div id="voucher-form-wrapper" hx-swap-oob="true" class="flex items-center justify-between p-3 bg-success/10 border border-success rounded-lg">
+    <span class="text-success font-medium">CNY <strong>¥ {{ voucher_applied|floatformat:2|intcomma }}</strong> Applied!</span>
+    <button hx-post="{% url 'reset_voucher' %}" 
+            hx-vals='{"csrfmiddlewaretoken": "{{ csrf_token }}"}'
+            hx-swap="none" 
+            class="btn btn-sm btn-ghost text-error h-auto py-2 min-h-0">
+        <div class="flex items-center gap-2">
+            <span>✕</span>
+            <span>
+                Reset<br>重置
+            </span>
+        </div> 
+    </button>
+</div>

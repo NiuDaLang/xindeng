@@ -1,0 +1,87 @@
+{% autoescape off %}
+<!DOCTYPE html>
+<html lang="en" style="padding:0;margin:0;box-sizing:border-box;">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Hold Expired ｜ 庫存保留逾期取消</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://googleapis.com" rel="stylesheet">
+    </head>
+    <body style="font-family: 'Noto Sans TC', sans-serif; margin:0; background-color:#f9f9f9; padding: 20px 0;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+                <td align="center">
+                    <table class="content" width="600" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse; border: 1px solid #e5e5e5; background-color:#ffffff;">
+                        <!-- Header -->
+                        <tr>
+                            <td class="header" style="background-color: #4a4a4a; padding: 40px; text-align: center; color:#ffffff;">
+                                <span style="font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 5px;">Hṛdayadīpa (हृदयदीप) ｜ 心燈</span>
+                                <span style="font-size: 1rem; line-height: 1.4rem; display: block; opacity: 0.9; color: #e5e5e5;">
+                                    Order Hold Expired<br/>庫存保留逾期自動取消通知
+                                </span>
+                            </td>
+                        </tr>
+
+                        <!-- Main Core Body Context -->
+                        <tr>
+                            <td class="body" style="padding: 40px; text-align: left; font-size: 0.9rem; line-height: 1.45rem; color: #333333;">
+                                {% if user.username %}
+                                    Dear <strong>{{ user.username }}</strong> ｜ 親愛的 <strong>{{ user.username }}</strong>，
+                                {% else %}
+                                    Dear <strong>{{ order.email }}</strong> ｜ 親愛的 <strong>{{ order.email }}</strong>，
+                                {% endif %}
+                                <br><br>
+                                This notice is to inform you that the 72-hour warehouse lock duration for order number <strong style="color: #d32f2f;">{{ order.order_number }}</strong> has run out without a confirmed remittance transaction clearance update.<br><br>
+                                您的訂單 <strong style="color: #d32f2f;">{{ order.order_number }}</strong> 由於未能在 72小時 的指定安全鎖定期限內完成匯款確認，現已逾期，系統已自動將其取消並釋放商品庫存。
+                            </td>
+                        </tr>
+
+                        <!-- Automatic Financial Voucher Recovery Notice Block -->
+                        {% if order.voucher_applied > 0 %}
+                        <tr>
+                            <td style="padding: 0 40px 20px 40px;">
+                                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f6f9; border: 1px solid #cfe2ff; border-radius: 8px;">
+                                    <tr>
+                                        <td style="padding: 20px; font-size: 0.85rem; line-height: 1.4rem; color: #084298;">
+                                            🛡️ <strong>Voucher Balance Restored ｜ 現金禮券全額退還通知</strong><br>
+                                            Our system tracking configuration indicates that a cash voucher was applied to this hold. A balance value of <strong>CNY {{ order.voucher_applied }}</strong> has been completely generated and restored back into your account wallet space.<br>
+                                            系統檢測到您在此訂單中使用了現金禮券。扣除的 <strong>CNY {{ order.voucher_applied }}</strong> 禮券金額已由系統全額自動退回至您的會員賬戶中，您可以隨時在下次購物時重新使用。
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        {% endif %}
+
+                        <!-- Continuation Text Call To Action -->
+                        <tr>
+                            <td class="body" style="padding: 0 40px 40px 40px; text-align: left; font-size: 0.85rem; line-height: 1.4rem; color: #555555;">
+                                If you still wish to purchase these items, please revisit your profile configurations to re-initialize an active cart selection sequence based on live database product variation quantities.<br>
+                                如果您仍希望購買上述商品，歡迎重新訪問店鋪將其加入購物車。若有任何疑問，請隨時回信與我們聯繫。<br><br>
+                                Sincerely,<br>心燈團隊敬上
+                                <br><br>
+                                <a href="https://xindeng.art" style="color: #4a4a4a; font-weight: bold; text-decoration: none;">xindeng.art</a>
+                            </td>
+                        </tr>
+
+                        <!-- Corporate Footer Banner -->
+                        <tr>
+                            <td class="footer" style="background-color: #333333; padding: 30px; text-align: center; color: white; font-size: 0.8rem; letter-spacing: 0.5px;">
+                                Copyright &copy; 2026 | xindeng.art
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
+<style>
+@media screen and (max-width: 600px) {
+    .content { width: 100% !important; border: none !important; }
+    .header, .body, .footer { padding: 25px 20px !important; }
+}
+</style>
+{% endautoescape %}

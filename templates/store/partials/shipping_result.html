@@ -1,0 +1,6 @@
+{% load humanize %}
+<!-- Main response (goes into #shipping-result-container safely) -->
+<div id="shipping-cost-display" class="my-4 alert alert-success shadow-sm flex flex-col justify-center items-center gap-2 animate-fade-in w-full">
+    <span>🚚 Estimated Shipping｜運費: </span>
+    <span id="shipping_cost_amount" class="font-semibold">CNY ¥ {{ shipping_cost }}</span>
+</div>

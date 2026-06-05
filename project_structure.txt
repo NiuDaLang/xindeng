@@ -1,0 +1,313 @@
+.
+├── accounts
+│   ├── __init__.py
+│   ├── adapter.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── context_processors.py
+│   ├── data.py
+│   ├── evaluators.py
+│   ├── forms.py
+│   ├── members.py
+│   ├── migrations
+│   │   ├── __init__.py
+│   │   ├── 0001_initial.py
+│   │   └── ...
+│   ├── models.py
+│   ├── routing.py
+│   ├── tasks.py
+│   ├── templatetags
+│   │   ├── __init__.py
+│   │   └── chat_extras.py
+│   ├── tests.py
+│   ├── urls.py
+│   ├── utils.py
+│   └── views.py
+├── assets
+│   ├── django-assets
+│   │   ├── main-C4l3sXjB.css
+│   │   └── main-I0EQBivj.js
+│   └── manifest.json
+├── blog
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── context_processors.py
+│   ├── migrations
+│   │   ├── __init__.py
+│   │   ├── 0001_initial.py
+│   │   └── ...
+│   ├── models.py
+│   ├── tests.py
+│   ├── urls.py
+│   └── views.py
+├── carts
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── consumers.py
+│   ├── forms.py
+│   ├── middleware.py
+│   ├── migrations
+│   │   ├── __init__.py
+│   │   ├── 0001_initial.py
+│   │   └── ...
+│   ├── models.py
+│   ├── routing.py
+│   ├── signals.py
+│   ├── tax.py
+│   ├── tests.py
+│   ├── urls.py
+│   ├── utils.py
+│   └── views.py
+├── category
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── context_processors.py
+│   ├── migrations
+│   │   ├── __init__.py
+│   │   ├── 0001_initial.py
+│   │   └── ...
+│   ├── models.py
+│   ├── tests.py
+│   └── views.py
+├── celerybeat-schedule
+├── celerybeat-schedule-shm
+├── celerybeat-schedule-wal
+├── dataentry
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── management
+│   │   └── commands
+│   │       ├── greeting.py
+│   │       ├── importdata.py
+│   │       └── insertdata.py
+│   ├── migrations
+│   │   └── __init__.py
+│   ├── models.py
+│   ├── tests.py
+│   └── views.py
+├── db.sqlite3
+├── django-app-key.pem
+├── dump.rdb
+├── emails
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── tests.py
+│   ├── utils.py
+│   └── views.py
+├── manage.py
+├── media
+│   ├── blog
+│   ├── chat_images
+│   ├── ckeditor5_storage
+│   ├── favicon
+│   ├── hero
+│   ├── images
+│   ├── perks
+│   ├── three
+│   ├── userprofile
+│   └── videos
+├── orders
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── migrations
+│   │   ├── __init__.py
+│   │   ├── 0001_initial.py
+│   │   └── ...
+│   ├── models.py
+│   ├── paypal.py
+│   ├── tasks.py
+│   ├── tests.py
+│   ├── urls.py
+│   ├── utils.py
+│   └── views.py
+├── package-lock.json
+├── package.json
+├── project_structure.txt
+├── requirements.txt
+├── reviews
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── forms.py
+│   ├── migrations
+│   │   ├── __init__.py
+│   │   └── 0001_initial.py
+│   ├── models.py
+│   ├── tests.py
+│   └── views.py
+├── static
+│   ├── css
+│   │   ├── ckeditor.css
+│   │   ├── custom.css
+│   │   └── main.css
+│   ├── fonts
+│   │   └── ...ttf
+│   └── js
+│       ├── firework.js
+│       ├── main.js
+│       └── shaders
+│           ├── firework
+│           │   ├── fragment.glsl
+│           │   └── vertex.glsl
+│           └── includes
+│               └── remap.glsl
+├── staticfiles
+│   ├── admin...
+│   ├── blog...
+│   ├── ckeditor5_storage...
+│   ├── css...
+│   ├── django_ckeditor_5...
+│   ├── django-assets...
+│   ├── hero...
+│   ├── images...
+│   ├── js...
+│   ├── manifest.json...
+│   ├── perks...
+│   ├── rest_framework...
+│   ├── three...
+│   ├── userprofile...
+│   └── videos...
+├── store
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── managers.py
+│   ├── migrations
+│   │   ├── __init__.py
+│   │   ├── 0001_initial.py
+│   │   └── ...
+│   ├── models.py
+│   ├── tests.py
+│   ├── urls.py
+│   └── views.py
+├── templates
+│   ├── 404.html
+│   ├── 500.html
+│   ├── accounts
+│   │   ├── dashboard_addresses.html
+│   │   ├── dashboard_favorites.html
+│   │   ├── dashboard_help.html
+│   │   ├── dashboard_main.html
+│   │   ├── dashboard_offers.html
+│   │   ├── dashboard_order.html
+│   │   ├── dashboard_orders.html
+│   │   ├── dashboard_profile.html
+│   │   ├── dashboard_threed.html
+│   │   ├── dashboard_vouchers.html
+│   │   ├── dashboard_wishlist.html
+│   │   ├── dashboard.html
+│   │   ├── partials
+│   │   │   ├── address_form.html
+│   │   │   ├── address_list_partial.html
+│   │   │   ├── admin_chat_list.html
+│   │   │   ├── chat_list.html
+│   │   │   ├── earlier_messages_wrapper.html
+│   │   │   ├── favorites_list.html
+│   │   │   ├── item_qty_form.html
+│   │   │   ├── new_chat_mssg.html
+│   │   │   ├── profile_strength_display.html
+│   │   │   ├── stock_badge.html
+│   │   │   └── wishlist_item.html
+│   │   └── three
+│   │       └── firework.html
+│   ├── base.html
+│   ├── blog
+│   │   ├── all_posts_display.html
+│   │   ├── all_posts.html
+│   │   ├── post.html
+│   │   └── tag_posts_list.html
+│   ├── emails
+│   │   ├── bank_hold_cancelled_email.html
+│   │   ├── bank_hold_cancelled_email.txt
+│   │   ├── bank_hold_confirmation_email.html
+│   │   ├── bank_hold_confirmation_email.txt
+│   │   ├── order_confirmation_email.html
+│   │   ├── order_confirmation_email.txt
+│   │   ├── registration_activation_email.html
+│   │   ├── registration_activation_email.txt
+│   │   ├── reset_password_completion_email.html
+│   │   ├── reset_password_completion_email.txt
+│   │   ├── reset_password_email.html
+│   │   └── reset_password_email.txt
+│   ├── home.html
+│   ├── includes
+│   │   ├── about_section.html
+│   │   ├── alerts.html
+│   │   ├── banner.html
+│   │   ├── blog_sidebar.html
+│   │   ├── collection.html
+│   │   ├── dashboard_sidebar.html
+│   │   ├── footer.html
+│   │   ├── header.html
+│   │   ├── hero.html
+│   │   ├── highlights.html
+│   │   ├── mug_rack_svg.html
+│   │   ├── posts_fibonacci.html
+│   │   ├── questionnaire.html
+│   │   └── two_d_canvas.html
+│   ├── orders
+│   │   ├── order_complete.html
+│   │   ├── order_confirmation_pdf.html
+│   │   └── place_order.html
+│   ├── pages
+│   │   ├── about.html
+│   │   ├── archive_results.html
+│   │   ├── collaboration.html
+│   │   ├── contact.html
+│   │   ├── forgot_password.html
+│   │   ├── login.html
+│   │   ├── register.html
+│   │   ├── reset_password.html
+│   │   ├── search_results.html
+│   │   ├── tag_results.html
+│   │   └── test.html
+│   ├── socialaccount
+│   │   ├── login_cancelled.html
+│   │   ├── login.html
+│   │   └── snippets
+│   │       └── provider_list.html
+│   └── store
+│       ├── cart_copy.html
+│       ├── cart.html
+│       ├── checkout.html
+│       ├── partials
+│       │   ├── cart_item_row.html
+│       │   ├── cart_summary_wrapper.html
+│       │   ├── cart_summary.html
+│       │   ├── change_qty_result.html
+│       │   ├── compliance_field_snippet.html
+│       │   ├── costs_calculations.html
+│       │   ├── header_cart_list.html
+│       │   ├── offer_active.html
+│       │   ├── offer_input.html
+│       │   ├── offers_section.html
+│       │   ├── shipping_result.html
+│       │   ├── shipping_section_wrapper.html
+│       │   ├── shipping_section.html
+│       │   ├── voucher_active.html
+│       │   ├── voucher_input.html
+│       │   └── wishlist_row.html
+│       ├── product.html
+│       └── products.html
+├── vite.config.js
+├── vscode
+│   └── settings.json
+└── xindeng
+    ├── __init__.py
+    ├── asgi.py
+    ├── celery.py
+    ├── ckeditorconfig.py
+    ├── settings.py
+    ├── urls.py
+    ├── utils.py
+    ├── views.py
+    └── wsgi.py
+
+138 directories, 953 files

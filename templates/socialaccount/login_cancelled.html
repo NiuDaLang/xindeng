@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[calc(100dvh-64px)] bg-base-200">
+    <div class="card w-96 bg-primary-content shadow-xl p-10 text-center">
+        <h1 class="text-3xl font-bold mb-4 text-error">Social Sign-In Cancelled</h1>
+        <h2 class="text-xl mb-6">社交帳號登入/註冊已取消</h2>
+        
+        <p class="text-sm mb-8 opacity-70">
+            You’ve cancelled the social sign-up or login.<br/>
+            If this was a mistake, please try again.
+            <br><br>
+            您已取消使用社交帳號登入或註冊。<br/>
+            如果這是誤操作，請重新嘗試。。
+        </p>
+        
+        <div class="flex flex-col gap-3">
+            <a href="{% url 'login' %}" class="btn btn-base-300">
+                Back to Login｜返回登入頁
+            </a>
+            <a href="{% url 'register' %}" class="btn btn-neutral text-primary-content">
+                Back to Register｜返回註冊頁 
+            </a>
+            <a href="/" class="btn btn-ghost btn-sm">
+                 Home｜返回首頁
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

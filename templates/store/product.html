@@ -1,101 +1,206 @@
+
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
+{% load sekizai_tags %}
+
 {% block content %}
 
+{% addtoblock "meta" %}
+    <meta property="og:title" content="{{ single_product.product_name }}">
+    <meta property="og:url" content="{{ absolute_url }}">
+    <!-- ... other meta tags as needed ... -->
+{% endaddtoblock %}
+
+<!-- json data from backend -->
+    {{ product_gallery_json_data|json_script:"product_gallery_json_data" }}
+    {{ variations_gallery_json_data|json_script:"variations_gallery_json_data" }}
+
 <!-- BANNER -->
-<div class="relative mt-16 w-full">
+<div class="relative mt-[86px] w-full">
     {% include 'includes/banner.html' %}
 </div>
 
-<main class="px-[max(1rem,5vw)] py-20">
+<main class="px-[max(1rem,5vw)] py-20 glight_main">
     <!-- INFO -->
-    <div class="md:grid md:grid-cols-8 md:gap-5">
+    <div class="md:grid md:grid-cols-8 md:gap-5" >
         <!-- images -->
-        <div class="col-span-5">
-            <!-- L-size image -->
-            <figure class="w-full aspect-4/3 rounded-xl ribbon-wrapper">
-                <div class="ribbon-content">
-                    <span class="ribbon bg-secondary text-[#ffffff]">新出爐！</span>
-                </div>
-                <img src="/media/hero/tulip.svg" class="w-full h-full object-cover rounded-xl"/>
-            </figure>
+        <div class="col-span-5" >
+            <!-- L-color image -->
+            <a 
+                id="open-product-gallery"
+                href="#" 
+                data-glightbox="gallery: my_dynamic_gallery;"
+                class="glightbox"
+                data-type="image"
+                data-effect="fade"
+                data-width="100%"
+                data-height="auto"
+                data-zoomable="true"
+                data-draggable="false"
+                data-sizes=""
+                data-srcset=""
+            >
+                <figure class="w-full aspect-4/3 rounded-xl ribbon-wrapper">
+                    <div class="ribbon-content">
+                        <span class="ribbon bg-success text-[#ffffff]">新出爐！</span>
+                    </div>
+                    <img id="main_thumbnail" src="{{ single_product.images.url}}" class="w-full h-full object-cover rounded-xl" alt="image"/>
+                </figure>
+            </a>
 
             <!-- S-size gallery -->
-            <div class="col-span-3 flex gap-3 mt-3">
+            <div class="col-span-3 flex gap-3 mt-3" id="product_gallery_images">
                 <label class="switch" name="pattern">
-                    <input type="radio" name="pattern">
-                    <img src="/media/images/variations/pattern1.png" class="switch-img rounded-sm"></img>
+                    <input id="main_product_image_input" type="radio" name="pattern" checked>
+                    <img id="product_gallery_image_0" src="{{single_product.images.url}}" alt="{{single_product.product_name}}" class="switch-img rounded-sm"></img>
                 </label>
-                <label class="switch" name="pattern">
-                    <input type="radio" name="pattern">
-                    <img src="/media/images/variations/pattern2.png" class="switch-img rounded-sm"></img>
-                </label>
-                <label class="switch" name="pattern">
-                    <input type="radio" name="pattern">
-                    <img src="/media/images/variations/pattern3.png" class="switch-img rounded-sm"></img>
-                </label>
+                {% if product_gallery %}
+                    {% for image in product_gallery %}
+                        <label class="switch product_gallery_image_wrapper" name="pattern">
+                            <input type="radio" name="pattern">
+                            <img id="product_gallery_image_{{forloop.counter}}" src="{{image.image.url}}" alt="{{image.title}}" class="switch-img rounded-sm product_gallery_image"></img>
+                        </label>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- SNS Share -->
+            <div class="mt-[3rem]">
+                <!-- X -->
+                <button 
+                    class="button cursor-pointer" 
+                    data-sharer="x" 
+                    data-title="快來看看👀！{{ single_product.product_name }}" 
+                    data-hashtags="{{single_product.tags_string}}" 
+                    data-url="https://localhost:8000{{ single_product.get_url }}"
+                >
+                    <i class="fa-brands fa-square-x-twitter fa-2xl"></i>
+                </button>
+                <!-- FACEBOOK -->
+                <button 
+                    class="button cursor-pointer" 
+                    data-sharer="facebook" 
+                    data-hashtag="{{single_product.tags_string}}" 
+                    data-url="https://localhost:8000{{ single_product.get_url }}">
+                    <i class="fa-brands fa-facebook fa-2xl"></i>
+                </button>
+                <!-- LINKED IN -->
+                <button 
+                    class="button cursor-pointer" 
+                    data-sharer="linkedin" 
+                    data-url="https://localhost:8000{{ single_product.get_url }}">
+                    <i class="fa-brands fa-linkedin-in fa-2xl"></i>
+                </button>
+                <!-- WEIBO -->
+                <button 
+                    class="button cursor-pointer" 
+                    data-sharer="weibo" 
+                    data-title="快來看看👀！{{ single_product.product_name }}" 
+                    data-url="https://localhost:8000{{ single_product.get_url }}">
+                    <i class="fa-brands fa-weibo fa-2xl"></i>
+                </button>
+                <!-- EMAIL -->
+                <button 
+                    class="button cursor-pointer" 
+                    data-sharer="email" 
+                    data-title="{{ single_product.product_name }}" 
+                    data-url="https://localhost:8000{{ single_product.get_url }}" 
+                    data-subject="快來看看👀！{{ single_product.product_name }}" 
+                >
+                    <i class="fa-solid fa-envelope fa-2xl"></i>
+                </button>
             </div>
         </div>
 
         <!-- order details -->
         <div class="col-span-3 ">
-            <div class="rounded-xl border-3 border-primary-content border-double p-3">
-                <form action="" method="POST" class="w-full">
+            <div class="rounded-xl border-3 border-base-300 border-double p-3">
+                <form id="add-to-cart-form" data-url="{% url 'add_to_cart' %}" method="POST" class="w-full">
+                    {% csrf_token %}
                     <!-- key-info -->
                     <div class="flex flex-col">
                         <!-- description -->
                         <div class="">
-                            <h2 class="card-title font-bold">超好看的迷你油畫</h2>
+                            <h2 class="card-title font-bold">{{ single_product.product_name }}</h2>
                         </div>
                         <div class="flex flex-wrap gap-1 my-2">
-                            <div class="badge badge-outline badge-neutral badge-xs">產品標籤</div>
-                            <div class="badge badge-outline badge-neutral badge-xs">產品標籤</div>
-                            <div class="badge badge-outline badge-neutral badge-xs">產品標籤</div>
+                            {% for tag in single_product.tags.all %}
+                                <a href="" class="badge badge-outline badge-base-300 badge-xs">{{ tag }}</a>
+                            {% endfor %}
                         </div>
                         <div class="badge badge-warning badge-xs">
                             <i class="fa-solid fa-tags"></i>
                             活動優惠券 10%OFF！
                         </div>                    
-                        <!-- price select -->
-                        <select class="select select-md w-full mt-3 font-extrabold text-right">
-                            <option selected>RMB&nbsp;500</option>
-                            <option>HKD&nbsp;600</option>
-                            <option>TWD&nbsp;2,400</option>
-                            <option>USD&nbsp;80</option>
-                            <option>JPY&nbsp;8,000</option>
-                        </select>   
+                        <!-- price -->
+                        <div class="select select-lg w-full mt-3 font-extrabold text-left" style="background-image:none;">
+                            <div>CNY&nbsp;<span id="price">{{ min_price|floatformat:2|intcomma }}{% if variations|length > 1 %}~{% endif %}</span></div>
+                        </div>   
                     </div>
     
                     <!-- variation - pattern -->
                     <div class="my-5 flex flex-wrap justify-start gap-3">
+                        {% for variation in variations %}
                         <label class="switch" name="pattern">
-                            <input type="radio" name="pattern">
-                            <img src="/media/images/variations/pattern1.png" class="switch-img"></img>
+                            {% if variations|length > 1 %}
+                            <input id="image_{{variation.pk}}" type="radio" name="pattern" class="variation_pattern_img">
+                            {% endif %}
+                            <img src="{{ variation.images.url }}" class="switch-img w-[4rem] aspect-square object-cover {% if variations|length == 1 %}switch-img-bordered {% endif %}"></img>
                         </label>
-                        <label class="switch" name="pattern">
-                            <input type="radio" name="pattern">
-                            <img src="/media/images/variations/pattern2.png" class="switch-img"></img>
-                        </label>
-                        <label class="switch" name="pattern">
-                            <input type="radio" name="pattern">
-                            <img src="/media/images/variations/pattern3.png" class="switch-img"></img>
-                        </label>
+                        {% endfor %}
                     </div>
     
                     <!-- variation - size etc. -->
-                    <select class="select select-xs select-ghost w-full">
-                        <option disabled selected>尺寸</option>
-                        <option>L - 大</option>
-                        <option>M - 中</option>
-                        <option>S - 小</option>
+                    <!-- if ONLY 1 variation -->
+                    {% if variations|length == 1 %}
+                        <div class="flex flex-col">
+                            {% for size in sizes %}
+                                {% if color != "" %}
+                                    <label class="label text-xs">尺寸|Size</label>
+                                    <div class="w-full input">{{ size }}</div>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% for color in colors %}
+                                {% if color != "" %}
+                                    <label class="label text-xs">顏色|Color</label>
+                                    <div class="w-full input">{{ color }}</div>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% for type in types %}
+                                {% if type != "" %}
+                                    <label class="label text-xs">款式|Type</label>
+                                    <div class="w-full input">{{ type }}</div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    
+                    {% else %}
+                    <!-- Variations > 1 -->
+                    <!-- Size -->
+                    <label class="label text-xs">尺寸|Size</label>
+                    <select name="size" id="size" class="select select-xs select-ghost w-full">
+                        <option disabled selected value="default">選擇尺寸|Pick Size</option>
                     </select>
-                    <select class="select select-xs select-ghost w-full">
-                        <option disabled selected>底色</option>
-                        <option>金</option>
-                        <option>銀</option>
-                        <option>銅</option>
+
+                    <!-- Color -->
+                    <label class="label text-xs">顏色|Color</label>
+                    <select name="color" id="color" class="select select-xs select-ghost w-full">
+                        <option disabled selected value="default">選擇顏色|Pick Color</option>
                     </select>
-    
+
+                    <!-- Type -->
+                    <label class="label text-xs">款式|Type</label>
+                    <select name="type" id="type" class="select select-xs select-ghost w-full">
+                        <option disabled selected value="default">選擇款式|Pick Type</option>
+                    </select>
+                    {% endif %}
+
+                    <!-- json data from backend -->
+                    {{ variations_json|json_script:"variation-data-container" }}
+
                     <div class="text-[10px] mt-5">
                         <!-- short description -->
                         <p>
@@ -112,32 +217,463 @@
                     </div>
                     <div class="divider"></div>
     
-                    <!-- add to cart button -->
-                    <button class="w-full my-3 block btn btn-xs sm:btn-sm md:btn-md">加 入 購 物 車</button>
-                    <!-- buy now button -->
-                    <button type="submit" class="w-full my-3 block btn btn-primary btn-xs sm:btn-sm md:btn-md">立 即 購 買</button>
-    
+                    <!-- Quatity -->
+                    <select name="quantity" id="quantity" class="select select-neutral w-full mb-[10px] font-light text-xs bg-base-content text-base-100">
+                        <option disabled selected value="default" >請選擇數量|Please select the quantity</option>
+                    </select>
+
+                    <!-- Buttons -->
+                    <input type="text" hidden id="product_sku_id" name="product_sku_id">
+                    <button type="submit" disabled id="add_to_cart" class="w-full my-3 btn btn-xs font-extralight sm:btn-sm md:btn-md">加 入 購 物 車&nbsp;<i class="fa-solid fa-cart-arrow-down"></i></button>
+                    <a href="" disabled id="buy_now" type="submit" class="w-full my-3 btn btn-primary btn-xs font-extralight sm:btn-sm md:btn-md">立 即 購 買&nbsp;<i class="fa-solid fa-cash-register"></i></a>
+                    <button hidden disabled id="out_of_stock" class="w-full my-3 btn btn-xs font-extralight sm:btn-sm md:btn-md text-error">暫 時 缺 貨&nbsp;<i class="fa-solid fa-circle-exclamation"></i></button>
                 </form>
             </div>
 
         </div>
     </div>    
 
+    <script>
+        /***** Variation Selection *****/
+
+        // Access the data using JavaScript by getting the element ID
+        const variations_data = JSON.parse(document.getElementById('variation-data-container').textContent);
+        
+        // Convert the JSON data into a list format
+        const variation_data_list = Object.entries(variations_data);
+        
+        // References to Select Elements
+        const sizeSelect = document.querySelector("#size")
+        const colorSelect = document.querySelector("#color")
+        const typeSelect = document.querySelector("#type")
+        const select_list = [sizeSelect, colorSelect, typeSelect]
+        const quantitySelect = document.querySelector("#quantity")
+
+        // References to Button Elements
+        const add_to_cart_btn = document.querySelector("#add_to_cart")
+        const out_of_stock_btn = document.querySelector("#out_of_stock")
+        const buy_now_btn = document.querySelector("#buy_now")
+
+        // Reference to Product SKU ID element
+        const product_sku_id_el = document.querySelector("#product_sku_id")
+
+        // Reference to Price Element
+        const price_el = document.querySelector("#price")
+
+        // Reference to Main Thumbnail
+        const main_thumbnail_el = document.querySelector("#main_thumbnail")
+
+        // References to Variation Image Elements
+        const variation_imgs = document.querySelectorAll(".variation_pattern_img")
+        const _variation_imgs = [...variation_imgs]
+
+        // Initialize the options in each category
+        let size_options = []
+        let color_options = []
+        let type_options = []
+
+        variation_data_list.map((variation_data, i) => {
+            const variation_data_detail = variation_data[1]
+            size_options.push(variation_data_detail.size)
+            color_options.push(variation_data_detail.color)
+            type_options.push(variation_data_detail.type)
+        })
+
+        // Remove all duplicated options and finalize the options for each category
+        let distinct_size_options = [...new Set(size_options)];
+        let distinct_color_options = [...new Set(color_options)];
+        let distinct_type_options = [...new Set(type_options)];
+
+        // Get a list of [select_category_element, relative_options] for all category
+        const select_options_list = [
+            [sizeSelect, distinct_size_options], 
+            [colorSelect, distinct_color_options], 
+            [typeSelect, distinct_type_options]
+        ]
+
+        // Global sku_id and stock variables
+        let sku_id, stock
+
+        // Clear Quantity Select
+        const clear_quantity_select = () => {
+            for (let i = quantitySelect.options.length - 1; i >= 0; i--) {
+                const option = quantitySelect.options[i];
+                if (option.value !== "default") {
+                    quantitySelect.remove(i);
+                } else {
+                    option.selected = true
+                }
+            }
+        }
+
+        // Populate Quantity Options
+        const populate_quantity_select = (quantity) => {
+            for(let i = 0; i < quantity; i++) {
+                const option_el = document.createElement('option')
+                option_el.value = i + 1
+                option_el.textContent = i + 1
+                quantitySelect.appendChild(option_el)
+            }
+        }
+
+        // Init Buttons - Make Quantity Available & Add-to-Cart & Buy-Now buttons Shown/Disabled
+        const init_btns = (qty_disabled, quantity_select_msg, stock_out) => {
+            // Quantity Select
+            quantitySelect.classList.remove("text-warning!")
+            quantitySelect.disabled = qty_disabled
+            quantitySelect.options[0].selected = true
+            quantitySelect.options[0].innerText = quantity_select_msg
+            qty_disabled ? quantitySelect.style.borderColor = "var(--color-primary)" : null
+            clear_quantity_select()
+            populate_quantity_select(stock)
+
+            // Add_to_cart Btn
+            stock_out ? add_to_cart_btn.hidden = true : add_to_cart_btn.hidden = false
+            add_to_cart_btn.disabled = true
+
+            // Buy_now Btn
+            stock_out ? buy_now_btn.hidden = true : buy_now_btn.hidden = false
+            buy_now_btn.setAttribute('disabled', 'disabled');
+
+            // Out_of_Stock Btn
+            stock_out ? out_of_stock_btn.hidden = false : out_of_stock_btn.hidden = true
+        }
+
+        // Update Conditions of Buttons & Quantity Select
+        const set_actions = (variation_list, sku_id) => {
+            product_sku_id_el.value = sku_id
+            quantitySelect.options[0].selected = true
+            variation_list.map(variation => {
+                const variation_id = variation[0]
+                const variation_data = variation[1]
+                if(variation_id === sku_id) {
+                    // check if item is already in cart
+                    if(variation_data.in_cart){
+                        //  check if in_cart_qty is less than stock
+                        if(variation_data.quantity_in_cart < stock) {
+                            stock -= variation_data.quantity_in_cart
+                            init_btns(qty_disabled=false, "請選擇數量|Please select the quantity", stock_out=false)
+                        } else {
+                        //  if in_cart_qty is already same as stock
+                            stock = 0
+                            init_btns(qty_disabled=true, "已達數量上限|Aavailable quantity reached", stock_out=false)
+                            quantitySelect.classList.add("text-warning!")
+                        }
+                    } else {
+                        //  if not in cart yet, check if stock is available
+                        if(variation_data.stock > 0) {
+                            // if stock is available
+                            init_btns(qty_disabled=false, "請選擇數量|Please select the quantity", stock_out=false)
+                        } else {
+                            // if no stock is available
+                            init_btns(qty_disabled=true, "暫時缺貨|Out Of Stock", stock_out=true)
+                        }
+                    }
+                }
+            })
+        }
+
+        // All Options of a given variation-list
+        const availableOptions = (variation_list, target_select_el) => {
+            let currently_available_options = {};
+
+            select_options_list.map(select_options => {
+                currently_available_options[select_options[0].id] = []
+            })
+            
+            // Keep All of Target Element's Options
+            const target_select_el_options = [...target_select_el.options]
+            target_select_el_options.map(option => {
+                if(option.value != "default") {
+                    currently_available_options[target_select_el.id].push(option.value)
+                }
+            })
+
+            variation_list.map(variation => {
+                for (const [key, value] of Object.entries(currently_available_options)) {
+                    if(key != target_select_el.id) {
+                        currently_available_options[key].push(variation[1][key])
+                    }
+                }
+            })
+            return currently_available_options
+        }
+
+        // Re-Define Select Options
+        const redefineOptions = (filtered_variation_list, non_target_select_options, target_select_el) => {
+            let currently_available_options = availableOptions(filtered_variation_list, target_select_el)
+
+            // If ONLY 1 variation is available
+            if(filtered_variation_list.length == 1) {
+                non_target_select_options.map(select_option => {
+                    const select_element = select_option[0]
+                    const select_value_in_variation = filtered_variation_list[0][1][select_option[0].id]
+                    const options = [...select_option[0].options]
+                    
+                    // reset >> enable all the options except for "選擇"
+                    const all_options_of_element = [...select_element.options]
+                    all_options_of_element.map(option => {
+                        if(option.value === "default"){
+                            option.disabled = true
+                        } else {
+                            option.disabled = false
+                        }
+                    })
+                    // redefine options according to current single variation 
+                    options.map(option => {
+                        if(option.value != select_value_in_variation) {
+                            option.selected = false
+                            option.disabled = true
+                        } else if(option.value == select_value_in_variation) {
+                            option.selected = true
+                        }       
+                    })
+                })
+            } else {
+            // if Multiple Variations are available
+                non_target_select_options.map(select_option => {
+                    const select_element = select_option[0]
+                    const option_list = select_option[1]
+                    const currently_available_options_of_this_category = currently_available_options[select_option[0].id]
+                    
+                    // reset >> enable all the options except for "選擇"
+                    const all_options_of_element = [...select_element.options]
+                    all_options_of_element.map(option => {
+                        if(option.value === "default"){
+                            option.disabled = true
+                        } else {
+                            option.disabled = false
+                        }
+                    })
+
+                    // if option value is not available for the current variation list, disable it/them
+                    option_list.map(option => {
+                        if(!currently_available_options_of_this_category.includes(option)){
+                            const option_to_disable = select_element.querySelector(`option[value="${option}"]`)
+                            option_to_disable.disabled = true
+                        } 
+                    })
+                })
+            }    
+        }        
+
+        // API -- Get Stock in Cart
+        const set_actions_with_cart_info = (variation_selected, sku_id) => {
+            product_sku_id_el.value = sku_id
+            quantitySelect.options[0].selected = true
+            const url = `/carts/get_cart_item_info?sku_id=${sku_id}`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const variation = variation_data_list.filter(variation => variation[0] === sku_id)
+                    stock = variation[0][1].stock
+                    // check if item is already in cart
+                    if(data.cart_item) {
+                        const cart_quantity = data.cart_item[0].quantity
+                        stock -= cart_quantity
+                        //  check if stock is larger than in_cart_qty
+                        if(stock > 0) {
+                            init_btns(qty_disabled=false, "請選擇數量|Please select the quantity", stock_out=false)
+                        } else {
+                        //  if in_cart_qty is already same as stock
+                            init_btns(qty_disabled=true, "已達數量上限|Aavailable quantity reached", stock_out=false)
+                            quantitySelect.classList.add("text-warning!")
+                        }
+                    } else {
+                        //  if not in cart yet, check if stock is available
+                        if(stock > 0){
+                            // if stock is available
+                            init_btns(qty_disabled=false, "請選擇數量|Please select the quantity", stock_out=false)
+                        } else {
+                            // if no stock is available
+                            init_btns(qty_disabled=true, "暫時缺貨|Out Of Stock", stock_out=true)
+                        }
+                    }
+                    // set_actions(variation_data_list, sku_id)
+
+                    return data
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // METHODS
+        if(variation_data_list.length > 1) {
+            // QuantitySelect Disable
+            quantitySelect.disabled = true
+            quantitySelect.options[0].innerText = "請先選擇上面的商品|Please first select from the above"
+            quantitySelect.style.borderColor = "var(--color-primary)"
+
+            // Populate: for each category options list, create an option element and attach to its relative select parent element
+            select_options_list.map(select_options => {
+                select_options[1].map(option => {
+                    const option_el = document.createElement('option');
+                    option_el.value = option;
+                    option_el.textContent = option;
+                    select_options[0].appendChild(option_el);
+                    if(!option){
+                        option_el.selected = true
+                    }
+                })
+            })
+
+            // Filter Method via Changing Select Option
+            select_list.forEach(function(target_select_el) {
+                target_select_el.addEventListener('change', function() {
+                    
+                    // ***** REVISED *****
+                    // (1) Get the Option Value of the CHANGED element.
+                    const target_el_options = [...this.options]
+                    const selected_option_value = target_el_options.filter(option => option.selected)[0].value
+                    const category_name = this.id
+
+                    // (2) Filter Variation List with the CHANGED element's value
+                    const filtered_variation_list = variation_data_list.filter(variation => {
+                       const variation_category_value = variation[1][category_name]
+                       if(variation_category_value === selected_option_value) {
+                            return variation
+                       }
+                    })
+
+                    // (3) Redefine NON_TARGET_ELs options with the TARGET_SELECT_EL's value
+                    const non_target_select_options = select_options_list.filter(select_option => {
+                        return select_option[0].id != target_select_el.id
+                    })
+
+                    redefineOptions(filtered_variation_list, non_target_select_options, this)
+
+                    // (4) If all categories are NOT DEFAULT (selected) && can be filtered by Variation_List and get > 0 result
+                    const current_options_combo = {}
+                    select_list.map(category => current_options_combo[category.id] = category.value)
+                    const matched_variations = filtered_variation_list.filter(variation => {
+                        const all_matched = Object.entries(current_options_combo).every(([key, value]) => value === variation[1][key]);
+                        if(all_matched) {return variation}
+                    })
+
+                    // Update Buy Buttnons & Check Cart
+                    if (select_list.every(category => category.value !== "default") && matched_variations.length === 1){
+                        sku_id = matched_variations[0][0]
+                        price_el.innerText = formatter.format(matched_variations[0][1].price)
+                        set_actions_with_cart_info(filtered_variation_list, sku_id)
+                    }
+
+                    // Highlight Variation Picture & Change Thumbnail/Images Displayed
+                    if(matched_variations.length === 1) {
+                        const matched_variation_pk = matched_variations[0][0] // 26
+                        const img_item_input_el_id = `image_${matched_variation_pk}`
+                        const img_item_input = document.querySelector(`#${img_item_input_el_id}`)
+                        _variation_imgs.map(img => {
+                            if(img.id === img_item_input_el_id){
+                                img.checked = true
+                            } else {
+                                img.checked = false
+                            }
+                        })
+
+                        // Change Thumbnail/DisplayPics
+                        main_thumbnail_el.src = matched_variations[0][1].image
+                        const first_product_gallery_el = document.querySelector("#product_gallery_image_0")
+                        first_product_gallery_el.src = matched_variations[0][1].image
+
+
+                        
+                    } else {
+                        _variation_imgs.map(img => img.checked = false)
+                    }
+                })
+            })
+
+            // Filter Mtehod via Clicking Variation Pattern Pics
+            variation_imgs.forEach(function(target_img_el) {
+                target_img_el.addEventListener("click", function(){
+                    const variation_id = this.id.split("_")[1] // from image tag
+                    const variation_selected = variation_data_list.filter(variation => variation[0] === variation_id)
+
+                    // Update Buttons & Price
+                    sku_id = variation_selected[0][0]
+                    price_el.innerText = formatter.format(variation_selected[0][1].price)
+                    set_actions_with_cart_info(variation_selected, sku_id)
+
+                    // Update Thumbnail/DisplayPics
+                    // main_thumbnail_el.src = variation_selected[0][1].image
+                    // const first_product_gallery_el = document.querySelector("#product_gallery_image_0")
+                    // first_product_gallery_el.src = variation_selected[0][1].image
+                    allocate_variation_gallery(main_thumbnail_el, Number(sku_id), variation_selected)
+
+
+                    // Populate Options with Selected 
+                    select_list.map(select_option => {
+                        const options = [...select_option.options]
+                        options.map(option => {
+                            if(option.value == variation_selected[0][1][select_option.id]){
+                                option.selected = true
+                            }
+                        })
+                    })
+                })
+            })
+        } else {
+            sku_id = variation_data_list[0][0]
+            set_actions_with_cart_info(variation_data_list, sku_id)
+        }
+
+        // Activate Add-to-Cart / Buy-Now Buttons upon selecting Quantity
+        quantitySelect.addEventListener("change", function () {
+            add_to_cart_btn.disabled = false
+            buy_now_btn.removeAttribute('disabled');
+        })
+
+        /***** Add to Cart AJAX *****/
+        const form = document.getElementById('add-to-cart-form');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent the default form submission and page reload
+
+            const formData = new FormData(form);
+            const url = form.getAttribute('data-url');
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest' // Helps Django identify AJAX
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const variation_data_cart_info = data.cart_items.filter(data => data.product_variation_id == sku_id)[0]
+                const quantity_added = data.quantity_added
+                stock -= quantity_added
+
+                if(stock > 0){
+                    init_btns(qty_disabled=false, "請選擇數量|Please select the quantity", stock_out=false)
+                } else {
+                    init_btns(qty_disabled=true, "已達數量上限|Aavailable quantity reached", stock_out=false)
+                    quantitySelect.classList.add("text-warning!")
+                }
+                
+                // update header cart details
+                updateHeaderCartDetails(data.cart_items_count, data.cart_items_sub_total, data.cart_items)
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        // ***** Glightbox Gallery *****
+
+
+    </script>
+
+
+
+
     <!-- DETAILS (Rich Text) -->
     <div class="my-10">
         <h2 class="text-neutral text-2xl font-bold">寶 貝 詳 情</h2>
         <p class="my-2">
-            的色違不就，己的成這了感謝陣真希望證明⋯一飯對自好喔所的經驗⋯突看不的玩這麼一：
-            沒有人感覺旅人甚至在收不希望，發現放上可看到親友。給他動新居搬包二時候個世界有可。
-            上也好想重要的在那邊沒關範圍，掉代理如果，能不過都會。看別人聊天面的這要開始真的，
-            是不是愛的的人變髮型要畫意，官，的感覺是話說現盼店不會有點不的所以，有點這樣，
-            久違給他們流我太幾。年的都用來這覺得有，自己的根本，大家都真是啦以後真的。
-            <br/>
-            <br/>
-            有趣直接，接著這樣對保護請問的存在的第，己覺得新居，提醒的不過的已經麼那麼，
-            他覺得在家，人在還用在會喔喔我到底很多人師。
+            {{ single_product.details|safe }}
         </p>
-        <img src="/media/hero/purpleFlower.svg" alt="" class="w-full">
     </div>
 
     <!-- REVIEWS -->
@@ -186,8 +722,6 @@
             </div>
             <br>
 	    </form>
-
-
 
         <!-- reviews on this product -->
         <div>
@@ -246,11 +780,6 @@
                         <b class="text-sm">客戶A<span class="ml-2"><small class="text-xs">3小時前</small></span></b>
                         <div class="rating-star">
                             <span>
-                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
-                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
-                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
-                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
-                                <i class="fa fa-regular fa-star" aria-hidden="true"></i>
                             </span>
                         </div>
                     </div>
@@ -268,11 +797,6 @@
                         <b class="text-sm">客戶A<span class="ml-2"><small class="text-xs">3小時前</small></span></b>
                         <div class="rating-star">
                             <span>
-                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
-                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
-                                <i class="fa fa-solid fa-star" aria-hidden="true"></i>
-                                <i class="fa-solid fa-star-half-stroke" aria-hidden="true"></i>
-                                <i class="fa fa-regular fa-star" aria-hidden="true"></i>
                             </span>
                         </div>
                     </div>
@@ -281,7 +805,5 @@
             </div>
         </div>
     </div>
-
-
 </main>
 {% endblock %}

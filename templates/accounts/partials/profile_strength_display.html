@@ -1,0 +1,20 @@
+<div id="profile_strength" hx-swap-oob="true">
+    <div class="flex flex-col items-center gap-2 p-4 rounded-xl">
+        <div class="radial-progress text-white" 
+                style="--value:{{ user.profile.get_completion_percentage }}; --size:4rem; --thickness: 8px;" 
+                role="progressbar">
+            {{ user.profile.get_completion_percentage }}%
+        </div>
+        <div class="text-center">
+            <span class="text-sm font-bold block text-white">Profile Strength</span>
+            <span class="text-sm font-normal block text-white">檔案填寫進度</span>
+            {% if user.profile.get_completion_percentage < 100 %}
+                <a href="{% url 'dashboard' 'profile' %}" class="btn btn-xs btn-outline btn-info mt-2 py-5">
+                    Fill in details to unlock perks!<br>填寫檔案解鎖更多優惠！
+                </a>
+            {% else %}
+                <span class="text-success text-xs/4">🎉 Fully Personalized!<br>檔案齊全🎉</span>
+            {% endif %}
+        </div>
+    </div>
+</div>

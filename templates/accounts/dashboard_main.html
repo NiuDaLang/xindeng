@@ -1,245 +1,410 @@
-{% extends 'accounts/dashboard_base.html' %}
-
-{% block accounts_content %}
-<!-- hero -->
-<div class="relative h-[14rem]">
-    <img src="/media/hero/red_leaves.jpeg" alt="" class="reel -z-1 absolute left-0 top-0 h-full w-full object-cover">
-    <div class="absolute top-[47%] left-[20%]">
-        <h2 class="text-5xl text-primary-content">霜降</h2>
-    </div>
-    <div class="absolute right-8 bottom-12 text-right text-primary-content">
-        <div id="dynamic-date"></div>
-        <div id="dynamic-clock"></div>
-    </div>
-</div>
-
+<title>{{ page_title }}</title>
 <!-- contents -->
-<div class="flex gap-4 my-5">
-
-    <!-- LEFT - Summary -->
-    <div class="flex flex-col gap-5 w-5/7">
-        <!-- stats -->
-        <div class="stats shadow w-full">
-            <a href="{% url 'orders' %}" class="stat">
-                <div class="cursor-pointer stat-figure text-secondary-content text-2xl">
-                    <i class="fa-solid fa-circle-info"></i>
+<div id="dashboard_main" class="subpage flex flex-col gap-8">
+    <!-- TOP - DataPoints X 3 -->
+    <div class="flex justify-center gap-8">
+        <!-- Orders Record -->
+        <div class="w-1/3 border-18 rounded-[36px] border-accent-content aspect-[4/3] bg-accent flex items-center gap-4 text-white">
+            <div class="w-4/5 flex flex-col gap-1 items-center">
+                <div class="flex flex-col justify-end font-extralight text-xs text-center h-1/2">
+                    <span>Works Owned by You</span>
+                    <span>您已擁有的寶貝數量</span>
                 </div>
-                <div class="stat-title">已購寶貝件數</div>
-                <div class="stat-value">
-                    3&nbsp;件
-                    <div class="stat-desc font-light">2025年</div>
+                <div class="flex flex-col flex-wrap justify-start gap-1 items-end h-1/2">
+                    <span class="text-xs">
+                        <strong class="text-6xl font-black">3</strong>
+                        <span> items｜件</span>
+                    </span>
                 </div>
-            </a>
-
-            <a href="{% url 'vouchers' %}" class="stat">
-                <div class="cursor-pointer stat-figure text-secondary-content text-2xl">
-                    <i class="fa-solid fa-coins"></i>
-                </div>
-                <div class="stat-title">禮品券總額</div>
-                <div>
-                    <div class="stat-value">
-                        50
-                        <div class="stat-desc font-light">RMB</div>
-                    </div>
-                </div>
-                <div>
-                    <div class="stat-value">
-                        200
-                        <div class="stat-desc font-light">HKD</div>
-                    </div>
-                </div>
-            </a>
-
-            <a href="{% url 'help' %}" class="stat">
-                <div  class="cursor-pointer stat-figure text-secondary-content text-2xl">
-                    <i class="fa-solid fa-envelope"></i>
-                </div>
-                <div class="stat-title">未讀客服訊息</div>
-                <div class="stat-value">
-                    17則
-                    <div class="stat-desc font-light">17 / 39</div>
-                </div>
-            </a>
-        </div>
-
-        <!-- latest order status -->
-        <div class="flex gap-3">
-            <!-- order status timeline -->
-            <ul class="timeline timeline-vertical w-1/3 text-left py-[1rem]">
-                <!-- order processed -->
-                <li>
-                    <div class="timeline-start"><i class="fa-solid fa-list-check"></i></div>
-                    <div class="timeline-middle">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            class="text-primary h-5 w-5"
-                        >
-                            <path
-                                fill-rule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                                clip-rule="evenodd"
-                            />
-                        </svg>
-                    </div>
-                    <div class="timeline-end text-xs py-3 font-bold">訂單已處理</div>
-                    <hr class="bg-primary" />
-                </li>
-                <!-- shipped -->
-                <li>
-                    <hr class="bg-primary" />
-                    <div class="timeline-end"><i class="fa-solid fa-truck-ramp-box"></i></div>
-                    <div class="timeline-middle">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            class="text-primary h-5 w-5"
-                        >
-                            <path
-                            fill-rule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                            clip-rule="evenodd"
-                            />
-                        </svg>
-                    </div>
-                    <div class="timeline-start text-xs py-3 font-bold">物品已發送</div>
-                    <hr class="bg-primary" />
-                </li>
-                <!-- en-route -->
-                <li>
-                    <hr class="bg-primary" />
-                    <div class="timeline-start"><i class="fa-solid fa-truck-fast"></i></div>
-                    <div class="timeline-end text-xs py-3 font-bold">正在運輸中</div>
-                    <div class="timeline-middle">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            class="text-primary h-5 w-5"
-                        >
-                            <path
-                            fill-rule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                            clip-rule="evenodd"
-                            />
-                        </svg>
-                    </div>
-                    <hr />
-                </li>
-                <!-- delivered -->
-                <li>
-                    <hr />
-                    <div class="timeline-end"><i class="fa-solid fa-person-chalkboard text-base-300"></i></div>
-                    <div class="timeline-start text-xs py-3 font-bold text-base-300">已送達</div>
-                    <div class="timeline-middle">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            class="text-base-300 h-5 w-5"
-                        >
-                            <path
-                            fill-rule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                            clip-rule="evenodd"
-                            />
-                        </svg>
-                    </div>
-                </li>
-            </ul>
-
-            <!-- order summary -->
-            <div class="card w-96 bg-base-200 shadow-sm">
-                <div class="card-body">
-                    <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
-                    <div class="text-xs flex justify-start w-full">
-                        訂單日期：2025年11月25日
-                        <br/>
-                        預計送達：2025年12月1日
-                        <br/>
-                        快遞單號：UPS 123443590345
-                    </div>
-                    <ul class="mt-6 flex flex-col gap-2 text-xs">
-                        <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
-                        <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
-                    </ul>
-                    <hr class="text-primary"/>
-                    <div class="flex justify-between w-full">
-                        <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
-                        <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
-                    </div>
-                    <div class="mt-6">
-                    <button class="btn btn-primary btn-block">查 看 明 細</button>
-                    </div>
-                </div>
+            </div>
+            <div class="tooltip w-1/5 min-w-[1.25rem] flex items-center cursor-pointer" data-tip="Orders｜訂單紀錄">
+                <a href="#"><i class="fa-solid fa-circle-info text-2xl"></i></a>
             </div>
         </div>
 
-        <!-- if no latest order, display a bubble scene -->
-        <div class="divider text-2xl">如果目前沒有進行中訂單👇</div>
-        <div class="relative bubble-wrapper rounded-2xl shadow w-full h-80">
-            <h2 class="text-neutral-content absolute left-1/2 top-1/2 -translate-1/2 text-2xl">
-                <i class="fa-solid fa-clipboard-list"></i>
-                目前暫無未完訂單
-            </h2>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
-            <div><span class="dot"></span></div>
+        <!-- Gift Vouchers -->
+        <div class="w-1/3 border-18 rounded-[36px] border-accent-content aspect-[4/3] bg-accent flex items-center gap-4 text-white">
+            <div class="w-4/5 flex flex-col gap-1 items-center">
+                <div class="flex flex-col font-extralight min-h-[2rem] text-xs pt-4 text-center">
+                    <span>Gift Vouchers</span>
+                    <span>禮品券</span>
+                </div>
+                <div class="flex flex-col flex-wrap gap-1 pb-4 items-end">
+                    <span class="text-xs">
+                        <strong class="text-4xl font-black block">1,000</strong>
+                        <span>CNY</span>
+                    </span>
+                </div>
+            </div>
+            <div class="tooltip w-1/5 min-w-[1.25rem] flex items-center cursor-pointer" data-tip="Vouchers｜禮品券">
+                <a href="#"><i class="fa-solid fa-coins text-2xl"></i></a>
+            </div>
         </div>
-    </div>
 
-    <!-- RIGHT - FAQs -->
-    <div class="w-2/7 join join-vertical bg-base-100 text-xs">
-        <div class="collapse collapse-arrow join-item bg-base-100 border-base-300 border">
-            <input type="checkbox" />
-            <div class="collapse-title font-semibold">可以訂製常規產品之外的產品嗎？</div>
-            <div class="collapse-content">
-                可以協商的，具體內容請進入【客服熱線】頁面發送諮詢至本店。
+        <!-- Messages -->
+        <div class="w-1/3 border-18 rounded-[36px] border-accent-content aspect-[4/3] bg-accent flex items-center gap-4 text-white">
+            <div class="w-4/5 flex flex-col gap-1 items-center">
+                <div class="flex flex-col font-extralight min-h-[2rem] text-xs pt-4 text-center">
+                    <span>Unread Messages</span>
+                    <span>未讀訊息</span>
+                </div>
+                <div class="flex flex-col flex-wrap gap-1 pb-4 items-end">
+                    <span class="text-xs">
+                        <strong class="text-4xl font-black block">0</strong>
+                        <span> 0｜0</span>
+                    </span>
+                </div>
             </div>
-        </div>
-        <div class="collapse collapse-arrow join-item bg-base-100 border-base-300 border">
-            <input type="checkbox" />
-            <div class="collapse-title font-semibold">如何更換會員頭像？</div>
-            <div class="collapse-content">
-                請點擊並進入【會員檔案】頁面進行修改更新。
-            </div>
-        </div>
-        <div class="collapse collapse-arrow join-item bg-base-100 border-base-300 border">
-            <input type="checkbox" />
-            <div class="collapse-title font-semibold">不同的優惠券可以同時使用嗎？</div>
-            <div class="collapse-content">
-                抱歉每一次的購買訂單僅限使用一張優惠券。
-            </div>
-        </div>
-        <div class="collapse collapse-arrow join-item bg-base-100 border-base-300 border">
-            <input type="checkbox" />
-            <div class="collapse-title font-semibold">可以用不同的幣種購物嗎？</div>
-            <div class="collapse-content">
-                抱歉，每一次訂單僅限使用一種貨幣。如果您有特殊需求的話請進入【客服熱線】頁面與本店人工客服洽商。
-            </div>
-        </div>
-        <div class="collapse collapse-arrow join-item bg-base-100 border-base-300 border">
-            <input type="checkbox" />
-            <div class="collapse-title font-semibold">可以開發票嗎？</div>
-            <div class="collapse-content">
-                若有需求，請聯繫客服。
+            <div class="tooltip w-1/5 min-w-[1.25rem] flex items-center cursor-pointer" data-tip="Help｜會員熱線">
+                <a href="#"><i class="fa-solid fa-envelope text-2xl"></i></a>
             </div>
         </div>
     </div>
 
+    <!-- BOOTTOM -->
+    <div class="grid grid-cols-3 gap-8">
+        <!-- left -->
+        <div class="col-span-2 flex flex-col gap-8">
+            <!-- Order Progress -->
+            <div>
+                <!-- if no current order in process -->
+                <div class="relative bubble-wrapper rounded-4xl shadow w-full h-80">
+                    <h2 class="text-neutral-content absolute left-1/2 top-1/2 -translate-1/2 text-2xl">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                        目前暫無未完訂單
+                    </h2>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                </div>
+                <!-- if there is/are current order(s) -->
+                <!-- { % for order in orders % } -->
+                <!-- <div class="flex gap-3"> -->
+                    <!-- order status timeline -->
+                    <!-- <ul class="timeline timeline-vertical w-1/3 text-left py-[1rem]"> -->
+                        <!-- order processed -->
+                        <!-- <li>
+                            <div class="timeline-start"><i class="fa-solid fa-list-check text-base-300"></i></div>
+                            <div class="timeline-middle">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    class="text-base-300 h-5 w-5"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                                        clip-rule="evenodd"
+                                    />
+                                </svg>
+                            </div>
+                            <div class="timeline-end text-xs py-3 font-bold text-base-300">訂單已處理</div>
+                            <hr class="bg-base-300" />
+                        </li> -->
+                        <!-- shipped -->
+                        <!-- <li>
+                            <hr class="bg-base-300" />
+                            <div class="timeline-end"><i class="fa-solid fa-truck-ramp-box text-base-300"></i></div>
+                            <div class="timeline-middle">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    class="text-base-300 h-5 w-5"
+                                >
+                                    <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                                    clip-rule="evenodd"
+                                    />
+                                </svg>
+                            </div>
+                            <div class="timeline-start text-xs py-3 font-bold text-base-300">物品已發送</div>
+                            <hr class="bg-base-300" />
+                        </li> -->
+                        <!-- en-route -->
+                        <!-- <li>
+                            <hr class="bg-base-300" />
+                            <div class="timeline-start"><i class="fa-solid fa-truck-fast text-base-300"></i></div>
+                            <div class="timeline-end text-xs py-3 font-bold text-base-300">正在運輸中</div>
+                            <div class="timeline-middle">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    class="text-base-300 h-5 w-5" 
+                                >
+                                    <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                                    clip-rule="evenodd"
+                                    />
+                                </svg>
+                            </div>
+                            <hr />
+                        </li> -->
+                        <!-- delivered -->
+                        <!-- <li>
+                            <hr />
+                            <div class="timeline-end"><i class="fa-solid fa-person-chalkboard text-primary"></i></div>
+                            <div class="timeline-start text-xs py-3 font-bold text-primary">已送達</div>
+                            <div class="timeline-middle">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    class="text-primary h-5 w-5"
+                                >
+                                    <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                                    clip-rule="evenodd"
+                                    />
+                                </svg>
+                            </div>
+                        </li> -->
+                    <!-- </ul> -->
+    
+                    <!-- order summary -->
+                    <!-- <div class="card w-96 bg-base-200 shadow-sm">
+                        <div class="card-body">
+                            <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
+                            <div class="text-xs flex justify-start w-full">
+                                訂單日期：2025年11月25日
+                                <br/>
+                                預計送達：2025年12月1日
+                                <br/>
+                                快遞單號：UPS 123443590345
+                            </div>
+                            <ul class="mt-6 flex flex-col gap-2 text-xs">
+                                <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
+                                <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
+                            </ul>
+                            <hr class="text-primary"/>
+                            <div class="flex justify-between w-full">
+                                <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
+                                <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
+                            </div>
+                            <div class="mt-6">
+                            <button class="btn btn-primary btn-block">查 看 明 細</button>
+                            </div>
+                        </div>
+                    </div>
+                </div> -->
+                <!-- { % endfor % } -->
+            </div>
+            <!-- Various Subpages -->
+            <div class="grid grid-cols-2 gap-8 text-white">
+                <!-- profile -->
+                <div class="flex aspect-[6/5] rounded-r-4xl bg-accent">
+                    <div class="w-[31%] h-full bg-accent-content flex justify-center items-center">
+                        <i class="fa-solid fa-address-card text-4xl text-white"></i>
+                    </div>
+                    <div class="flex flex-1 items-center justify-center">
+                        Edit Profile
+                    </div>                    
+                </div>
+                <!-- address -->
+                <div class="flex aspect-[6/5] rounded-r-4xl bg-accent">
+                    <div class="w-[31%] h-full bg-accent-content flex justify-center items-center">
+                        <i class="fa-solid fa-address-book text-4xl text-white"></i>
+                    </div>
+                    <div class="flex flex-1 items-center justify-center">
+                        Address Book
+                    </div>                        
+                </div>
+                <!-- offers -->
+                <div class="flex aspect-[6/5] rounded-r-4xl bg-accent">
+                    <div class="w-[31%] h-full bg-accent-content flex justify-center items-center">
+                        <i class="fa-solid fa-gifts text-4xl text-white"></i>
+                    </div>
+                    <div class="flex flex-1 items-center justify-center">
+                        Offers
+                    </div>                        
+                </div>
+                <!-- wishlist -->
+                <div class="flex aspect-[6/5] rounded-r-4xl bg-accent">
+                    <div class="w-[31%] h-full bg-accent-content flex justify-center items-center">
+                        <i class="fa-solid fa-clipboard-list text-4xl text-white"></i>
+                    </div>
+                    <div class="flex flex-1 items-center justify-center">
+                        Wishlist
+                    </div>                        
+                </div>
+                <!-- favorites -->
+                <div class="flex aspect-[6/5] rounded-r-4xl bg-accent">
+                    <div class="w-[31%] h-full bg-accent-content flex justify-center items-center">
+                        <i class="fa-solid fa-bookmark text-4xl text-white"></i>
+                    </div>
+                    <div class="flex flex-1 items-center justify-center">
+                        Favorites
+                    </div>                        
+                </div>
+                <!-- 3D -->
+                <div class="flex aspect-[6/5] rounded-r-4xl bg-accent">
+                    <div class="w-[31%] h-full flex justify-center items-center bg-[linear-gradient(180deg,rgba(252,5,5,1)0%,rgba(255,14,142,1)12%,rgba(169,28,255,1)25%,rgba(42,136,255,1)37%,rgba(57,255,200,1)50%,rgba(124,242,156,1)63%,rgba(206,255,72,1)75%,rgba(255,105,87,1)88%,rgba(255,120,120,1)100%)]">
+                        <i class="fa-solid fa-cube text-4xl text-white"></i>
+                    </div>
+                    <div class="flex flex-1 items-center justify-center">
+                        3D Scene
+                    </div>                        
+                </div>
+            </div>
+        </div>
+        <!-- right -->
+        <div class="col-span-1 flex flex-col gap-8">
+            <!-- Calender -->
+            <div class="w-full min-h-80 rounded-4xl text-white relative flex flex-col justify-between">
+                <!-- season & date -->
+                <div class="flex flex-col z-10 p-7">
+                    <div class="flex flex-col z-10 p-0">
+                        {% if solar_term %}
+                            <div class="flex items-center gap-5 z-10">
+                                <div class="flex flex-col">
+                                    <span id="solar_term" class="text-[1.35rem]">{{ solar_term }}</span>
+                                    <span id="solar_term_en" class="text-[8px]">{{ solar_term_en }}</span>
+                                </div>
+                                {% if next_solar_term %}
+                                <div class="solar-arrow-container">
+                                    <div class="solar-arrow"></div>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span id="next_solar_term" class="text-[1.35rem]">{{ next_solar_term }}</span>
+                                    <span id="next_solar_term_en" class="text-[9px]">{{ next_solar_term_en }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        <span id="dynamic-date" hx-preserve="true" class="text-sm text-left"></span>
+                    </div>
+                    <span id="dynamic-date" class="text-xs w-full text-left"></span>
+                </div>
+                <!-- clock -->
+                <div id="persistent-analog-clock" hx-preserve="true" class="w-full flex justify-end z-10">
+                    <div class="relative z-0 bg-transparent">
+                        <div class="absolute inset-0 -z-10 bg-[#1b5ac63f] blur-md rounded-full"></div>
+                        <div class="clock z-10">
+                            <div class="clock__second"></div>
+                            <div class="clock__minute"></div>
+                            <div class="clock__hour"></div>
+                            <div class="clock__axis"></div>
+                            <section class="clock__indicator" style="--i: 1"></section>
+                            <section class="clock__indicator" style="--i: 2"></section>
+                            <section class="clock__indicator" style="--i: 3"></section>
+                            <section class="clock__indicator" style="--i: 4"></section>
+                            <section class="clock__indicator" style="--i: 5"></section>
+                            <section class="clock__indicator" style="--i: 6"></section>
+                            <section class="clock__indicator" style="--i: 7"></section>
+                            <section class="clock__indicator" style="--i: 8"></section>
+                            <section class="clock__indicator" style="--i: 9"></section>
+                            <section class="clock__indicator" style="--i: 10"></section>
+                            <section class="clock__indicator" style="--i: 11"></section>
+                            <section class="clock__indicator" style="--i: 12"></section>
+                            <section class="clock__indicator" style="--i: 13"></section>
+                            <section class="clock__indicator" style="--i: 14"></section>
+                            <section class="clock__indicator" style="--i: 15"></section>
+                            <section class="clock__indicator" style="--i: 16"></section>
+                            <section class="clock__indicator" style="--i: 17"></section>
+                            <section class="clock__indicator" style="--i: 18"></section>
+                            <section class="clock__indicator" style="--i: 19"></section>
+                            <section class="clock__indicator" style="--i: 20"></section>
+                            <section class="clock__indicator" style="--i: 21"></section>
+                            <section class="clock__indicator" style="--i: 22"></section>
+                            <section class="clock__indicator" style="--i: 23"></section>
+                            <section class="clock__indicator" style="--i: 24"></section>
+                            <section class="clock__indicator" style="--i: 25"></section>
+                            <section class="clock__indicator" style="--i: 26"></section>
+                            <section class="clock__indicator" style="--i: 27"></section>
+                            <section class="clock__indicator" style="--i: 28"></section>
+                            <section class="clock__indicator" style="--i: 29"></section>
+                            <section class="clock__indicator" style="--i: 30"></section>
+                            <section class="clock__indicator" style="--i: 31"></section>
+                            <section class="clock__indicator" style="--i: 32"></section>
+                            <section class="clock__indicator" style="--i: 33"></section>
+                            <section class="clock__indicator" style="--i: 34"></section>
+                            <section class="clock__indicator" style="--i: 35"></section>
+                            <section class="clock__indicator" style="--i: 36"></section>
+                            <section class="clock__indicator" style="--i: 37"></section>
+                            <section class="clock__indicator" style="--i: 38"></section>
+                            <section class="clock__indicator" style="--i: 39"></section>
+                            <section class="clock__indicator" style="--i: 40"></section>
+                            <section class="clock__indicator" style="--i: 41"></section>
+                            <section class="clock__indicator" style="--i: 42"></section>
+                            <section class="clock__indicator" style="--i: 43"></section>
+                            <section class="clock__indicator" style="--i: 44"></section>
+                            <section class="clock__indicator" style="--i: 45"></section>
+                            <section class="clock__indicator" style="--i: 46"></section>
+                            <section class="clock__indicator" style="--i: 47"></section>
+                            <section class="clock__indicator" style="--i: 48"></section>
+                            <section class="clock__indicator" style="--i: 49"></section>
+                            <section class="clock__indicator" style="--i: 50"></section>
+                            <section class="clock__indicator" style="--i: 51"></section>
+                            <section class="clock__indicator" style="--i: 52"></section>
+                            <section class="clock__indicator" style="--i: 53"></section>
+                            <section class="clock__indicator" style="--i: 54"></section>
+                            <section class="clock__indicator" style="--i: 55"></section>
+                            <section class="clock__indicator" style="--i: 56"></section>
+                            <section class="clock__indicator" style="--i: 57"></section>
+                            <section class="clock__indicator" style="--i: 58"></section>
+                            <section class="clock__indicator" style="--i: 59"></section>
+                            <section class="clock__indicator" style="--i: 60"></section>
+                        </div>
+                    </div>
+                </div>
+                <!-- bg img -->
+                <img src="/media/hero/red_leaves.jpeg" alt="" class="absolute left-0 top-0 w-full h-full rounded-4xl object-cover">
+            </div>
+            <!-- FAQs -->
+            <div class="w-full join join-vertical text-xs rounded-4xl text-white">
+                <div class="collapse collapse-arrow bg-accent join-item">
+                    <input type="checkbox" />
+                    <div class="collapse-title font-semibold after:text-accent-content">可以訂製常規產品之外的產品嗎？</div>
+                    <div class="collapse-content">
+                        可以協商的，具體內容請進入【客服熱線】頁面發送諮詢至本店。
+                    </div>
+                </div>
+                <div class="collapse collapse-arrow bg-accent join-item">
+                    <input type="checkbox" />
+                    <div class="collapse-title font-semibold after:text-accent-content border-t-2 border-accent-content">如何更換會員頭像？</div>
+                    <div class="collapse-content">
+                        請點擊並進入【會員檔案】頁面進行修改更新。
+                    </div>
+                </div>
+                <div class="collapse collapse-arrow bg-accent join-item">
+                    <input type="checkbox" />
+                    <div class="collapse-title font-semibold after:text-accent-content border-t-2 border-accent-content">不同的優惠券可以同時使用嗎？</div>
+                    <div class="collapse-content">
+                        抱歉每一次的購買訂單僅限使用一張優惠券。
+                    </div>
+                </div>
+                <div class="collapse collapse-arrow bg-accent join-item">
+                    <input type="checkbox" />
+                    <div class="collapse-title font-semibold after:text-accent-content border-t-2 border-accent-content">可以用不同的幣種購物嗎？</div>
+                    <div class="collapse-content">
+                        抱歉，每一次訂單僅限使用一種貨幣。如果您有特殊需求的話請進入【客服熱線】頁面與本店人工客服洽商。
+                    </div>
+                </div>
+                <div class="collapse collapse-arrow bg-accent join-item">
+                    <input type="checkbox" />
+                    <div class="collapse-title font-semibold after:text-accent-content border-t-2 border-accent-content">可以開發票嗎？</div>
+                    <div class="collapse-content">
+                        若有需求，請聯繫客服。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-{% endblock %}

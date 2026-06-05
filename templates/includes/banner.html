@@ -1,24 +1,33 @@
 {% block content %}
     <!-- BCKGROUND -->
-    <img src="/media/hero/purpleFlower.svg" class="opacity-50 object-cover aspect-100/17" alt="">
-
+    <img src="/media/hero/purpleFlower.svg" class="opacity-50 object-cover w-full h-[8rem]" alt="">
+        <!-- aspect-100/17 -->
     <!-- DESCRIPTION -->
     <div class="absolute top-0 left-0 flex flex-col w-full h-full justify-center items-center">
         <!-- titles -->
-        <h1 class="text-base-content text-3xl">{{ main_title }}</h1>
-        <h3 class="text-base-content text-sm">{{ sub_title }}</h3>
+        <h1 class="text-base-content text-[1.2rem] w-[35%] min-w-[300px] text-center">
+            {{ main_title }}
+            {% if search_keyword %}
+                <span>- </span><mark style="background-color: #9139f0; color:white;">&nbsp;{{ search_keyword }}&nbsp;</mark>
+            {% endif %}
+        </h1>
+        <h3 class="text-base-content text-[0.85rem] w-[50%] min-w-[300px] text-center">{{ sub_title_1 }}</h3>
+        {% if sub_title_2 %}
+        <h3 class="text-base-content text-[0.85rem] w-[50%] min-w-[300px] text-center">{{ sub_title_2 }}</h3>
+        {% endif %}
         <!-- bread crumb -->
         <div class="breadcrumbs text-xs text-info-content">
             <ul>
                 <li><a href="{{ bread_crumb_1_url }}">{{ bread_crumb_1 }}</a></li>
                 <li><a href="{{ bread_crumb_2_url }}">{{ bread_crumb_2 }}</a></li>
                 {% if bread_crumb_3 %}
-                <li><a href="{{ bread_crumb_3_url }}">{{ bread_crumb_3 }}</a></li>
+                <li><a id="banner-breadcrumb-link" href="{{ bread_crumb_3_url }}">{{ bread_crumb_3 }}</a></li>
                 {% elif bread_crumb_4 %}
                 <li><a href="{{ bread_crumb_4_url }}">{{ bread_crumb_4 }}</a></li>
                 {% endif %}
             </ul>
         </div>
+        {% include 'includes/alerts.html' %}
     </div>
 
 {% endblock %}

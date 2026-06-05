@@ -1,0 +1,244 @@
+/* @theme
+@utility
+@variant
+@source
+@reference
+@apply
+@custom-variant */
+/* @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@200..900&display=swap'); */
+@import "./custom.css";
+@import "tailwindcss";
+
+/* color theme */
+@custom-variant dark (&:where(.dark, .dark *));
+@plugin "daisyui" {
+   /* themes: valentine --default, aqua --prefersdark, cupcake; */
+    themes: silk --default;
+ }
+
+@utility container {
+  @apply mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* @plugin "daisyui/theme" {
+  name: "valentine";
+  default: false;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(97% 0.014 343.198);
+  --color-base-200: oklch(94% 0.028 342.258);
+  --color-base-300: oklch(89% 0.061 343.231);
+  --color-base-content: oklch(52% 0.223 3.958);
+  --color-primary: oklch(65% 0.241 354.308);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(62% 0.265 303.9);
+  --color-secondary-content: oklch(97% 0.014 308.299);
+  --color-accent: oklch(82% 0.111 230.318);
+  --color-accent-content: oklch(39% 0.09 240.876);
+  --color-neutral: oklch(40% 0.153 2.432);
+  --color-neutral-content: oklch(89% 0.061 343.231);
+  --color-info: oklch(86% 0.127 207.078);
+  --color-info-content: oklch(44% 0.11 240.79);
+  --color-success: oklch(84% 0.143 164.978);
+  --color-success-content: oklch(43% 0.095 166.913);
+  --color-warning: oklch(75% 0.183 55.934);
+  --color-warning-content: oklch(26% 0.079 36.259);
+  --color-error: oklch(63% 0.237 25.331);
+  --color-error-content: oklch(97% 0.013 17.38);
+  --radius-selector: 1rem;
+  --radius-field: 2rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+} */
+
+@theme {
+  --font-serif-tc: "Noto Serif TC", serif; 
+}
+
+/*<weight>: Use a value from 200 to 900
+<uniquifier>: Use a unique and descriptive class name*/
+
+/* .noto-serif-tc-extralight {
+  font-family: "Noto Serif TC", serif;
+  font-optical-sizing: auto;
+  font-weight: 200;
+  font-style: normal;
+}
+.noto-serif-tc-light {
+  font-family: "Noto Serif TC", serif;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+}
+.noto-serif-tc-regular {
+  font-family: "Noto Serif TC", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+.noto-serif-tc-medium {
+  font-family: "Noto Serif TC", serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+}
+.noto-serif-tc-semibold {
+  font-family: "Noto Serif TC", serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+}
+.noto-serif-tc-bold {
+  font-family: "Noto Serif TC", serif;
+  font-optical-sizing: auto;
+  font-weight: 700;
+  font-style: normal;
+}
+.noto-serif-tc-extrabold {
+  font-family: "Noto Serif TC", serif;
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: normal;
+}
+.noto-serif-tc-black {
+  font-family: "Noto Serif TC", serif;
+  font-optical-sizing: auto;
+  font-weight: 900;
+  font-style: normal;
+} */
+
+
+/* 中文 */
+/* <weight>: Use a value from 100 to 900 */
+/* <uniquifier>: Use a unique and descriptive class name */
+.noto-sans-tc-100 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 100;
+  font-style: normal;
+}
+.noto-sans-tc-200 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 200;
+  font-style: normal;
+}
+.noto-sans-tc-300 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+}
+.noto-sans-tc-400 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+.noto-sans-tc-500 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+}
+.noto-sans-tc-600 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+}
+.noto-sans-tc-700 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 700;
+  font-style: normal;
+}
+.noto-sans-tc-800 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: normal;
+}
+.noto-sans-tc-900 {
+  font-family: "Noto Sans TC", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 900;
+  font-style: normal;
+}
+
+/* 英文 */
+/* <weight>: Use a value from 200 to 900 */
+/* // <uniquifier>: Use a unique and descriptive class name */
+.zalando-sans-200, body {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 200;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-300 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-400 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-500 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-600 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-700 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 700;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-800 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+.zalando-sans-900 {
+  font-family: "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 900;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+}
+
+/* for ckeditor */
+figure > img {
+  width: 100%;
+}

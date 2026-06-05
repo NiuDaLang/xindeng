@@ -1,81 +1,80 @@
 {% block content %}
-    <div class="flex">
+    <div class="flex relative bg-[url(/media/hero/highlight_bg.svg)]">
         <!-- LEFT -->
-        <div class="w-1/2 flex flex-col justify-around">
-            <!-- activity -->
-            <div class="card md:card-side bg-base-100 shadow-sm">
-                <figure class="w-1/2">
-                    <img
-                    src="media/hero/tulip.svg"
-                    alt="tulip drawing image" />
-                </figure>
-                <div class="card-body w-1/2 m-auto">
-                    <div class="flex justify-center">
-                        <h2 class="card-title">最新活動</h2>
-                    </div>
-                    <p class="text-xs">
-                        借我掃荷故面實邊元功星造定肖道嗎呀你已邊；
-                        尤美右秋，尺央進找助肉民您木時波吉員昔主水止鳥它何，
-                        棵少跑蝸訴空棵香裏世即：高故了福走來。
-                    </p>
-                    <div class="card-actions justify-start">
-                    <button class="btn btn-info">瞭 解 詳 情</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- article -->
-            <div class="card md:card-side bg-base-100 shadow-sm">
-                <div class="card-body w-1/2">
-                    <div class="flex justify-center">
-                        <h2 class="card-title">作品背後的故事</h2>
-                    </div>
-                    <p class="text-xs">目黃光停？原別弟人吉院休去坐買貓登兌在哭，
-                        示眼石新聲辛士申雨直活玩太條追兒錯旁百半，
-                        送香或造念斗左地父彩太黃。
-                    </p>
-                    <div class="card-actions justify-end">
-                        <button class="btn btn-outline">閱 讀 文 章</button>
-                    </div>
-                </div>
-                <figure class="w-1/2">
-                    <img
-                    src="media/hero/purpleFlower.svg"
-                    alt="tulip drawing image" />
-                </figure>
-            </div>
-            
+        <div id="highlight_svg_animation" class="w-1/2 flex flex-col justify-around">
+            <!-- mug svg animation -->
+            {% include 'includes/mug_rack_svg.html' %}           
         </div>
         <!-- RIGHT -->
-        <div class="relative w-1/2 text-right">
-            <!-- arrow -->
-            <i class="absolute fa-solid fa-arrows-up-down bottom-5 right-5 z-10 animate-bounce"></i>
+        <div class="w-1/2 flex flex-col justify-center items-center">
+            <!-- catch copy -->
+            <div class="text-base-content text-2xl font-light text-shadow-lg mb-3 text-shadow-stone-300">
+                PANORAMA of HṚDAYADĪPA ｜心燈縱覽
+            </div>
+
             <!-- vertical carousel -->
-            <div class="w-5/6 carousel carousel-vertical m-auto aspect-square v-calrousel-frame max-h-200">
-                <!-- images -->
-                <div class="carousel-item h-full">
-                    <img class="w-full" src="https://img.daisyui.com/images/stock/photo-1559703248-dcaaec9fab78.webp" />
+            <div class="w-full h-auto text-center relative">
+                <!-- <i class="absolute text-accent-content text-2xl fa-solid fa-arrows-up-down bottom-5 right-5 z-10 animate-bounce"></i> -->
+                <div class="w-[1.5rem] h-auto absolute bottom-5 left-5 z-10 animate-bounce">
+                    <svg viewBox="0 0 68 246" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                        <title>scroll_arrow</title>
+                        <g id="scroll_arrow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                            <path d="M34.5,80.2755698 L34.5,113.14442 L61.1537197,113.14442 C62.1566083,98.9110885 58.9333152,89.6078925 51.4838405,85.2348315 C44.0343657,80.8617705 38.3730856,79.2086832 34.5,80.2755698 Z" id="路径-245" fill="#77C8FF"></path>
+                            <path d="M34.5,80.1775598 C24.7871257,80.8612902 17.9902379,83.668334 14.1093367,88.5986912 C10.2284354,93.5290484 8.3754343,101.710958 8.55033323,113.14442 L34.5,113.14442 L34.5,80.1775598 Z" id="路径-247" fill="#00FFF8"></path>
+                            <path d="M8.53901994,112.737495 L61.1537197,113.14442 C62.035432,132.275055 60.8178041,144.908065 57.5008359,151.043449 C54.1838678,157.178834 46.5169225,161.497684 34.5,164 C23.0206973,162.406625 15.2260229,157.710409 11.1159766,149.911352 C7.00593035,142.112294 6.14694479,129.721009 8.53901994,112.737495 Z" id="路径-248" fill="#003163"></path>
+                            <path d="M30.3226813,89.3112606 L30.3226813,99.96995 C30.8086282,101.497373 32.2010678,102.261085 34.5,102.261085 C36.7989322,102.261085 37.9483983,101.497373 37.9483983,99.96995 L37.9483983,89.3112606 C38.2817316,87.3645574 37.1322655,86.3912058 34.5,86.3912058 C31.8677345,86.3912058 30.4752949,87.3645574 30.3226813,89.3112606 Z" id="路径-249" fill="#E1FF00"></path>
+                            <path d="M33.1023141,9.56545309 C29.8198408,18.0595711 26.9607915,23.8214168 24.5251661,26.8509901 C22.0895406,29.8805634 18.2496699,33.948161 13.0055539,39.0537828 L47.9161058,39.0537828 C43.644833,35.668732 40.3409971,32.2010324 38.0045983,28.6506841 C35.6681994,25.1003358 34.1075604,19.0674102 33.3226813,10.5519072 C31.7056957,17.2474601 30.6247397,22.1826195 30.0798132,25.3573856 C28.8123405,32.7417379 28.1786042,39.7100924 28.1786042,46.2624494 C28.1786042,57.040404 31.0284638,67.2575328 36.728183,76.9138359" id="路径-250" stroke="#4C4744" stroke-width="3"></path>
+                            <path d="M29.6071684,167.766135 C35.074635,172.803684 37.8737783,181.146 38.0045983,192.793081 C38.1354182,204.440163 36.8005521,218.634702 34,235.376697 C38.1261231,228.475149 41.2293325,223.814204 43.3096283,221.393864 C45.3899242,218.973523 49.1480039,215.508902 54.5838675,211 L21.51951,211 C26.307386,214.962956 29.2417764,218.427577 30.3226813,221.393864 C31.4035861,224.36015 32.629359,229.021095 34,235.376697" id="路径-251" stroke="#4C4744" stroke-width="3"></path>
+                        </g>
+                    </svg>
                 </div>
-                <div class="carousel-item h-full">
-                    <img class="w-full" src="https://img.daisyui.com/images/stock/photo-1565098772267-60af42b81ef2.webp" />
-                </div>
-                <div class="carousel-item h-full">
-                    <img class="w-full" src="https://img.daisyui.com/images/stock/photo-1572635148818-ef6fd45eb394.webp" />
-                </div>
-                <div class="carousel-item h-full">
-                    <img class="w-full" src="https://img.daisyui.com/images/stock/photo-1494253109108-2e30c049369b.webp" />
-                </div>
-                <div class="carousel-item h-full">
-                    <img class="w-full" src="https://img.daisyui.com/images/stock/photo-1550258987-190a2d41a8ba.webp" />
-                </div>
-                <div class="carousel-item h-full">
-                    <img class="w-full" src="https://img.daisyui.com/images/stock/photo-1559181567-c3190ca9959b.webp" />
-                </div>
-                <div class="carousel-item h-full">
-                    <img class="w-full" src="https://img.daisyui.com/images/stock/photo-1601004890684-d8cbf643f5f2.webp" />
+                <div class="hover:cursor-ns-resize w-5/6 carousel carousel-vertical aspect-square v-calrousel-frame max-h-200">
+                    <!-- images -->
+                    <div class="carousel-item h-full">
+                        <img class="w-full" src="/static/images/carousel/light.webp" />
+                    </div>
+                    <div class="carousel-item h-full">
+                        <img class="w-full" src="/static/images/carousel/light_blue.webp" />
+                    </div>
+                    <div class="carousel-item h-full">
+                        <img class="w-full" src="/static/images/carousel/purple.webp" />
+                    </div>
+                    <div class="carousel-item h-full">
+                        <img class="w-full" src="/static/images/carousel/green.webp" />
+                    </div>
+                    <div class="carousel-item h-full">
+                        <img class="w-full" src="/static/images/carousel/white.webp" />
+                    </div>
+                    <div class="carousel-item h-full">
+                        <img class="w-full" src="/static/images/carousel/garden.webp" />
+                    </div>
+                    <div class="carousel-item h-full">
+                        <img class="w-full" src="/static/images/carousel/pond.webp" />
+                    </div>
                 </div>
             </div>
+            <!-- arrow -->
         </div>
+
+        <!-- BG -->
+        <div class="absolute w-full h-full -z-1">
+            <svg viewBox="0 0 2040 1336" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                <title>highlight_bg</title>
+                <defs>
+                    <linearGradient x1="-3.20898779%" y1="51.3680411%" x2="100%" y2="36.0262913%" id="linearGradient-1">
+                        <stop stop-color="#847C6D" offset="0%"></stop>
+                        <stop stop-color="#AFA48F" offset="21.9024709%"></stop>
+                        <stop stop-color="#D1D0BA" offset="39.8377811%"></stop>
+                        <stop stop-color="#ECEEEE" offset="71.8472829%"></stop>
+                        <stop stop-color="#DFEDF8" offset="90.033946%"></stop>
+                        <stop stop-color="#DFE9F5" offset="100%"></stop>
+                    </linearGradient>
+                </defs>
+                <g id="highlight_bg" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                    <rect id="bg" fill="url(#linearGradient-1)" x="1" y="0" width="2039" height="1336"></rect>
+                </g>
+            </svg>
+        </div>        
     </div>
 
 {% endblock %}

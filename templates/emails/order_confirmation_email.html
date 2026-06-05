@@ -1,0 +1,89 @@
+{% autoescape off %}
+
+<!DOCTYPE html>
+<html lang="en" style="padding:0;margin:0;box-sizing:border-box;">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Confirmation ｜ 訂單確認</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128&family=Noto+Sans+TC:wght@100..900&family=Zalando+Sans:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
+    </head>
+    <body style="font-family: 'Noto Sans TC','Zalando Sans',sans-serif; margin:0;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" >
+            <tr>
+                <td align="center">
+                    <table class="content" width="600" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse; border: 1px solid #cccccc; background-color:#f7f5f3;">
+                        <!-- Header -->
+                        <tr>
+                            <td class="header" style="background-color: #c2bdb9; padding: 40px; text-align: center; color:#161616;font-size: 1.15rem;line-height: 1.35rem;">
+                                <!-- <img src="/media/images/site/ad1.png.webp" width="80" height="45" alt=""> -->
+                                <br/>
+                                Order Confirmation
+                                <br/>
+                                訂單確認
+                            </td>
+                        </tr>
+
+                        <!-- Body -->
+                        <tr>
+                            <td class="body" style="padding: 40px; text-align: left; font-size: 0.85rem; line-height: 1.05rem;">
+                                {% if user.username %}
+                                    Dear {{user.username}} ｜ 親愛的{{user.username}}
+                                {% else %}
+                                    Dear {{order.email}} ｜ 親愛的{{order.email}}
+                                {% endif %}
+
+                                <br><br>
+                                Thank you for shopping with us!
+                                <br/>
+                                Your order number is {{ order.order_number }}
+                                <br/>
+                                感謝您在本店購物！
+                                <br/>
+                                您的訂單號碼是{{ order.order_number }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="body" style="padding: 40px; text-align: left; font-size: 0.85rem; line-height: 1.05rem;">
+                                Please find the attached for order details.
+                                <br/>
+                                訂單詳情請見附件。
+                                <br/>
+                                <br/>
+                                <br/>
+                                xindeng.com
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="body" style="padding: 40px; text-align: left; font-size:0.7rem; line-height: 0.9rem;">
+                                If you did not make a purchase at xindeng.com, please ignore this email.<br>
+                                如果您沒有在心燈 xindeng.com 購物，請忽視這份郵件。     
+                            </td>
+                        </tr>
+                        <!-- Footer -->
+                        <tr>
+                            <td class="footer" style="background-color: #333333; padding: 40px; text-align: center; color: white; font-size: 14px;">
+                            Copyright &copy; 2026 | xindeng.art
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+
+<style>
+@media screen and (max-width: 600px) {
+    .content {
+        width: 100% !important;
+        display: block !important;
+        padding: 10px !important;
+    }
+    .header, .body, .footer {
+        padding: 20px !important;
+    }
+  }
+</style>
+{% endautoescape %}

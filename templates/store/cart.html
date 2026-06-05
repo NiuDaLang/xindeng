@@ -1,709 +1,736 @@
 {% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load django_vite %}
 
 {% block content %}
-<!-- BANNER -->
-<div class="relative mt-16 w-full">
-    {% include 'includes/banner.html' %}
+<div id="cart_sync_global_context">
+     <!-- BANNER -->
+     <div class="relative mt-[86px] w-full">
+         {% include 'includes/banner.html' %}
+     </div>
+     
+     <!-- MAIN -->
+     <main class="px-[max(1rem,5vw)] py-20 min-h-[calc(100dvh-200px)]">
+         <!-- progress -->
+         <ul class="timeline w-full justify-center">
+             <li>
+                 <div class="timeline-start timeline-box text-center">Cart<br/>購物車</div>
+                 <div class="timeline-middle">
+                     <i class="fa-solid fa-circle-check text-success"></i>
+                 </div>
+                 <hr class="bg-success-content"/>
+             </li>
+             <li>
+                 <hr class="bg-success-content"/>
+                 <div class="timeline-start timeline-box text-center">Order Details<br/>訂單詳情</div>
+                 <div class="timeline-middle">
+                     <i class="fa-solid fa-circle-check text-base-300"></i>
+                 </div>
+                 <hr />
+             </li>
+             <li>
+                 <hr />
+                 <div class="timeline-start timeline-box text-center">Confirm Order<br/>訂單確認</div>
+                 <div class="timeline-middle">
+                     <i class="fa-solid fa-circle-check text-base-300"></i>
+                 </div>
+                 <hr />
+             </li>
+             <li>
+                 <hr />
+                 <div class="timeline-start timeline-box text-center">Payment Complete<br/>支付完成</div>
+                 <div class="timeline-middle">
+                     <i class="fa-solid fa-circle-check text-base-300"></i>
+                 </div>
+             </li>
+         </ul>
+     
+         <!-- details -->
+         <div id="cart-page-container" class="grid grid-cols-3 gap-8">
+             <!-- LEFT -->
+             <div class="col-span-2">
+                 <!-- Cart Container-->
+                 <h2 class="text-[1.25rem] mb-5">Cart｜購物車</h2>
+     
+                 <div id="cart_item_list_container">
+                     {% include 'store/partials/cart_item_row.html' %}
+                 </div>
+                 <!-- Wishlist -->
+                 {% if user.is_authenticated %}
+                 <div id="wishlist_wrapper_ul" class="wishlist_wrapper flex flex-col divide-y divide-white/10">
+                     {% include 'store/partials/wishlist_row.html' %}
+                 </div>
+                 {% endif %}
+             </div>
+     
+             <!-- RIGHT -->
+             <div id="payment_calculation_section" class="col-span-1 h-full min-h-[450px]">
+                 {% include 'store/partials/costs_calculations.html' %}
+             </div>
+         </div>
+     </main>
+     
+     <dialog id="global_modal" class="modal">
+       <div class="modal-box">
+         <h3 id="modal_title" class="font-bold text-lg">Alert</h3>
+         <p id="modal_message" class="py-4 text-sm"></p>
+         <div class="modal-action">
+           <form method="dialog"><button class="btn">Close</button></form>
+         </div>
+       </div>
+     </dialog>
+     
+     <!-- An empty container waiting for OOB content -->
+     <div id="modal-wrapper"></div>
+
+</div>     
+
+<script>
+(function() {
+document.addEventListener('htmx:oobErrorNoTarget', function(evt) {
+    console.group("%c🚨 HTMX Out-of-Band Swap Failed!", "color: white; background: #e11d48; font-size: 12px; padding: 4px; border-radius: 4px;");
+    
+    // 1. Extract the exact missing element ID target string parameter
+    const missingTargetId = evt.detail.targetId;
+    console.error(`Missing Target ID: The webpage DOM is completely missing an element with id="${missingTargetId}"`);
+    
+    // 2. Extract and print the raw HTML string snippet payload sent down by your Django view
+    if (evt.detail.fragment) {
+        const tempDiv = document.createElement('div');
+        tempDiv.appendChild(evt.detail.fragment.cloneNode(true));
+        console.warn("Raw Incoming HTML Fragment Payload:", tempDiv.innerHTML);
+    }
+    
+    // 3. Provide an absolute production diagnostic cross-reference blueprint trace
+    console.log("Current Page Path:", window.location.pathname);
+    console.log("👉 Action Required: Go to your Django view or utility helper function (like update_cart_totals or update_shipping_cost), check the ID string attribute returned in the HTML/OOB template fragment string, and ensure a matching id container exists in your frontend HTML template file.");
+    
+    console.groupEnd();
+});
+
+// // ❌ Check for an explicit structural listener pattern like this inside main.js:
+// document.addEventListener("htmx:beforeSwap", function(evt) {
+//     // Reading an un-passed header trigger metric or an un-rendered OOB variable:
+//     let couponInputId = evt.detail.xhr.getResponseHeader("X-Offer-Input-Id"); 
+    
+//     // If the header is missing, Vanilla JS evaluates the unassigned reference 
+//     // directly as a literal text string value of "undefined"!
+//     document.getElementById(couponInputId).classList.add("hidden"); 
+// });
+
+
+
+
+
+    // Ensure this listener attaches EXACTLY ONCE to document.body, regardless of HTMX page swaps
+    if (!window.htmxHistoryScrubberAttached) {
+        document.body.addEventListener('htmx:beforeHistorySave', function(evt) {
+            // Target elements that still have active hx-swap-oob attributes
+            const oobElements = document.querySelectorAll('[hx-swap-oob]');
+            
+            oobElements.forEach(el => {
+                // Strip the attribute entirely so it won't execute or break cache restorations
+                el.removeAttribute('hx-swap-oob');
+            });
+            
+            console.log(`🧹 Cleaned ${oobElements.length} OOB elements from history snapshot.`);
+        });
+        
+        // Set global flag to true so subsequent script executions bypass this block
+        window.htmxHistoryScrubberAttached = true;
+    }    
+
+    // 1. Memory Cleanups: Clear any active stale timers or sockets on this window scope
+    if (window.checkoutTimer && window.checkoutTimer.intervalId) {
+        clearInterval(window.checkoutTimer.intervalId);
+    }
+    if (window.cartSyncSocket && typeof window.cartSyncSocket.close === 'function') {
+        window.cartSyncSocketExplicitClose = true;
+        window.cartSyncSocket.close();
+    }
+
+    window.cartSyncSocketExplicitClose = false;
+
+    // 2. Global Event Debug Listeners Configuration (Safely Bound Once)
+    if (!window.cartListenersAttached) {
+        document.body.addEventListener('htmx:beforeProcessNode', function(evt) {
+            const duplicates = document.querySelectorAll('#payment_calculation_section');
+            if (duplicates.length > 1) {
+                console.warn(`⚠️ Warning: Found ${duplicates.length} elements using ID "#payment_calculation_section". This will break HTMX targeting nested components!`);
+            }
+        });
+
+        document.body.addEventListener('htmx:beforeSwap', function(evt) {
+            if (evt.detail.target && evt.detail.target.id === "payment_calculation_section") {
+                console.log("⚠️ Parent section is swapping. Checking for active sub-swaps...");
+            }
+        });
+
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target && evt.detail.target.id) {
+                console.log(`✅ Swap completed safely on element ID: #${evt.detail.target.id}`);
+            }
+        });
+
+        document.body.addEventListener('htmx:swapError', function(evt) {
+            if (evt.detail.target && evt.detail.target.id) {
+                console.error("❌ HTMX Swap Error Caught on ID:", evt.detail.target.id);
+            }
+        });
+
+        document.body.addEventListener("showModal", function(evt){
+            const titleEl = document.getElementById('modal_title');
+            const msgEl = document.getElementById('modal_message');
+            const modalEl = document.getElementById('global_modal');
+            if (titleEl) titleEl.innerText = evt.detail.title || "Notice";
+            if (msgEl) msgEl.innerText = evt.detail.message;
+            if (modalEl && typeof modalEl.showModal === 'function') modalEl.showModal();
+        });
+
+        window.cartListenersAttached = true;
+    }
+
+
+    /** 
+     * SHIPPING SECTION LOGIC
+     **/
+    async function setTbaState(accordion) {
+        const calcBtn = document.getElementById('calc-shipping-btn');
+        if (calcBtn) {
+            calcBtn.disabled = false;
+            calcBtn.classList.remove('btn-disabled', 'opacity-50');
+            const textEl = calcBtn.querySelector('.btn_text');
+            if (textEl) textEl.innerText = 'Calculate Shipping｜計算運費';
+        }
+
+        const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfEl) {
+            await fetch('/carts/clear_shipping_session/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfEl.value }
+            });
+        }
+
+        htmx.trigger('body', 'refresh_shipping');
+        
+        const checkoutWrapper = document.getElementById('checkout-btn-wrapper');
+        if (checkoutWrapper) {
+            checkoutWrapper.innerHTML = `
+                <button id="checkout-btn" class="flex gap-3 btn btn-block btn-disabled opacity-80 cursor-not-allowed h-auto py-2 min-h-0" disabled>
+                    <span>Please calculate shipping first<br>請先計算運費</span>
+                    <span><i class="fa-solid fa-arrow-up fa-xl"></i></span>
+                </button>
+            `;
+        }
+    }
+
+    async function resetShippingState() {
+        const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfEl) {
+            await fetch('/carts/clear_shipping_session/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfEl.value }
+            });
+        }
+
+        htmx.trigger('body', 'refresh_shipping');
+
+        const calcBtn = document.getElementById('calc-shipping-btn');
+        if (calcBtn) {
+            calcBtn.disabled = true;
+            calcBtn.classList.add('btn-disabled', 'opacity-50');
+        }
+
+        const checkoutBtn = document.getElementById('checkout-btn');
+        if (checkoutBtn) {
+            checkoutBtn.classList.add('btn-disabled', 'opacity-80', "flex", "gap-3", "cursor-not-allowed", "h-auto", "py-2", "min-h-0");
+            checkoutBtn.innerHTML = `
+                <span>Please calculate shipping first<br>請先計算運費</span>
+                <span><i class="fa-solid fa-arrow-up fa-xl"></i></span>
+            `;
+        }
+    }
+
+    function resetShippingInputs() {
+        const globalRadio = document.querySelector('input[name="zone"][value="global"]');
+        if (globalRadio) globalRadio.checked = true;
+
+        document.querySelectorAll('.zone-select').forEach(select => {
+            select.selectedIndex = 0;
+            if (select.id === 'global_select') {
+                select.classList.remove('hidden');
+                select.disabled = false;
+            } else {
+                select.classList.add('hidden');
+                select.disabled = true;
+            }
+        });
+    }
+
+    // SCOPED CHANGE LISTENER: Attach to body via explicit named wrapper function
+    function handleCartFormChanges(e) {
+        if (!e.target) return;
+
+        // Match Zone Radio Buttons
+        if (e.target.name === 'zone') {
+            resetShippingState();
+            
+            document.querySelectorAll('.zone-select').forEach(sel => {
+                sel.classList.add('hidden');
+                sel.disabled = true;
+                sel.selectedIndex = 0; 
+            });
+
+            const targetMap = { 
+                'global': 'global_select', 
+                'greater_china': 'greater_china_select', 
+                'china': 'china_select' 
+            };
+            const activeSelectId = targetMap[e.target.value];
+            const activeSelect = document.getElementById(activeSelectId);
+            if (activeSelect) {
+                activeSelect.classList.remove('hidden');
+                activeSelect.disabled = false;
+            }
+        }
+
+        // Match Dropdown Selection Menus
+        if (e.target.classList.contains('zone-select')) {
+            if (e.target.value) {
+                setTbaState("dropdown");
+            }
+        }
+
+        // Match Accordion Group Selection
+        if (e.target.name === 'shipping_accordion') {
+            const isSavedAddress = e.target.value === 'saved_address';
+            const addressInput = document.getElementById('active-address-id');
+            if (addressInput) addressInput.disabled = !isSavedAddress;
+            
+            document.querySelectorAll('.zone-select').forEach(sel => {
+                if (isSavedAddress) {
+                    sel.disabled = true;
+                } else {
+                    if (!sel.classList.contains('hidden')) {
+                        sel.disabled = false;
+                    }
+                }
+            });
+
+            if (isSavedAddress) {
+                setTbaState("address_book");
+            } else {
+                resetShippingState();
+                resetShippingInputs();
+            }
+        }
+    }
+
+    // Safely replace the document change layout engine with explicit tracking
+    document.body.removeEventListener('change', window.activeCartChangeHandler);
+    window.activeCartChangeHandler = handleCartFormChanges;
+    document.body.addEventListener('change', window.activeCartChangeHandler);
+
+    /**
+     * FOREX LOGIC
+     **/
+    async function update_foreign_currency(e) {
+        e.preventDefault();
+        const foreign_currency_code = e.target.value;
+        const response = await fetch(`/carts/set_currency/?code=${foreign_currency_code}`);
+        if (response.ok) {
+            htmx.trigger('body', 'refresh_forex');
+        }
+    }
+
+    // 1. Initialize Universal Timer Memory Space (Protects against multi-declaration crashes)
+    window.checkoutTimer = window.checkoutTimer || {
+        expiryTime: 0,
+        currencyExpired: false,
+        intervalId: null
+    };
+
+    // 2. Safely parse the absolute milliseconds string milestone from the Django session context
+    const sessionExpiryTimestamp = parseInt("{{ request.session.rate_expiry_timestamp }}", 10);
+    if (sessionExpiryTimestamp && sessionExpiryTimestamp > 0) {
+        window.checkoutTimer.expiryTime = sessionExpiryTimestamp;
+        window.checkoutTimer.currencyExpired = Date.now() > window.checkoutTimer.expiryTime;
+    }
+
+    function check_foreign_currency_expiry() {
+        // 💡 FETCH CURRENT CURRENCY
+        const selectCurrencyInput = document.getElementById('select_currency_input');
+        const currentCurrency = selectCurrencyInput ? selectCurrencyInput.value : '';
+
+        // 💡 BYPASS IF CNY IS CHOSEN
+        if (currentCurrency === 'CNY') {
+            const warningEl = document.getElementById('price-warning');
+            if (warningEl) warningEl.classList.add('hidden');
+
+            const overlay = document.getElementById('price-overlay');
+            if (overlay) overlay.classList.add('hidden');
+
+            const checkout_btn = document.querySelector("#checkout-btn");
+            if (checkout_btn && checkout_btn.hasAttribute('disabled') && !checkout_btn.classList.contains('opacity-80')) {
+                // Only re-enable if it wasn't disabled by the physical shipping check
+                checkout_btn.classList.add("btn-success");
+                checkout_btn.classList.remove("btn-disabled", "opacity-80", "cursor-not-allowed");
+                checkout_btn.disabled = false;
+            }
+            return; // Exit early, skipping time calculations
+        }
+
+        if (Date.now() > window.checkoutTimer.expiryTime) {
+            window.checkoutTimer.currencyExpired = true;
+
+            const warningEl = document.getElementById('price-warning');
+            if (warningEl) warningEl.classList.remove('hidden');
+
+            const overlay = document.getElementById('price-overlay');
+            if (overlay) overlay.classList.remove('hidden');
+
+            const checkout_btn = document.querySelector("#checkout-btn");
+            if (checkout_btn) {
+                checkout_btn.classList.remove("btn-success", "animate-bounce-once");
+                checkout_btn.classList.add("btn-disabled", "opacity-80", "cursor-not-allowed");
+                checkout_btn.disabled = true;
+            }
+        }                                           
+    }
+
+    // 3. Clear running loops from previous views before spinning up a new tracker instance
+    if (window.checkoutTimer.intervalId) {
+        clearInterval(window.checkoutTimer.intervalId);
+    }
+    window.checkoutTimer.intervalId = setInterval(check_foreign_currency_expiry, 5000);
+    check_foreign_currency_expiry();
+
+    const select_currency_input_el = document.querySelector("#select_currency_input");
+    if (select_currency_input_el) {
+        select_currency_input_el.removeEventListener("change", update_foreign_currency); // Deduplication rule
+        select_currency_input_el.addEventListener("change", update_foreign_currency);
+    }
+
+    /**
+     * SILENT BACKGROUND RECONNECTION SYSTEM (WS LAYER)
+     **/
+    const wsScheme = window.location.protocol === "https:" ? "wss://" : "ws://";
+    let reconnectDelay = 1000;
+    const maxReconnectDelay = 30000;
+
+    function connectCartSyncSocket() {
+        if (window.cartSyncSocketExplicitClose) return;
+
+        window.cartSyncSocket = new WebSocket(`${wsScheme}${window.location.host}/ws/cart-sync/`);
+        window.cartSyncSocket.onmessage = function(event) {
+            try {
+                const rawData = JSON.parse(event.data);
+                if (rawData.action === "refresh_cart" && document.hidden) {
+                    window.location.reload();
+                }
+            } catch (err) {
+                console.error("Failed processing synchronization packet payload:", err);
+            }
+        };
+
+        window.cartSyncSocket.onopen = function() {
+            console.log("Cart synchronization channel established successfully.");
+            reconnectDelay = 1000;
+        };
+        window.cartSyncSocket.onclose = function(e) {
+            if (window.cartSyncSocketExplicitClose) {
+                console.log("Cart sync socket explicitly closed due to page navigation.");
+                return;
+            }
+            setTimeout(() => {
+                reconnectDelay = Math.min(reconnectDelay * 2, maxReconnectDelay);
+                if (document.hidden) {
+                    window.location.reload();
+                } else {
+                    connectCartSyncSocket();
+                }
+            }, reconnectDelay);
+        };
+
+        window.cartSyncSocket.onerror = function(err) {
+            if (!window.cartSyncSocketExplicitClose) {
+                console.error("WebSocket synchronization transport layer error encountered:", err);
+            }
+            window.cartSyncSocket.close();
+        };
+    }
+
+    connectCartSyncSocket();
+
+    // 4. SECURE TEARDOWN: Clear shared timers when HTMX executes route leave events
+    document.body.addEventListener('htmx:beforeLeave', function cleanupCartPage() {
+        if (window.checkoutTimer && window.checkoutTimer.intervalId) {
+            clearInterval(window.checkoutTimer.intervalId);
+        }
+        document.body.removeEventListener('change', window.activeCartChangeHandler);
+        if (window.cartSyncSocket && typeof window.cartSyncSocket.close === 'function') {
+            window.cartSyncSocketExplicitClose = true;
+            window.cartSyncSocket.close();
+        }
+        document.body.removeEventListener('htmx:beforeLeave', cleanupCartPage);
+    });
+
+})();
+</script>
+{% endblock %}
+
+
+<!-- LATEST 5/10 -->
+<!-- The arrangement where the customer bears all import costs upon arrival is officially called DAP (Delivered at Place), 
+ though it is still widely referred to in the industry by the older term DDU (Delivered Duty Unpaid).
+
+Modern Term: DAP (Delivered at Place)
+Under Incoterms 2020, DAP is the official designation for this setup 
+(https://www.google.com/url?sa=i&source=web&rct=j&url=https://www.trade.gov/know-your-incoterms&ved=2ahUKEwjb8L-A3K6UAxUFn2MGHU3ECEoQy_kOegYIAQgEEAE&opi=89978449&cd&psig=AOvVaw3KmAvW7rG27_HjQqZ-C_oz&ust=1778502435615000)
+
+- Your Responsibility: You handle the export clearance and the costs/risks of transporting the goods to the customer's named address.
+- Customer's Responsibility: The customer acts as the "importer of record" and must pay all import duties, local taxes (VAT/GST), 
+and customs clearance fees before the carrier will release the package for final delivery
+
+Legacy Term: DDU (Delivered Duty Unpaid)
+While the International Chamber of Commerce (ICC) officially replaced DDU with DAP in 2010, 
+DDU remains the most common term used by e-commerce platforms and courier services like DHL or FedEx to describe this "pay-on-arrival" model to consumers.
+
+Key Considerations for Your Workshop
+Moving away from DDP (Delivered Duty Paid) simplifies your logistics but introduces new risks:
+
+- Transparency: To avoid "sticker shock" or package refusals, you should clearly state on your checkout page that 
+"Import duties and taxes are not included and must be paid by the recipient upon arrival".
+- Customs Delays: Shipments may be held at the border until the customer settled the fees, which can lead to longer total delivery times compared to DDP.
+- De Minimis Thresholds: In many countries, if the order value is below a certain "de minimis" threshold (e.g., $800 in the US or $1,000 in Australia), 
+the customer may not actually be charged any duties or taxes.
+
+Proactive Follow-up: Do you need help drafting a disclaimer for your checkout page or finding the current de minimis thresholds for your target shipping countries? (Yes)
+
+Under a DAP (Delivered at Place) arrangement, your customer acts as the importer and is responsible for all destination costs. 
+To protect your workshop from refused packages or disputes, you should clearly communicate this "pay-on-arrival" requirement at checkout.
+
+1. Recommended Checkout Disclaimer
+Place this near the "Place Order" button or in your shipping policy to ensure visibility:
+
+"Import Duties & Taxes: Please note that orders are shipped from [Your Workshop Location] on a DAP (Delivered at Place) basis. 
+Prices and shipping fees shown do not include import duties, VAT, or customs clearance fees. 
+These charges are determined by your local customs authority and must be paid by the recipient upon arrival. 
+We recommend checking your local 'de minimis' threshold before ordering."
+
+2. 2026 Global De Minimis Thresholds
+The "de minimis" value is the amount below which no duties or taxes are charged. 
+However, many major regions have recently shifted toward zero-threshold policies, especially for VAT.
+
+Region/Country          Duty Threshold      Tax/VAT Threshold       Notes
+
+United States           None                None                    As of August 2025, the previous $800 exemption was suspended for commercial shipments.
+
+Australia               AUD 1,000           AUD 1,000               Generally duty/GST free under $1,000 unless you exceed the $75k annual turnover for GST registration.
+
+European Union          €150                €0 (Zero)               Duty is waived under €150, but VAT applies to every shipment from the first cent.
+
+United Kingdom          £135                €0 (Zero)               Duty is waived under £135, but VAT applies to all imports.
+
+Canada                  CAD 20              CAD 20                  One of the world's lowest thresholds; most international orders will trigger fees.
+
+3. Strategic Advice for your Workshop
+Commercial Invoice: Ensure your commercial invoice clearly states "Incoterms 2020: DAP" so the courier knows to bill the customer and not your account.
+Customer Confirmation: For high-value orders, consider sending a quick automated email after purchase 
+asking the customer to confirm they are aware of their local import tax responsibilities before you ship.
+
+Proactive Follow-up: Would you like a Python script to dynamically display these country-specific tax warnings to users in your Django frontend 
+based on their selected shipping country? (yes)
+
+Implementing a dynamic tax warning ensures your customers are not surprised by DAP (Delivered at Place) costs. 
+Given the current 2026 global landscape, many thresholds have shifted to zero, making these alerts critical for conversion and compliance
+
+Dynamic Tax Warning Logic (Django)
+You can use a simple dictionary in your views.py to map thresholds to the customer's selected country and pass the relevant warning to your template.
+
+# views.py
+def checkout_view(request):
+    # In a real app, get this from the user's selected shipping address
+    selected_country = request.GET.get('country', 'US') 
+
+    tax_data = {
+        'US': {'duty': 0, 'tax': 0, 'note': "Exemption suspended; all shipments subject to tariffs."},
+        'GB': {'duty': 135, 'tax': 0, 'note': "VAT applies to all imports; duties apply over £135."},
+        'EU': {'duty': 150, 'tax': 0, 'note': "VAT applies to all imports. €3 flat duty starts July 1, 2026."},
+        'AU': {'duty': 1000, 'tax': 1000, 'note': "Duty/GST free under AUD 1,000 for most personal imports."},
+        'CA': {'duty': 20, 'tax': 20, 'note': "Very low threshold; expect fees on almost all orders."},
+    }
+
+    country_info = tax_data.get(selected_country, {
+        'duty': 0, 'tax': 0, 'note': "Check local customs for DAP import fees."
+    })
+
+    return render(request, 'checkout.html', {'tax_info': country_info}) -->
+
+<!-- 2026 Global De Minimis Status
+As of May 2026, the "era of de minimis" is largely ending for major e-commerce markets.
+
+Region          Duty Threshold      Tax/VAT Threshold       Status & Action
+
+United States   USD 0               USD 0                   Suspended. Exemption for sub-$800 goods was removed August 29, 2025.
+
+European Union  €150                €0                      Changing. Effective July 1, 2026, a flat €3 duty applies to all sub-€150 items.
+
+Australia       AUD 1,000           AUD 1,000               Active. Most generous current threshold, though GST may apply to registered overseas sellers.
+
+United Kingdom  £135                £0                      Active. VAT is collected on all imports; customs duty starts at £135.
+
+Frontend Integration Tips
+- Real-time Updates: Use JavaScript (AJAX) to update this warning immediately when a user changes their country in the dropdown.
+
+- Geographical Detection: For a more seamless experience, you can use a library like GeoIP2 
+or an API like ipapi.com to pre-select the user's country and display the correct warning immediately upon page load.
+
+- Legal Disclaimer: Always include a link to your full Shipping Policy to ensure customers can read the fine print regarding refused shipments.
+
+Proactive Follow-up: Would you like a JavaScript/AJAX snippet to update this tax warning instantly on your checkout page without a page refresh? (OK)
+
+To implement a dynamic tax warning in your django-vite setup, you can use a JSON API endpoint in Django 
+and a JavaScript event listener in your Vite-managed frontend. This ensures that as soon as a customer selects a country, 
+the correct DAP (Delivered at Place) warnings and thresholds are displayed without reloading the page.
+
+Step 1: Create a JSON API Endpoint in Django
+In your views.py, create a view that returns the tax thresholds as JSON. This is more maintainable than hardcoding data in your templates.
+
+# views.py
+from django.http import JsonResponse
+
+def get_tax_threshold(request):
+    country_code = request.GET.get('country_code', 'US')
+    
+    # 2026 Threshold Data
+    thresholds = {
+        'US': {'limit': 0, 'currency': 'USD', 'msg': "Exemption suspended; all imports subject to fees."},
+        'GB': {'limit': 135, 'currency': 'GBP', 'msg': "VAT applies to all; duties apply over £135."},
+        'EU': {'limit': 150, 'currency': 'EUR', 'msg': "VAT applies to all; €3 duty on all small items starts July 2026."},
+        'AU': {'limit': 1000, 'currency': 'AUD', 'msg': "Generally duty-free under 1,000 AUD."},
+    }
+    
+    data = thresholds.get(country_code, {'limit': 0, 'currency': '', 'msg': "Check local customs for DAP fees."})
+    return JsonResponse(data)
+
+Step 2: Add the URL Pattern
+# urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('api/tax-info/', views.get_tax_threshold, name='get_tax_threshold'),
+]
+
+Step 3: JavaScript Listener in Vite Frontend
+Since you are using django-vite, place this logic in your main JavaScript entry file (e.g., main.js). 
+It listens for changes on your country selection dropdown and updates the UI.
+
+// main.js (Vite asset)
+document.addEventListener('DOMContentLoaded', () => {
+    const countrySelect = document.getElementById('id_shipping_country'); // Your country dropdown ID
+    const warningBox = document.getElementById('tax-warning-container');
+
+    countrySelect.addEventListener('change', async (e) => {
+        const countryCode = e.target.value;
+        
+        try {
+            const response = await fetch(`/api/tax-info/?country_code=${countryCode}`);
+            const data = await response.json();
+            
+            // Update the warning text
+            warningBox.innerHTML = `
+                <div class="alert alert-warning">
+                    <strong>DAP Shipping Notice:</strong> ${data.msg} 
+                     Threshold: ${data.currency} ${data.limit}
+                </div>
+            `;
+        } catch (error) {
+            console.error('Error fetching tax info:', error);
+        }
+    });
+}); -->
+
+<!-- Why use this approach?
+- Separation of Concerns: Your tax data lives in your Python backend, making it easy to update for all users at once without re-deploying your frontend assets.
+- Performance: Fetching small JSON objects is faster than reloading the entire checkout page.
+- Compliance: In 2026, where many countries have zero-threshold VAT policies, this dynamic update prevents abandoned shipments by setting expectations immediately.
+
+Proactive Follow-up: Do you need help styling this warning box to match your current checkout theme, 
+or would you like to add automatic currency conversion to the threshold values? (yes)
+
+To make the tax warning look professional and ensure the currency is relevant to your customer, 
+here is a styled CSS/HTML template and an updated JavaScript snippet that converts the thresholds into the user's local currency.
+
+1. Styled HTML & CSS
+Add this to your Django template. It uses a clean "Alert" style that stands out without looking like an error message. -->
+<!-- Inside your checkout.html -->
+<!-- <div id="tax-warning-container" class="dap-warning" style="display: none;">
+    <div class="warning-icon">⚠️</div>
+    <div class="warning-content">
+        <h4 id="warning-title">Import Notice (DAP)</h4>
+        <p id="warning-text"></p>
+        <small id="currency-convert"></small>
+    </div>
 </div>
 
-<!-- MAIN -->
-<main class="px-[max(1rem,5vw)] py-20 min-h-[calc(100dvh-200px)]">
-    <!-- progress -->
-    <ul class="timeline w-full justify-center">
-        <li>
-            <div class="timeline-start timeline-box">購物車</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-success"></i>
-            </div>
-            <hr class="bg-success-content"/>
-        </li>
-        <li>
-            <hr class="bg-success-content"/>
-            <div class="timeline-start timeline-box">配送訊息</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-base-300"></i>
-            </div>
-            <hr />
-        </li>
-        <li>
-            <hr />
-            <div class="timeline-start timeline-box">支付</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-base-300"></i>
-            </div>
-            <hr />
-        </li>
-        <li>
-            <hr />
-            <div class="timeline-start timeline-box">支付完成</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-base-300"></i>
-            </div>
-            <!-- <hr /> -->
-        </li>
-        <!-- <li>
-            <hr />
-            <div class="timeline-start timeline-box">Apple Watch</div>
-            <div class="timeline-middle">
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                class="h-5 w-5"
-            >
-                <path
-                fill-rule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                clip-rule="evenodd"
-                />
-            </svg>
-            </div>
-        </li> -->
-    </ul>
+<style>
+.dap-warning {
+    display: flex;
+    align-items: flex-start;
+    background-color: #fff9db; /* Light yellow */
+    border-left: 5px solid #fab005; /* Amber border */
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 4px;
+    font-family: sans-serif;
+}
+.warning-icon { font-size: 1.5rem; margin-right: 15px; }
+.warning-content h4 { margin: 0 0 5px 0; color: #856404; font-size: 1rem; }
+.warning-content p { margin: 0; color: #856404; font-size: 0.9rem; line-height: 1.4; }
+#currency-convert { color: #666; font-size: 0.8rem; display: block; margin-top: 5px; }
+</style>
 
-    <!-- details -->
-    <div class="grid grid-cols-3 gap-8">
-        <!-- LEFT - ITEM LISTS DETAILS -->
-        <div class="col-span-2">
-            <!-- cart items -->
-            <ul class="list bg-base-100 rounded-box shadow-md mb-20">
-                           
-                <li class="flex gap-3 p-3">
-                    <!-- # -->
-                    <div class="flex-grow-0 text-4xl font-thin opacity-30 tabular-nums">01</div>
-                    <div class="flex flex-col flex-grow justify-center">
-                        <!-- top -->
-                        <div class="flex justify-between items-center mb-3">
-                            <!-- item-name -->
-                            <div class="list-col-grow">
-                                <div>Dio Lupa</div>
-                                <div class="text-xs uppercase font-semibold opacity-60">Remaining Reason</div>
-                            </div>
-                            <!-- item-quantity -->
-                            <div class="flex w-28 h-4/5 border-primary ">
-                                <input type="number" class="w-2/3 rounded-l-4xl border-y-1 border-l-1 focus:outline-none text-center bg-primary-content" value="1" min="1" id="quantity-input" />
-                                <div class="flex flex-col justify-center w-1/3 border-y-1 border-r-1 rounded-r-4xl">
-                                    <button class="h-1/2 cursor-pointer border-l-1 border-b-1 border-base-300 rounded-tr-4xl hover:bg-base-300 active:scale-90 active:text-primary-content transition-transform flex justify-center items-center" id="decrease-btn"><div>-</div></button>
-                                    <button class="h-1/2 cursor-pointer border-l-1 border-base-300 rounded-br-4xl hover:bg-base-300 active:scale-90 active:text-primary-content transition-transform flex justify-center items-center" id="increase-btn"><div>+</div></button>
-                                </div>
-                            </div>
-                            <!-- item-unit_price -->
-                            <div class="text-center">
-                                <div class="text-primary">RMB 80.88</div>
-                                <div class="text-error line-through text-[10px]">RMB 90.88</div>
-                            </div>
-                            <!-- subtotal_price -->
-                            <div class="text-right text-base-content pr-5">
-                                RMB 80.88
-                            </div>
-                        </div>
-    
-                        <!-- bottom -->
-                        <div class="flex gap-5">
-                            <!-- image -->
-                            <div class="md:size-38 aspect-square"><img class="w-full h-full rounded-box object-cover" src="/media/hero/lavendar.svg"/></div>
 
-                            <div class="flex w-full">
-                                <!-- details -->
-                                <div class="text-[12px] w-3/5 pr-10">
-                                    <div><b>當前庫存：</b>10</div>
-                                    <div><b>發貨地：</b>中國</div>
-                                    <div><b>顏色：</b>橙色</div>
-                                    <div><b>尺寸/規格：</b>含2026日历最新版</div>
-                                    <div><b>配送狀態</b>目前正常</div>
-                                    <div>舉具體詳情請注意查收發貨郵件</div>
-                                    <div class="flex items-center">
-                                        <i class="fa-solid fa-gift"></i>
-                                        不需寄帳單&nbsp;
-                                        <input type="checkbox" class="checkbox checkbox-primary checkbox-xs" />
-                                    </div>
-                                </div>
-                                <!-- option buttons -->
-                                <div class="flex flex-wrap w-2/5 gap-3 content-center">
-                                    <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="轉入未來購物清單">
-                                        <button class="btn btn-primary"><i class="w-full fa-solid fa-list"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品">
-                                        <button class="btn btn-error"><i class="w-full fa-solid fa-trash"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="線上分享該產品">
-                                        <button class="btn btn-success"><i class="fa-solid fa-share-from-square"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品">
-                                        <button class="btn btn-secondary"><i class="w-full fa-solid fa-bookmark"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </li>
-                <div class="divider pl-1/10"></div>
+2. Enhanced JavaScript with Currency Conversion
+This script updates the text and uses a simple multiplier (or you can integrate an exchange rate API) to show the customer what the threshold means in their own currency.
 
-                <li class="flex gap-3 p-3">
-                    <!-- # -->
-                    <div class="flex-grow-0 text-4xl font-thin opacity-30 tabular-nums">02</div>
-                    <div class="flex flex-col flex-grow justify-center">
-                        <!-- top -->
-                        <div class="flex justify-between items-center mb-3">
-                            <!-- item-name -->
-                            <div class="list-col-grow">
-                                <div>Dio Lupa</div>
-                                <div class="text-xs uppercase font-semibold opacity-60">Remaining Reason</div>
-                            </div>
-                            <!-- item-quantity -->
-                            <div class="flex w-28 h-4/5 border-primary ">
-                                <input type="number" class="w-2/3 rounded-l-4xl border-y-1 border-l-1 focus:outline-none text-center bg-primary-content" value="1" min="1" id="quantity-input" />
-                                <div class="flex flex-col justify-center w-1/3 border-y-1 border-r-1 rounded-r-4xl">
-                                    <button class="h-1/2 cursor-pointer border-l-1 border-b-1 border-base-300 rounded-tr-4xl hover:bg-base-300 active:scale-90 active:text-primary-content transition-transform flex justify-center items-center" id="decrease-btn"><div>-</div></button>
-                                    <button class="h-1/2 cursor-pointer border-l-1 border-base-300 rounded-br-4xl hover:bg-base-300 active:scale-90 active:text-primary-content transition-transform flex justify-center items-center" id="increase-btn"><div>+</div></button>
-                                </div>
-                            </div>
-                            <!-- item-unit_price -->
-                            <div class="text-center">
-                                <div class="text-primary">RMB 80.88</div>
-                                <div class="text-error line-through text-[10px]">RMB 90.88</div>
-                            </div>
-                            <!-- subtotal_price -->
-                            <div class="text-right text-base-content pr-5">
-                                RMB 80.88
-                            </div>
-                        </div>
-    
-                        <!-- bottom -->
-                        <div class="flex gap-5">
-                            <!-- image -->
-                            <div class="md:size-38 aspect-square"><img class="w-full h-full rounded-box object-cover" src="/media/hero/tulip.svg"/></div>
+// main.js (Vite asset)
+document.addEventListener('DOMContentLoaded', () => {
+    const countrySelect = document.getElementById('id_shipping_country');
+    const container = document.getElementById('tax-warning-container');
+    const warningText = document.getElementById('warning-text');
+    const currencySmall = document.getElementById('currency-convert');
 
-                            <div class="flex w-full">
-                                <!-- details -->
-                                <div class="text-[12px] w-3/5 pr-10">
-                                    <div><b>當前庫存：</b>10</div>
-                                    <div><b>發貨地：</b>中國</div>
-                                    <div><b>顏色：</b>橙色</div>
-                                    <div><b>尺寸/規格：</b>含2026日历最新版</div>
-                                    <div><b>配送狀態</b>目前正常</div>
-                                    <div>舉具體詳情請注意查收發貨郵件</div>
-                                    <div class="flex items-center">
-                                        <i class="fa-solid fa-gift"></i>
-                                        不需寄帳單&nbsp;
-                                        <input type="checkbox" class="checkbox checkbox-primary checkbox-xs" />
-                                    </div>
-                                </div>
-                                <!-- option buttons -->
-                                <div class="flex flex-wrap w-2/5 gap-3 content-center">
-                                    <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="轉入未來購物清單">
-                                        <button class="btn btn-primary"><i class="w-full fa-solid fa-list"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品">
-                                        <button class="btn btn-error"><i class="w-full fa-solid fa-trash"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="線上分享該產品">
-                                        <button class="btn btn-success"><i class="fa-solid fa-share-from-square"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品">
-                                        <button class="btn btn-secondary"><i class="w-full fa-solid fa-bookmark"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </li>
-                <div class="divider pl-1/10"></div>
+    // Example exchange rates (In production, fetch these from an API)
+    const rates = { "USD": 1.0, "EUR": 0.92, "GBP": 0.79, "AUD": 1.52 };
 
-                <li class="flex gap-3 p-3">
-                    <!-- # -->
-                    <div class="flex-grow-0 text-4xl font-thin opacity-30 tabular-nums">03</div>
-                    <div class="flex flex-col flex-grow justify-center">
-                        <!-- top -->
-                        <div class="flex justify-between items-center mb-3">
-                            <!-- item-name -->
-                            <div class="list-col-grow">
-                                <div>Dio Lupa</div>
-                                <div class="text-xs uppercase font-semibold opacity-60">Remaining Reason</div>
-                            </div>
-                            <!-- item-quantity -->
-                            <div class="flex w-28 h-4/5 border-primary ">
-                                <input type="number" class="w-2/3 rounded-l-4xl border-y-1 border-l-1 focus:outline-none text-center bg-primary-content" value="1" min="1" id="quantity-input" />
-                                <div class="flex flex-col justify-center w-1/3 border-y-1 border-r-1 rounded-r-4xl">
-                                    <button class="h-1/2 cursor-pointer border-l-1 border-b-1 border-base-300 rounded-tr-4xl hover:bg-base-300 active:scale-90 active:text-primary-content transition-transform flex justify-center items-center" id="decrease-btn"><div>-</div></button>
-                                    <button class="h-1/2 cursor-pointer border-l-1 border-base-300 rounded-br-4xl hover:bg-base-300 active:scale-90 active:text-primary-content transition-transform flex justify-center items-center" id="increase-btn"><div>+</div></button>
-                                </div>
-                            </div>
-                            <!-- item-unit_price -->
-                            <div class="text-center">
-                                <div class="text-primary">RMB 80.88</div>
-                                <div class="text-error line-through text-[10px]">RMB 90.88</div>
-                            </div>
-                            <!-- subtotal_price -->
-                            <div class="text-right text-base-content pr-5">
-                                RMB 80.88
-                            </div>
-                        </div>
-    
-                        <!-- bottom -->
-                        <div class="flex gap-5">
-                            <!-- image -->
-                            <div class="md:size-38 aspect-square"><img class="w-full h-full rounded-box object-cover" src="/media/hero/purpleFlower.svg"/></div>
+    countrySelect.addEventListener('change', async (e) => {
+        const countryCode = e.target.value;
+        
+        const response = await fetch(`/api/tax-info/?country_code=${countryCode}`);
+        const data = await response.json();
+        
+        if (data) {
+            container.style.display = 'flex';
+            warningText.innerText = data.msg;
 
-                            <div class="flex w-full">
-                                <!-- details -->
-                                <div class="text-[12px] w-3/5 pr-10">
-                                    <div><b>當前庫存：</b>10</div>
-                                    <div><b>發貨地：</b>中國</div>
-                                    <div><b>顏色：</b>橙色</div>
-                                    <div><b>尺寸/規格：</b>含2026日历最新版</div>
-                                    <div><b>配送狀態</b>目前正常</div>
-                                    <div>舉具體詳情請注意查收發貨郵件</div>
-                                    <div class="flex items-center">
-                                        <i class="fa-solid fa-gift"></i>
-                                        不需寄帳單&nbsp;
-                                        <input type="checkbox" class="checkbox checkbox-primary checkbox-xs" />
-                                    </div>
-                                </div>
-                                <!-- option buttons -->
-                                <div class="flex flex-wrap w-2/5 gap-3 content-center">
-                                    <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="轉入未來購物清單">
-                                        <button class="btn btn-primary"><i class="w-full fa-solid fa-list"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品">
-                                        <button class="btn btn-error"><i class="w-full fa-solid fa-trash"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="線上分享該產品">
-                                        <button class="btn btn-success"><i class="fa-solid fa-share-from-square"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品">
-                                        <button class="btn btn-secondary"><i class="w-full fa-solid fa-bookmark"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </li>
+            // Show conversion if the threshold is not zero
+            if (data.limit > 0) {
+                const localRate = rates[data.currency] || 1;
+                currencySmall.innerText = `Threshold: ${data.currency} ${data.limit} (approx. USD ${(data.limit / localRate).toFixed(2)})`;
+            } else {
+                currencySmall.innerText = "";
+            }
+        }
+    });
+});
 
-                <div class="border-t-4 border-double border-base-300"></div>
-                <div class="text-right text-[1.2rem] text-base-content font-black p-3">寶貝金額小計（共3件）： RMB 888.00</div>
-            </ul>
-
-            <!-- wish-list items -->
-            <h2 class="text-[1.25rem] mb-5">未來購物清單</h2>
-
-            <ul class="list bg-base-200 rounded-box shadow-md mb-20 text-secondary">
-                           
-                <li class="flex gap-3 p-3">
-                    <div class="flex flex-col flex-grow justify-center">
-                        <!-- top -->
-                        <div class="flex justify-between items-center mb-3">
-                            <!-- item-name -->
-                            <div class="list-col-grow">
-                                <div>Dio Lupa</div>
-                                <div class="text-xs uppercase font-semibold opacity-60">Remaining Reason</div>
-                            </div>
-                            <!-- item-quantity -->
-                            <div class="flex w-28 h-4/5 border-primary ">
-                                <div class="shadow rounded-3xl">
-                                    <div class="flex items-center h-full p-5">
-                                        <div class="stat-title text-success font-black">存貨: 0件</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- item-unit_price -->
-                            <div class="text-right text-base-content pr-5">
-                                RMB 80.88
-                            </div>
-                        </div>
-    
-                        <!-- bottom -->
-                        <div class="flex gap-5">
-                            <!-- image -->
-                            <div class="md:size-38 aspect-square"><img class="w-full h-full rounded-box object-cover" src="/media/hero/lavendar.svg"/></div>
-
-                            <div class="flex w-full">
-                                <!-- details -->
-                                <div class="text-[12px] w-3/5 pr-10">
-                                    <div><b>發貨地：</b>中國</div>
-                                    <div><b>顏色：</b>橙色</div>
-                                    <div><b>尺寸/規格：</b>含2026日历最新版</div>
-                                </div>
-                                <!-- option buttons -->
-                                <div class="flex flex-wrap w-2/5 gap-3 content-center p-2">
-                                    <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="放入購物車">
-                                        <button class="btn btn-outline btn-primary"><i class="fa-solid fa-cart-plus"></i></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品">
-                                        <button class="btn btn-outline btn-error"><i class="w-full fa-solid fa-trash"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="線上分享該產品">
-                                        <button class="btn btn-outline btn-success"><i class="fa-solid fa-share-from-square"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品">
-                                        <button class="btn btn-outline btn-secondary"><i class="w-full fa-solid fa-bookmark"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </li>
-                <div class="divider pl-1/10"></div>
-
-                <li class="flex gap-3 p-3">
-                    <div class="flex flex-col flex-grow justify-center">
-                        <!-- top -->
-                        <div class="flex justify-between items-center mb-3">
-                            <!-- item-name -->
-                            <div class="list-col-grow">
-                                <div>Dio Lupa</div>
-                                <div class="text-xs uppercase font-semibold opacity-60">Remaining Reason</div>
-                            </div>
-                            <!-- item-quantity -->
-                            <div class="flex w-28 h-4/5 border-primary ">
-                                <div class="shadow rounded-3xl">
-                                    <div class="flex items-center h-full p-5">
-                                        <div class="stat-title text-error font-black">目前無貨</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- item-unit_price -->
-                            <div class="text-right text-base-content pr-5">
-                                RMB 80.88
-                            </div>
-                        </div>
-    
-                        <!-- bottom -->
-                        <div class="flex gap-5">
-                            <!-- image -->
-                            <div class="md:size-38 aspect-square"><img class="w-full h-full rounded-box object-cover" src="/media/hero/tulip.svg"/></div>
-
-                            <div class="flex w-full">
-                                <!-- details -->
-                                <div class="text-[12px] w-3/5 pr-10">
-                                    <div><b>發貨地：</b>中國</div>
-                                    <div><b>顏色：</b>橙色</div>
-                                    <div><b>尺寸/規格：</b>含2026日历最新版</div>
-                                </div>
-                                <!-- option buttons -->
-                                <div class="flex flex-wrap w-2/5 gap-3 content-center p-2">
-                                    <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="放入購物車">
-                                        <button class="btn btn-outline btn-primary"><i class="fa-solid fa-cart-plus"></i></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品">
-                                        <button class="btn btn-outline btn-error"><i class="w-full fa-solid fa-trash"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="線上分享該產品">
-                                        <button class="btn btn-outline btn-success"><i class="fa-solid fa-share-from-square"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品">
-                                        <button class="btn btn-outline btn-secondary"><i class="w-full fa-solid fa-bookmark"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </li>
-                <div class="divider pl-1/10"></div>
-
-                <li class="flex gap-3 p-3">
-                    <!-- # -->
-                    <!-- <div class="flex-grow-0 text-4xl font-thin opacity-30 tabular-nums">01</div> -->
-                    <div class="flex flex-col flex-grow justify-center">
-                        <!-- top -->
-                        <div class="flex justify-between items-center mb-3">
-                            <!-- item-name -->
-                            <div class="list-col-grow">
-                                <div>Dio Lupa</div>
-                                <div class="text-xs uppercase font-semibold opacity-60">Remaining Reason</div>
-                            </div>
-                            <!-- item-quantity -->
-                            <div class="flex w-28 h-4/5 border-primary ">
-                                <div class="shadow rounded-3xl">
-                                    <div class="flex items-center h-full p-5">
-                                        <div class="stat-title text-warning font-black">存貨: 1件</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- item-unit_price -->
-                            <div class="text-right text-base-content pr-5">
-                                RMB 80.88
-                            </div>
-                        </div>
-    
-                        <!-- bottom -->
-                        <div class="flex gap-5">
-                            <!-- image -->
-                            <div class="md:size-38 aspect-square"><img class="w-full h-full rounded-box object-cover" src="/media/hero/purpleFlower.svg"/></div>
-
-                            <div class="flex w-full">
-                                <!-- details -->
-                                <div class="text-[12px] w-3/5 pr-10">
-                                    <div><b>發貨地：</b>中國</div>
-                                    <div><b>顏色：</b>橙色</div>
-                                    <div><b>尺寸/規格：</b>含2026日历最新版</div>
-                                </div>
-                                <!-- option buttons -->
-                                <div class="flex flex-wrap w-2/5 gap-3 content-center p-2">
-                                    <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="放入購物車">
-                                        <button class="btn btn-outline btn-primary"><i class="fa-solid fa-cart-plus"></i></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品">
-                                        <button class="btn btn-outline btn-error"><i class="w-full fa-solid fa-trash"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="線上分享該產品">
-                                        <button class="btn btn-outline btn-success"><i class="fa-solid fa-share-from-square"></i></button>
-                                    </div>
-                                    <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品">
-                                        <button class="btn btn-outline btn-secondary"><i class="w-full fa-solid fa-bookmark"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </li>
-                <div class="mb-6"></div>
-            </ul>
-        </div>
-
-        <!-- RIGHT - PAYMENT CALCULATIONS -->
-        <div class="col-span-1">
-            <!-- cost estimate form -->
-            <form action="" >
-                <fieldset class="fieldset bg-primary-content border-base-300 rounded-box w-full border p-4">
-                    <div class="flex justify-between text-neutral text-base font-extrabold">
-                        <span>寶貝金額小計（共3件）： </span>
-                        <span>RMB 888.88</span>
-                    </div>
-                    <br/>
-                    <div class="text-left text-neutral text-base font-extrabold">運費估算</div>
-
-                    <label class="label">國家</label>
-                    <!-- <input type="email" class="input" placeholder="Email" /> -->
-                    <select class="select w-full">
-                        <option disabled selected>當前發送至以下地區/國家</option>
-                        <option>香港</option>
-                        <option>澳門</option>
-                        <option>台灣</option>
-                        <option>新加坡</option>
-                        <option>澳大利亞</option>
-                        <option>新西蘭</option>
-                    </select>
-
-                    <label class="label">州/縣</label>
-                    <input type="text" class="input w-full" placeholder="州/縣" />
-
-                    <label class="label">城市</label>
-                    <input type="text" class="input w-full" placeholder="城市" />
-
-                    <label class="label">郵政編碼</label>
-                    <input type="number" class="input w-full" placeholder="郵政編碼" />
-
-                    <button class="btn btn-soft btn-primary mt-4 tooltip tooltip-primary before:text-[10px]" data-tip="最終金額將基於訂單配送地址">運費估算</button>
-
-                    <!-- calculated delivery cost -->
-                        <!-- <div class="my-3 w-full rounded-4xl outline-2 outline-solid py-2 text-center text-sm">運費估算金額</div> -->
-                        <div class="my-3 w-full rounded-4xl outline-2 outline-dotted py-2 text-center text-sm">運費估算 - 待定</div>
-                        <div class="divider"></div>
-                    
-                    <!-- coupon -->
-                    <label class="label">優惠券代碼</label>
-                    <div class="input flex w-full">
-                        <input type="text" class="w-4/5" />
-                        <a href="" class="w-1/5 text-center cursor-pointer text-[0.75rem] badge badge-soft badge-primary">適用</a>
-                    </div>
-
-                    <!-- gift voucher -->
-                    <label class="label">現金禮品券代碼</label>
-                    <div class="input input-secondary flex w-full">
-                        <input type="text" class="w-4/5" />
-                        <a href="" class="w-1/5 text-center cursor-pointer text-[0.75rem] badge badge-soft badge-secondary">適用</a>
-                    </div>
-
-                    <div class="divider"></div>
-
-                    <!-- total amount -->
-                    <div class="text-right text-[1.1rem] text-base-content font-black px-3">金額總計： RMB 888.00</div>
-
-                    <!-- go to pay -->
-                    <button class="btn btn-primary mt-4 tooltip tooltip-primary before:text-[10px]">去結算</button>
-
-                    <!-- payment methods -->
-                    <div class="flex justify-around fill-primary stroke-primary">
-                        <!-- visa -->
-                        <svg width="48" height="48" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" xml:space="preserve">
-                            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                            <g id="SVGRepo_iconCarrier"> 
-                                <g> 
-                                    <g> 
-                                        <path d="M503.915,153.88c4.467,0,8.085-3.619,8.085-8.084v-31.459c0-20.619-16.775-37.394-37.395-37.394H37.395 C16.775,76.943,0,93.718,0,114.337v283.325c0,20.62,16.775,37.395,37.395,37.395h437.209c20.62,0,37.395-16.776,37.395-37.395 V172.026c0-4.465-3.618-8.084-8.084-8.084s-8.084,3.62-8.084,8.084V357.8H16.168V153.88H503.915z M16.168,114.337 c0-11.704,9.522-21.226,21.227-21.226h437.209c11.705,0,21.227,9.522,21.227,21.226v23.375H16.168V114.337z M495.832,373.968 v23.693c0,11.705-9.522,21.227-21.227,21.227H37.395c-11.705,0-21.227-9.522-21.227-21.227v-23.693H495.832z"></path> 
-                                    </g> 
-                                </g> 
-                                <g> 
-                                    <g> 
-                                        <path d="M247.995,187.737c-1.536-1.821-3.796-2.872-6.179-2.872h-34.488c-2.956,0-5.589,1.599-7,4.038 c-0.061-0.103-0.113-0.212-0.18-0.315c-1.496-2.271-4.032-3.638-6.752-3.638h-36.501c-3.328,0-6.315,2.039-7.528,5.138 l-24.222,61.892l-10.738-51.509c-0.026-0.125-0.055-0.249-0.087-0.372c-1.836-7.107-7.231-15.711-22.504-16.352 c-0.112-0.004-0.225-0.006-0.338-0.006H38.099c-3.893,0-7.234,2.774-7.947,6.602l-0.475,2.551 c-0.787,4.224,1.867,8.327,6.043,9.339c10.152,2.461,19.59,5.898,28.17,10.187c-0.216,1.205-0.163,2.467,0.196,3.694 L94.93,321.538c1.008,3.446,4.169,5.814,7.759,5.814c0.003,0,0.006,0,0.01,0l36.469-0.042c3.227-0.004,6.143-1.926,7.418-4.891 l50.504-117.497l-19.27,113.073c-0.4,2.348,0.255,4.753,1.791,6.573c1.536,1.819,3.796,2.869,6.177,2.869h34.431 c3.94,0,7.305-2.84,7.969-6.723l21.597-126.403C250.186,191.962,249.532,189.558,247.995,187.737z M91.299,199.91 c6.153,0.289,6.83,2.175,7.321,4.052l3.25,15.591c-7.757-7.554-16.819-14.157-26.984-19.643H91.299z M133.828,311.148 l-25.086,0.028L86.688,235.8c12.059,11.415,21.261,24.052,25.218,33.117l3.455,12.49c0.928,3.353,3.899,5.738,7.375,5.918 c3.472,0.18,6.676-1.885,7.945-5.128l31.731-81.079h18.709L133.828,311.148z M213.4,311.269h-18.032l18.783-110.236h18.083 L213.4,311.269z"></path> 
-                                    </g> 
-                                </g> 
-                                <g>
-                                    <g> 
-                                        <path d="M469.205,317.059l-27.773-125.725c-0.818-3.704-4.101-6.34-7.893-6.34h-26.607c-4.618,0-18.672,0-25.435,15.286 l-33.29,75.362c-0.845-16.501-11.834-29.368-33.527-39.267c-4.477-2.167-12.429-6.022-14.455-8.29 c0.99-0.939,4.271-2.826,11.405-2.826c0.041,0,0.083-0.001,0.124-0.001c10.163-0.147,17.358,2.155,22.471,4.193l2.933,1.345 c2.284,1.048,4.922,0.973,7.145-0.2c2.222-1.173,3.77-3.312,4.194-5.788l4.674-27.384c0.652-3.825-1.505-7.575-5.142-8.934 c-7.072-2.642-18.662-5.789-33.716-5.789c-38.786,0-66.055,20.444-66.313,49.692c-0.301,25.473,26.181,37.747,34.9,41.789 c11.678,5.375,12.972,7.63,13.113,8.022c0,0.001,0.011,0.051,0.008,0.213c-0.017,1.741-5.277,4.326-12.508,4.326 c-12.799,0-19.124-1.755-29.21-5.951l-4.274-1.963c-2.282-1.048-4.925-0.974-7.146,0.196c-2.223,1.173-3.773,3.311-4.196,5.788 l-4.84,28.325c-0.626,3.664,1.326,7.282,4.732,8.77c9.985,4.363,26.288,7.264,41.536,7.391c0.023,0,0.045,0,0.068,0 c19.474,0,36.143-4.586,48.203-13.262c1.054-0.758,2.054-1.558,3.03-2.375l-1.091,2.469c-1.105,2.5-0.872,5.39,0.62,7.679 c1.493,2.291,4.04,3.671,6.773,3.671h36.211c3.363,0,6.375-2.083,7.563-5.228c0.042-0.112,3.037-8.039,5.215-13.759 c3.775,0.004,8.951,0.01,14.3,0.016c6.376,0.006,13,0.014,17.807,0.018c1.254,5.65,2.737,12.484,2.759,12.583 c0.806,3.718,4.096,6.369,7.9,6.369h31.97c0.005,0,0.014,0,0.02,0c4.466,0,8.084-3.618,8.084-8.084 C469.547,318.583,469.428,317.8,469.205,317.059z M280.214,313.13c-11.338-0.098-21.985-1.897-29.281-3.989l1.965-11.503 c9.408,3.565,17.411,5.273,30.615,5.273c16.762,0,28.553-8.36,28.675-20.288c0.178-11.699-10.554-17.616-22.506-23.119 c-17.768-8.236-25.637-16.537-25.514-26.943c0.175-19.836,20.796-33.691,50.145-33.691c8.934,0,16.371,1.346,21.736,2.77 l-1.817,10.65c-5.83-1.826-13.228-3.335-22.662-3.198c-19.02,0.022-27.709,9.786-27.748,18.881 c-0.128,11.371,11.009,16.759,23.9,22.998c0.057,0.027,0.114,0.054,0.17,0.08c21.584,9.827,24.275,19.542,24.207,26.901 C331.886,299.643,312.005,313.121,280.214,313.13z M435.982,311.313c-0.988-4.514-2.242-10.193-2.838-12.719 c-0.861-3.65-4.119-6.228-7.869-6.228c-2.659,0-13.792-0.013-24.251-0.023c-9.275-0.011-18.023-0.021-19.874-0.021 c-3.328,0-6.314,2.038-7.527,5.136c-0.849,2.169-3.435,8.984-5.279,13.855h-18.216l46.158-104.495 c1.694-3.831,3.721-5.655,10.647-5.655h20.112l24.331,110.15H435.982z"></path> 
-                                    </g> 
-                                </g> 
-                                <g> 
-                                    <g> 
-                                        <path d="M427.548,272.807c-1.384-6.313-7.952-36.476-7.953-36.477l-2.337-10.901c-0.755-3.525-3.752-6.122-7.348-6.37 c-3.602-0.242-6.922,1.915-8.154,5.302c-1.057,2.911-2.663,7.061-3.623,9.54c-0.316,0.818-0.622,1.61-0.872,2.389l-0.032-0.013 c-0.109,0.28-10.881,28.138-13.698,35.304c-0.978,2.488-0.662,5.299,0.843,7.51c1.509,2.209,4.01,3.532,6.683,3.532h28.595 c2.448,0,4.764-1.109,6.299-3.017C427.486,277.699,428.073,275.198,427.548,272.807z M402.882,266.454 c1.392-3.587,2.908-7.498,4.309-11.115c0.813,3.733,1.664,7.641,2.422,11.115H402.882z"></path> 
-                                    </g> 
-                                </g> 
-                            </g>
-                        </svg>
-                        <!-- master card -->
-                        <svg width="48" height="48"  version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                            <g id="SVGRepo_iconCarrier"> 
-                                <g> 
-                                    <g> 
-                                        <path d="M503.916,153.88c4.466,0,8.084-3.62,8.084-8.084v-31.459c0-20.619-16.775-37.394-37.393-37.394H37.393 C16.775,76.942,0,93.718,0,114.336v283.326c0,20.62,16.775,37.395,37.393,37.395h437.212c20.619,0,37.393-16.776,37.393-37.395 V172.024c0-4.465-3.619-8.084-8.084-8.084s-8.084,3.62-8.084,8.084v225.637c0,11.705-9.522,21.227-21.225,21.227H37.393 c-11.703,0-21.225-9.522-21.225-21.227V114.336c0-11.704,9.522-21.226,21.225-21.226h437.212c11.703,0,21.225,9.522,21.225,21.226 v31.459C495.832,150.26,499.45,153.88,503.916,153.88z"></path> 
-                                    </g> 
-                                </g> 
-                                <g> 
-                                    <g> 
-                                        <path d="M387.84,171.529c-12.455,0.001-24.669,3.702-35.016,10.5c-10.344-6.798-22.558-10.5-35.013-10.5 c-35.137,0-63.722,28.587-63.722,63.724c0,35.136,28.586,63.721,63.722,63.721c12.458,0,24.672-3.7,35.013-10.499 c10.345,6.798,22.559,10.499,35.016,10.499c35.137,0,63.722-28.585,63.722-63.721C451.562,200.115,422.976,171.529,387.84,171.529 z M317.811,282.805c-26.221,0-47.553-21.332-47.553-47.552c0-26.222,21.333-47.556,47.553-47.556 c7.875,0,15.403,1.869,22.178,5.463l-0.001,0.001c-0.025,0.028-0.047,0.058-0.072,0.086c-0.694,0.789-1.362,1.596-2.014,2.416 c-0.217,0.273-0.424,0.552-0.636,0.829c-0.454,0.59-0.899,1.185-1.33,1.789c-0.226,0.318-0.449,0.637-0.67,0.959 c-0.412,0.599-0.811,1.205-1.2,1.817c-0.196,0.308-0.397,0.615-0.587,0.927c-0.458,0.746-0.897,1.503-1.323,2.267 c-0.098,0.177-0.205,0.349-0.302,0.527c-0.514,0.943-1.001,1.9-1.467,2.868c-0.127,0.265-0.244,0.535-0.367,0.801 c-0.331,0.714-0.652,1.431-0.956,2.157c-0.146,0.348-0.285,0.698-0.425,1.05c-0.267,0.67-0.523,1.346-0.766,2.026 c-0.127,0.356-0.255,0.71-0.377,1.068c-0.254,0.75-0.49,1.507-0.717,2.268c-0.083,0.278-0.174,0.554-0.252,0.834 c-0.293,1.038-0.563,2.084-0.803,3.139c-0.046,0.204-0.082,0.411-0.127,0.614c-0.186,0.856-0.359,1.716-0.51,2.583 c-0.064,0.362-0.117,0.725-0.174,1.09c-0.114,0.728-0.218,1.457-0.307,2.19c-0.047,0.388-0.093,0.775-0.133,1.164 c-0.078,0.756-0.139,1.514-0.191,2.275c-0.024,0.345-0.053,0.69-0.07,1.036c-0.056,1.099-0.093,2.202-0.093,3.311 s0.036,2.212,0.093,3.311c0.017,0.347,0.047,0.692,0.07,1.038c0.052,0.76,0.112,1.518,0.191,2.272 c0.04,0.39,0.085,0.779,0.133,1.167c0.089,0.732,0.193,1.461,0.306,2.186c0.057,0.364,0.111,0.73,0.175,1.093 c0.151,0.861,0.322,1.717,0.508,2.57c0.045,0.209,0.082,0.419,0.129,0.627c0.24,1.053,0.509,2.098,0.802,3.133 c0.081,0.286,0.174,0.566,0.258,0.85c0.224,0.755,0.459,1.505,0.71,2.249c0.123,0.362,0.252,0.721,0.382,1.081 c0.242,0.675,0.496,1.345,0.761,2.01c0.141,0.355,0.282,0.71,0.43,1.062c0.302,0.72,0.62,1.431,0.949,2.138 c0.126,0.273,0.245,0.548,0.375,0.818c0.465,0.966,0.951,1.921,1.464,2.862c0.099,0.182,0.208,0.359,0.308,0.54 c0.424,0.76,0.86,1.512,1.316,2.255c0.192,0.313,0.391,0.62,0.589,0.929c0.39,0.612,0.789,1.219,1.201,1.818 c0.22,0.32,0.441,0.638,0.666,0.954c0.434,0.608,0.883,1.207,1.339,1.801c0.209,0.272,0.413,0.548,0.627,0.816 c0.665,0.836,1.347,1.662,2.057,2.467c0.01,0.011,0.018,0.023,0.028,0.033c0.002,0.002,0.004,0.004,0.005,0.008 C333.216,280.937,325.687,282.805,317.811,282.805z M365.296,237.748c-0.014,0.264-0.038,0.526-0.055,0.789 c-0.039,0.567-0.083,1.133-0.142,1.696c-0.031,0.303-0.069,0.604-0.106,0.905c-0.066,0.529-0.139,1.055-0.222,1.58 c-0.047,0.3-0.095,0.599-0.148,0.898c-0.097,0.548-0.207,1.092-0.322,1.634c-0.056,0.261-0.107,0.523-0.167,0.781 c-0.168,0.725-0.352,1.447-0.554,2.161c-0.019,0.068-0.034,0.137-0.054,0.204c-0.224,0.785-0.473,1.561-0.737,2.33 c-0.078,0.225-0.164,0.447-0.245,0.672c-0.195,0.542-0.398,1.083-0.612,1.618c-0.109,0.269-0.222,0.536-0.336,0.803 c-0.208,0.489-0.423,0.976-0.647,1.457c-0.125,0.269-0.251,0.539-0.382,0.806c-0.239,0.49-0.489,0.975-0.746,1.458 c-0.127,0.239-0.25,0.481-0.382,0.718c-0.33,0.595-0.675,1.182-1.029,1.763c-0.069,0.112-0.131,0.227-0.2,0.338 c-0.43,0.69-0.88,1.368-1.345,2.035c-0.132,0.189-0.272,0.372-0.406,0.559c-0.342,0.474-0.688,0.946-1.048,1.409 c-0.184,0.237-0.374,0.469-0.563,0.703c-0.329,0.407-0.664,0.811-1.007,1.208c-0.207,0.239-0.415,0.476-0.626,0.712 c-0.127,0.141-0.261,0.278-0.39,0.418c-0.128-0.139-0.262-0.275-0.388-0.416c-0.212-0.236-0.421-0.475-0.63-0.716 c-0.341-0.396-0.674-0.796-1.001-1.201c-0.191-0.236-0.383-0.472-0.569-0.711c-0.355-0.456-0.696-0.921-1.033-1.388 c-0.139-0.194-0.285-0.384-0.421-0.58c-0.464-0.665-0.912-1.341-1.34-2.028c-0.076-0.121-0.143-0.246-0.218-0.366 c-0.349-0.572-0.689-1.15-1.013-1.735c-0.135-0.243-0.261-0.489-0.39-0.734c-0.252-0.476-0.5-0.955-0.736-1.439 c-0.134-0.273-0.262-0.548-0.39-0.824c-0.22-0.474-0.431-0.953-0.636-1.435c-0.116-0.275-0.234-0.549-0.345-0.826 c-0.211-0.525-0.409-1.055-0.6-1.588c-0.084-0.233-0.174-0.464-0.254-0.698c-0.263-0.767-0.51-1.54-0.734-2.322 c-0.023-0.08-0.041-0.162-0.064-0.241c-0.197-0.703-0.379-1.411-0.544-2.125c-0.061-0.263-0.113-0.529-0.169-0.794 c-0.115-0.538-0.224-1.077-0.32-1.62c-0.054-0.302-0.102-0.606-0.15-0.909c-0.082-0.522-0.155-1.044-0.22-1.57 c-0.038-0.304-0.076-0.607-0.107-0.912c-0.058-0.56-0.102-1.124-0.141-1.689c-0.018-0.265-0.042-0.529-0.056-0.795 c-0.043-0.828-0.069-1.659-0.069-2.494c0-0.835,0.027-1.665,0.069-2.494c0.014-0.266,0.038-0.53,0.056-0.796 c0.039-0.565,0.083-1.129,0.141-1.689c0.031-0.305,0.069-0.608,0.107-0.912c0.065-0.526,0.138-1.049,0.22-1.57 c0.047-0.304,0.096-0.607,0.15-0.909c0.096-0.543,0.205-1.082,0.32-1.62c0.056-0.265,0.108-0.53,0.169-0.794 c0.165-0.713,0.346-1.42,0.543-2.122c0.023-0.081,0.041-0.164,0.064-0.245c0.224-0.78,0.471-1.553,0.734-2.321 c0.081-0.236,0.171-0.468,0.255-0.702c0.192-0.531,0.389-1.061,0.599-1.585c0.112-0.278,0.23-0.553,0.346-0.828 c0.204-0.481,0.415-0.958,0.635-1.431c0.128-0.277,0.258-0.553,0.391-0.827c0.236-0.483,0.482-0.96,0.734-1.435 c0.13-0.246,0.258-0.494,0.392-0.737c0.324-0.585,0.663-1.162,1.012-1.734c0.074-0.122,0.142-0.247,0.218-0.368 c0.428-0.688,0.876-1.362,1.34-2.029c0.135-0.194,0.278-0.382,0.416-0.573c0.338-0.471,0.683-0.939,1.039-1.398 c0.183-0.236,0.373-0.469,0.562-0.702c0.33-0.409,0.666-0.814,1.011-1.213c0.204-0.236,0.41-0.472,0.619-0.705 c0.128-0.143,0.263-0.28,0.393-0.422c0.131,0.142,0.267,0.281,0.398,0.426c0.207,0.231,0.411,0.463,0.613,0.697 c0.346,0.4,0.683,0.806,1.014,1.217c0.189,0.233,0.378,0.466,0.562,0.702c0.356,0.458,0.7,0.926,1.038,1.396 c0.138,0.192,0.282,0.38,0.417,0.575c0.463,0.665,0.911,1.34,1.339,2.026c0.08,0.127,0.151,0.259,0.23,0.387 c0.345,0.565,0.68,1.135,1,1.713c0.137,0.248,0.266,0.499,0.399,0.749c0.25,0.471,0.495,0.944,0.728,1.423 c0.135,0.277,0.266,0.556,0.396,0.836c0.218,0.47,0.428,0.944,0.631,1.421c0.118,0.278,0.237,0.555,0.349,0.835 c0.209,0.521,0.405,1.047,0.596,1.575c0.086,0.237,0.178,0.473,0.26,0.711c0.263,0.765,0.509,1.536,0.733,2.315 c0.026,0.088,0.045,0.179,0.07,0.267c0.194,0.694,0.374,1.393,0.537,2.096c0.061,0.267,0.114,0.538,0.171,0.806 c0.114,0.535,0.222,1.071,0.318,1.611c0.054,0.302,0.102,0.606,0.15,0.909c0.082,0.522,0.155,1.044,0.22,1.57 c0.038,0.304,0.075,0.608,0.107,0.913c0.058,0.56,0.102,1.123,0.141,1.688c0.018,0.265,0.042,0.53,0.056,0.797 c0.043,0.828,0.069,1.659,0.069,2.493C365.366,236.089,365.339,236.919,365.296,237.748z M387.841,282.805 c-7.876,0-15.405-1.868-22.18-5.462c0.002-0.002,0.003-0.004,0.004-0.005c0.011-0.012,0.021-0.025,0.031-0.038 c0.707-0.803,1.388-1.627,2.052-2.461c0.217-0.273,0.424-0.551,0.636-0.827c0.453-0.59,0.898-1.184,1.329-1.787 c0.23-0.32,0.454-0.643,0.677-0.968c0.406-0.592,0.801-1.191,1.187-1.797c0.202-0.317,0.406-0.632,0.603-0.951 c0.445-0.726,0.872-1.463,1.287-2.205c0.111-0.197,0.23-0.391,0.337-0.59c0.51-0.936,0.994-1.885,1.456-2.846 c0.136-0.282,0.26-0.57,0.391-0.855c0.321-0.695,0.635-1.394,0.931-2.101c0.151-0.36,0.295-0.723,0.44-1.086 c0.262-0.658,0.512-1.318,0.751-1.984c0.132-0.366,0.264-0.733,0.389-1.103c0.248-0.732,0.479-1.471,0.7-2.213 c0.088-0.295,0.184-0.589,0.268-0.885c0.292-1.033,0.559-2.072,0.799-3.12c0.05-0.217,0.087-0.437,0.135-0.654 c0.183-0.843,0.354-1.69,0.502-2.543c0.065-0.368,0.119-0.737,0.177-1.107c0.113-0.721,0.216-1.445,0.305-2.173 c0.047-0.391,0.093-0.783,0.134-1.175c0.078-0.752,0.139-1.508,0.19-2.266c0.024-0.348,0.053-0.695,0.071-1.044 c0.056-1.098,0.093-2.201,0.093-3.309c0-1.108-0.036-2.212-0.093-3.311c-0.018-0.347-0.047-0.692-0.071-1.038 c-0.052-0.76-0.112-1.519-0.191-2.273c-0.04-0.39-0.085-0.778-0.133-1.166c-0.089-0.732-0.193-1.461-0.306-2.186 c-0.057-0.365-0.111-0.731-0.175-1.094c-0.151-0.865-0.323-1.722-0.509-2.577c-0.045-0.206-0.081-0.413-0.128-0.618 c-0.24-1.054-0.51-2.1-0.803-3.137c-0.08-0.281-0.17-0.558-0.254-0.839c-0.226-0.759-0.462-1.514-0.716-2.264 c-0.121-0.357-0.249-0.711-0.376-1.066c-0.245-0.681-0.5-1.358-0.769-2.03c-0.139-0.35-0.278-0.7-0.424-1.047 c-0.305-0.729-0.627-1.449-0.96-2.164c-0.122-0.264-0.237-0.53-0.363-0.792c-0.466-0.97-0.955-1.928-1.47-2.875 c-0.092-0.168-0.193-0.332-0.287-0.5c-0.431-0.774-0.876-1.54-1.341-2.297c-0.186-0.304-0.38-0.601-0.572-0.902 c-0.397-0.623-0.803-1.241-1.222-1.85c-0.213-0.311-0.429-0.621-0.649-0.928c-0.443-0.62-0.899-1.231-1.365-1.836 c-0.202-0.262-0.398-0.526-0.603-0.785c-0.678-0.854-1.373-1.694-2.096-2.515c6.776-3.594,14.305-5.463,22.179-5.463 c26.222,0,47.555,21.334,47.555,47.556C435.394,261.474,414.061,282.805,387.841,282.805z"></path> </g> </g> <g> <g> <path d="M169.658,312.565H66.715c-4.466,0-8.084,3.62-8.084,8.084c0,4.466,3.618,8.084,8.084,8.084h102.943 c4.466,0,8.084-3.618,8.084-8.084C177.743,316.183,174.124,312.565,169.658,312.565z"></path> </g> </g> <g> <g> <path d="M169.658,346.279H66.715c-4.466,0-8.084,3.619-8.084,8.084c0,4.466,3.618,8.084,8.084,8.084h102.943 c4.466,0,8.084-3.618,8.084-8.084C177.743,349.898,174.124,346.279,169.658,346.279z"></path> 
-                                        </g> 
-                                    </g> 
-                                    <g> 
-                                        <g> 
-                                            <path d="M161.611,177.449H73.794c-8.36,0-15.162,6.802-15.162,15.161v68.436c-0.001,8.36,6.802,15.162,15.162,15.162h87.817 c8.36,0,15.162-6.802,15.162-15.162V192.61C176.773,184.25,169.971,177.449,161.611,177.449z M94.168,260.039H74.799v-11.36 h19.369V260.039z M94.168,232.51H74.799v-11.364h19.369V232.51z M94.168,204.977H74.799v-11.36h19.369V204.977z M160.604,260.039 h-50.268v-66.421h0.001h18.682v46.977c0,4.465,3.618,8.084,8.084,8.084h23.501V260.039z M160.604,232.51h-15.417v-11.364h15.417 V232.51z M160.604,204.977h-15.417v-11.36h15.417V204.977z"></path> 
-                                        </g> 
-                                    </g> 
-                                </g>
-                        </svg>
-                        <!-- paypal -->
-                        <svg width="48" height="48" viewBox="0 -140 780 780" xmlns="http://www.w3.org/2000/svg">
-                            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                            <g id="SVGRepo_iconCarrier"> 
-                                <path d="M55 15h670c22.091 0 40 17.909 40 40v391c0 22.092-17.909 40-40 40H55c-22.092 0-40-17.908-40-40V55c0-22.091 17.908-40 40-40z" fill="none" stroke-width="30"></path> 
-                                <g> 
-                                    <path d="M168.379 169.853c-8.399-5.774-19.359-8.668-32.88-8.668H83.153c-4.145 0-6.435 2.073-6.87 6.215L55.018 300.883c-.221 1.311.107 2.51.981 3.6.869 1.092 1.962 1.635 3.271 1.635h24.864c4.361 0 6.758-2.068 7.198-6.215l5.888-35.986c.215-1.744.982-3.162 2.291-4.254 1.308-1.09 2.944-1.803 4.907-2.13 1.963-.324 3.814-.487 5.562-.487 1.743 0 3.814.11 6.217.327 2.397.218 3.925.324 4.58.324 18.756 0 33.478-5.285 44.167-15.866 10.684-10.577 16.032-25.243 16.032-44.004 0-12.867-4.202-22.191-12.597-27.974zm-26.99 40.08c-1.094 7.635-3.926 12.649-8.506 15.049-4.581 2.403-11.124 3.598-19.629 3.598l-10.797.327 5.563-35.007c.434-2.397 1.851-3.597 4.252-3.597h6.218c8.72 0 15.049 1.257 18.975 3.761 3.924 2.51 5.233 7.801 3.924 15.869zM720.793 161.185h-24.207c-2.406 0-3.822 1.2-4.254 3.6l-21.266 136.099-.328.654c0 1.096.436 2.127 1.311 3.109.867.98 1.963 1.471 3.27 1.471h21.594c4.139 0 6.43-2.068 6.871-6.215L725.05 166.09v-.325c-.001-3.053-1.423-4.58-4.257-4.58zM428.31 213.856c0-1.088-.439-2.126-1.305-3.106-.875-.981-1.859-1.474-2.945-1.474h-25.193c-2.404 0-4.366 1.096-5.889 3.271l-34.679 51.04-14.395-49.075c-1.095-3.487-3.492-5.236-7.197-5.236h-24.541c-1.093 0-2.074.492-2.941 1.474-.875.98-1.309 2.019-1.309 3.106 0 .44 2.127 6.871 6.379 19.303 4.252 12.435 8.832 25.849 13.74 40.245 4.908 14.393 7.469 22.031 7.688 22.898-17.886 24.43-26.826 37.517-26.826 39.259 0 2.838 1.416 4.254 4.253 4.254h25.192c2.398 0 4.36-1.088 5.889-3.27l83.427-120.399c.435-.433.652-1.193.652-2.29zM662.887 209.276H638.02c-3.055 0-4.904 3.6-5.557 10.798-5.678-8.721-16.031-13.088-31.084-13.088-15.703 0-29.066 5.89-40.076 17.668-11.016 11.778-16.521 25.631-16.521 41.551 0 12.871 3.761 23.121 11.284 30.752 7.525 7.639 17.613 11.451 30.266 11.451 6.324 0 12.758-1.311 19.301-3.926 6.543-2.617 11.664-6.105 15.379-10.469 0 .219-.223 1.199-.656 2.943-.439 1.748-.654 3.059-.654 3.926 0 3.494 1.414 5.234 4.254 5.234h22.576c4.137 0 6.541-2.068 7.193-6.215l13.416-85.39c.215-1.309-.113-2.507-.982-3.599-.876-1.089-1.963-1.636-3.272-1.636zm-42.695 64.453c-5.561 5.453-12.268 8.178-20.119 8.178-6.328 0-11.449-1.742-15.377-5.234-3.928-3.484-5.891-8.283-5.891-14.395 0-8.065 2.727-14.886 8.18-20.447 5.447-5.562 12.215-8.343 20.285-8.343 6.102 0 11.174 1.8 15.213 5.397 4.031 3.6 6.053 8.563 6.053 14.889-.001 7.851-2.782 14.505-8.344 19.955zM291.231 209.276h-24.865c-3.058 0-4.908 3.6-5.563 10.798-5.889-8.721-16.25-13.088-31.081-13.088-15.704 0-29.065 5.89-40.078 17.668-11.016 11.778-16.521 25.631-16.521 41.551 0 12.871 3.763 23.121 11.288 30.752 7.525 7.639 17.61 11.451 30.262 11.451 6.104 0 12.433-1.311 18.975-3.926 6.543-2.617 11.778-6.105 15.704-10.469-.875 2.617-1.309 4.908-1.309 6.869 0 3.494 1.417 5.234 4.253 5.234h22.574c4.141 0 6.543-2.068 7.198-6.215l13.413-85.39c.215-1.309-.111-2.507-.981-3.599-.873-1.089-1.963-1.636-3.269-1.636zm-42.696 64.615c-5.563 5.35-12.382 8.016-20.447 8.016-6.329 0-11.4-1.742-15.214-5.234-3.819-3.484-5.726-8.283-5.726-14.395 0-8.065 2.725-14.886 8.18-20.447 5.449-5.562 12.211-8.343 20.284-8.343 6.104 0 11.175 1.8 15.214 5.397 4.032 3.6 6.052 8.563 6.052 14.889 0 8.07-2.781 14.779-8.343 20.117zM540.036 169.853c-8.398-5.774-19.355-8.668-32.879-8.668H455.14c-4.365 0-6.766 2.073-7.199 6.215l-21.264 133.483c-.221 1.311.105 2.51.98 3.6.867 1.092 1.963 1.635 3.271 1.635h26.826c2.617 0 4.361-1.416 5.234-4.252l5.891-37.949c.215-1.744.98-3.162 2.289-4.254 1.309-1.09 2.943-1.803 4.908-2.13 1.963-.324 3.813-.487 5.563-.487 1.742 0 3.814.11 6.213.327 2.4.218 3.93.324 4.58.324 18.76 0 33.48-5.285 44.168-15.866 10.687-10.577 16.03-25.243 16.03-44.004.001-12.867-4.2-22.191-12.594-27.974zm-33.533 53.82c-4.799 3.271-11.998 4.906-21.592 4.906l-10.471.327 5.564-35.007c.432-2.397 1.848-3.597 4.252-3.597h5.887c4.797 0 8.613.218 11.453.653 2.832.439 5.561 1.799 8.178 4.089 2.619 2.29 3.926 5.618 3.926 9.979 0 9.162-2.402 15.376-7.197 18.65z"></path> 
-                                </g> 
-                            </g>
-                        </svg>
-                        <!-- wechat pay -->
-                        <svg width="40" height="40" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <g id="SVGRepo_iconCarrier"> 
-                                <g> 
-                                    <path d="M19.145 8.993l-9.799 5.608-.07.046a.646.646 0 0 1-.3.068.655.655 0 0 1-.58-.344l-.046-.092-1.83-3.95c-.024-.046-.024-.092-.024-.138 0-.184.139-.321.324-.321.07 0 .14.023.209.069l2.155 1.515c.162.092.348.161.556.161a.937.937 0 0 0 .348-.069l8.275-3.648C16.934 6.273 14.634 5.2 12 5.2c-4.42 0-7.9 3.022-7.9 6.6 0 1.366.5 2.673 1.432 3.781.048.057.12.137.214.235a4 4 0 0 1 1.101 3.102l-.025.297.716-.436a4 4 0 0 1 2.705-.536c.212.033.386.059.52.076.406.054.82.081 1.237.081 4.42 0 7.9-3.022 7.9-6.6 0-.996-.27-1.95-.755-2.807zM6.192 21.943a1 1 0 0 1-1.526-.932l.188-2.259a2 2 0 0 0-.55-1.551A6.993 6.993 0 0 1 4 16.868C2.806 15.447 2.1 13.695 2.1 11.8c0-4.75 4.432-8.6 9.9-8.6s9.9 3.85 9.9 8.6-4.432 8.6-9.9 8.6c-.51 0-1.01-.033-1.499-.098a23.61 23.61 0 0 1-.569-.084 2 2 0 0 0-1.353.268l-2.387 1.456z"></path> 
-                                </g> 
-                            </g>
-                        </svg>
-                        <!-- alipay -->
-                        <svg width="48" height="48" viewBox="0 -139.5 750 750" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-                            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                            <g id="SVGRepo_iconCarrier"> 
-                                <desc>Created with Sketch.</desc> 
-                                <defs> </defs> 
-                                <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"> 
-                                    <g id="Alipay" class="fill-primary" fill-rule="nonzero"> 
-                                        <path d="M40,30 C34.4771525,30 30,34.4771525 30,40 L30,431 C30,436.522847 34.4771525,441 40,441 L710,441 C715.522847,441 720,436.522847 720,431 L720,40 C720,34.4771525 715.522847,30 710,30 L40,30 Z M40,0 L710,0 C732.09139,-3.55271368e-15 750,17.90861 750,40 L750,431 C750,453.09139 732.09139,471 710,471 L40,471 C17.90861,471 3.55271368e-15,453.09139 0,431 L0,40 C-3.55271368e-15,17.90861 17.90861,3.55271368e-15 40,0 Z" id="Rectangle-path"> </path> 
-                                        <g id="Logo" transform="translate(54.000000, 143.000000)"> 
-                                            <path d="M45.460353,100.349396 C40.6592864,100.949379 32.2574197,102.749327 27.456353,106.949206 C13.053153,119.548841 21.4550197,141.7482 50.861553,141.7482 C67.665286,141.7482 84.46902,130.948512 97.671953,114.148997 C78.467686,105.149258 62.86422,98.549448 45.460353,100.349396 Z" id="Shape"> </path> 
-                                            <path d="M153.034,115.796653 C180.04,124.796393 186.041333,125.396375 186.041333,125.396375 L186.041333,29.39915 C186.041333,13.199618 172.8384,0 156.034667,0 L30.0066667,0 C13.8030667,0 0,13.199618 0,29.39915 L0,155.395508 C0,171.59504 13.2029333,184.794658 30.0066667,184.794658 L156.034667,184.794658 C172.238267,184.794658 186.041333,171.59504 186.041333,155.395508 L186.041333,154.195543 C186.041333,154.195543 138.030667,134.396115 113.4252,122.396462 C97.2216,142.19589 76.216933,154.795525 54.012,154.795525 C16.8037333,154.795525 4.2009333,122.396462 22.2049333,101.397069 C25.8057333,96.597208 32.4072,92.397329 42.6094667,89.997399 C58.2129333,86.397503 83.418533,92.397329 106.823733,100.197104 C111.024667,92.397329 114.625467,83.997572 117.026,74.997832 L44.4098667,74.997832 L44.4098667,67.79804 L81.618133,67.79804 L81.618133,53.398456 L36.008,53.398456 L36.008,46.198665 L81.618133,46.198665 L81.618133,27.599202 C81.618133,27.599202 81.618133,24.599289 84.6188,24.599289 L102.6228,24.599289 L102.6228,46.798647 L147.6328,46.798647 L147.6328,53.398456 L102.6228,53.398456 L102.6228,66.598075 L139.230933,66.598075 C135.630133,80.997659 130.228933,94.197277 123.627467,105.596948 C135.630133,109.796826 145.8324,113.396722 153.034,115.796653 Z M271.688933,43.612532 L311.297733,129.410052 L290.293067,129.410052 L279.490667,106.610711 L247.083467,106.610711 L236.281067,129.410052 L222.478,129.410052 L262.686933,46.012463 C262.686933,46.012463 263.8872,43.612532 266.287733,43.612532 C268.088133,43.612532 271.688933,43.612532 271.688933,43.612532 Z M250.684267,98.810937 L275.889867,98.810937 L263.287067,71.811717 L250.684267,98.810937 Z M338.132267,130.092791 L318.928,130.092791 L318.928,48.49515 C318.928,46.095219 320.128267,44.895254 323.128933,44.895254 L338.132267,44.895254 L338.132267,130.092791 Z M374.140267,129.534187 L354.936,129.534187 L354.936,67.735973 C354.936,65.336042 356.136267,64.136077 359.136933,64.136077 L374.140267,64.136077 L374.140267,129.534187 Z M397.621934,65.418799 L410.224734,65.418799 L410.224734,71.418625 C412.625267,69.618677 415.025801,67.818729 418.026467,67.218747 C421.027134,66.018781 424.027801,65.418799 428.228734,65.418799 C432.429667,65.418799 436.030467,66.018781 439.031134,67.818729 C442.631934,69.618677 445.032467,71.418625 447.433001,74.418539 C449.833534,77.418452 451.633934,80.418365 452.834201,84.018261 C454.034467,87.618157 454.634601,91.218053 454.634601,95.417932 C454.634601,100.817775 454.034467,105.617637 452.234067,109.817515 C450.433667,114.017394 448.633267,118.217272 445.632601,121.217186 C442.631934,124.217099 439.631267,127.217012 435.430334,129.01696 C431.229401,130.816908 427.028467,131.416891 422.227401,131.416891 L415.625934,131.416891 C413.825534,131.416891 412.025134,130.816908 410.224734,130.216926 L410.224734,151.816301 L391.020467,151.816301 L391.020467,73.218573 C390.420334,65.418799 393.421001,65.418799 397.621934,65.418799 Z M410.224734,112.217446 C410.224734,114.017394 410.224734,115.217359 410.824867,116.417325 C411.425001,117.61729 412.025134,118.817255 413.225401,120.01722 C414.425667,121.217186 415.625934,121.817168 416.826201,122.417151 C418.026467,123.017134 419.826867,123.017134 421.627267,123.017134 C423.427667,123.017134 424.627934,122.417151 426.428334,121.217186 C427.628601,120.01722 429.429001,118.817255 430.029134,116.417325 C430.629267,114.017394 431.829534,112.217446 432.429667,109.217533 C433.029801,106.217619 433.629934,103.817689 433.629934,100.217793 C433.629934,96.017914 433.629934,92.418018 433.029801,89.418105 C432.429667,86.418192 431.829534,84.018261 430.629267,81.61833 C429.429001,79.818382 428.228734,78.018434 427.028467,76.818469 C425.828201,75.618504 424.027801,75.018521 422.227401,75.018521 C421.027134,75.018521 419.826867,75.018521 418.626601,75.618504 C417.426334,76.218486 416.226067,76.818469 415.625934,77.418452 C414.425667,78.018434 413.825534,79.2184 412.625267,79.818382 C411.425001,81.018348 410.824867,81.61833 410.224734,82.818296 L410.224734,112.217446 Z M491.252,65.418799 C496.053067,65.418799 499.653867,66.018781 503.254667,66.618764 C506.255333,67.218747 509.256,68.418712 511.656533,70.21866 C514.057067,72.018608 515.257333,73.818556 516.4576,75.618504 C517.657867,78.018434 518.258,80.418365 518.258,82.818296 L518.258,130.216926 L499.053733,130.216926 L499.053733,125.417064 C497.853467,126.61703 496.6532,127.217012 496.053067,127.816995 C494.8528,128.416978 493.652533,129.01696 492.452267,129.616943 C491.252,130.216926 490.051733,130.816908 488.251333,130.816908 C486.450933,131.416891 484.650533,131.416891 482.850133,131.416891 C479.849467,131.416891 477.448933,130.816908 475.0484,130.216926 C472.647867,129.616943 470.847467,128.416978 469.047067,126.61703 C467.246667,125.417064 466.0464,123.617116 465.446267,121.217186 C464.846133,119.417238 464.246,117.017307 464.246,114.617377 C464.246,112.217446 464.846133,109.817515 465.446267,108.017567 C466.0464,106.217619 467.8468,104.417671 469.047067,102.617723 C470.247333,100.817775 472.647867,99.61781 474.448267,98.417845 C476.8488,97.217879 478.6492,96.017914 481.649867,94.817949 C484.0504,93.617984 486.450933,93.018001 489.4516,91.818036 C491.852133,91.218053 494.8528,90.018088 497.253333,89.418105 L499.653867,88.818122 L499.653867,82.218313 C499.653867,80.418365 499.653867,78.618417 499.053733,76.818469 C498.4536,75.618504 497.853467,74.418539 497.253333,73.218573 C496.6532,72.618591 495.452933,71.418625 494.8528,71.418625 C493.652533,70.818643 492.452267,70.818643 491.252,70.818643 C491.252,70.818643 481.049733,70.818643 472.047733,78.618417 L467.8468,72.018608 C466.0464,73.218573 476.8488,65.418799 491.252,65.418799 Z M497.853467,97.217879 C496.053067,97.817862 494.252667,99.017827 492.452267,100.217793 C490.651867,101.417758 488.851467,102.617723 487.051067,103.817689 C485.250667,105.017654 484.0504,106.217619 483.450267,108.017567 C482.25,109.217533 482.25,111.017481 482.25,112.217446 C482.25,113.417411 482.25,114.617377 482.850133,115.817342 C483.450267,117.017307 483.450267,117.61729 484.0504,118.817255 C484.650533,120.01722 485.250667,120.01722 485.8508,120.617203 C486.450933,121.217186 487.051067,121.217186 488.251333,121.217186 C490.051733,121.217186 491.252,120.617203 493.0524,120.01722 C494.8528,118.817255 496.6532,117.61729 498.4536,116.417325 L498.4536,97.217879 L497.853467,97.217879 Z M544.406667,151.216319 L531.803867,151.216319 L531.203733,139.816648 C531.203733,139.816648 546.8072,140.416631 551.608267,134.416804 C553.408667,132.016874 554.608933,125.417064 554.608933,125.417064 L523.402,65.418799 L544.406667,65.418799 L564.211067,104.417671 L581.614933,65.418799 L595.418,65.418799 L563.610933,136.216752 C562.410667,138.616683 557.6096,151.216319 544.406667,151.216319 Z" id="Shape"> </path> 
-                                            <ellipse id="Oval" cx="364.602" cy="46.5" rx="9.602" ry="8.5"> </ellipse> 
-                                            <polygon id="Shape" points="614.879 15.31 608.278 15.31 608.278 14.11 622.681 14.11 622.681 15.31 616.08 15.31 616.08 33.909 614.279 33.909 614.279 15.31"> </polygon> 
-                                            <path d="M625.596133,14.109937 L627.996667,14.109937 L632.1976,25.509607 L633.998,29.709486 C634.598133,28.509521 635.198267,26.709573 635.7984,25.509607 L639.999333,14.109937 L642.399867,14.109937 L642.399867,34.509347 L639.999333,34.509347 L639.999333,21.909712 L639.999333,16.509868 L638.198933,21.309729 L633.998,33.309382 L632.797733,33.309382 L628.5968,21.309729 L626.7964,16.509868 L626.7964,21.909712 L626.7964,34.509347 L624.996,34.509347 L624.996,14.109937 L625.596133,14.109937 Z" id="Shape"> </path> 
-                                        </g> 
-                                    </g> 
-                                </g> 
-                            </g>
-                        </svg>
-                    </div>
-                </fieldset>
-            </form>
-            <!-- recommended items -->
-            <div class="my-10">
-                <h2 class="text-[1.25rem] mb-5">猜您喜歡</h2>
-                <!-- NO-1 -->
-                <div class="my-3 card bg-base-100 shadow-sm">
-                    <figure class="relative">
-                        <a href="{% url 'product' %}" class="w-full h-full group transition-all duration-5000 ease-in-out">
-                            <img
-                            class=""
-                            src="/media/hero/lavendar.svg"
-                            alt="Shoes" />
-                            <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
-                            </div>
-                            <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
-                        </a>
-                    </figure>
-                    <div class="card-body">
-                        <p class="card-title">
-                            <i class="fa-solid fa-tag"></i>
-                            產品名稱
-                            <span class="badge badge-secondary">新上架</span>
-                        </p>
-                        <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
-                        <!-- price -->
-                        <div class="card-title">
-                            <i class="fa-solid fa-money-check-dollar"></i>
-                            <form action="" method="POST">
-                                <select class="select w-20">
-                                    <option selected class="text-opacity-50">RMB</option>
-                                    <option>HKD</option>
-                                    <option>TWD</option>
-                                    <option>USD</option>
-                                    <option>JPY</option>
-                                </select>   
-                            </form>
-                            <i>500.00</i>
-                        </div>
-                        <!-- labels -->
-                        <div class="card-actions justify-end">
-                            <div class="badge badge-outline text-xs">Fashion</div>
-                            <div class="badge badge-outline text-xs">Products</div>
-                        </div>
-                    </div>
-                </div>
-                <!-- NO-2 -->
-                <div class="my-3 card bg-base-100 shadow-sm">
-                    <figure class="relative">
-                        <a href="{% url 'product' %}" class="w-full h-full group transition-all duration-5000 ease-in-out">
-                            <img
-                            class=""
-                            src="/media/hero/tulip.svg"
-                            alt="Shoes" />
-                            <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
-                            </div>
-                            <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket opacity-0 group-hover:opacity-100 text-primary-content"></i>
-                        </a>
-                    </figure>
-                    
-                    <div class="card-body">
-                        <p class="card-title">
-                            <i class="fa-solid fa-tag"></i>
-                            產品名稱
-                            <!-- <span class="badge badge-secondary"></span> -->
-                        </p>
-                        <p>很好看巨好吃超好用！愛了愛了❤️今年限定款！</p>
-                        <!-- price -->
-                        <div class="card-title">
-                            <i class="fa-solid fa-money-check-dollar"></i>
-                            <form action="" method="POST">
-                                <select class="select">
-                                    <option selected class="text-opacity-50">RMB</option>
-                                    <option>HKD</option>
-                                    <option>TWD</option>
-                                    <option>USD</option>
-                                    <option>JPY</option>
-                                </select>   
-                            </form>
-                            <i>500.00</i>
-                        </div>
-                        <!-- labels -->
-                        <div class="card-actions justify-end">
-                            <div class="badge badge-outline text-xs">Fashion</div>
-                            <div class="badge badge-outline text-xs">Products</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</main>
-
-{% endblock %}
+Why this design works:
+1. Immediate Visibility: The yellow background acts as a "soft warning," signaling to the customer that they have a responsibility without scaring them away from the purchase.
+2. Contextual Logic: If the threshold is 0 (like in the US or for EU VAT), it simply shows the message without a confusing "Threshold: 0" label.
+3. Trust Building: By explaining the DAP arrangement upfront, you significantly reduce the chance of the customer refusing the package 
+when the courier asks for payment at their door.
+ -->

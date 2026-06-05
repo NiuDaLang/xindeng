@@ -1,89 +1,181 @@
 {% block content %}
 <div class="text-base-content z-50">
-  <form action="">
+  <form id="q_form" action="/find_destined_work" method="GET">
     <fieldset class="fieldset bg-warning/10 border-base-300 rounded-box w-xs border p-4">
       <!-- form name -->
-      <legend class="fieldset-legend text-neutral text-base">尋找與您有緣的作品</legend>
+      <legend class="fieldset-legend text-base-content text-base flex flex-col items-start">
+        <span class="text-xs -mb-1">Discover the piece you were meant to find</span>
+        <span class="text-sm">尋找與您有緣的作品</span>
+      </legend>
 
       <!-- input - name -->
-      <label class="label text-neutral">名字</label>
-      <input type="text" class="input bg-base-100" placeholder="請輸入您的名字" />
+      <label class="label text-neutral font-normal">Name｜名字</label>
+      <input type="text" name="name" class="input bg-base-100" placeholder="請輸入您的名字" required/>
     
       <!-- input - DOB -->
-      <label class="label text-neutral">生日</label>
-      <input type="date" class="input bg-base-100">
+      <label class="label text-neutral font-normal">DOB｜生日</label>
+      <input type="date" name="dob" max="{% now 'Y-m-d' %}" class="input bg-base-100" required>
 
       <!-- input - gender -->
-      <label class="label text-neutral">性別</label>
+      <label class="label text-neutral font-normal">Gender｜性別</label>
       <div class="flex justify-evenly">
         <!-- male -->
         <div class="flex">
           <label class="label text-info mr-1"><i class="fa-solid fa-mars fa-xl fa-spin" style="--fa-animation-duration: 15s;"></i></label>
-          <input type="radio" name="gender" class="radio radio-xs radio-info" />
+          <input type="radio" name="gender" value="MALE" class="radio radio-xs radio-info" required/>
         </div>
         <!-- female -->
         <div class="flex">
           <label class="label text-error"><i class="fa-solid fa-venus fa-xl fa-spin" style="--fa-animation-duration: 15s;"></i></label>
-          <input type="radio" name="gender" class="radio radio-xs radio-error" />
+          <input type="radio" name="gender" value="FEMALE" class="radio radio-xs radio-error" />
         </div>
         <!-- secret -->
           <div class="flex">
             <label class="label text-success"><i class="fa-solid fa-lock fa-xl fa-spin" style="--fa-animation-duration: 15s;"></i></label>
-            <input type="radio" name="gender" class="radio radio-xs radio-success" /> 
+            <input type="radio" name="gender" value="DEFAULT" class="radio radio-xs radio-success" /> 
           </div>
       </div>
 
       <!-- input - blood type -->
-      <label class="label text-neutral">血型</label>
+      <label class="label text-neutral font-normal">Blood Type｜血型</label>
       <div class="flex justify-between text-sm">
         <!-- A -->
         <div class="flex items-center">
           <label class="label text-base-content mr-1">A</label>
-          <input type="radio" name="blood" class="radio radio-base-content radio-xs" />
+          <input type="radio" name="blood" value="A" class="radio radio-base-content radio-xs" required/>
         </div>
         <!-- B -->
         <div class="flex items-center">
           <label class="label text-base-content mr-1">B</label>
-          <input type="radio" name="blood" class="radio radio-base-content radio-xs" />
+          <input type="radio" name="blood" value="B" class="radio radio-base-content radio-xs" />
         </div>
         <!-- O -->
         <div class="flex items-center">
           <label class="label text-base-content mr-1">AB</label>
-          <input type="radio" name="blood" class="radio radio-base-content radio-xs" /> 
+          <input type="radio" name="blood" value="AB" class="radio radio-base-content radio-xs" /> 
         </div>
         <!-- AB -->
         <div class="flex items-center">
           <label class="label text-base-content mr-1">O</label>
-          <input type="radio" name="blood" class="radio radio-base-content radio-xs" /> 
+          <input type="radio" name="blood" value="O" class="radio radio-base-content radio-xs" /> 
         </div>
         <!-- Panda -->
         <div class="flex items-center">
           <label class="label text-base-content mr-1">
             <i class="fa-brands fa-reddit-alien fa-xl" style="--fa-animation-duration: 15s;"></i>
           </label>
-          <input type="radio" name="blood" class="radio radio-base-content radio-xs" /> 
+          <input type="radio" name="blood" value="OTHER" class="radio radio-base-content radio-xs" /> 
         </div>
       </div>
 
       <!-- input - preferred color scheme -->
-      <select class="select ">
-        <option disabled selected class="text-opacity-50">請選擇您喜歡的色系</option>
-        <option style="color: #FF0000;">紅色系</option>
-        <option style="color: #FFC0CB">粉紅色系</option>
-        <option style="color: #FFA500">橙色系</option>
-        <option style="color: #FFFF00">黃色系</option>
-        <option style="color: #800080">紫色系</option>
-        <option style="color: #008000">綠色系</option>
-        <option style="color: #0000FF">藍色系</option>
-        <option style="color: #A52A2A">褐色系</option>
-        <option style="color: #FFFFFF">白色系</option>
-        <option style="color: #808080">灰&黑色系</option>
+      <select id="q-color-select" name="color" class="select bg-base-200" required>
+        <option value="" disabled selected class="text-opacity-50">Favorite Color｜喜歡的顏色</option>
+        <option value="RED" style="color: #FF0000;">Red｜紅色</option>
+        <option value="PINK" style="color: #FFC0CB">Pink｜粉紅色</option>
+        <option value="ORANGE" style="color: #FFA500">Orange｜橙色</option>
+        <option value="YELLOW" style="color: #FFFF00">Yellow｜黃色</option>
+        <option value="PURPLE" style="color: #800080">Purple｜紫色</option>
+        <option value="VIOLET" style="color: #EE82EE">Violet｜紫羅蘭色</option>
+        <option value="GREEN" style="color: #008000">Green｜綠色</option>
+        <option value="BLUE" style="color: #0000FF">Blue｜藍色</option>
+        <option value="BROWN" style="color: #A52A2A">Brown｜褐色</option>
+        <option value="GRAY" style="color: #FFFFFF">White｜白色</option>
+        <option value="GREYBLACK" style="color: #808080">Grey/Black｜灰/黑色</option>
       </select>   
       
       <!-- input - submit -->
-      <button type="submit" class="btn btn-primary">尋&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;覓</button>
+      <button type="submit" class="btn btn-primary">
+        Search｜尋&nbsp;&nbsp;覓
+      </button>
     </fieldset>
   </form>
-</div>
 
+  <dialog id="resultModal" class="modal">
+    <div id="modalContent" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+      <div class="destined_card z-100 relative">
+        <!-- content -->
+        <div class="destined_content">
+          <!-- back -->
+          <div class="destined_back">
+            <div class="destined_back-content">
+              <svg class="w-[20%] h-[20%]" viewBox="0 0 100 100" version="1.1">
+                  <defs>
+                      <linearGradient x1="38.9835362%" y1="2.91852469%" x2="50%" y2="100%" id="linearGradient-1">
+                          <stop stop-color="#FFF4AC" offset="0%"></stop>
+                          <stop stop-color="#FAD162" offset="48.1677511%"></stop>
+                          <stop stop-color="#D8AC26" offset="100%"></stop>
+                      </linearGradient>
+                      <linearGradient x1="25.5948989%" y1="23.6182305%" x2="50%" y2="86.7870584%" id="linearGradient-2">
+                          <stop stop-color="#FFE178" offset="0%"></stop>
+                          <stop stop-color="#FFC444" offset="100%"></stop>
+                      </linearGradient>
+                  </defs>
+                  <g id="" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                      <g id="" transform="translate(2.000000, -1.588067)">
+                          <path d="M3.69693826,60.6697627 C2.77602214,61.607117 5.4221475,70.9843238 5.4221475,72.5670744 C5.4221475,74.1498251 0,76.541053 0,78.547812 C0,80.5545709 4.72323307,82.1895746 5.4221475,83.2948252 C6.12106194,84.4000757 6.24736114,98.7636433 8.62209599,99.5485547 C10.9968308,100.333466 18.108431,89.1708353 19.8189084,88.5743448 C21.5293858,87.9778544 31.1020422,91.2563817 31.9327218,89.9920065 C32.7634014,88.7276314 25.6275106,82.5956096 25.6275106,80.6355864 C25.6275106,78.6755633 33.3554339,68.6678935 30.5623114,65.7759649 C27.769189,62.8840363 20.0972258,67.1705384 15.8347865,67.1705384 C11.5723472,67.1705384 4.61785437,59.7324084 3.69693826,60.6697627 Z" id="路径-4" fill="url(#linearGradient-1)"></path>
+                          <path d="M24.0144035,12.3296313 C20.7589847,9.54486611 1.89256924,64.9259596 39.8453407,78.5584231 C77.7981121,92.1908866 102.93963,48.8366996 99.8730671,48.8366996 C96.8065044,48.8366996 66.3790458,54.7343629 51.4590547,49.9422931 C36.5390636,45.1502234 27.2698223,15.1143964 24.0144035,12.3296313 Z" id="路径-3" fill="url(#linearGradient-2)" transform="translate(58.290948, 46.719511) rotate(20.000000) translate(-58.290948, -46.719511) "></path>
+                      </g>
+                  </g>
+              </svg>
+              <strong>Hover Me｜滑鼠移過來</strong>
+            </div>
+          </div>
+          <!-- front -->
+          <div class="destined_front">
+            <div class="destined_img">
+              <div class="destined_circle"></div>
+              <div class="destined_circle" id="destined_right"></div>
+              <div class="destined_circle" id="destined_bottom"></div>
+            </div>
+            <a id="destined_work_url" href="" class="destined_front-content">
+              <small class="destined_badge">Is this the ONE?｜是這幅嗎？</small>
+              <div class="w-9/10" >
+                <img class="w-full" id="product_image" src="" alt="">
+              </div>
+              <div class="destined_description">
+                <div class="destined_title">
+                  <p class="destined_title">
+                    <strong id="product_name"></strong>
+                  </p>
+                </div>
+                <p id="product_description" class="destined_card-footer"></p>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- close button -->
+    <button class="absolute top-[100px] right-[5px] text-white cursor-pointer" onclick="document.getElementById('resultModal').close()">
+      Close｜關閉<i class="fa-regular fa-circle-xmark fa-2xl"></i>
+    </button>
+  </dialog>
+</div>
 {% endblock %}
+
+<script>
+document.getElementById('q_form').addEventListener('submit', async (e) => {
+  e.preventDefault(); // Stop page reload
+
+  const form = e.target;
+  const formData = new FormData(form);
+  const params = new URLSearchParams(formData).toString(); // Convert to GET query string
+
+  try {
+    const response = await fetch(`${form.action}?${params}`);
+    const data = await response.json();
+
+    // Show result in Modal
+    const modal = document.getElementById('resultModal');
+    document.getElementById('product_name').innerText=`${data.destined_data.distined_work_json.product_name}`
+    document.getElementById('product_description').innerText=`${data.destined_data.distined_work_json.product_description}`
+    document.getElementById('product_image').src=`${data.destined_data.distined_work_json.product_image_url}`
+    document.getElementById('destined_work_url').href=`${data.destined_data.distined_work_json.product_url}`
+
+    modal.showModal(); // Opens the dialog as a modal
+  } catch (error) {
+    console.error('Error:', error);
+  }
+});
+</script>

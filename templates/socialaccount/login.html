@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load socialaccount %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-base-200">
+    <div class="card w-96 bg-primary-content shadow-xl p-8">
+        <h1 class="text-2xl font-bold mb-6 text-center">Social Sign-In<br><small class="opacity-70">社交帳號登入/註冊</small></h1>
+        {% include "socialaccount/snippets/provider_list.html" with process="login" %}
+        
+        <p class="mt-4 text-xs text-center text-gray-500">
+            By continuing, you agree to our Terms of Service. <br>
+            點擊「繼續」即表示同意我們的服務條款。
+        </p>
+    </div>
+</div>
+{% endblock %}

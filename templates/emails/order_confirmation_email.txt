@@ -1,0 +1,18 @@
+{% if user.username %}
+親愛的{{user.username}} ｜ Dear {{user.username}}
+{% else %}
+親愛的{{order.email}} ｜ Dear {{order.email}}
+{% endif %}
+
+訂單確認 ｜ Order Confirmation
+
+感謝您在本店購物！您的訂單號碼是{{ order.order_number }}
+Thank you for shopping with us! Your order number is {{ order.order_number }}
+
+訂單詳情請見附件。
+Please find the attached for order details.
+
+xindeng.com
+
+如果您沒有在心燈 xindeng.com 購物，請忽視這份郵件。
+If you did not make a purchase at xindeng.com, please ignore this email.

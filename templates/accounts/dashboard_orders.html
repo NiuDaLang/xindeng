@@ -1,123 +1,119 @@
-{% extends 'accounts/dashboard_base.html' %}
+<title>{{ page_title }}</title>
 
-{% block accounts_content %}
-<!-- hero -->
-<div class="relative w-full h-[14rem]">
-    <img src="/media/hero/red_leaves.jpeg" alt="" class="reel -z-1 absolute left-0 top-0 h-full w-full object-cover">
-    <div class="absolute top-[47%] left-[20%]">
-        <h2 class="text-5xl text-primary-content">霜降</h2>
+<div id="dashboard_orders" class="subpage">
+    <!-- hero -->
+    <div class="relative w-full h-[14rem]">
+        <img src="/media/hero/red_leaves.jpeg" alt="" class="reel -z-1 absolute left-0 top-0 h-full w-full object-cover">
+        <div class="absolute top-[47%] left-[20%]">
+            <h2 class="text-5xl text-primary-content">霜降</h2>
+        </div>
+        <div class="absolute right-8 bottom-12 text-right text-primary-content">
+            <div id="dynamic-date"></div>
+            <div id="dynamic-clock"></div>
+        </div>
     </div>
-    <div class="absolute right-8 bottom-12 text-right text-primary-content">
-        <div id="dynamic-date"></div>
-        <div id="dynamic-clock"></div>
+    
+    <!-- orders -->
+    <div class="grid grid-cols-2 gap-4 my-5">
+        <!-- order1 -->
+        <div class="card col-span-1 bg-primary-content shadow-sm">
+            <div class="card-body">
+                <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
+                <div class="text-xs flex justify-start w-full">
+                    訂單日期：2025年11月25日
+                    <br/>
+                    狀態：已完成
+                    <br/>
+                    快遞單號：UPS 123443590345
+                </div>
+                <ul class="mt-6 flex flex-col gap-2 text-xs">
+                    <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
+                    <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
+                </ul>
+                <hr class="text-primary"/>
+                <div class="flex justify-between w-full">
+                    <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
+                    <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
+                </div>
+                <div class="mt-6">
+                <a href="#" class="btn btn-primary btn-block">查 看 明 細</a>
+                </div>
+            </div>
+        </div>
+        <!-- order2 -->
+        <div class="card col-span-1 bg-primary-content shadow-sm">
+            <div class="card-body">
+                <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
+                <div class="text-xs flex justify-start w-full">
+                    訂單日期：2025年11月25日
+                    <br/>
+                    狀態：已完成
+                    <br/>
+                    快遞單號：UPS 123443590345
+                </div>
+                <ul class="mt-6 flex flex-col gap-2 text-xs">
+                    <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
+                    <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
+                </ul>
+                <hr class="text-primary"/>
+                <div class="flex justify-between w-full">
+                    <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
+                    <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
+                </div>
+                <div class="mt-6">
+                <a href="" class="btn btn-primary btn-block">查 看 明 細</a>
+                </div>
+            </div>
+        </div>
+        <!-- order3 -->
+        <div class="card col-span-1 bg-primary-content shadow-sm">
+            <div class="card-body">
+                <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
+                <div class="text-xs flex justify-start w-full">
+                    訂單日期：2025年11月25日
+                    <br/>
+                    狀態：已完成
+                    <br/>
+                    快遞單號：UPS 123443590345
+                </div>
+                <ul class="mt-6 flex flex-col gap-2 text-xs">
+                    <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
+                    <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
+                </ul>
+                <hr class="text-primary"/>
+                <div class="flex justify-between w-full">
+                    <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
+                    <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
+                </div>
+                <div class="mt-6">
+                <a href="" class="btn btn-primary btn-block">查 看 明 細</a>
+                </div>
+            </div>
+        </div>
+        <!-- order4 -->
+        <div class="card col-span-1 bg-primary-content shadow-sm">
+            <div class="card-body">
+                <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
+                <div class="text-xs flex justify-start w-full">
+                    訂單日期：2025年11月25日
+                    <br/>
+                    狀態：已完成
+                    <br/>
+                    快遞單號：UPS 123443590345
+                </div>
+                <ul class="mt-6 flex flex-col gap-2 text-xs">
+                    <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
+                    <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
+                </ul>
+                <hr class="text-primary"/>
+                <div class="flex justify-between w-full">
+                    <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
+                    <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
+                </div>
+                <div class="mt-6">
+                <a href="" class="btn btn-primary btn-block">查 看 明 細</a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-
-<!-- orders -->
-<div class="grid grid-cols-2 gap-4 my-5">
-    <!-- order1 -->
-    <div class="card col-span-1 bg-primary-content shadow-sm">
-        <div class="card-body">
-            <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
-            <div class="text-xs flex justify-start w-full">
-                訂單日期：2025年11月25日
-                <br/>
-                狀態：已完成
-                <br/>
-                快遞單號：UPS 123443590345
-            </div>
-            <ul class="mt-6 flex flex-col gap-2 text-xs">
-                <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
-                <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
-            </ul>
-            <hr class="text-primary"/>
-            <div class="flex justify-between w-full">
-                <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
-                <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
-            </div>
-            <div class="mt-6">
-            <a href="{% url 'order' %}" class="btn btn-primary btn-block">查 看 明 細</a>
-            </div>
-        </div>
-    </div>
-    <!-- order2 -->
-    <div class="card col-span-1 bg-primary-content shadow-sm">
-        <div class="card-body">
-            <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
-            <div class="text-xs flex justify-start w-full">
-                訂單日期：2025年11月25日
-                <br/>
-                狀態：已完成
-                <br/>
-                快遞單號：UPS 123443590345
-            </div>
-            <ul class="mt-6 flex flex-col gap-2 text-xs">
-                <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
-                <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
-            </ul>
-            <hr class="text-primary"/>
-            <div class="flex justify-between w-full">
-                <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
-                <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
-            </div>
-            <div class="mt-6">
-            <a href="" class="btn btn-primary btn-block">查 看 明 細</a>
-            </div>
-        </div>
-    </div>
-    <!-- order3 -->
-    <div class="card col-span-1 bg-primary-content shadow-sm">
-        <div class="card-body">
-            <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
-            <div class="text-xs flex justify-start w-full">
-                訂單日期：2025年11月25日
-                <br/>
-                狀態：已完成
-                <br/>
-                快遞單號：UPS 123443590345
-            </div>
-            <ul class="mt-6 flex flex-col gap-2 text-xs">
-                <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
-                <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
-            </ul>
-            <hr class="text-primary"/>
-            <div class="flex justify-between w-full">
-                <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
-                <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
-            </div>
-            <div class="mt-6">
-            <a href="" class="btn btn-primary btn-block">查 看 明 細</a>
-            </div>
-        </div>
-    </div>
-    <!-- order4 -->
-    <div class="card col-span-1 bg-primary-content shadow-sm">
-        <div class="card-body">
-            <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
-            <div class="text-xs flex justify-start w-full">
-                訂單日期：2025年11月25日
-                <br/>
-                狀態：已完成
-                <br/>
-                快遞單號：UPS 123443590345
-            </div>
-            <ul class="mt-6 flex flex-col gap-2 text-xs">
-                <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
-                <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
-            </ul>
-            <hr class="text-primary"/>
-            <div class="flex justify-between w-full">
-                <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
-                <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
-            </div>
-            <div class="mt-6">
-            <a href="" class="btn btn-primary btn-block">查 看 明 細</a>
-            </div>
-        </div>
-    </div>
-
-
-
-</div>
-
-{% endblock %}

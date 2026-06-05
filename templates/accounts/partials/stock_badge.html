@@ -1,0 +1,28 @@
+<div class="flex h-4/5 border-primary">
+    <div class="shadow-[4px_4px_10px_0px_#fde047] rounded-3xl bg-base-100">
+        <div class="flex items-center h-full p-5">
+            {% if variation.stock > 1 %}
+                <div class="stat-title text-success font-black">Stock｜存貨: {{ variation.stock }}件</div>
+            {% elif variation.stock == 1 %}
+                <div class="stat-title text-warning font-black">Last｜僅剩: 1件</div>
+            {% else %}
+                <div class="stat-title text-error font-black">Out of Stock｜缺貨</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+
+<!-- Out-of-Band update for the button -->
+<button type="button"
+        id="add_wish_to_cart_btn_{{ variation.wishlist_item_id }}" 
+        hx-swap-oob="true"
+        class="w-full btn btn-sm btn-primary {% if variation.stock <= 0 %}btn-disabled{% endif %}"
+        {% if variation.stock <= 0 %}disabled{% endif %}
+        hx-get="{% url 'add_to_cart_qty' variation.pk 'wishlist' %}"
+        hx-target="#change_qty_wrapper"
+        hx-trigger="click consume"
+        onclick="my_modal_3.showModal()"
+>
+    {% if variation.stock <= 0 and variation.is_available %}Sold Out｜已售罄{% else %}Move to Cart｜轉入購物車{% endif %}
+</button>

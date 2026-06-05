@@ -1,6 +1,6 @@
 {% block content %}
 
-<aside class="col-span-1 bg-neutral-content rounded-2xl border-1 border-base-300 text-info-content px-5 py-5">
+<aside class="col-span-1 bg-base-200 rounded-2xl border-1 border-base-100 text-info-content px-5 py-5">
     <!-- logo -->
     <div class="w-full text-center py-2">
         <div class="mask mask-squircle">
@@ -29,22 +29,12 @@
         <div class="text-center text-lg">話 題 標 籤</div>
         <!-- tag links -->
         <div class="text-base-content text-sm my-5 flex flex-wrap gap-x-3 justify-center">
+            {% for tag in tags_with_counts %}
             <a href="">
                 <i class="fa-solid fa-hashtag"></i>
-                <span>自然生活(2)</span>
+                <span>{{tag.name}}({{tag.post_count}})</span>
             </a>
-            <a href="">
-                <i class="fa-solid fa-hashtag"></i>
-                <span>靈性發現(5)</span>
-            </a>
-            <a href="">
-                <i class="fa-solid fa-hashtag"></i>
-                <span>自我啟蒙(3)</span>
-            </a>
-            <a href="">
-                <i class="fa-solid fa-hashtag"></i>
-                <span>大覺醒(5)</span>
-            </a>
+            {% endfor %}
         </div>
     </div>
     

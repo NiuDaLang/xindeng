@@ -1,9 +1,57 @@
+/* color */
+:root {
+    --xindeng-light-color: #FFEE70;
+}
+
 /* navbar */
 #navbar {
-    transition: background-color 0.5s ease;
+    transition: background-color 0.3s ease, padding 0.3s ease;
+    background-color: rgba(247, 245, 243, 1); /* Initial solid color */
 }
-.scrolled-background {
-    background-color: transparent; /* New background color on scroll */
+
+#navbar.scrolled-background {
+    background-color: rgba(255, 255, 255, 0); /* Fully transparent */
+    /* If you need a blur effect for readability: */
+    /* backdrop-filter: blur(5px); */
+}
+
+/* Featured Shadow */
+.shadows {
+    position: relative;
+    text-transform: uppercase;
+    text-shadow: -15px 5px 20px #e2ddd9;
+    color: #f7f5f3;
+    letter-spacing: -0.05em;
+    font-family: "Zalando Sans", "Noto Sans TC", sans-serif;
+    user-select: none;
+    text-transform: uppercase;
+    /* font-size: 150px; */
+    transition: all 0.25s ease-out;
+}
+.shadows:hover {
+    text-shadow: -16px 6px 15px #ced0d3;
+}
+
+
+/* fixed backdrop */
+/* .section { */
+    /* background-image: url("/static/hero/home_bg.webp");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center; */
+    /* Other styling for height, padding, etc. */
+    /* height: auto;  */
+    /* padding: 20px; */
+/* } */
+
+.normal-bg {
+    /* Default behavior: background scrolls with the content (same as 'scroll' or 'local') */
+    background-attachment: scroll; 
+}
+
+.fixed-bg {
+    /* The key property: the background image stays fixed relative to the viewport */
+    background-attachment: fixed; 
 }
 
 /* vertical carousel frame */
@@ -85,8 +133,9 @@ overflow: hidden;
 .switch { 
     position: relative; 
     display: inline-block; 
-    width: 4rem; 
-    height: 4rem; 
+    width: 6rem;
+    /* aspect-ratio: 16 / 9;  */
+    height: 6rem; 
 }
 .switch input { 
     opacity: 0; 
@@ -96,15 +145,17 @@ overflow: hidden;
 .switch-img { 
     position: absolute; 
     cursor: pointer; 
-    top: 0; 
+    width: 100%;
+    height: 100%;
+    /* top: 0; 
     left: 0; 
     right: 0; 
-    bottom: 0; 
-    width: 4rem; 
-    height: 4rem
+    bottom: 0;  */
+    object-fit: cover;
 }
-input:checked + .switch-img { 
-    border: solid 2px green; 
+input:checked + .switch-img, 
+.switch-img-bordered { 
+    border: solid 3px var(--color-secondary-content); 
 }
 input:checked + .switch-img:before { 
     border: none; 
@@ -163,18 +214,57 @@ label:hover ~ input:checked ~ label
   color: #ffb503;
 }
 
-/* ##### dashboard hero frame ##### */
-.reel {
+/* ##### dashboard hero ##### */
+/* .reel {
   display: block;
   background: var(--color-neutral-content);
   border: 14px dotted var(--color-base-content);
   line-height: 1;
   padding: 30px 10px;
+} */
+
+.dashboard_hero:after {
+    content: "";
+    position: absolute;
+    left: 0.5rem;
+    top: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    background: transparent;
+    border: 0.5rem solid #4b4743;
+    border-radius: 1.8rem;
+}
+
+
+/* ##### dashboard sidebar pinup ##### */
+.pinup::before,
+.pinup::after {
+    content: "";
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: block;
+}
+.pinup::before {
+    border: 2px solid var(--color-success);
+    transform: rotate(0);
+    z-index: -10;
+    /* background-color: var(--color-secondary-content); */
+    background-color: transparent;
+}
+.pinup::after {
+    border: 2px solid var(--color-accent-content);
+    transform: rotate(5deg) translateY(-5px);
+    z-index: -9;
+    /* background-color: var(--color-success); */
+    background-color: transparent;
 }
 
 /* ##### dashboard bubble scene ##### */
 .bubble-wrapper {
-  background: linear-gradient(180deg, var(--color-base-100), 5%, var(--color-base-200), 50%, var(--color-base-300));
+  background: linear-gradient(180deg, var(--color-base-100), 5%, var(--color-base-200), 50%, var(--color-info));
 }
 .bubble-wrapper div {
   height: 60px;
@@ -311,12 +401,13 @@ body::selection {
 
 /* Coupon */
 .coupon {
-  width: 400px;
-  height: 200px;
+  width: 90%;
+  aspect-ratio: 2 / 1;
+  min-width: 400px;
+  /* height: 200px; */
   border-radius: 10px;
   overflow: hidden;
-  margin: auto;
-  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(4px 4px 8px rgba(212, 175, 55, 0.827));
   display: flex;
   align-items: stretch;
   position: relative;
@@ -329,10 +420,14 @@ body::selection {
   left: -15%;
   width: 100%;
   height: 100%;
-  z-index: -1;
+  z-index: -2;
   overflow: hidden;
+  right: 0;
+  background-image: var(--dynamic-bg, url(/static/hero/tulip.svg));
+  background-size: cover;
+  background-position: center;
 }
-.coupon1::before {
+/* .coupon1::before {
   right: 0;
   background-image: 
     url(/static/hero/purpleFlower.svg);
@@ -347,8 +442,30 @@ body::selection {
   background-image:
     url(/static/hero/lavendar.svg);
 }
-
+ */
+.center::after {
+  /* This pulls the string from the --watermark variable */
+  content: var(--watermark); 
+  
+  position: absolute;
+  top: 70%;
+  left: 30%;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  
+  /* Styling for the 'Watermark' effect */
+  font-size: 2.1rem;
+  font-weight: 900;
+  color: rgba(248, 244, 4, 0.412); /* Very light grey/transparent */
+  white-space: nowrap;
+  pointer-events: none; /* User can click through it */
+  z-index: -1; /* Behind the divs, but in front of the ::before bg */
+  text-transform: uppercase;
+  font-family: sans-serif;
+}
+/* Ensure your existing content divs stay in front of the watermark */
 .coupon > div {
+  position: relative;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -385,7 +502,7 @@ body::selection {
   white-space: nowrap;
 }
 .center h3 {
-  font-size: 2.15rem;
+  font-size: 1.95rem;
 }
 .center small {
   font-size: 0.625rem;
@@ -405,6 +522,7 @@ body::selection {
   }
 }
 
+/* Firework */
 .firework_gl {
   /* width: 100%;
   height: 100dvh; */
@@ -412,3 +530,958 @@ body::selection {
   margin-top: 65px;
 }
 
+/* Empty Cart / Coming Soon */
+.h2shadow {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--color-primary);
+    
+    --x-offset: -0.0625em;
+    --y-offset: 0.0625em;
+    --stroke: 0.025em;
+    --background-color: var(--color-primary-content);
+    --stroke-color: lightblue;
+    
+    text-shadow: 
+        
+        var(--x-offset)
+        var(--y-offset)
+        0px
+        var(--background-color), 
+        
+        calc( var(--x-offset) - var(--stroke) )
+        calc( var(--y-offset) + var(--stroke) )
+        0px
+        var(--stroke-color);
+}
+
+/* shareon icon cusomize */
+/* Override Shareon's default Twitter icon with the new 'X' logo */
+.shareon .twitter {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBkPSJNMCAwaDI0djI0SDB6IiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTEwLjQgNi44NGwxLjQ4IDEuNDggMy40Ny0zLjQ3SDE4bC00LjQgNC40IDUuMTcgNy4xOEgxNS43bC0zLjgtNS4zLTEuNSAxLjVWMjBoLTJsMS41LTEuNS0zLjggNS4zSDZsNS4xNy03LjE4TDEwLjQxIDRLMTUuNzcgMTMuMDMgMTcuNiAxNiAxNy42IDE2aDEuOEwtMy45IDEuOCA4LjcgMTguMSAzLjMgMjAuMmgwTDE2LjMgMy44IDE1LjkgMy40IDE1LjcgMy4ySDE4bC00LjQtNC40bDUuMTctNy4xOEgxNS43bC0zLjggNS4zLTEuNS0xLjVMMCAwaDE2LjMgMy44bC40LjR6Ii8+PC9zdmc+');
+  background-size: contain;
+}
+
+/* amount paid - marker */
+.marker-highlight {
+    background-image: linear-gradient(to top, #ffff08, #ffff08);
+    background-repeat: no-repeat;
+    
+    /* 1. Control the thickness here (e.g., 8px high) */
+    background-size: 100% 8px; 
+    
+    /* 2. Control vertical position here (e.g., center, bottom, or 60%) */
+    background-position: left center; 
+}
+
+/* menu active color */
+.menu {
+  --menu-active-fg: var(--color-primary) !important;
+  --menu-active-bg: var(--color-base-300) !important;
+}
+
+/* cube display - collab */
+:root {
+    --cube-size: 250px; /* Default, adjusted by JS */
+}
+#cube_display {
+    background: var(--color-base-100); 
+    color: white; 
+    margin: 0;
+    font-family: sans-serif; 
+    overflow: hidden;
+    display: flex; 
+    flex-direction: column; 
+    /* height: 80vh; */
+}
+#cube-viewport {
+    height: 75vh; 
+    position: relative;
+    overflow: hidden; /* Prevents the 'cut off' look at the bottom */
+    display: flex;
+    align-items: center; /* Centers cube vertically */
+    justify-content: center;
+}
+
+
+/* Part B: Paragraph Div */
+#info-overlay {
+    position: absolute;
+    top: 10px; /* Pushes the paragraph to the very top */
+    width: 80%;
+    z-index: 10;
+    pointer-events: none; /* Allows you to click 'through' the text to the cube */
+    padding: 1.25rem;
+    max-width: 50rem;
+}
+#info-overlay > * {
+    pointer-events: auto;
+}
+
+@media (min-aspect-ratio: 1/1) {
+    #cube-viewport { height: 80vh; }
+    #controls-area { height: 20vh; }
+}
+
+.scene {
+    width: var(--cube-size);
+    height: var(--cube-size);
+    perspective: 1000px;
+    margin: auto; /* Centers the cube in the viewport */
+}
+
+.rubiksCube {
+    width: 100%; 
+    height: 100%; 
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(-25deg) rotateY(45deg);
+}
+
+.rubiksCube div {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0.85;
+    border: 2px solid var(--color-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    
+    /* Image Background Settings */
+    background-repeat: no-repeat; /* Prevents tiling */
+    background-position: center;  /* Centers image in face */
+    background-size: cover;       /* Fills face while keeping aspect ratio */
+}        
+
+/* Face Colors/Transforms */
+.f1 { background-image: url('/static/images/cube/1.png'); transform: rotateY(0deg) translateZ(calc(var(--cube-size)/2)); }
+.f2 { background-image: url('/static/images/cube/5.png'); transform: rotateY(180deg) translateZ(calc(var(--cube-size)/2)); }
+.f3 { background-image: url('/static/images/cube/3.png'); transform: rotateY(90deg) translateZ(calc(var(--cube-size)/2)); }
+.f4 { background-image: url('/static/images/cube/2.png'); transform: rotateX(-90deg) translateZ(calc(var(--cube-size)/2)); }
+.f5 { background-image: url('/static/images/cube/4.png'); transform: rotateY(-90deg) translateZ(calc(var(--cube-size)/2)); }
+.f6 { background-image: url('/static/images/cube/6.png'); transform: rotateX(90deg) translateZ(calc(var(--cube-size)/2)); }
+
+/* Part A: Controls */
+#controls-area {
+    flex: 1; 
+    display: flex; 
+    flex-direction: column;
+    align-items: center; 
+    justify-content: center;
+    background: var(--color-base-200); 
+    border-bottom: 2px solid var(--color-neutral-content);
+    padding: 1rem;
+}
+
+#cube_display > .button-grid {
+    display: grid; 
+    grid-template-columns: repeat(5, 1fr); 
+    gap: 10px;
+}
+
+#cube_display > .btn {
+    width: 50px; height: 50px; 
+    background: #444; 
+    border: 1px solid #666;
+    color: white; 
+    border-radius: 8px; 
+    cursor: pointer;
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 18px;
+}
+#cube_display > .btn:active { background: #666; }
+#cube_display > .btn.active { background: #ff9800; }
+#cube_display > .reset-btn { grid-column: 3; background: #822; }
+
+/* Destined Artwork */
+.destined_card {
+  overflow: visible;
+  width: max(250px, 40vw);
+  height: auto;
+  aspect-ratio: 1.33 / 1;
+}
+
+.destined_content {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 300ms;
+  box-shadow: 0px 0px 10px 1px #000000ee;
+  border-radius: 5px;
+}
+
+.destined_front, .destined_back {
+  background-color: #151515;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.destined_back {
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.destined_back::before {
+  position: absolute;
+  content: ' ';
+  display: block;
+  width: 160px;
+  height: 160%;
+  background: linear-gradient(90deg, transparent, #ff9966, #ff9966, #ff9966, #ff9966, transparent);
+  animation: rotation_481 5000ms infinite linear;
+}
+
+.destined_back-content {
+  position: absolute;
+  width: 99%;
+  height: 99%;
+  background-color: #151515;
+  border-radius: 5px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+}
+
+.destined_card:hover 
+.destined_content {
+  transform: rotateY(180deg);
+}
+
+@keyframes rotation_481 {
+  0% {transform: rotateZ(0deg);}
+  0% {transform: rotateZ(360deg);}
+}
+
+.destined_front {
+  transform: rotateY(180deg);
+  color: white;
+}
+
+.destined_front .destined_front-content {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.destined_front-content .destined_badge {
+  background-color: #00000055;
+  padding: 2px 10px;
+  border-radius: 10px;
+  backdrop-filter: blur(2px);
+  width: fit-content;
+}
+
+.destined_description {
+  box-shadow: 0px 0px 10px 5px #00000088;
+  width: 100%;
+  padding: 10px;
+  background-color: #00000099;
+  backdrop-filter: blur(5px);
+  border-radius: 5px;
+}
+
+.destined_title {
+  font-size: 11px;
+  max-width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.destined_title p {
+  width: 50%;
+}
+
+.destined_card-footer {
+  color: #ffffff88;
+  margin-top: 5px;
+  font-size: 8px;
+}
+
+.destined_front .destined_img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.destined_circle {
+  position: relative;
+  width: max(12vw, 90px);
+  height: max(12vw, 90px);
+  border-radius: 50%;
+  background-color: #ffbb66;
+  filter: blur(15px);
+  animation: floating 2600ms infinite linear;
+}
+
+#destined_bottom {
+  background-color: #ff8866;
+  right: -65%;
+  top: 0px;
+  width: max(20vw, 150px);
+  height: max(20vw, 150px);
+  animation-delay: -800ms;
+}
+
+#destined_right {
+  background-color: #ff2233;
+  right: -85%;
+  top: -37%;
+  width: max(4vw, 30px);
+  height: max(4vw, 30px);
+  animation-delay: -1800ms;
+}
+
+@keyframes floating {
+  0% {transform: translateY(0px);}
+  50% {transform: translateY(10px);}
+  100% {transform: translateY(0px);}
+}
+
+/* filter product */
+#resultModal {
+    --bg: 25% 0.0075 70;
+
+    --pink: 77.75% 0.1003 350.51;
+    --gold: 84.16% 0.1169 71.19;
+    --mint: 84.12% 0.1334 165.28;
+
+    --mobile--w: 360px;
+    --mobile--h: 540px;
+
+    --outline-w: 9px;
+    --preview-bg: #fff;
+
+    /* background: linear-gradient(
+        50deg,
+        oklch(from oklch(var(--bg)) 50% c h),
+        oklch(from oklch(var(--bg)) 90% c h)
+    ); */
+    background-attachment: fixed;	
+    height: 100%;
+    padding: 3rem 2dvw;
+}
+.filtered_card__container {
+    height: 95%;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0 2rem;
+
+    /* fade out other cards when one is :hover/:focus-within */
+    &:has(:hover, :focus-within) {
+        .preview:not(:hover, :focus) {
+            opacity: 0.4;
+        }
+    }
+}
+.filtered_card {
+    height: 100%;
+    aspect-ratio: 16 / 9;
+    flex-shrink: 0;
+    cursor: pointer;
+
+    /* Layout Setup */
+    position: relative;
+    overflow: hidden; /* Keep image/text inside rounded corners */
+    display: flex;
+    flex-direction: column;
+    
+    /* IMAGE TAG HANDLING */
+    & img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 0% 0%; /* Start position */
+        filter: grayscale(100%) sepia(5%);
+        transition: filter 0.3s ease;
+        
+        /* Apply the scrolling animation to the actual img tag */
+        animation: img-scroll var(--duration) forwards;
+        animation-delay: var(--delay);
+    }
+
+    /* TEXT CONTENT */
+    & .card-content {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 0.75rem;
+        background: linear-gradient(transparent, rgba(66, 66, 66, 0.8));
+        color: white;
+        opacity: 0; /* Hidden by default */
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+    }
+
+    /* HOVER / FOCUS EFFECTS */
+    &:hover, &:focus-within {
+        /* ... existing scale/rotate/shadow code ... */
+        scale: 1.05;
+        rotate: 0deg;
+        filter: none;
+        opacity: 1;
+        z-index: 10;
+
+        & img {
+            filter: none;
+            /* Pause or reset animation on hover if desired */
+        }
+
+        & .card-content {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+
+#filter_modal_close {
+        font-size: 0.75rem;
+}
+@media screen and (min-width: 640px){
+    #filter_modal_close {
+        font-size: 1rem;
+    }
+}
+/* preview-scroll */
+@keyframes img-scroll {
+    to {
+        object-position: 0% var(--bg-pos-y--end);
+    }
+}
+
+/* dashboard sidebar */
+.dashboard-item.is-active {
+    border-color: var(--color-info); /* or your specific color */
+    position: relative;
+}
+
+.dashboard-item.is-active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 100%;
+    width: 4px;
+    height: 100%;
+    background-color: theme('colors.base-content'); /* Tailwind theme helper */
+}
+
+/* round clock */
+.clock {
+  --clock-size: 200px;
+  --clock-black: #1b59c6;
+  --clock-white: #f4eed7;
+  --clock-feature : #4b9aaa;
+  --clock-bg: #1b5ac68a;
+}
+.clock {
+  height: var(--clock-size);
+  width: var(--clock-size);
+  border-radius: calc(var(--clock-size) / 2);
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.clock__second,
+.clock__minute,
+.clock__hour,
+.clock__indicator {
+  position: absolute;
+  left: calc(50% - 1px);
+  width: 2px;
+  background: var(--clock-white);
+  transform-origin: bottom center;
+  z-index: 2;
+  border-radius: 1px;
+}
+
+.clock__second {
+  height: calc((var(--clock-size) / 2) - 10px);
+  margin-top: 10px;
+  background: var(--clock-feature);
+  animation: time 60s infinite steps(60);
+  z-index: 3;
+}
+
+.clock__minute {
+  height: calc((var(--clock-size) / 2) - 20px);
+  margin-top: 20px;
+  opacity: 0.75;
+  animation: time 3600s linear infinite;
+}
+
+.clock__hour {
+  height: calc((var(--clock-size) / 2) - 40px);
+  margin-top: 40px;
+  animation: time 43200s linear infinite;
+}
+
+.clock__indicator {
+  height: calc((var(--clock-size) / 2) - 2px);
+  border-top: 2px solid var(--clock-feature);
+  background: none;
+
+  position: absolute;
+  transform: rotateZ(calc(6deg * var(--i)));
+}
+
+.clock__indicator:nth-of-type(5n) {
+  opacity: 1;
+  height: calc((var(--clock-size) / 2) - 7px);
+  border-top: 7px solid var(--clock-white);
+}
+
+.clock__axis {
+  background: var(--clock-feature);
+  width: 5px;
+  height: 5px;
+  border-radius: 3px;
+  position: absolute;
+  z-index: 4;
+  top: calc(var(--clock-size) / 2 - 3px);
+}
+
+/* 
+   The loop below handles the rotation for each section. 
+   In modern CSS, you can use --i to avoid writing 60 lines.
+*/
+/* .clock__indicator:nth-of-type(n) {
+  transform: rotateZ(calc(6deg * var(--i, 0)));
+} */
+
+@keyframes time {
+  to {
+    transform: rotateZ(360deg);
+  }
+}
+
+/* Form errors */
+.input:has(+ .errorlist), .input:has(~ .text-error) {
+    @apply border-error ring-1 ring-error;
+}
+.border-error {
+    --validator-color: var(--er) !important;
+    border-color: var(--er) !important;
+}
+
+/* If the select inside has a value (isn't the placeholder), hide the error styling */
+#china_field_wrapper:has(select:not(:placeholder-shown)) {
+    border-color: var(--fallback-bc,oklch(var(--bc)/0.2));
+    --tw-ring-color: transparent;
+}
+
+
+
+/* Google Autocomplete */
+/* Force the Google dropdown to be visible above modals */
+/* 1. Ensure the modal doesn't clip the dropdown */
+.modal, 
+.modal-box,
+.form_wrapper {
+    overflow: visible !important;
+}
+
+/* 1. Reset the Component Wrapper */
+gmp-place-autocomplete {
+    /* Set the target placeholder font-size on the host component itself */
+    font-size: 6px !important; 
+    
+    margin-left: -14px;
+    display: block;
+    width: 0 !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+    background-color: transparent !important;
+    color-scheme: light !important;
+    
+    --gmp-autocomplete-search-icon-display: none;
+    --gmp-autocomplete-icon-color: transparent; 
+    --gmp-autocomplete-focus-ring-width: 0px;
+    --gmp-autocomplete-focus-ring-color: transparent;
+    --gmp-item-background-hover: transparent;
+}
+
+/* @media (min-width: 640px) {
+    gmp-place-autocomplete {
+        margin-left: -14px;
+    }
+} */
+
+/* 2. Style the Internal Input Text */
+gmp-place-autocomplete::part(input) {
+    /* Tell the native element to pull the 12px rule from above */
+    font-size: inherit !important; 
+
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    background-color: transparent !important;
+    color: #333 !important;
+    font-family: inherit;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important; 
+    padding-right: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+gmp-place-autocomplete::part(search-icon) {
+    display: none !important;
+    width: 0 !important;
+    margin: 0 !important;
+}
+
+/* 3. Brute Force Removal of the Focus Ring Part */
+gmp-place-autocomplete::part(focus-ring) {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* 4. Fix the Clear Button ('x') */
+gmp-place-autocomplete::part(clear-button) {
+    background-color: transparent !important;
+}
+
+gmp-place-autocomplete::part(clear-button):hover {
+    background-color: rgba(0,0,0,0.05) !important; /* Very subtle hover instead of dark */
+}
+
+.pac-container {
+    max-width: 400px !important; /* Adjust based on your LG column width */
+}
+
+/* Solar Term Display */
+.solar-timeline {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    z-index: 10;
+    padding: calc(var(--spacing) * 5)
+}
+.solar-arrow-container {
+    width: 60px;
+    display: flex;
+    justify-content: center;
+}
+.solar-arrow {
+    width: 0; 
+    height: 0; 
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 15px solid #ffffff; /* High contrast orange/brown */
+    position: relative;
+    animation: solar-slide-right 1.5s infinite ease-in-out;
+}
+
+/* The Animation Loop */
+@keyframes solar-slide-right {
+    0% {
+        transform: translateX(-10px);
+        opacity: 0.3;
+    }
+    50% {
+        transform: translateX(5px);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(15px);
+        opacity: 0;
+    }
+}
+
+/* Countdown Flilpping Cards */
+.flip-card-wrapper {
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  display: flex;
+  justify-content: center;
+}
+.flip-score-card {
+  font-size: 1.5rem;
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.2);
+  border-radius: 0.1em;
+}
+.top,
+.bottom,
+.flip-score-card .top-flip,
+.flip-score-card .bottom-flip {
+    width: 1.8rem;
+    height: 0.8em;
+    line-height: 1;
+    padding-top: 0.25em;
+    padding-bottom: 0.34em;
+    padding-left: 0.35em;
+    padding-right: 0.7em;
+    overflow: hidden;
+}
+.top,
+.flip-score-card .top-flip {
+  background-color: #fd8d14;
+  border-top-left-radius: 0.1em;
+  border-top-right-radius: 0.1em;
+  border-bottom: 0.5px solid #ffffff7a;
+}
+.bottom,
+.flip-score-card .bottom-flip {
+  background-color: #fa870c;
+  display: flex;
+  align-items: flex-end;
+  border-bottom-left-radius: 0.1em;
+  border-bottom-right-radius: 0.1em;
+}
+.flip-score-card .top-flip {
+  position: absolute;
+  width: 100%;
+  animation: flip-top 200ms ease-in;
+  transform-origin: bottom;
+}
+@keyframes flip-top {
+  100% {
+    transform: rotateX(90deg);
+  }
+}
+.flip-score-card .bottom-flip {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  animation: flip-bottom 200ms ease-out 200ms;
+  transform-origin: top;
+  transform: rotateX(90deg);
+}
+@keyframes flip-bottom {
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+
+/* REVISED CART */
+/* .btn.htmx-request {
+    opacity: 0.6;
+    cursor: wait;
+    pointer-events: none; 
+    filter: grayscale(0.5);
+} */
+
+/* Optional: If you want to show a hidden spinner inside the button */
+/* .btn.htmx-request .loading-spinner {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+} */
+
+/* 1. Target the button specifically when it has the htmx-request class */
+#calc-shipping-btn.htmx-request {
+    opacity: 0.4 !important;
+    background-color: #94a3b8 !important; /* Forces a gray tone (Slate-400) */
+    border-color: #94a3b8 !important;
+    pointer-events: none !important;
+    cursor: wait !important;
+    transition: all 0.2s ease;
+}
+
+/* 2. Hide the spinner by default */
+.htmx-indicator {
+    display: none;
+}
+
+/* 3. Show the spinner inside the button during the request */
+.htmx-request .htmx-indicator {
+    display: inline-block;
+    margin-right: 8px;
+}
+
+/* Cart logo jiggle */
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+
+.cart-update-pop {
+  animation: pop 0.3s ease-out;
+}
+
+/* wishlist last item divider */
+.wishlist-item:not(:last-child) {
+    border-bottom: 1px solid rgba(84, 74, 74, 0.131);
+    margin-bottom: 0rem; /* matches your my-0 */
+    padding-bottom: 1.25rem; /* gives space for the line */
+}
+
+/* Optional: add top padding to everything except the first to balance it */
+.wishlist-item:not(:first-child) {
+    padding-top: 1.25rem;
+}
+
+/* dashboard help - push button */
+/* The container/base that stays on the "wall" */
+.pushable {
+  background: var(--color-error-content); /* Darker red for the button "side" */
+  border-radius: 50%; /* Round industrial shape */
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  /* outline-offset: 4px; */
+}
+
+/* The actual clickable red surface */
+.front {
+  display: block;
+  padding: 20px 22px;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  line-height: 1.15rem;
+  font-weight: bold;
+  background: var(--color-error); /* Main bright red */
+  color: white;
+  transform: translateY(-8px); /* Raise it up for 3D look */
+  will-change: transform;
+  transition: transform 250ms;
+}
+
+/* Hover Effect: Slightly lowers the button */
+.pushable:hover .front {
+  transform: translateY(-10px); /* Slightly lift higher or pulse */
+}
+
+/* Click/Active Effect: Physically "presses" the button down */
+.pushable:active .front {
+  transform: translateY(-2px); /* Pushes down towards the base */
+  transition: transform 34ms;
+}
+
+/* phone-mockup */
+#mockup-phone-base {
+    border-color: var(--color-primary);
+    position: relative;
+    justify-items: center;
+    border: 5px solid #6b6b6b;
+    background-color: #000;
+    padding: 6px;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    /* aspect-ratio: 462 / 978; */
+    border-radius: 90px;
+    @supports (corner-shape: superellipse(1.45)) {
+        corner-shape: superellipse(1.45);
+    }
+}
+#mockup-phone-camera-part {
+    position: absolute;
+    left: 50%;
+    top: 4%;
+    width: 30%;
+    height: 3.7%;
+    transform: translateX(-50%);
+    background: #555151;
+    border-radius: 17px;
+    z-index: 1;
+}
+#mockup-phone-main-container {
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    height: calc(100% - 10px);
+    width: calc(100% - 10px);
+    background-color: var(--color-neutral-900);
+    border-radius: 78px;
+    overflow: hidden;
+    @supports (corner-shape: superellipse(1.45)) {
+        corner-shape: superellipse(1.45);
+    }
+}
+#chat_message_list::-webkit-scrollbar {
+    width: 5px; /* Very thin width */
+}
+#chat_message_list::-webkit-scrollbar-track {
+    background: transparent; /* Makes the track invisible */
+}
+#chat_message_list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2); /* Subtle white thumb */
+    border-radius: 10px;
+}
+#chat_message_list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4); /* Brighten on hover */
+}
+/* Firefox support */
+#chat_message_list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* chat search */
+/* Subtle glow for all search results */
+.search-hit {
+    transition: all 0.2s ease;
+    border-radius: 2px;
+    padding: 0 2px;
+}
+
+/* Telegram-style active highlight for the currently selected arrow match */
+.search-hit.active-hit {
+    background-color: var(--p) !important; /* Uses your primary color */
+    color: white !important;
+    box-shadow: 0 0 10px var(--p);
+    transform: scale(1.1);
+    outline: 2px solid white;
+}
+
+/* Goal 5: Visual cue that input is disabled during search */
+#chat_msg_input_form.disabled-overlay {
+    opacity: 0.3;
+    pointer-events: none;
+    filter: grayscale(1);
+    transition: opacity 0.3s ease;
+}
+#chat_msg_input_form {
+    transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+#chat_msg_input_form.opacity-30 {
+    filter: grayscale(0.8);
+}
+.active-hit {
+    background-color: #3b82f6 !important; /* Blue glow */
+    color: white !important;
+    border-radius: 2px;
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.8);
+}

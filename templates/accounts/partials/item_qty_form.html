@@ -1,0 +1,43 @@
+{% load humanize %}
+<form 
+    id="item_qty_form"
+    hx-post="{% url 'add_to_cart_from_dashboard' variation.pk %}"
+    {% if source == 'wishlist' %}
+        hx-target="#wishlist_wrapper"
+    {% else %}
+        hx-swap="none"
+    {% endif %}
+    onsubmit="my_modal_3.close()"
+>
+    {% csrf_token %}
+    <!-- Add this hidden input -->
+    <input type="hidden" name="source" value="{{ source }}">
+
+
+    {% csrf_token %}
+    <div class="w-full flex flex-col gap-2 py-5">
+        <!-- Details -->
+        <div class="w-full flex flex-col gap-2 py-5">
+            <div class="flex flex-col flex-grow justify-center text-center">
+                <p class="font-semibold text-lg">{{ variation.product.product_name }}</p>
+                <p class="text-sm opacity-60">{{ variation.variation_value }}</p>
+                <p class="text-primary font-bold mt-2">Available: {{ variation.stock }}</p>
+            </div>
+        </div>
+        <!-- Qty Input -->
+        <div class="flex items-center gap-4 justify-center">
+            <label class="label font-bold">Qty:</label>
+            <input type="number" 
+                   name="quantity" 
+                   value="1" 
+                   min="1" 
+                   max="{{ variation.stock }}" 
+                   class="input input-bordered w-24"
+                   required>
+        </div>
+        <!-- Submit Btn -->
+        <div class="modal-action flex justify-center mt-6">
+            <button type="submit" class="btn btn-success w-full">Add to Cart!｜加入購物車！</button>
+        </div>
+    </div>
+</form>

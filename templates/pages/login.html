@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load socialaccount %} 
 {% block content %}
 <div class="relative mt-16 w-full h-[calc(100dvh-64px)] ">
     <!-- BG_IMAGE -->
@@ -7,32 +8,99 @@
 
     <!-- CONTENTS -->
     <div class="absolute top-0 left-0 w-full h-full flex flex-col justify-center items-center">
+        <!-- if just registered -->
+        {% if request.GET.command == 'verification'%}
+            <div id="message" class="relative auto_plus mx-[5rem] {% if message.tags %}{{ message.tags }}{% endif %}">
+                <span class="absolute cursor-pointer top-1/2 -translate-y-1/2 right-0 px-1 py-1">
+                    <button id="dismissAlertButton" class="cursor-pointer text-primary-content hover:text-neutral">
+                        <svg class="fill-current h-6 w-6" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+                    </button>
+                </span>
+         
+                <div role="alert" class="mb-2 alert alert-info">
+                    <div role="alert" class="mb-2 alert alert-info">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-6 w-6 shrink-0 stroke-current">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>
+                            感謝註冊！我們已向您的郵箱[{{request.GET.email}}]發送了一封驗證郵件。
+                            <br/>
+                            Thank you for registering with us. 
+                            <br/>
+                            We have sent you an verification email to your mailbox [{{request.GET.email}}].
+                        </span>
+                    </div>
+                </div>
+            </div>
+        <!-- if reset password requested -->
+        {% elif request.GET.command == 'reset_password' %}
+            <div id="message" class="relative auto_plus mx-[5rem] {% if message.tags %}{{ message.tags }}{% endif %}">
+                <span class="absolute cursor-pointer top-1/2 -translate-y-1/2 right-0 px-1 py-1">
+                    <button id="dismissAlertButton" class="cursor-pointer text-primary-content hover:text-neutral">
+                        <svg class="fill-current h-6 w-6" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+                    </button>
+                </span>
+         
+                <div role="alert" class="mb-2 alert alert-info">
+                    <div role="alert" class="mb-2 alert alert-info">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-6 w-6 shrink-0 stroke-current">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>
+                            我們已向您的信箱[{{request.GET.email}}]發送了一封重設密碼郵件。
+                            <br/>
+                            We have sent you an email to reset your password to your mailbox [{{request.GET.email}}].
+                        </span>
+                    </div>
+                </div>
+            </div>
+        {% else %}
         <!-- title -->
-        <h1 class="text-5xl text-primary-content text-shadow-lg text-shadow-base-300 mb-5">歡 迎 回 來 ！</h1>
+        <h1 class="text-5xl text-primary-content text-shadow-lg text-shadow-base-300 mb-5">Welcome Back! <br><small class="w-full block text-center opacity-70">歡 迎 回 來 ！</small></h1>
+        {% include 'includes/alerts.html' %}
         <!-- form -->
-        <form action="" method="POST">
-            <fieldset class="fieldset bg-primary-content border-base-300 rounded-box w-sm border p-4">
-                <button class="btn bg-white text-black border-[#e5e5e5] flex justify-between">
-                    <svg aria-label="Google logo" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g><path d="m0 0H512V512H0" fill="#fff"></path><path fill="#34a853" d="M153 292c30 82 118 95 171 60h62v48A192 192 0 0190 341"></path><path fill="#4285f4" d="m386 400a140 175 0 0053-179H260v74h102q-7 37-38 57"></path><path fill="#fbbc02" d="m90 341a208 200 0 010-171l63 49q-12 37 0 73"></path><path fill="#ea4335" d="m153 219c22-69 116-109 179-50l55-54c-78-75-230-72-297 55"></path></g></svg>
-                    <span>用 Google帳號 登入</span>
-                </button>
+        <fieldset class="fieldset bg-primary-content border-base-300 rounded-box w-sm border p-4">
+            <a  href="{% provider_login_url 'google' %}" 
+                class="btn bg-white text-black border-[#e5e5e5] flex justify-between">
+                <svg aria-label="Google logo" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g><path d="m0 0H512V512H0" fill="#fff"></path><path fill="#34a853" d="M153 292c30 82 118 95 171 60h62v48A192 192 0 0190 341"></path><path fill="#4285f4" d="m386 400a140 175 0 0053-179H260v74h102q-7 37-38 57"></path><path fill="#fbbc02" d="m90 341a208 200 0 010-171l63 49q-12 37 0 73"></path><path fill="#ea4335" d="m153 219c22-69 116-109 179-50l55-54c-78-75-230-72-297 55"></path></g></svg>
+                <span>Sign in with Google<small class="opacity-70">｜用 Google帳號 登入</small></span>
 
-                <button class="btn bg-[#1A77F2] text-white border-[#005fd8] flex justify-between">
-                    <svg aria-label="Facebook logo" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path fill="white" d="M8 12h5V8c0-6 4-7 11-6v5c-4 0-5 0-5 3v2h5l-1 6h-4v12h-6V18H8z"></path></svg>
-                    <span>用 Facebook帳號 登入</span>
-                </button>
+            </a>
+            <!-- [続行] をクリックすることにより、LinkedInの利用規約、プライバシーポリシー、Cookieポリシーに同意したものとみなされます。 -->
 
-                <div class="divider">或 OR</div>
+            <div class="divider">OR 或</div>
+            
+            <form action="{% url 'login' %}" method="POST">
+                {% csrf_token %}
+                <label class="label">Email 郵箱</label>
+                <input name="email" type="email" class="input w-full" placeholder="Email｜郵箱" />
 
-                <label class="label">郵箱 Email</label>
-                <input type="email" class="input w-full" placeholder="Email" />
+                <label class="label">Password 密碼</label>
+                <input name="password" type="password" class="input w-full" placeholder="Password｜密碼" />
 
-                <label class="label">密碼 Password</label>
-                <input type="password" class="input w-full" placeholder="Password" />
+                <a href="{% url 'forgot_password' %}" class="block font-medium text-right text-shadow-2xs text-shadow-secondary-content"><small>Forgot password?｜忘記密碼？</small></a>
+                <button class="w-full btn btn-neutral text-white my-4">Sign In｜登&nbsp;&nbsp;入</button>
+            </form>
+        </fieldset>
+        <!-- go to register -->
+        <a href="{% url 'register' %}" class="text-xs my-2 font-medium text-primary text-shadow-2xs text-shadow-primary-content"><h5>註冊帳號 | Sign up</h5></a>
 
-                <button class="btn btn-neutral mt-4">登&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;入</button>
-            </fieldset>
-        </form>
+        {% endif %}
     </div>
 </div>
+
+<style>
+    .auto_plus {
+        max-width: 100%;
+        width: calc-size(auto, size + 1.25rem);
+    }
+</style>
+<script>
+    const btn = document.getElementById('dismissAlertButton')
+    btn 
+        ? btn.addEventListener('click', function() {document.getElementById('message').classList.add('hidden');})
+        : null
+    
+</script>
+
 {% endblock %}

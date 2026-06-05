@@ -1,176 +1,230 @@
-{% extends 'accounts/dashboard_base.html' %}
-
-{% block accounts_content %}
-<div class="flex gap-5 mb-10 w-full">
+{% load humanize %}
+<title>{{ page_title }}</title>
+<div id="dashboard_help" class="subpage flex flex-col gap-5 mb-5 w-full">
     <!-- mobile mockup -->
-    <div class="w-3/4">
-        <div class="relative mockup-help-phone w-full">
-            <div class="mockup-phone-camera"></div>
-            <div class="relative mockup-help-phone-display text-white px-10 pt-25 items-start bg-accent overflow-y-auto">
-                <!-- input -->
-                <form action="" method="POST" class="w-full h-[5rem] flex gap-[5%] items-center mb-5">
-                    {% csrf_token %}
-                    <textarea placeholder="请输入内容" class="w-[76%] h-full textarea textarea-primary text-primary"></textarea>
-                    <button class="btn btn-info w-[19%] px-5 h-full text-[1.05rem]">發&nbsp;送</button>
-                </form>
-
-                <!-- dialog -->
-                <div class="overflow-y-auto">
-                    <!-- member -->
-                    <div class="chat chat-start">
-                    <div class="chat-image avatar">
-                        <div class="w-10 rounded-full">
-                        <img
-                            alt="Tailwind CSS chat bubble component"
-                            src="https://img.daisyui.com/images/profile/demo/kenobee@192.webp"
-                        />
-                        </div>
-                    </div>
-                    <div class="chat-header">
-                        Obi-Wan Kenobi
-                        <time class="text-xs opacity-50">12:45</time>
-                    </div>
-                    <div class="chat-bubble">You were the Chosen One!</div>
-                    <div class="chat-footer opacity-50">Delivered</div>
-                    </div>
-                    <!-- staff -->
-                    <div class="chat chat-end">
-                    <div class="chat-image avatar">
-                        <div class="w-10 rounded-full">
-                        <img
-                            alt="Tailwind CSS chat bubble component"
-                            src="https://img.daisyui.com/images/profile/demo/anakeen@192.webp"
-                        />
-                        </div>
-                    </div>
-                    <div class="chat-header">
-                        Anakin
-                        <time class="text-xs opacity-50">12:46</time>
-                    </div>
-                    <div class="chat-bubble">I hate you!</div>
-                    <div class="chat-footer opacity-50">Seen at 12:46</div>
-                    </div>
-                    <!-- member -->
-                    <div class="chat chat-start">
-                    <div class="chat-image avatar">
-                        <div class="w-10 rounded-full">
-                        <img
-                            alt="Tailwind CSS chat bubble component"
-                            src="https://img.daisyui.com/images/profile/demo/kenobee@192.webp"
-                        />
-                        </div>
-                    </div>
-                    <div class="chat-header">
-                        Obi-Wan Kenobi
-                        <time class="text-xs opacity-50">12:45</time>
-                    </div>
-                    <div class="chat-bubble">You were the Chosen One!</div>
-                    <div class="chat-footer opacity-50">Delivered</div>
-                    </div>
-                    <!-- staff -->
-                    <div class="chat chat-end">
-                    <div class="chat-image avatar">
-                        <div class="w-10 rounded-full">
-                        <img
-                            alt="Tailwind CSS chat bubble component"
-                            src="https://img.daisyui.com/images/profile/demo/anakeen@192.webp"
-                        />
-                        </div>
-                    </div>
-                    <div class="chat-header">
-                        Anakin
-                        <time class="text-xs opacity-50">12:46</time>
-                    </div>
-                    <div class="chat-bubble">I hate you!</div>
-                    <div class="chat-footer opacity-50">Seen at 12:46</div>
-                    </div>
-                    <!-- member -->
-                    <div class="chat chat-start">
-                    <div class="chat-image avatar">
-                        <div class="w-10 rounded-full">
-                        <img
-                            alt="Tailwind CSS chat bubble component"
-                            src="https://img.daisyui.com/images/profile/demo/kenobee@192.webp"
-                        />
-                        </div>
-                    </div>
-                    <div class="chat-header">
-                        Obi-Wan Kenobi
-                        <time class="text-xs opacity-50">12:45</time>
-                    </div>
-                    <div class="chat-bubble">You were the Chosen One!</div>
-                    <div class="chat-footer opacity-50">Delivered</div>
-                    </div>
-                    <!-- staff -->
-                    <div class="chat chat-end">
-                    <div class="chat-image avatar">
-                        <div class="w-10 rounded-full">
-                        <img
-                            alt="Tailwind CSS chat bubble component"
-                            src="https://img.daisyui.com/images/profile/demo/anakeen@192.webp"
-                        />
-                        </div>
-                    </div>
-                    <div class="chat-header">
-                        Anakin
-                        <time class="text-xs opacity-50">12:46</time>
-                    </div>
-                    <div class="chat-bubble">I hate you!</div>
-                    <div class="chat-footer opacity-50">Seen at 12:46</div>
-                    </div>
-                </div>
-
-
-
-            </div>
-
+    <div class="w-full h-[calc(100vh-86px-8rem-2.5rem)]">
+        <div id="mockup-phone-base">
+            <!-- phone camera -->
+            <div id="mockup-phone-camera-part"></div>
             <!-- clock -->
-            <div class="absolute left-1/2 bottom-5 -translate-x-1/2 text-center text-primary-content">
+            <div class="absolute top-[4%] left-8 z-10 text-left text-white text-xs flex h-[1rem]">
                 <div id="dynamic-date"></div>
                 <div id="dynamic-clock"></div>
             </div>
+            <!-- Num of Unread Messages -->
+            <div class="absolute top-[4%] right-8 z-10 text-right text-white text-xs h-[1rem]">
+                <span class="text-xs">Inbox｜收件匣</span>
+                <div id="total_unread_count_badge_member"
+                    hx-get="{% url 'get_unread_count' %}"
+                    hx-trigger="refresh_count from:body"
+                    class="badge badge-md badge-secondary"
+                >
+                    {{ unread_count }}
+                </div>
+            </div>
+            <!-- Mockup Phone -->
+            <div id="mockup-phone-main-container">
+                <div class="flex flex-col h-full bg-accent text-white px-6 pt-[6%]">
+                    <!-- TOP - input -->
+                    <form id="chat_msg_input_form"
+                            hx-post="{% url 'send_message' %}"
+                            hx-target="#chat_message_list"
+                            hx-swap="beforeend"
+                            hx-on::after-request="this.reset()"
+                            enctype="multipart/form-data" 
+                            class="w-full py-4 border-b border-white/10 flex"
+                    >
+                        {% csrf_token %}
+                        <input type="hidden" name="receiver_id" id="receiver_id_input" value="{{admin.id}}">
+                        <input type="hidden" name="user_id" id="user_id" value="{{request.user.id}}"></input>
+                        <div class="flex flex-col gap-1 flex-grow-1 h-full relative">
+                            <textarea id="chat_content" name="content" maxlength="1000" placeholder="Max 1,000 characters｜限1,000字" required class="w-full flex-grow textarea textarea-primary text-primary"></textarea>
+                            <input type="file" name="image" accept="image/*" class="file-input w-full h-[2rem] text-base-content">
+                        </div>
+                        <div class="flex-grow-0 min-w-[5rem] flex justify-center items-center p-3">
+                            <button type="submit" class="pushable">
+                                <span class="front w-full h-full text-white">Send<br>發&nbsp;送</span>
+                            </button>
+                        </div>
+                    </form>
+                    <!-- BOTTOM - dialog -->
+                    <div id="chat_message_list"
+                         hx-get="{% url 'refresh_chat' %}"
+                         hx-trigger="refresh_chat from:body"
+                         hx-include="[name='q']"
+                         hx-swap="beforeend"
+                         hx-vals="js:{msg_id: event.detail.msg_id}"
+                         class="flex-grow overflow-y-auto min-h-0 py-4 custom-scrollbar"
+                         >
+                        {% include 'accounts/partials/chat_list.html' %}
+                    </div>
+                    <!-- MIDDLE - Search Container -->
+                    <div id="chat_search_container" class="flex py-4 mt-auto border-t border-white/10 relative">
+                        <button id="search-trigger" onclick="toggleSearch(true)" class="btn btn-ghost btn-circle ml-auto">
+                            <i class="fas fa-search text-white"></i>
+                        </button>
 
+                        <div id="search-input-container" class="d-none bg-light p-2 rounded border shadow-sm flex-grow-1 flex items-center">
+                            <span class="loading loading-dots loading-xs htmx-indicator mr-2"></span>
+                            <input type="text" name="q"
+                                    hx-get="{% url 'dashboard' 'help' %}"
+                                    hx-target="#chat_message_list"
+                                    hx-trigger="keyup changed delay:300ms"
+                                    hx-swap="innerHTML"
+                                    hx-indicator=".loading-dots"
+                                    placeholder="Search dialogue｜搜索內容..."
+                                    class="form-control form-control-sm flex-grow-1 outline-none text-white"
+                            >
+                            <span id="search-counter" class="text-xs text-white/70 mx-2 min-w-[3rem] text-center">
+                                0 / 0
+                            </span>
+                            <div class="flex-grow-0 flex gap-1 ml-2">
+                                <button class="btn btn-xs" onclick="navigateSearch(-1)">▲</button>
+                                <button class="btn btn-xs" onclick="navigateSearch(1)">▼</button>
+                                <button class="btn btn-xs text-danger" onclick="toggleSearch(false)">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-
     </div>
 
-    <!-- hero -->
-    <div class="relative w-1/4 h-auto rounded-[64px] bg-[url(/static/hero/red_leaves.jpeg)] bg-cover" style="box-shadow: 0 0 8px 8px var(--color-base-100) inset;">
-        <!-- <img src="/media/hero/red_leaves.jpeg" alt="" 
-        style="box-shadow: 0 0 32px 32px white inset;"
-        class="rounded-[64px] h-full object-cover"> -->
-        <div class="absolute top-[10rem] right-[20%]">
-            <h2 class="text-5xl text-primary-content">霜</h2>
-            <h2 class="text-5xl text-primary-content">降</h2>
-        </div>
+    <!-- chatting members -->
+    {% if request.user == admin%}
+    <div class="flex justify-start py-5 px-3 gap-2 relative w-full h-auto">
+        {% if members %} 
+            {% for member in members %}
+            <button type="button"
+                    id="member-btn-{{ member.pk }}"
+                    hx-get="{% url 'filter_message_by_member' member.pk %}"
+                    hx-include="[name='q']"
+                    hx-target="#chat_message_list"
+                    hx-on:click="setActiveMember('{{ member.pk }}', this)"
+                     class="btn bg-white text-black border-[#e5e5e5] member-filter-btn"
+            >
+                <svg aria-label="Email icon" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="black"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></g></svg>
+                <!-- Num of Unread Messages - ADMIN - by MEMBER -->
+                <span hx-get="{% url 'get_unread_count' sender_id=member.id %}"
+                      hx-trigger="refresh_count from:body"
+                      hx-target="this" 
+                      class="badge badge-sm badge-secondary"
+                >
+                    {{ member.unread_count }}
+                </span>
+                <span>{{ member.username }}</span>
+            </button>
+            {% endfor %}
+        {% endif %}
     </div>
-
-
-<style>
-    .mockup-help-phone {
-        display: inline-grid;
-        justify-items: center;
-        border: 5px solid #6b6b6b;
-        border-radius: 65px;
-        background-color: var(--color-accent);
-        padding: 6px;
-        overflow: hidden;
-        width: 100%;
-        aspect-ratio: 462 / 978;
-    }
-
-    .mockup-help-phone-display {
-        border-radius: 54px;
-        grid-column: 1 / 1;
-        grid-row: 1 / 1;
-        /* overflow: hidden; */
-        width: 100%;
-        height: 100%;
-    }
-</style>
-
-
-
+    {% endif %}
 </div>
 
-{% endblock %}
+<!-- <script>
+    const textarea = document.getElementById('chat_content');
+    const charCount = document.getElementById('char_count');
+
+    textarea.addEventListener('input', function() {
+        const length = textarea.value.length;
+        charCount.textContent = length;
+
+        // Visual warning: Turn text red if it gets close to the limit
+        if (length >= 240) {
+            charCount.classList.add('text-error');
+        } else {
+            charCount.classList.remove('text-danger');
+        }
+    });
+</script> -->
+
+<!-- <script>
+    document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+    if (evt.detail.target.id === 'chat_message_list') {
+        const list = document.getElementById('chat_message_list');
+        list.scrollTop = list.scrollHeight;
+    }
+    document.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.detail.target.id === 'chat_message_list') {
+            evt.detail.target.scrollTop = evt.detail.target.scrollHeight;
+        }
+    });
+});
+</script> -->
+
+<script>
+    const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+    const chatSocket = new WebSocket(wsProtocol + window.location.host + '/ws/chat_notifications')
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const event = new CustomEvent("refresh_chat", {
+            detail: { msg_id: data.msg_id } 
+        });
+        console.log(event)
+
+        if (data.type === 'new_message') {
+            // Replace htmx.trigger('body', 'refresh_count') with:
+            document.body.dispatchEvent(new CustomEvent('refresh_count'));
+
+            // This is the person the current user is talking to
+            const activeChatPartnerId = document.getElementById('receiver_id_input').value;
+            const myId = document.getElementById('user_id').value;
+
+            // Refresh if:
+            // 1. I'm looking at "All Messages" (Hybrid: activeChatPartnerId == myId)
+            // 2. I'm looking at a specific member (activeChatPartnerId == data.sender_id)
+            if (activeChatPartnerId == myId || data.sender_id == activeChatPartnerId) {
+                htmx.trigger('body', 'refresh_chat', { msg_id: data.msg_id });
+            }
+        }
+    };
+
+    document.body.addEventListener('htmx:beforeSwap', function(evt) {
+        if (evt.detail.target.id === "chat_message_list") {
+            // Record height before new messages are added
+            evt.detail.oldHeight = evt.detail.target.scrollHeight;
+        }
+    })
+
+    document.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.detail.target.id === "chat_message_list" && evt.detail.oldHeight) {
+            // Step 2: After new messages land, adjust scroll based on height change
+            const container = evt.detail.target;
+            const newHeight = container.scrollHeight;
+            container.scrollTop = newHeight - evt.detail.oldHeight;
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            toggleSearch(false);
+        }
+    });
+
+    
+    // Correct the enum error and wrap in a function
+    function adjustChatScroll() {
+        const chat_divider = document.getElementById('unread-separator');
+        const container = document.getElementById('chat_message_list');
+        
+        if (chat_divider) {
+            // 'smooth' or 'auto' for behavior; 'start' for block alignment
+            chat_divider.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
+    }
+
+    // Run on initial load
+    document.addEventListener('DOMContentLoaded', adjustChatScroll);
+
+    // Run after HTMX updates the list
+    document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+        if (evt.detail.target.id === "chat_message_list") {
+            // Only scroll to bottom if NOT loading earlier messages (infinite scroll)
+            if (!evt.detail.pathInfo.requestPath.includes('load_earlier_messages')) {
+                adjustChatScroll();
+            }
+        }
+    });
+</script>

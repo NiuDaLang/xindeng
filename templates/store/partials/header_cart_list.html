@@ -1,0 +1,24 @@
+{% load humanize %}
+<ul id="cart_items_list" 
+    class="overflow-y-scroll max-h-[calc(100vh-500px)] w-full"
+    {% if is_htmx_update %} hx-swap-oob="true" {% endif %}>
+    {% if current_cart_items %}
+        {% for item in current_cart_items %}
+            <li class="flex hover:bg-base-200 transition-colors duration-300 ease-in-out rounded-2xl items-center mt-2">
+                <a href="{{ item.product_variation.product.get_url }}" class="flex flex-col flex-grow-0 items-start p-2">
+                    <span class="text-sm"><strong>{{ item.product_variation.product }}</strong></span>
+                    <span class="text-[0.65rem]">{{ item.product_variation.get_sku }}</span>
+                    <img src="{{ item.product_variation.images.url }}" alt="product image" class="rounded-e-4xl">
+                </a>
+                <div class="h-full flex gap-1 items-center mr-2">
+                    <span class="">X</span>
+                    <span id="header_item_qty_{{item.id}}" class="flex-grow-1">{{ item.quantity }}</span>
+                </div>
+            </li>
+        {% endfor %}
+    {% else %}
+        <li class="p-4 text-center text-sm text-gray-500">
+            Your cart is empty<br>您的購物車是空的
+        </li>
+    {% endif %}
+</ul>

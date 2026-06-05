@@ -1,73 +1,122 @@
 {% block content %}
-
-<div class="relative">
+{% load humanize %}
+<div class="relative glight_main">
     <div id="navbar" class="fixed top-0 right-0 left-0 z-100 navbar flex justify-between bg-base-100 shadow-sm px-[max(1rem,5vw)] ">
       <!-- LEFT -->
         <div class="navbar-start">
             <!-- hamburger menu -->
-            <div class="dropdown">
+            <div class="dropdown dropdown-hover lg:hidden">
                 <!-- logo -->
-                <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /> </svg>
+                <div class="flex">
+                    <div tabindex="0" role="button" class="btn btn-ghost">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /> </svg>
+                    </div>
                 </div>
                 <!-- menu -->
                 <ul
                     tabindex="0"
-                    class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
-                    <li><a>介紹</a></li>
+                    class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 w-[17rem] p-2 shadow ">
+                    <li><a href="{% url 'about' %}" class="font-bold">About｜介紹</a></li>
                     <li>
-                        <a>3D寶貝</a>
+                        <a href="{% url 'products' category_slug='physical' %}" class="text-primary font-bold">3D Goods｜三維寶貝</a>
                         <ul class="p-2">
-                            <li><a>油畫</a></li>
-                            <li><a>水彩畫</a></li>
-                            <li><a>能量系</a></li>
+                            {% for link in links %}
+                                {% if link.product_format == "physical" %}
+                                    <li class="text-xs">
+                                        <a href="{{ link.get_url }}" class="flex flex-col items-start p-2">
+                                            <span>{{ link.category_name }}</span>
+                                            <!-- <img src="{{ link.cat_image.url }}" alt="category image" class="rounded-e-4xl"> -->
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
                         </ul>
                     </li>
                     <li>
-                        <a>電子寶貝</a>
+                        <a href="{% url 'products' category_slug='e-product' %}" class="text-primary font-bold">Digital｜電子寶貝</a>
                         <ul class="p-2">
-                            <li><a>線上手繪課程</a></li>
-                            <li><a>禮品券</a></li>
+                            {% for link in links %}
+                                {% if link.product_format == "e-product" %}
+                                    <li class="text-xs">
+                                        <a href="{{ link.get_url }}" class="flex flex-col items-start p-2">
+                                            <span>{{ link.category_name }}</span>
+                                            <!-- <img src="{{ link.cat_image.url }}" alt="category image" class="rounded-e-4xl"> -->
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
                         </ul>
                     </li>
+                    <li><a href="{% url 'all_posts' %}" class="font-bold">Blog｜筆記</a></li>
+                    <li><a href="{% url 'collaboration' %}" class="font-bold">Collab｜合作</a></li>
                 </ul>
             </div>
             <!-- logo -->
-            <div>
-                <a href="{% url 'home' %}" class="">Hṛdayadīpa (हृदयदीप)</a>
+            <div class="hidden lg:block">
+                <a href="{% url 'home' %}" class="">
+                    <!-- Hṛdayadīpa (हृदयदीप) -->
+                    <img id="logo_landscape" class="h-[2.25rem]" 
+                    src="/media/images/logos/logo_full_landscape.svg"
+                    alt="logo landscape">
+                </a>
             </div>
         </div>
         
       <!-- CENTER -->
+
+            <div class="h-[2.25rem] lg:hidden mr-1">
+                <a href="{% url 'home' %}" class="">
+                    <img id="logo_square" class="h-[2.25rem] lg:hidden mr-1" 
+                    src="/media/images/logos/logo_transparent.svg" 
+                    alt="logo square">
+                </a>
+            </div>
+
+
+
         <div class="navbar-center hidden lg:flex max-w-3/5">
             <ul class="menu menu-horizontal px-1">
-            <li><a href="{% url 'about' %}">介紹</a></li>
+            <li><a href="{% url 'about' %}" class="text-center"><strong>About<br/>介紹</strong></a></li>
             <li>
-                <details class="dropdown">
-                    <summary>寶貝</summary>
-                    <ul class="menu dropdown-content bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
-                        <li><a href="{% url 'products' %}">一覽</a></li>
-
-                        <li>
-                            <a>3D寶貝</a>
+                <div class="dropdown dropdown-hover dropdown-center">
+                    <a href="{% url 'products' category_slug='all' %}" role="button" class="inline-block text-center"><strong>Products<br/>寶貝</strong></a>
+                    <ul tabindex="-1" class="dropdown-content flex menu w-[51rem] bg-base-100 rounded-box z-1 p-2 shadow-sm -ml-[2rem] h-[calc(100vh-300px)] overflow-y-scroll -mt-5">
+                        <li class="w-[6rem]"><a href="{% url 'products' category_slug='all' %}" class="text-primary"><strong>All｜一覽</strong></a></li>
+                        <li class="w-1/3">
+                            <a href="{% url 'products' category_slug='physical' %}" class="text-primary"><strong>3D Goods｜三維寶貝</strong></a>
                             <ul>
-                                <li><a>油畫</a></li>
-                                <li><a>水彩畫</a></li>
-                                <li><a>能量系</a></li>
+                                {% for link in links %}
+                                    {% if link.product_format == "physical" %}
+                                        <li class="text-xs">
+                                            <a href="{{ link.get_url }}" class="flex flex-col items-start p-2">
+                                                <span>{{ link.category_name }}</span>
+                                                <img src="{{ link.cat_image.url }}" alt="category image" class="rounded-e-4xl">
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
                             </ul>
                         </li>
-                        <li>
-                            <a>電子寶貝</a>
+                        <li class="w-1/3">
+                            <a href="{% url 'products' category_slug='e-product' %}" class="text-primary"><strong>Digital｜電子寶貝</strong></a>
                             <ul>
-                                <li><a>禮品券</a></li>
-                                <li><a>線上手繪課程</a></li>
+                                {% for link in links %}
+                                    {% if link.product_format == "e-product" %}
+                                        <li class="text-xs">
+                                            <a href="{{ link.get_url }}" class="flex flex-col items-start p-2">
+                                                <span>{{ link.category_name }}</span>
+                                                <img src="{{ link.cat_image.url }}" alt="category image" class="rounded-e-4xl">
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
                             </ul>
                         </li>
                     </ul>
-                </details>
+                </div>
             </li>
-            <li><a href="{% url 'all_posts' %}">筆記</a></li>
-            <li><a href="{% url 'collaboration' %}">合作</a></li>
+            <li><a href="{% url 'all_posts' %}" class="text-center"><strong>Blog<br/>筆記</strong></a></li>
+            <li><a href="{% url 'collaboration' %}" class="text-center"><strong>Collab<br/>合作</strong></a></li>
             </ul>
         </div>
     
@@ -84,97 +133,183 @@
                 <!-- icon -->
                 <div tabindex="0" role="button" class="btn btn-ghost btn-circle flex items">
                     <div class="indicator">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /> </svg>
-                    <span class="badge badge-sm indicator-item">8</span>
+                        <svg xmlns="http://w3.org" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span id="cart_count_icon" class="badge badge-sm indicator-item {% if cart_count == 0 %}bg-transparent{% endif %}">
+                            {{item_count}}
+                        </span>
                     </div>
                 </div>
                 <!-- dropdown content -->
-                <div
-                    tabindex="0"
-                    class="card card-compact dropdown-content bg-base-100 z-1 mt-3 w-52 shadow right-0">
+                <div tabindex="0" class="card card-compact dropdown-content *:bg-base-100 z-1 mt-3 w-[23rem] shadow right-0 max-h-[calc(100vh-300px)]">
                     <div class="card-body">
-                        <span class="text-lg font-bold">8 Items</span>
-                        <span class="text-info-content">Subtotal: $999</span>
-                        <div class="card-actions">
-                            <a href="{% url 'cart' %}" class="btn btn-primary btn-block">View cart</a>
+                        <!-- list -->
+                        {% include 'store/partials/header_cart_list.html' %}
+                        <div class="divider -mb-2"></div>
+                        <!-- summary -->
+                        <div>
+                            <span class="text-sm font-light flex justify-between">
+                                <b>Total {% if item_count > 1 %}Items{% else %}Item{% endif %}｜總件數: </b>
+                                <b id="cart_count" class="font-bold">{{ item_count }} {% if item_count > 1 %}items{% else %}item{% endif %}</b>
+                            </span>
+                            <span class="text-sm flex justify-between">
+                                <b>Sub-Total｜小計: </b>
+                                <!-- Secure: Maps safely to isolated context key without page name clashing -->
+                                <b id="cart_sub_total" class="font-bold">CNY ¥ {{ header_cart_total }}</b>
+                            </span>
+                        </div>
+                        <div class="card-actions mt-3">
+                            <a href="{% url 'cart' %}" class="btn btn-primary btn-block font-light font-xs text-[1.05rem]">購物車 | View cart</a>
                         </div>
                     </div>
                 </div>
             </div>
             <!-- user -->
             {% if user.is_authenticated %}
-                <!-- logged-in user icon -->
-                <div class="dropdown dropdown-bottom flex items-center">
+                <div class="dropdown dropdown-bottom flex items-center relative">
+                    <div class="absolute z-10 text-[0.65rem] w-max max-w-[300px] whitespace-nowrap -bottom-3 left-1/2 -translate-x-1/2">Hi, {{request.user.username}}!</div>
                     <!-- avatar -->
                     <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
                         <div class="w-10 rounded-full">
-                        <img
-                            alt="Tailwind CSS Navbar component"
-                            src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp" />
+                            <img
+                                class="w-[1rem]"
+                                alt="User Picture"
+                                src="{% if request.user.profile %}{{ request.user.profile.profile_picture.url }} {% else %} /static/userprofile/default.png {% endif %}" 
+                            />
                         </div>
                     </div>
                     <!-- dropdown content -->
-                    <ul
-                    tabindex="0"
-                    class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow right-0">
-                        <li><a href="{% url 'dashboard' %}"><i class="fa-solid fa-gauge"></i>管理主頁</a></li>
-                        <li><a href="{% url 'member_profile' %}"><i class="fa-solid fa-address-card"></i>會員檔案</a></li>
-                        <li><a href="{% url 'addresses' %}"><i class="fa-solid fa-truck"></i>配送地址</a></li>
-                        <li><a href="{% url 'orders' %}"><i class="fa-solid fa-bag-shopping"></i>購物紀錄</a></li>
-                        <li><a href="{% url 'coupons' %}"><i class="fa-solid fa-money-bill"></i>優惠券</a></li>
-                        <li><a href="{% url 'vouchers' %}"><i class="fa-solid fa-money-bill-1-wave"></i>禮品券</a></li>
+                    <ul tabindex="0"
+                        class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-[16rem] p-2 shadow right-0">
                         <li>
-                            <a href="{% url 'help' %}" class="flex justify-between">
-                                <div>
-                                    <i class="fa-solid fa-headset"></i>
-                                    <span>&nbsp;客服熱線</span>
-                                </div>
-                                <div class="badge text-[10px] bg-primary text-primary-content">新到<i class="fa-solid fa-message"></i>17</div>
+                            <a href="{% url 'dashboard' 'main' %}" 
+                                {% if request.resolver_match.url_Name == 'dashboard' %}
+                                hx-get="{% url 'dashboard' 'main' %}" hx-target="#dashboard-content" hx-push-url="true"
+                                {% endif %}
+                            >
+                                <i class="fa-solid fa-gauge"></i>Dashboard｜管理主頁
                             </a>
                         </li>
-                        <li><a href="{% url 'wishlist' %}"><i class="fa-solid fa-rectangle-list"></i>未來購物清單</a></li>
-                        <li><a href="{% url 'favorites' %}"><i class="fa-solid fa-star"></i>收藏</a></li>
-                        <li><a href="{% url 'threed' %}"><i class="fa-solid fa-cubes"></i>3D場景</a></li>
+                        <li>
+                            <a href="{% url 'dashboard' 'profile' %}" 
+                                {% if request.resolver_match.url_Name == 'dashboard' %}
+                                hx-get="{% url 'dashboard' 'profile' %}" hx-target="#dashboard-content" hx-push-url="true"
+                                {% endif %}
+                            >
+                                <i class="fa-solid fa-address-card"></i>My Profile｜個人檔案
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'dashboard' 'addresses' %}" 
+                                {% if request.resolver_match.url_Name == 'dashboard' %}
+                                hx-get="{% url 'dashboard' 'addresses' %}" hx-target="#dashboard-content" hx-push-url="true"
+                                {% endif %}
+                            >
+                                <i class="fa-solid fa-truck"></i>Addresses｜地址簿
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'dashboard' 'orders' %}" 
+                                {% if request.resolver_match.url_Name == 'dashboard' %}
+                                hx-get="{% url 'dashboard' 'orders' %}" hx-target="#dashboard-content" hx-push-url="true"
+                                {% endif %}
+                            >
+                                <i class="fa-solid fa-bag-shopping"></i>Orders｜購物紀錄
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'dashboard' 'offers' %}" 
+                                {% if request.resolver_match.url_Name == 'dashboard' %}
+                                hx-get="{% url 'dashboard' 'offers' %}" hx-target="#dashboard-content" hx-push-url="true"
+                                {% endif %}
+                            >
+                                <i class="fa-solid fa-money-bill"></i>Offers｜福利活動
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'dashboard' 'Vouchers' %}" 
+                                {% if request.resolver_match.url_Name == 'dashboard' %}
+                                hx-get="{% url 'dashboard' 'Vouchers' %}" hx-target="#dashboard-content" hx-push-url="true"
+                                {% endif %}
+                            >
+                                <i class="fa-solid fa-money-bill-1-wave"></i>Vouchers｜禮品券
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'dashboard' 'wishlist' %}" 
+                                {% if request.resolver_match.url_Name == 'dashboard' %}
+                                hx-get="{% url 'dashboard' 'wishlist' %}" hx-target="#dashboard-content" hx-push-url="true"
+                                {% endif %}
+                            >
+                                <i class="fa-solid fa-rectangle-list"></i>Wishlist｜購物清單
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'dashboard' 'favorites' %}" 
+                                {% if request.resolver_match.url_Name == 'dashboard' %}
+                                hx-get="{% url 'dashboard' 'favorites' %}" hx-target="#dashboard-content" hx-push-url="true"
+                                {% endif %}
+                            >
+                                <i class="fa-solid fa-star"></i>Favorites｜收藏
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'dashboard' 'help' %}" 
+                                {% if request.resolver_match.url_Name == 'dashboard' %}
+                                hx-get="{% url 'dashboard' 'help' %}" hx-target="#dashboard-content" hx-push-url="true" 
+                                class="flex"
+                                {% endif %}
+                            >
+                                <div>
+                                    <i class="fa-solid fa-headset"></i>
+                                    <span>&nbsp;Help｜會員熱線</span>
+                                </div>
+                                <div class="badge text-[10px] bg-primary text-primary-content">
+                                    New
+                                    <i class="fa-solid fa-message"></i>
+                                    <span id="unread-count-header" 
+                                        hx-swap-oob="true" 
+                                        lass="badge badge-xs badge-secondary text-primary-content">
+                                        {{ unread_count }}
+                                    </span>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'dashboard' 'threed' %}" 
+                                {% if request.resolver_match.url_Name == 'dashboard' %}
+                                hx-get="{% url 'dashboard' 'threed' %}" hx-target="#dashboard-content" hx-push-url="true"
+                                {% endif %}
+                            >
+                                <i class="fa-solid fa-cubes"></i>3D Scenes｜3D場景
+                            </a>
+                        </li>
                     </ul>
                 </div>
+                <!-- logout btn -->
+                <a class="flex items-center btn btn-ghost" href="{% url 'logout' %}">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span class="text-xs text-center"><strong>Log out<br/>登出</strong></span>
+                </a>
             {% else %}
                 <!-- login btn -->
-                <a class="flex items-center" href="{% url 'login' %}">
-                    <i class="fa-solid fa-right-to-bracket"></i>
-                    <span class="text-xs">登入</span>
+                <a id="login_btn" class="flex items-center px-3 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg 
+                    shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),_inset_-4px_-4px_8px_rgba(255,255,255,0.7)] 
+                    active:shadow-[inset_6px_6px_12px_rgba(0,0,0,0.15),_inset_-6px_-6px_12px_rgba(255,255,255,0.8)] 
+                    transition-all duration-200" href="{% url 'login' %}">
+                    <i class="fa-solid fa-right-to-bracket mr-1"></i>
+                    <span class="text-xs text-center"><strong>Log in<br/>登入</strong></span>
                 </a>
                 <!-- register btn -->
-                <a class="flex items-center" href="{% url 'register' %}">
-                    <button class="btn btn-sm btn-active btn-primary">
-                        <i class="fa-regular fa-registered"></i>
-                        註冊
-                    </button>
+                <a id="register_btn" class="text-center flex items-center text-xs px-6 py-2 bg-neutral-content text-primary-content font-medium rounded-lg 
+                    shadow-[4px_4px_8px_rgba(0,0,0,0.1),_-4px_-4px_8px_rgba(255,255,255,0.7)] 
+                    active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),_inset_-4px_-4px_8px_rgba(255,255,255,0.7)" href="{% url 'register' %}">
+                        <i class="fa-regular fa-registered fa-xl"></i>
+                        <span>Register<br/>註冊</span>
+                    <!-- </button> -->
                 </a>
             {% endif %}
-            <!-- theme toggle -->
-            <!-- <label class="swap swap-flip"> -->
-                <!-- this hidden checkbox controls the state -->
-                <!-- <input id="day_night_checkbox" type="checkbox" checked="" class="theme-controller" value="" /> -->
-                <!-- sun icon -->
-                <!-- <svg
-                    id="sunIcon"
-                    class="swap-off h-6 w-6 fill-current"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24">
-                    <path
-                    d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z" />
-                </svg> -->
-    
-                <!-- moon icon -->
-                <!-- <svg
-                    id="moonIcon"
-                    class="swap-on h-6 w-6 fill-current"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24">
-                    <path
-                    d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z" />
-                </svg>
-            </label> -->
         </div>
     </div>
 </div>
@@ -186,7 +321,7 @@
         <div class="modal-box bg-neutral-content relative">
             <div class="modal-action py-[2rem] px-[3rem]">
                 <!-- form -->
-                <form action="" method="GET" class="flex gap-2">
+                <form action="{% url 'search' %}" method="GET" class="flex gap-2">
                     <label class="w-full input">
                         <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                             <g
@@ -200,7 +335,7 @@
                             <path d="m21 21-4.3-4.3"></path>
                             </g>
                         </svg>
-                        <input type="search" class="grow w-full" placeholder="搜索" />
+                        <input name="keyword" type="search" required class="grow w-full" placeholder="搜索" />
                         <kbd class="kbd kbd-sm">⌘</kbd>
                         <kbd class="kbd kbd-sm">K</kbd>
                     </label>  
@@ -214,6 +349,5 @@
         </div>
     </dialog>
 </div>
-
 
 {% endblock %}

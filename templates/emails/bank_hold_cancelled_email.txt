@@ -1,0 +1,27 @@
+Hṛdayadīpa (हृदयदीप) ｜ 心燈
+Order Hold Expired ｜ 庫存保留逾期自動取消通知
+
+======================================================================
+ORDER HOLD EXPIRED | 庫存保留逾期已自動取消
+======================================================================
+Order Number: {{ order.order_number }}
+
+{% if user.username %}Dear {{ user.username }},{% else %}Dear {{ order.email }},{% endif %}
+
+This notice is to inform you that the 72-hour warehouse lock duration for order number {{ order.order_number }} has run out without a confirmed remittance transaction clearance update. 
+您的訂單 {{ order.order_number }} 由於未能在 72小時 的指定期限內完成匯款確認，現已逾期。系統已自動將其取消並釋放商品庫存。
+
+{% if order.voucher_applied > 0 %}
+[🛡️ VOUCHER BALANCE RESTORED | 現金禮券全額退還通知]
+A balance value of CNY {{ order.voucher_applied }} has been fully generated and restored back into your account profile wallet space.
+您在此訂單中使用的現金禮券（金額：CNY {{ order.voucher_applied }}）已由系統全額自動退回至您的會員賬戶中。
+{% endif %}
+
+If you still wish to purchase these items, please revisit our store to re-initialize an active checkout loop sequence.
+如果您仍希望購買上述商品，歡迎重新訪問店鋪將其加入購物車。
+
+Sincerely,
+心燈團隊敬上
+
+--
+xindeng.art

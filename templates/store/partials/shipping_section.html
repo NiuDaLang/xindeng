@@ -1,0 +1,139 @@
+{% load humanize %}
+
+{% if cart.needs_shipping %}
+<div id="shipping-wrapper" class="space-y-4">
+    <form hx-post="{% url 'calculate_shipping' %}" 
+          hx-swap="none"
+    >
+        {% csrf_token %}
+        
+        <!-- Accordion 1: Manual Selection -->
+        <h2 class="text-[1.25rem] mb-5">Shipping｜配送</h2>
+        <div class="collapse collapse-arrow bg-base-200 border border-base-300">
+            <input type="radio" name="shipping_accordion" value="dropdown" checked /> 
+            <div class="collapse-title text-md font-medium">Select Destination｜選擇目的地</div>
+            <div class="collapse-content bg-base-50 !p-0">
+                <div class="p-4 space-y-4 pt-0">
+                    <!-- Zone Radios -->
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="zone" value="global" class="peer hidden" checked />
+                            <div class="peer-checked:border-primary peer-checked:bg-primary/5 border-2 p-3 rounded-lg text-center">
+                                <div class="text-xs font-bold text-base-content/70 h-[3rem] flex flex-col justify-center">
+                                    <div class="block">Global</div>
+                                    <div class="block text-[0.65rem]">地球村</div>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="zone" value="greater_china" class="peer hidden" />
+                            <div class="peer-checked:border-primary peer-checked:bg-primary/5 border-2 p-3 rounded-lg text-center">
+                                <div class="flex flex-col justify-center text-xs font-bold text-base-content/70 h-[3rem]">Greater China<br><span class="text-[0.65rem]">港澳台</span></div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="zone" value="china" class="peer hidden" />
+                            <div class="peer-checked:border-primary peer-checked:bg-primary/5 border-2 p-3 rounded-lg text-center">
+                                <div class="text-xs font-bold text-base-content/70 h-[3rem]">Mainland China<br><span class="text-[0.65rem]">中國大陸</span></div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Destination Selects -->
+                    <div class="form-control w-full">
+                        <div id="select_container">
+                            <select id="global_select" name="destination" class="select select-bordered w-full zone-select">
+                                <option value="" disabled selected>Country or Region｜國家或地區</option>
+                                {% for destination in global_destinations %}<option value="{{destination.0}}">{{ destination.1 }}</option>{% endfor %}
+                            </select>
+                            <select id="greater_china_select" name="destination" class="select select-bordered w-full zone-select hidden" disabled>
+                                <option value="" disabled selected>Please Select｜請選擇</option>
+                                {% for destination in greater_china_destinations %}<option value="{{destination.0}}">{{ destination.1 }}</option>{% endfor %}
+                            </select>
+                            <select id="china_select" name="destination" class="select select-bordered w-full zone-select hidden" disabled>
+                                <option value="" disabled selected>Please Select｜請選擇省份</option>
+                                {% for destination in mainland_china_destinations %}<option value="{{destination.0}}">{{ destination.1 }}</option>{% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>                
+        </div>
+
+        <!-- Accordion 2 -->
+        {% if user.is_authenticated and user.profile.addresses.exists %}
+        <div class="collapse collapse-arrow bg-base-200 border border-base-300 mt-2">
+            <input type="radio" id="acc-saved-address" name="shipping_accordion" value="saved_address" />
+            <div class="collapse-title text-md font-medium">Use Saved Address｜使用已儲存地址</div>
+            <div class="collapse-content">
+                <div class="flex justify-between items-center p-3 bg-base-100 rounded-lg border">
+                    <span id="display-address-text" class="text-sm">
+                        {% if user.default_address %}
+                            {{ user.default_address.full_address }}
+                        {% else %}
+                            {# Gets the latest address by ordering by ID descending #}
+                            {{ user.profile.addresses.all.last.full_address}}
+                        {% endif %}
+                    </span>
+                    
+                    <input type="hidden" name="address_id" id="active-address-id"
+                            value="{% if user.default_address %}{{ user.default_address.id }}{% else %}{{ user.profile.addresses.all.last.id }}{% endif %}">
+                    <button type="button" class="btn btn-ghost btn-xs text-primary" onclick="document.getElementById('address_modal').showModal()">Change</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Address Selection Modal -->
+        <dialog id="address_modal" class="modal">
+            <div class="modal-box">
+                <h3 class="font-bold text-lg mb-4">Select Address｜選擇地址</h3>
+                <div class="space-y-2">
+                    {% for address in user.profile.addresses.all %}
+                    <label class="flex items-center gap-3 p-3 border rounded-lg hover:bg-base-100 cursor-pointer">
+                        <input type="radio" name="modal_addr_choice" value="{{ address.id }}" 
+                            data-full="{{ address.full_address }}" 
+                            {% if forloop.first %}checked{% endif %} class="radio radio-primary">
+                        <span class="text-sm">{{ address.full_address }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <div class="modal-action">
+                    <button type="button" class="btn btn-primary" onclick="updateAccordionAddress()">Update Address</button>
+                    <button type="button" class="btn" onclick="document.getElementById('address_modal').close()">Cancel</button>
+                </div>
+            </div>
+        </dialog>
+        {% endif %}
+
+        <!-- PERMANENT BUTTON: No more HTMX partial -->
+        <div id="calc-btn-wrapper" class="mt-4">
+            <button type="submit" id="calc-shipping-btn" class="btn btn-primary btn-block btn-disabled opacity-50" disabled>
+                <span class="btn_text">Calculate Shipping｜計算運費</span>
+            </button>
+        </div>
+    </form>
+
+    <div id="shipping-result-container" class="mt-4 border-t border-dashed border-base-300">
+        <!-- Displays initially before calculation button is clicked -->
+        <div id="shipping-cost-display" 
+                class="my-4 alert alert-soft alert-success shadow-sm text-base-content/50 justify-center">
+                Shipping Cost｜配送費 - TBA｜待定
+        </div>
+    </div>
+
+</div>
+{% else %}
+    <div class="alert alert-info shadow-sm justify-center py-6">
+        <div class="text-center">
+            <p class="font-bold">No Shipping Required｜無需物流</p>
+            <p class="text-xs">Digital products only.｜僅包含電子產品</p>
+        </div>
+    </div>
+    <script>
+        // Auto-enable checkout for digital goods
+        const btn = document.getElementById('checkout-btn');
+        btn.classList.remove('btn-disabled', 'opacity-80', 'cursor-not-allowed');
+        btn.disabled = false;
+        btn.innerHTML = '<span>Go to Checkout<br>前往結帳</span><span><i class="fa-solid fa-arrow-right fa-xl"></i></span>';
+    </script>
+{% endif %}

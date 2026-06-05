@@ -1,0 +1,135 @@
+{% load humanize %}
+{% load chat_extras %}
+
+<!-- sender=request.user | receiver=request.user | sender=admin | receiver | admin-->
+{% if chat_messages %}
+    <div id="load-more-container" class="flex justify-center p-4">
+        {% if has_more and not search_query %}
+            <button 
+                hx-get="{% url 'load_earlier_messages' %}?last_id={{ chat_messages.0.id }}&other_user_id={{ other_user.id }}"
+                hx-target="#load-more-container"
+                hx-swap="outerHTML"
+                class="btn btn-ghost btn-xs text-primary-content"
+            >
+                Load Earlier Messages | 載入更早訊息
+                <span class="loading loading-dots loading-xs htmx-indicator"></span>
+            </button>
+        {% endif %}
+    </div>
+
+    {% for msg in chat_messages %}
+        {% if msg.id == first_unread_id %}
+            <div id="unread-separator" class="divider divider-error my-8 text-xs opacity-70">
+                UNREAD MESSAGES｜未讀訊息
+            </div>
+        {% endif %}
+
+        <!-- if user is not admin -->
+        {% if request.user != admin %}
+            <div id="msg-{{ msg.id }}" 
+                    class="chat 
+                            {% if msg.sender == request.user %}chat-end{% else %}chat-start{% endif %} 
+                            {% if msg.is_match %}search-match{% endif %}"
+                    {% if not msg.is_read and msg.receiver == request.user %}
+                        hx-post="{% url 'mark_read' msg.id %}"
+                        hx-trigger="intersect once"
+                        hx-swap="none"
+                    {% endif %}
+            >
+                <!-- avatar -->
+                <div class="chat-image avatar">
+                    <div class="w-10 h-10 rounded-full">
+                        <img
+                            alt="admin avatar"
+                            src="{{ msg.sender.profile.profile_picture.url }}"
+                            class="w-full f-full"
+                        />
+                    </div>
+                </div>
+                <!-- content -->
+                <div class="chat-header">
+                    <!-- name -->
+                    <div>{{ msg.sender.username }}</div>
+                    <time class="text-xs opacity-50">{{ msg.timestamp|date:"Y-m-d H:i:s" }}</time>
+                </div>
+                <div class="chat-bubble">
+                    <!-- text -->
+                    {% if msg.highlighted_text %}
+                        {{ msg.highlighted_text|format_chat }}
+                    {% else %}
+                        {{ msg.content|format_chat }}
+                    {% endif %}
+                    <!-- image -->
+                    {% if msg.image %}
+                        <img src="{{ msg.image.url}}" alt="chat message image">
+                    {% endif %}
+                </div>
+                {% if msg.sender == request.user %}
+                <div class="chat-footer opacity-50">
+                    <span id="msg-footer-{{ msg.id }}">
+                        {% if msg.is_read %}
+                            read｜已閱
+                        {% else %}
+                            unread｜未閱
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        <!-- if user is admin -->
+        {% elif request.user == admin %}
+            <!-- default -> BOTH sender & receiver == admin -->
+            <div id="msg-{{ msg.id }}" 
+                 class="chat 
+                    {% if msg.sender == admin %}chat-end{% elif msg.sender != admin %}chat-start{% endif %}
+                    {% if msg.is_match %}search-match{% endif %}"
+                    {% if not msg.is_read and msg.receiver == request.user %}
+                        hx-post="{% url 'mark_read' msg.id %}"
+                        hx-trigger="intersect once"
+                        hx-swap="none"
+                    {% endif %}
+            >
+                <!-- avatar -->
+                <div class="chat-image avatar">
+                    <div class="w-10 h-10 rounded-full">
+                        <img
+                            alt="sender avatar"
+                            src="{{ msg.sender.profile.profile_picture.url }}"
+                            class="w-full f-full"
+                        />
+                    </div>
+                </div>
+                <!-- content -->
+                <div class="chat-header">
+                    <!-- name -->
+                    <div>{{ msg.sender.username }}</div>
+                    <time class="text-xs opacity-50">{{ msg.timestamp|date:"Y-m-d H:i:s" }}</time>
+                </div>
+                <div class="chat-bubble">
+                    <!-- text -->
+                    {% if msg.highlighted_text %}
+                        {{ msg.highlighted_text|format_chat }}
+                    {% else %}
+                        {{ msg.content|format_chat }}
+                    {% endif %}
+                    <!-- image -->
+                    {% if msg.image %}
+                        <img src="{{ msg.image.url}}" class="rounded-lg mt-2" alt="chat message image">
+                    {% endif %}
+                </div>
+                {% if msg.sender == request.user %}
+                <div class="chat-footer opacity-50">
+                    <span>sent to: {{ msg.receiver.username }}｜</span>
+                    <span id="msg-footer-{{ msg.id }}">
+                        {% if msg.is_read %}
+                            read｜已閱
+                        {% else %}
+                            unread｜未閱
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% endfor %}
+{% endif %}

@@ -84,3 +84,7 @@ django-app-key.pem
 
 # Env
 setenv.txt
+
+# Misc
+accounts_errors.html
+test.html

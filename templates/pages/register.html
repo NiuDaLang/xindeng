@@ -1,13 +1,16 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load socialaccount %}
 {% block content %}
 
 <div class="flex mt-16 w-full h-[calc(100dvh-64px)] ">
     <!-- TITLE -->
     <div class="relative flex flex-col justify-center items-center grow">
         <img src="/media/hero/purpleFlower.svg" alt="" class="absolute left-0 top-0 w-full h-full object-cover -z-1">
-        <h1 class="text-5xl text-primary-content text-shadow-lg text-shadow-base-300 mb-2">加入會員</h1>
-        <h2 class="text-primary-content text-shadow-lg text-shadow-base-300 mb-5">~ 基本套餐免費 ～</h2>
+        <h1 class="text-2xl text-[#614051] text-shadow-lg text-shadow-[#E6E6E6] mb-2">Become a Member｜加入會員</h1>
+        <h2 class="text-[#614051] text-shadow-lg text-shadow-[#E6E6E6] mb-5">~ Get Exclusive Access｜免費私享 ～</h2>
+        <!-- #614051 (Classic Eggplant), #483248 (Dark Eggplant), #513653 (Plum Purple), and #8E4585 (Vibrant Plum). -->
+        
         <div class="ml-[2rem]">
             <h3>專享福利 福利！</h3>
             <h3>驚喜不斷 驚喜不斷 源源不絕！</h3>
@@ -16,51 +19,69 @@
 
     <!-- FORM -->
     <div class="flex flex-col justify-center grow-0 h-full bg-primary-content p-10">
-        <h2 class="text-3xl pb-5">註冊 Sign up</h2>
-        <form action="" method="POST">
-            <fieldset class="fieldset w-md">
-                <button class="btn bg-white text-black border-[#e5e5e5] flex justify-between">
-                    <svg aria-label="Google logo" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g><path d="m0 0H512V512H0" fill="#fff"></path><path fill="#34a853" d="M153 292c30 82 118 95 171 60h62v48A192 192 0 0190 341"></path><path fill="#4285f4" d="m386 400a140 175 0 0053-179H260v74h102q-7 37-38 57"></path><path fill="#fbbc02" d="m90 341a208 200 0 010-171l63 49q-12 37 0 73"></path><path fill="#ea4335" d="m153 219c22-69 116-109 179-50l55-54c-78-75-230-72-297 55"></path></g></svg>
-                    <span>用 Google帳號 註冊</span>
-                </button>
+        <h2 class="text-3xl pb-5">Sign up 註冊</h2>
+        {% include 'includes/alerts.html' %}
+        
+        <fieldset class="fieldset w-md">
+            <a  href="{% provider_login_url 'google' %}" 
+                class="btn bg-white text-black border-[#e5e5e5] flex justify-between"
+                >
+                <svg aria-label="Google logo" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g><path d="m0 0H512V512H0" fill="#fff"></path><path fill="#34a853" d="M153 292c30 82 118 95 171 60h62v48A192 192 0 0190 341"></path><path fill="#4285f4" d="m386 400a140 175 0 0053-179H260v74h102q-7 37-38 57"></path><path fill="#fbbc02" d="m90 341a208 200 0 010-171l63 49q-12 37 0 73"></path><path fill="#ea4335" d="m153 219c22-69 116-109 179-50l55-54c-78-75-230-72-297 55"></path></g></svg>
+                <span>Sign up with Google<small class="opacity-70">｜用 Google帳號 註冊</small></span>
 
-                <button class="btn bg-[#1A77F2] text-white border-[#005fd8] flex justify-between">
-                    <svg aria-label="Facebook logo" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path fill="white" d="M8 12h5V8c0-6 4-7 11-6v5c-4 0-5 0-5 3v2h5l-1 6h-4v12h-6V18H8z"></path></svg>
-                    <span>用 Facebook帳號 註冊</span>
-                </button>
-
-                <div class="divider">或 OR</div>
-
-                <label class="label">用戶名</label>
-                <input type="text" class="input w-full" placeholder="Username" />
+            </a>                
+        
+            <div class="divider">或 OR</div>
+        
+            <form action="{% url 'register' %}" method="POST">
+                {% csrf_token %}
+                {% if email_errors %}
+                    {% for error in email_errors %}
+                        <p>{{ error.message }}</p>
+                    {% endfor %}
+                {% endif %}
 
                 <label class="label">郵箱 Email</label>
-                <input type="email" class="input w-full" placeholder="Email" />
+                 {{ form.email }}
 
-                <label class="label">密碼 Password</label>
-                <input type="password" class="input w-full" placeholder="Password" />
+                {% if username_errors %}
+                    {% for error in username_errors %}
+                        <p>{{ error.message }}</p>
+                    {% endfor %}
+                {% endif %}
+
+                <label class="label">用戶名</label>
+                {{ form.username }}
+
+                {% if pw_errors %}
+                    {% for error in pw_errors %}
+                        <p>{{ error.message }}</p>
+                    {% endfor %}
+                {% endif %}
+
+                <label class="label">密碼 Password <small>至少8個字：1個大寫英字母+1個小寫英字母+1個數字+1個特殊符號(~!@#$%^&*()_+{}\":;'[])</small></label>
+                {{ form.password1 }}
 
                 <label class="label">確認密碼 Confirm Password</label>
-                <input type="password" class="input w-full" placeholder="Confirm Password" />
-
-                <label class="label">會員種類 Membership Type</label>
-                <select class="select select-primary w-full">
-                    <option disabled selected>選擇套餐種類</option>
-                    <option>【葉】基礎會員<div class="badge badge-sm badge-success">免費Free</div></option>
-                    <option>【花】私享會員</option>
-                </select>
+                {{ form.password2 }}
 
                 <br>
                 <div class="flex items-center gap-1 text-xs">
-                    <input type="checkbox" class="checkbox checkbox-xs checkbox-neutral" />
-                    <span class="text-base">我同意<a href=""><u>會員條款</u></a>  I agree to the <a href=""><u>User Terms</u></a>.</span>
+                    {{ form.receive_newsletter }}
+                    <span class="text-base"> 接收時事通訊 | Receive Newsletter</span>
+                </div>
+                <div class="flex items-center gap-1 text-xs">
+                    <input type="checkbox" class="checkbox checkbox-xs checkbox-primary" required />
+                    <span class="text-base">我同意<a href=""><u>會員條款</u></a> | I agree to the <a href=""><u>User Terms</u></a>.</span>
                 </div>
 
-                <button class="btn btn-neutral mt-4">註&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;冊</button>
-            </fieldset>
-        </form>
+                <button type="submit" class="w-full btn btn-neutral text-primary-content mt-4">註&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;冊</button>
+            </form>
+        </fieldset>
+    
+        <!-- go to register -->
+        <h5 class="text-xs my-2 font-light text-secondary text-center">已是會員？ | Aready a member? <a class="text-shadow-2xs text-shadow-secondary-content" href="{% url 'login' %}" >登入 | Login</a></h5>
     </div>
-
 </div>
 
 {% endblock %}

@@ -1,0 +1,108 @@
+{% load humanize %}
+{% if favorites %}
+    <div class="grid md:grid-cols-2 gap-8 my-5">
+        {% for favorite in favorites%}
+            <div id="favorite_item_{{ favorite.pk }}" class="card bg-base-100 shadow-sm">
+                <figure class="relative">
+                    <a href="{{ favorite.product_variation.product.get_url }}" class="w-full h-full group transition-all duration-5000 ease-in-out">
+                        <img
+                            src="{{ favorite.product_variation.images.url }}"
+                            alt="Product Image" 
+                        />
+                        <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
+                        </div>
+                        <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket fa-lg opacity-0 group-hover:opacity-100 text-base-100"></i>
+                    </a>
+                    <div class="absolute right-2 top-2 z-20 flex flex-col items-center">
+                        <!-- add to cart -->
+                        {% if favorite.product_variation.stock > 0 and favorite.product_variation.is_available %}
+                            <button type="button"
+                                    id="add_favorite_to_cart_btn_{{ favorite.pk }}"
+                                    class="btn btn-circle btn-xs btn-ghost hover:bg-success-content hover:text-white transition-colors"             
+                                    hx-get="{% url 'add_to_cart_qty' favorite.product_variation.pk 'favorites' %}"
+                                    hx-target="#change_qty_wrapper"
+                                    hx-trigger="click consume"
+                                    onclick="my_modal_3.showModal()"
+                            >
+                                <i class="fa-solid fa-cart-plus fa-lg"></i>
+                            </button>
+                        {% else %}
+                            <button disabled>
+                                <i class="fa-solid fa-store-slash"></i>
+                            </button>
+                        {% endif %}
+                        <!-- share -->
+                        <button type="button"
+                                class="btn btn-circle btn-xs btn-ghost hover:bg-info-content hover:text-white transition-colors"
+                                data-title="Hṛdayadīpa (हृदयदीप) - {{ favorite.product_variation.product.product_name }}"
+                                data-text="{{ favorite.product_variation.get_sku }}"
+                                data-link="{{ request.build_absolute_uri }}"
+                                hx-on:click="share_link(this.getAttribute('data-title'), this.getAttribute('data-text'), this.getAttribute('data-link'))"
+                        >
+                            <i class="fa-solid fa-share-from-square fa-lg"></i>
+                        </button>
+
+
+                        <!-- delete -->
+                        <button type="button" 
+                                class="btn btn-circle btn-xs btn-ghost hover:bg-error-content hover:text-white transition-colors"
+                                hx-post="{% url 'delete_favorite_item' favorite.pk %}"
+                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                hx-target="#favorites_wrapper"
+                                hx-trigger="confirmed"
+                                onclick="confirmAction(
+                                    button=this,
+                                    title='Are you sure?｜您確定嗎？',
+                                    html=`This item will be removed from your favorites!<br>此寶貝將從您的收藏清單中移除！`,
+                                    icon='warning',
+                                    show_cancel=true,
+                                    confirm_btn_color='#d33',
+                                    cancel_btn_color='#3085d6',
+                                    confirm_btn_text='Yes, remove it!｜確定移除！',
+                                    cancel_btn_text='Cancel｜取消',
+                                )"
+                        >
+                            <i class="fa-solid fa-trash-can fa-lg"></i>
+                        </button>
+                    </div>
+    
+                    <!-- tags -->
+                    <div class="card-title absolute top-3 left-3">
+                        <span class="badge badge-secondary badge-xs text-[0.6rem]">新上架</span>
+                        <span class="badge badge-error badge-xs text-[0.6rem]">人气！</span>
+                        <span class="badge badge-success badge-xs text-[0.6rem]">优惠！</span>
+                    </div>
+                </figure>
+                <div class="flex flex-col gap-[0.5rem] p-[1.5rem] text-[0.875rem]">
+                    <div class="text-[1.125rem] leading-tight font-medium flex items-start">
+                        <div class="pr-1">
+                            <i class="fa-solid fa-tag fa-xs inline-block"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="inline-block text-[0.9rem] text-shadow-lg/10">{{ favorite.product_variation.product.product_name }}</span>
+                            <span class="text-[0.65rem] uppercase font-light opacity-60">{{ favorite.sku }}</span>
+                        </div>
+                    </div>
+                    <p class="text-xs font-light">{{ favorite.product_variation.product.description }}</p>
+                    <!-- price -->
+                    <div class="card-title">
+                        <i class="fa-solid fa-money-check-dollar fa-sm"></i>                            
+                        <i class="font-extralight text-shadow-md text-shadow-stone-300 text-sm">CNY {{ favorite.product_variation.price|floatformat:2|intcomma}}</i>
+                    </div>
+                    <!-- labels -->
+                    <div class="card-actions justify-start">
+                        {% if favorite.product_variation.product.tags %}
+                            {% for tag in favorite.product_variation.product.tags.all %}
+                                <a href="" class="badge badge-outline badge-xs py-2 text-[0.65rem]">{{ tag }}</a>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <h2 class="h2shadow col-span-2 mx-auto my-[5rem] text-center"><a href="{% url 'products' 'all' %}" class="text-secondary-content">寶貝們</a>在靜候著您的寵幸｜Don't lose contact with our <a href="{% url 'products' 'all' %}" class="text-secondary-content">GEMs</a>.</h2>
+{% endif %}
+
+    

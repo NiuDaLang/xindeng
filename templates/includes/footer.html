@@ -1,130 +1,118 @@
 {% block content %}
-<footer class="footer sm:footer-horizontal bg-primary text-primary-content p-10 justify-around">
-    <!-- COMPANY -->
-    <aside>
-    <div class="w-full flex justify-between">
-        <svg
-            width="50"
-            height="50"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-            fill-rule="evenodd"
-            clip-rule="evenodd"
-            class="fill-current">
-            <path
-            d="M22.672 15.226l-2.432.811.841 2.515c.33 1.019-.209 2.127-1.23 2.456-1.15.325-2.148-.321-2.463-1.226l-.84-2.518-5.013 1.677.84 2.517c.391 1.203-.434 2.542-1.831 2.542-.88 0-1.601-.564-1.86-1.314l-.842-2.516-2.431.809c-1.135.328-2.145-.317-2.463-1.229-.329-1.018.211-2.127 1.231-2.456l2.432-.809-1.621-4.823-2.432.808c-1.355.384-2.558-.59-2.558-1.839 0-.817.509-1.582 1.327-1.846l2.433-.809-.842-2.515c-.33-1.02.211-2.129 1.232-2.458 1.02-.329 2.13.209 2.461 1.229l.842 2.515 5.011-1.677-.839-2.517c-.403-1.238.484-2.553 1.843-2.553.819 0 1.585.509 1.85 1.326l.841 2.517 2.431-.81c1.02-.33 2.131.211 2.461 1.229.332 1.018-.21 2.126-1.23 2.456l-2.433.809 1.622 4.823 2.433-.809c1.242-.401 2.557.484 2.557 1.838 0 .819-.51 1.583-1.328 1.847m-8.992-6.428l-5.01 1.675 1.619 4.828 5.011-1.674-1.62-4.829z"></path>
-        </svg>
-        
-        <a href="{% url 'contact' %}" class="link link-hover text-sm btn btn-outline">聯繫我們</a>
+    <footer id="footer" class="relative bg-primary footer w-full sm:footer-horizontal text-[var(--xindeng-light-color)] px-10 py-30 justify-around">
+        <!-- wrapper -->
+        <div class="footer_wrapper min-w-[30rem] w-full h-full">
+            <!-- row 1 -->
+            <div class="flex w-full -mb-[4px]">
+                <!-- top-left -->
+                <div class="w-1/2 relative">
+                    <!-- links -->
+                    <nav class="w-full h-[80px] flex flex-col text-right">
+                        <span class="font-semibold text-[#A1FFAB]">Shopping Guide｜購物指南</span>
+                        <a class="text-[0.7rem] font-light text-[#A1FFAB] leading-4" href="#">Shipping Policy ｜配送須知</a>
+                        <a class="text-[0.7rem] font-light text-[#A1FFAB] leading-4" href="#">After-Sales Service｜售後服務</a>
+                        <a class="text-[0.7rem] font-light text-[#A1FFAB] leading-4" href="#">How to Order｜購買流程</a>
+                    </nav>
+                    <!-- windmill wing -->
+                    <div class="absolute right-0 w-[160px] aspect-[2/1] flex bg-[#38533B]" style="clip-path: polygon(50% 0, 100% 0, 100% 100%, 0% 100%);"></div>
+                </div>
+                <!-- top-right -->
+                <div class="w-1/2 h-[160px] flex justify-start">
+                    <!-- windmill wing -->
+                    <div class="w-[80px] aspect-[1/2] bg-[#5E2C2C]" style="clip-path: polygon(0 0, 100% 50%, 100% 100%, 0% 100%);"></div>
+                    <!-- links -->
+                    <nav class="flex flex-col w-[calc(100%-80px)] justify-end">
+                        <a class="text-[0.7rem] font-light text-[#FF7E7E] leading-4" href="#">IP Policy｜版權政策</a>
+                        <a class="text-[0.7rem] font-light text-[#FF7E7E] leading-4" href="#">Privacy Policy｜隱私政策</a>
+                        <a class="text-[0.7rem] font-light text-[#FF7E7E] leading-4" href="#">FAQs｜常見疑問</a>
+                        <a class="text-[0.7rem] font-light text-[#FF7E7E] leading-4" href="{% url 'about' %}">About Us｜關於我們</a>
+                        <span class="font-semibold text-[#FF7E7E]">General Info｜常用資訊</span>
+                    </nav>
+                </div>
+            </div>
+            <!-- row 2 -->
+            <div class="flex w-full -mt-[4px]">
+                <!-- bottom-left -->
+                <div class="w-1/2 h-[160px] flex justify-end">
+                    <!-- links -->
+                    <nav class="flex flex-col w-[calc(100%-80px)] text-right">
+                        <a href=""><span class="font-semibold text-[var(--xindeng-light-color)]">Contact Us｜聯繫我們</span></a>
+                        <a class="text-[0.7rem] font-light text-[var(--xindeng-light-color)] leading-4" href="#">E-mail Us｜電郵我們</a>
+                        <a class="text-[0.7rem] font-light text-[var(--xindeng-light-color)] leading-4" href="#">Member Hotline｜會員熱線</a>
+                    </nav>
+                    <!-- windmill wing -->
+                    <div class="w-[80px] aspect-[1/2] bg-[#7E7B50]" style="clip-path: polygon(0 0, 100% 0, 100% 100%, 0 50%);"></div>
+                </div>
+                <!-- bottom right -->
+                <div class="w-1/2 flex flex-col">
+                    <!-- windmill wing -->
+                    <div class="w-[160px] aspect-[2/1] flex bg-[#13366F]" style="clip-path: polygon(0 0, 100% 0, 50% 100%, 0 100%);"></div>
+                    <!-- links -->
+                    <nav class="w-full h-[80px] flex flex-col justify-end text-left">
+                        <a class="flex items-center gap-1 text-[0.7rem] font-light text-[#3E87FF] leading-4" href="#">
+                            <svg 
+                                fill="#3E87FF"
+                                viewBox="0 0 32 32" 
+                                id="Camada_1" 
+                                version="1.1" 
+                                width="16"
+                                height="16"
 
-    </div>
-    <p>
-        Copyright © 2025 - All right reserved by Hṛdayadīpa
-    </p>
-    </aside>
-
-    <!-- POLICIES -->
-    <nav>
-    <h6 class="footer-title text-base">服務內容</h6>
-    <a class="link link-hover text-sm">顧客須知</a>
-    <a class="link link-hover text-sm">關於隱私</a>
-    </nav>
-
-    <!-- SNS -->
-    <nav class="w-">
-    <h6 class="footer-title text-base">社交平台</h6>
-    <div class="grid grid-flow-col gap-4 text-sm">
-        <!-- Instagram -->
-        <a href="">
-            <svg 
-                fill="#ffffff"
-                viewBox="0 0 32 32" 
-                id="Camada_1" 
-                version="1.1" 
-                width="32"
-                height="32"
-
-                xml:space="preserve" 
-                xmlns="http://www.w3.org/2000/svg" 
-                xmlns:xlink="http://www.w3.org/1999/xlink"
-            >
-                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                <g id="SVGRepo_iconCarrier"> 
-                    <g> 
-                    <path d="M22.3,8.4c-0.8,0-1.4,0.6-1.4,1.4c0,0.8,0.6,1.4,1.4,1.4c0.8,0,1.4-0.6,1.4-1.4C23.7,9,23.1,8.4,22.3,8.4z"></path> 
-                    <path d="M16,10.2c-3.3,0-5.9,2.7-5.9,5.9s2.7,5.9,5.9,5.9s5.9-2.7,5.9-5.9S19.3,10.2,16,10.2z M16,19.9c-2.1,0-3.8-1.7-3.8-3.8 c0-2.1,1.7-3.8,3.8-3.8c2.1,0,3.8,1.7,3.8,3.8C19.8,18.2,18.1,19.9,16,19.9z"></path> 
-                    <path d="M20.8,4h-9.5C7.2,4,4,7.2,4,11.2v9.5c0,4,3.2,7.2,7.2,7.2h9.5c4,0,7.2-3.2,7.2-7.2v-9.5C28,7.2,24.8,4,20.8,4z M25.7,20.8 c0,2.7-2.2,5-5,5h-9.5c-2.7,0-5-2.2-5-5v-9.5c0-2.7,2.2-5,5-5h9.5c2.7,0,5,2.2,5,5V20.8z"></path> 
-                    </g> 
-                </g>
-            </svg>
-        </a>
-        <!-- Pinterest -->
-        <a href="">
-            <svg 
-                fill="#ffffff" 
-                viewBox="0 0 256 256" 
-                id="Flat" 
-                width="32"
-                height="32"
-                xmlns="http://www.w3.org/2000/svg">
-                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                <g id="SVGRepo_iconCarrier"> 
-                    <path d="M232,128a104.02405,104.02405,0,0,1-132.74316,99.957l9.8164-39.26513A50.31473,50.31473,0,0,0,136,196c35.29,0,64-30.50488,64-68A72,72,0,1,0,61.2373,155.00393,8.00011,8.00011,0,0,0,76.06836,149,56.00735,56.00735,0,1,1,184,128c0,28.67285-21.53271,52-48,52-10.49072,0-17.78076-3.66064-22.75049-8.01269l14.51172-58.04688a8.00012,8.00012,0,0,0-15.52246-3.88086L84.17822,222.30178A103.99416,103.99416,0,1,1,232,128Z"></path> 
-                </g>
-            </svg>
-
-        </a>
-        <!-- Facebook -->
-        <a href="">
-            <svg 
-                fill="#ffffff" 
-                version="1.1" 
-                id="Capa_1" 
-                width="32"
-                height="32"
-                xmlns="http://www.w3.org/2000/svg" 
-                xmlns:xlink="http://www.w3.org/1999/xlink" 
-                viewBox="0 0 97.75 97.75" 
-                xml:space="preserve"
-            >
-                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                <g id="SVGRepo_iconCarrier"> 
-                    <g> 
-                        <path d="M48.875,0C21.882,0,0,21.882,0,48.875S21.882,97.75,48.875,97.75S97.75,75.868,97.75,48.875S75.868,0,48.875,0z M67.521,24.89l-6.76,0.003c-5.301,0-6.326,2.519-6.326,6.215v8.15h12.641L67.07,52.023H54.436v32.758H41.251V52.023H30.229V39.258 h11.022v-9.414c0-10.925,6.675-16.875,16.42-16.875l9.851,0.015V24.89L67.521,24.89z"></path> 
-                    </g> 
-                </g>
-            </svg>
-        </a>
-        <!-- Wechat -->
-        <a href="">
-            <svg 
-                viewBox="0 0 300 300" 
-                xmlns="http://www.w3.org/2000/svg" 
-                fill="#000000"
-                width="32"
-                height="32"
-
-            >
-                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                <g id="SVGRepo_iconCarrier"> 
-                    <path fill="#2DC100" d="M300 255c0 24.854-20.147 45-45 45H45c-24.854 0-45-20.146-45-45V45C0 20.147 20.147 0 45 0h210c24.853 0 45 20.147 45 45v210z"></path> 
-                    <g fill="#FFF"> 
-                        <path d="M200.803 111.88c-24.213 1.265-45.268 8.605-62.362 25.188-17.271 16.754-25.155 37.284-23 62.734-9.464-1.172-18.084-2.462-26.753-3.192-2.994-.252-6.547.106-9.083 1.537-8.418 4.75-16.488 10.113-26.053 16.092 1.755-7.938 2.891-14.889 4.902-21.575 1.479-4.914.794-7.649-3.733-10.849-29.066-20.521-41.318-51.232-32.149-82.85 8.483-29.25 29.315-46.989 57.621-56.236 38.635-12.62 82.054.253 105.547 30.927 8.485 11.08 13.688 23.516 15.063 38.224zm-111.437-9.852c.223-5.783-4.788-10.993-10.74-11.167-6.094-.179-11.106 4.478-11.284 10.483-.18 6.086 4.475 10.963 10.613 11.119 6.085.154 11.186-4.509 11.411-10.435zm58.141-11.171c-5.974.11-11.022 5.198-10.916 11.004.109 6.018 5.061 10.726 11.204 10.652 6.159-.074 10.83-4.832 10.772-10.977-.051-6.032-4.981-10.79-11.06-10.679z"></path> 
-                        <path d="M255.201 262.83c-7.667-3.414-14.7-8.536-22.188-9.318-7.459-.779-15.3 3.524-23.104 4.322-23.771 2.432-45.067-4.193-62.627-20.432-33.397-30.89-28.625-78.254 10.014-103.568 34.341-22.498 84.704-14.998 108.916 16.219 21.129 27.24 18.646 63.4-7.148 86.284-7.464 6.623-10.15 12.073-5.361 20.804.884 1.612.985 3.653 1.498 5.689zm-87.274-84.499c4.881.005 8.9-3.815 9.085-8.636.195-5.104-3.91-9.385-9.021-9.406-5.06-.023-9.299 4.318-9.123 9.346.166 4.804 4.213 8.69 9.059 8.696zm56.261-18.022c-4.736-.033-8.76 3.844-8.953 8.629-.205 5.117 3.772 9.319 8.836 9.332 4.898.016 8.768-3.688 8.946-8.562.19-5.129-3.789-9.364-8.829-9.399z"></path> 
-                    </g> 
-                </g>
-            </svg>    
-        </a>
-    </div>
-
-    </nav>
-
-
-</footer>
+                                xml:space="preserve" 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                xmlns:xlink="http://www.w3.org/1999/xlink"
+                            >
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier"> 
+                                    <g> 
+                                    <path d="M22.3,8.4c-0.8,0-1.4,0.6-1.4,1.4c0,0.8,0.6,1.4,1.4,1.4c0.8,0,1.4-0.6,1.4-1.4C23.7,9,23.1,8.4,22.3,8.4z"></path> 
+                                    <path d="M16,10.2c-3.3,0-5.9,2.7-5.9,5.9s2.7,5.9,5.9,5.9s5.9-2.7,5.9-5.9S19.3,10.2,16,10.2z M16,19.9c-2.1,0-3.8-1.7-3.8-3.8 c0-2.1,1.7-3.8,3.8-3.8c2.1,0,3.8,1.7,3.8,3.8C19.8,18.2,18.1,19.9,16,19.9z"></path> 
+                                    <path d="M20.8,4h-9.5C7.2,4,4,7.2,4,11.2v9.5c0,4,3.2,7.2,7.2,7.2h9.5c4,0,7.2-3.2,7.2-7.2v-9.5C28,7.2,24.8,4,20.8,4z M25.7,20.8 c0,2.7-2.2,5-5,5h-9.5c-2.7,0-5-2.2-5-5v-9.5c0-2.7,2.2-5,5-5h9.5c2.7,0,5,2.2,5,5V20.8z"></path> 
+                                    </g> 
+                                </g>
+                            </svg>
+                            <span>Instagram</span>
+                        </a>
+                        <a class="flex items-center gap-1 text-[0.7rem] font-light text-[#3E87FF] leading-4" href="#">
+                            <svg 
+                                fill="#3E87FF" 
+                                viewBox="0 0 256 256" 
+                                id="Flat" 
+                                width="16"
+                                height="16"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier"> 
+                                    <path d="M232,128a104.02405,104.02405,0,0,1-132.74316,99.957l9.8164-39.26513A50.31473,50.31473,0,0,0,136,196c35.29,0,64-30.50488,64-68A72,72,0,1,0,61.2373,155.00393,8.00011,8.00011,0,0,0,76.06836,149,56.00735,56.00735,0,1,1,184,128c0,28.67285-21.53271,52-48,52-10.49072,0-17.78076-3.66064-22.75049-8.01269l14.51172-58.04688a8.00012,8.00012,0,0,0-15.52246-3.88086L84.17822,222.30178A103.99416,103.99416,0,1,1,232,128Z"></path> 
+                                </g>
+                            </svg>
+                            <span>Pinterest</span>
+                        </a>
+                        <a class="flex items-center gap-1 text-[0.7rem] font-light text-[#3E87FF] leading-4" href="#">
+                            <svg height="16" width="16" viewBox="-51.45 -69.25 445.9 415.5">
+                                <g fill="#3E87FF" fill-rule="evenodd">
+                                    <path d="M274 167c-7.778 0-14-6.222-14-14s6.222-14 14-14 14 6.222 14 14c0 7.389-6.222 14-14 14m-69 0c-7.778 0-14-6.222-14-14s6.222-14 14-14 14 6.222 14 14c0 7.389-6.222 14-14 14m102.39 78.581C329.216 229.871 343 206.5 343 180.827 343 133.316 297.052 95 240 95s-103 38.316-103 85.827c0 47.512 45.948 85.828 103 85.828 11.87 0 22.974-1.533 33.695-4.598.766-.383 1.915-.383 3.063-.383 1.915 0 3.83.766 5.361 1.532l22.591 13.028c.766.383 1.149.766 1.915.766a3.433 3.433 0 003.446-3.448c0-.767-.383-1.533-.383-2.683 0-.383-3.063-10.728-4.595-17.242-.383-.766-.383-1.532-.383-2.299-.383-2.682.766-4.597 2.68-5.747"/>
+                                    <path d="M164 86c-8.93 0-16-7.07-16-16s7.07-16 16-16 16 7.07 16 16c0 8.558-7.07 16-16 16m-82 0c-8.93 0-16-7.07-16-16s7.07-16 16-16 16 7.07 16 16c0 8.558-7.07 16-16 16m41.96-86C55.646 0 0 45.895 0 102.88c0 30.98 16.502 58.899 42.983 77.64 1.919 1.53 3.454 3.824 3.454 6.884 0 .764-.384 1.912-.384 2.677-1.919 7.649-5.373 20.27-5.757 20.652-.383 1.148-.767 1.913-.767 3.06 0 2.295 1.919 4.207 4.221 4.207.768 0 1.535-.382 2.303-.765l27.248-15.68c1.919-1.148 4.222-1.913 6.524-1.913 1.152 0 2.303 0 3.454.383 12.665 3.442 26.48 5.736 40.297 5.736h6.908c-2.687-8.031-4.222-16.445-4.222-25.242 0-51.631 50.658-93.701 112.83-93.701H246C237.173 37.48 185.747 0 123.96 0"/>
+                                </g>
+                            </svg>                            
+                            <span>WeChat｜微信</span>
+                        </a>
+                        <span class="font-semibold text-[#3E87FF]">SNSs｜社群媒體</span>
+                    </nav>
+                </div>
+            </div>
+        </div>
+        <!-- logo -->
+        <div class="absolute inset-0 m-auto h-10 w-10 md:h-15 md:w-15 z-10">
+            <img src="/media/images/logos/logo_transparent_light.svg" alt="">
+        </div>
+        <!-- copyright -->
+        <p class="absolute bottom-10 left-1/2 -translate-x-1/2 font-extralight text-center text-xs">
+            <span>Copyright © 2026 - All right reserved by Hṛdaya Dīpa 心燈之屋</span>
+        </p>
+    </footer>
 
 </body>
 </html>

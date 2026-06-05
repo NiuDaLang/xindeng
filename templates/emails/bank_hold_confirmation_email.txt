@@ -1,0 +1,35 @@
+Hṛdayadīpa (हृदयदीप) ｜ 心燈
+Bank Transfer Instructions ｜ 銀行轉帳與線下匯款指引
+
+======================================================================
+⚠️ ITEMS HELD SECURE FOR 72 HOURS | 商品庫存已為您安全鎖定 72小時
+======================================================================
+Please complete your transfer before {{ expiry_date|date:"Y-m-d H:i" }}.
+Unpaid holds will be cancelled automatically by our automated server engine.
+請於 {{ expiry_date|date:"Y-m-d H:i" }} 前完成匯款，逾期未付訂單將被系統自動取消。
+
+{% if user.username %}Dear {{ user.username }},{% else %}Dear {{ order.email }},{% endif %}
+
+Your inventory hold request has been processed successfully under order number: {{ order.order_number }}.
+您的商品庫存已成功鎖定！訂單號碼為：{{ order.order_number }}
+
+🏦 REMITTANCE DETAILS | 銀行轉帳帳號資訊:
+----------------------------------------------------------------------
+Bank Name ｜ 開戶銀行: Bank of China (Mainland) / Tailored Bank Name
+Account Name ｜ 開戶名稱: Xindeng Corporate Entity Ltd.
+Account Number ｜ 銀行帳號: 6217 0000 0000 0000 000
+Swift Code ｜ 國際代碼: BKCHCNBJXXX
+Total Due ｜ 應付總額: ¥ {{ order.total_due }} (or currency equivalent)
+
+*Important Reference Memo: Please include your order number [ {{ order.order_number }} ] inside your transaction note/remark field configuration.
+*重要提示：請務必在匯款備註/附言中填寫您的訂單號碼 [ {{ order.order_number }} ]。
+
+A PDF copy of your statement invoice is attached to this transmission for record keeping.
+訂單詳細水單明細已隨附於本郵件之附件 PDF 檔案中。
+
+Thank you for your support! | 感謝您對我們的支持！
+
+--
+xindeng.art
+If you did not request a hold on xindeng.art, please disregard this system notification.
+如果您沒有在心燈 xindeng.art 申請商品保留，請忽視這份由系統自動發出的郵件。

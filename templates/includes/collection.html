@@ -1,211 +1,56 @@
 {% block content %}
 <!-- TITLE -->
-<div class="flex justify-between p-5">
+<div class="flex justify-between p-5 mb-16">
     <!-- title -->
-    <h2 class="text-primary text-lg font-bold">人 氣 產 品</h2>
+    <h2 class="text-base-content text-2xl font-light text-shadow-lg text-shadow-stone-300">FEATURED｜精選寶貝</h2>
 
     <!-- link button -->
-    <a class="btn btn-active btn-primary">目 錄</a>
+    <a href="{% url 'products' category_slug='all' %}" class="btn btn-ghost font-extralight text-primary text-shadow-lg text-shadow-stone-300 text-md px-12">目 錄 | ALL</a>
 </div>
 
 <!-- COLLECTION -->
-<div class="grid grid-cols-3 gap-8">
-    <!-- <div class="bg-base-300 grid h-32 w-32 place-items-center">content</div> -->
-    <a href="#" class="relative card col-span-1 mx-5 bg-base-100 shadow-sm">
-        <span class="absolute -top-2 -right-2 badge badge-primary">New</span>
-        <figure>
-            <img
-            src="media/hero/tulip.svg"
-            alt="Shoes" />
-        </figure>
-        <div class="card-body">
-            <!-- BOTTOM LINE -->
-            <div class="flex justify-between items-center">
-                <!-- product title -->
-                <div class="flex flex-col">
-                    <p class="font-semibold">鬱金香之戀</p>
-                    <p>HKD2,000</p>
-                </div>
-                <!-- rating -->
-                <div class="rating rating-xs rating-half justify-end">
-                    <input type="radio" name="rating-11" class="rating-hidden" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="0.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="1 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="1.5 star" checked="checked" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="2 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="2.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="3 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="3.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="4 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="4.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="5 star" />
+<div class="grid grid-cols-2 gap-x-16 gap-y-32">
+    {% for product in featured_products %}
+        <a href="{{ product.get_url }}" class="relative card col-span-1 mx-5 bg-base-100 shadow-sm group">
+            <div class="absolute -top-2 -right-2 z-10 group-hover:z-10">
+                <span class="badge badge-primary">New</span>
+                <span class="badge badge-error">Hot!</span>
+            </div>
+            <figure class="overflow-hidden rounded-t-2xl">
+                {% if product.images %}
+                    <img
+                        class="w-full h-full object-cover transform transition duration-500 ease-in-out group-hover:scale-125 z-0 group-hover:z-0"
+                        src="{{ product.images.url }}"
+                        alt="Product Image" 
+                    />
+                {% endif %}
+            </figure>
+            <div class="card-body">
+                <!-- BOTTOM LINE -->
+                <div class="flex justify-between items-center">
+                    <!-- product title -->
+                    <div class="flex flex-col">
+                        <p class="font-semibold">{{ product.product_name }}</p>
+                        <p>CNY2,000</p>
+                    </div>
+                    <!-- rating -->
+                    <div class="rating rating-xs rating-half justify-end">
+                        <input type="radio" name="rating-11" class="rating-hidden" />
+                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="0.5 star" />
+                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="1 star" />
+                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="1.5 star" checked="checked" />
+                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="2 star" />
+                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="2.5 star" />
+                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="3 star" />
+                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="3.5 star" />
+                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="4 star" />
+                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="4.5 star" />
+                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="5 star" />
+                    </div>
                 </div>
             </div>
-        </div>
-    </a>  
-    <a href="#" class="card col-span-1 mx-5 bg-base-100 shadow-sm">
-        <figure>
-            <img
-            src="media/hero/purpleFlower.svg"
-            alt="Shoes" />
-        </figure>
-        <div class="card-body">
-            <!-- BOTTOM LINE -->
-            <div class="flex justify-between items-center">
-                <!-- product title -->
-                <div class="flex flex-col">
-                    <p class="font-semibold">鬱金香之戀</p>
-                    <p>HKD2,000</p>
-                </div>
-                <!-- rating -->
-                <div class="rating rating-xs rating-half justify-end">
-                    <input type="radio" name="rating-11" class="rating-hidden" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="0.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="1 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="1.5 star" checked="checked" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="2 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="2.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="3 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="3.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="4 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="4.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="5 star" />
-                </div>
-            </div>
-        </div>
-    </a>    
-    <a href="#" class="card col-span-1 mx-5 bg-base-100 shadow-sm">
-        <figure>
-            <img
-            src="media/hero/lavendar.svg"
-            alt="Shoes" />
-        </figure>
-        <div class="card-body">
-            <!-- BOTTOM LINE -->
-            <div class="flex justify-between items-center">
-                <!-- product title -->
-                <div class="flex flex-col">
-                    <p class="font-semibold">鬱金香之戀</p>
-                    <p>HKD2,000</p>
-                </div>
-                <!-- rating -->
-                <div class="rating rating-xs rating-half justify-end">
-                    <input type="radio" name="rating-11" class="rating-hidden" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="0.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="1 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="1.5 star" checked="checked" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="2 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="2.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="3 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="3.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="4 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="4.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="5 star" />
-                </div>
-            </div>
-        </div>
-    </a>    
-    <a href="#" class="card col-span-1 mx-5 bg-base-100 shadow-sm">
-        <figure>
-            <img
-            src="media/hero/purpleFlower.svg"
-            alt="Shoes" />
-        </figure>
-        <div class="card-body">
-            <!-- BOTTOM LINE -->
-            <div class="flex justify-between items-center">
-                <!-- product title -->
-                <div class="flex flex-col">
-                    <p class="font-semibold">鬱金香之戀</p>
-                    <p>HKD2,000</p>
-                </div>
-                <!-- rating -->
-                <div class="rating rating-xs rating-half justify-end">
-                    <input type="radio" name="rating-11" class="rating-hidden" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="0.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="1 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="1.5 star" checked="checked" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="2 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="2.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="3 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="3.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="4 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="4.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="5 star" />
-                </div>
-            </div>
-        </div>
-    </a>    
-    <a href="#" class="card col-span-1 mx-5 bg-base-100 shadow-sm">
-        <figure>
-            <img
-            src="media/hero/tulip.svg"
-            alt="Shoes" />
-        </figure>
-        <div class="card-body">
-            <!-- BOTTOM LINE -->
-            <div class="flex justify-between items-center">
-                <!-- product title -->
-                <div class="flex flex-col">
-                    <p class="font-semibold">鬱金香之戀</p>
-                    <p>HKD2,000</p>
-                </div>
-                <!-- rating -->
-                <div class="rating rating-xs rating-half justify-end">
-                    <input type="radio" name="rating-11" class="rating-hidden" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="0.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="1 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="1.5 star" checked="checked" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="2 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="2.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="3 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="3.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="4 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="4.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="5 star" />
-                </div>
-            </div>
-        </div>
-    </a>    
-    <a href="#" class="card col-span-1 mx-5 bg-base-100 shadow-sm">
-        <span class="absolute -top-2 -right-2 badge badge-error">Hot!</span>
-
-        <figure>
-            <img
-            src="media/hero/lavendar.svg"
-            alt="Shoes" />
-        </figure>
-        <div class="card-body">
-            <!-- BOTTOM LINE -->
-            <div class="flex justify-between items-center">
-                <!-- product title -->
-                <div class="flex flex-col">
-                    <p class="font-semibold">鬱金香之戀</p>
-                    <p>HKD2,000</p>
-                </div>
-                <!-- rating -->
-                <div class="rating rating-xs rating-half justify-end">
-                    <input type="radio" name="rating-11" class="rating-hidden" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="0.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="1 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="1.5 star" checked="checked" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="2 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="2.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="3 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="3.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="4 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="4.5 star" />
-                    <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="5 star" />
-                </div>
-            </div>
-        </div>
-    </a>    
+        </a>
+    {% endfor %}
 </div>
 
 {% endblock %}
-
-<!-- src="media/hero/purpleFlower.svg"
-src="media/hero/lavendar.svg"
-src="media/hero/purpleFlower.svg"
-src="media/hero/tulip.svg"
-src="media/hero/lavendar.svg" -->

@@ -1,0 +1,13 @@
+Dear {{user.username}} ｜ 親愛的{{user.username}}
+
+Activate your Account ｜ 激活您的心燈帳號
+
+Thank you for registering with us. In order to activate your account, please visit the following link.
+感謝您註冊成為心燈會員！請進入下方鏈/連接，並啟動您的帳號。
+
+http://{{domain}}{% url 'activate' uidb64=uid token=token %}
+
+xindeng.com
+
+If you did not register for xindeng.com membership, please ignore this email.
+如果您沒有在心燈 xindeng.com 註冊，請忽視這份郵件。

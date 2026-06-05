@@ -19,7 +19,6 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -30,21 +29,77 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 # DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
-
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.1.120"]
+# DJANGO_VITE_DEV_SERVER_HOST = "192.168.1.120"
+# X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
     "django_vite",
+    "django_password_validators",
+    "django_password_validators.password_history",
+    "django_htmx",
+    "accounts",
+    "blog",
+    "category",
+    "carts",
+    "dataentry",
+    "emails",
+    "orders",
     "store",
+    "taggit",
+    "django_ckeditor_5",
+    "django.contrib.humanize",
+    "sekizai",
+    "reviews",
+    "rest_framework",
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google', # Google specific
 ]
+
+SITE_ID = 1 # Matches the ID in the Django Admin 'Sites' section
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# Manual Registration
+# ACCOUNT_EMAIL_REQUIRED = True # deprecated
+# ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+ACCOUNT_AUTHENTICATION_METHODS = {'email'}
+ACCOUNT_EMAIL_VERIFICATION = 'none' # Disable Allauth's manual email verification (since YOU handle it in views.py)
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True # Verifies as soon as they click the link
+
+# Google Registration (Objective a)
+SOCIALACCOUNT_ADAPTER = 'accounts.adapter.MySocialAccountAdapter'
+SOCIALACCOUNT_QUERY_EMAIL = True
+SOCIALACCOUNT_LOGIN_ON_GET = False # Skips the "Are you sure you want to log in?" page
+SOCIALACCOUNT_AUTO_SIGNUP = True # Automatically creates account if email is new
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
+
+LOGIN_REDIRECT_URL = '/accounts/dashboard/main/' 
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email',],
+        'AUTH_PARAMS': {'access_type': 'online',}
+    }
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -54,7 +109,13 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_htmx.middleware.HtmxMiddleware",
+    "carts.middleware.CaptureAnonymousSessionMiddleware",
+    "carts.middleware.CurrencyMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
+
+
 
 ROOT_URLCONF = "xindeng.urls"
 
@@ -68,6 +129,13 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "category.context_processors.menu_links",
+                "category.context_processors.cart_item_count",
+                "sekizai.context_processors.sekizai",
+                "blog.context_processors.blog_sidebar",
+                "accounts.context_processors.get_google_api",
+                # "carts.context_processors.counter",
+                # "carts.context_processors.cart_items",
             ],
         },
     },
@@ -75,6 +143,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "xindeng.wsgi.application"
 
+ASGI_APPLICATION = "xindeng.asgi.application"
+
+AUTH_USER_MODEL = "accounts.Account"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -90,21 +161,44 @@ DATABASES = {
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "OPTIONS": {
+            "user_attributes": ("username", "first_name", "last_name", "email"),
+            "max_similarity": 0.7,
+        }
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {
+            "min_length": 8,
+        }
     },
     {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+        "NAME": "django_password_validators.password_history.password_validation.UniquePasswordsValidator",
+        "OPTIONS": {
+             # How many recently entered passwords matter.
+             # Passwords out of range are deleted.
+             # Default: 0 - All passwords entered by the user. All password hashes are stored.
+            "last_passwords": 5 # Only the last 5 passwords entered by the user
+        }
     },
     {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+        "NAME": "django_password_validators.password_character_requirements.password_validation.PasswordCharacterValidator",
+        "OPTIONS": {
+             "min_length_digit": 1,
+             "min_length_alpha": 1,
+             "min_length_special": 1,
+             "min_length_lower": 1,
+             "min_length_upper": 1,
+             "special_characters": "~!@#$%^&*()_+{}\":;'[]"
+         }
     },
 ]
 
+PASSWORD_RESET_TIMEOUT = 86400
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -121,11 +215,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles" # "collectstatic"
 STATICFILES_DIRS = [
     BASE_DIR / "assets",
     BASE_DIR / "media",
+    BASE_DIR / "static",
 ]
 
 # Default primary key field type
@@ -133,15 +228,104 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Django-Vite
 DJANGO_VITE = {
     "default": {
-        "dev_mode": False,
+        "dev_mode": DEBUG,
         "manifest_path": BASE_DIR / "assets" / "manifest.json",
-        "static_url_prefix": ""
+        "dev_server_host": "localhost",
+        "dev_server_port": 5173,
+        # Ensure this matches your Vite 'base'
+        "static_url_prefix": "", 
     }
 }
 
 # Media files
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR /"media"
+
+# Messages
+from django.contrib.messages import constants as messages
+MESSAGE_TAGS = {
+    messages.INFO: "info",
+    messages.SUCCESS: "success",
+    messages.WARNING: "warning",
+    messages.ERROR: "error",
+}
+
+# Email Configuration
+EMAIL_HOST = os.environ.get("EMAIL_HOST")
+EMAIL_PORT = os.environ.get("EMAIL_PORT")
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS")
+
+# Tags
+TAGGIT_CASE_INSENSITIVE = True
+
+# CKEditor
+from .ckeditorconfig import *
+
+# GOOGLE API
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+
+# Ensure Session always exists
+# SESSION_SAVE_EVERY_REQUEST = True
+
+# PAYPAL Configuration
+PAYPAL_TEST = True
+PAYPAL_RECEIVER_EMAIL=os.environ.get("PAYPAL_RECEIVER_EMAIL")
+
+# PAYPAL_CLIENT_ID=os.environ.get("PAYPAL_CLIENT_ID")
+# PAYPAL_CLIENT_SECRET=os.environ.get("PAYPAL_CLIENT_SECRET")
+PAYPAL_ACCESS_TOKEN=os.environ.get("PAYPAL_ACCESS_TOKEN")
+
+PAYPAL_CLIENT_ID=os.environ.get("PAYPAL_SANDBOX_CLIENT_ID")
+PAYPAL_SECRET=os.environ.get("PAYPAL_SANDBOX_CLIENT_SECRET")
+PAYPAL_MODE=os.environ.get("PAYPAL_MODE")
+
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
+
+OPENEXCHANGERATES_APP_ID = os.environ.get("OPENEXCHANGERATES_APP_ID")
+
+# REDIS
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',  # Use a separate DB (1) for cache
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+# CELERY
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'update-exchange-rates-hourly': {
+        'task': 'orders.tasks.update_exchange_rates', # Use the full path to your task
+        'schedule': crontab(minute=0), # Runs at the start of every hour (e.g., 1:00, 2:00)
+    },
+    'check-solar-term-daily': {
+        'task': 'accounts.tasks.update_solar_term_broadcast',
+        # 'schedule': crontab(minute='*') ,# Runs this at the start of every minute (e.g., 0:01, 0:02)
+        'schedule': crontab(minute=0, hour=0), # Runs this once a day (e.g., at midnight)
+    },
+}
+
+STRIPE_SECRET_KEY_TEST = os.environ.get("STRIPE_SECRET_KEY_TEST")
+
+# CHANNEL
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}

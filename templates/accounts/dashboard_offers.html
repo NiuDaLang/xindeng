@@ -1,0 +1,225 @@
+<title>{{ page_title }}</title>
+<div id="dashboard_offers" class="subpage">
+    <!-- hero -->
+    <div class="dashboard_hero w-full min-h-72 rounded-2xl text-white relative flex justify-center items-center">
+        <!-- season & date -->
+        <div class="flex flex-col z-10 p-5">
+            {% if solar_term %}
+                <div class="solar-timeline">
+                    <div class="flex flex-col">
+                        <span id="solar_term" class="text-4xl">{{ solar_term }}</span>
+                        <span id="solar_term_en" class="text-[16px]">{{ solar_term_en }}</span>
+                    </div>
+                    {% if next_solar_term %}
+                    <div class="solar-arrow-container">
+                        <div class="solar-arrow"></div>
+                    </div>
+                    <div class="flex flex-col">
+                        <span id="next_solar_term" class="text-4xl">{{ next_solar_term }}</span>
+                        <span id="next_solar_term_en" class="text-[16px]">{{ next_solar_term_en }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+            <span id="dynamic-date" hx-preserve="true" class="text-sm text-center"></span>
+        </div>
+        <!-- clock -->
+        <div id="persistent-analog-clock" hx-preserve="true" class="flex justify-end z-10">
+            <div class="relative z-0 bg-transparent">
+                <div class="absolute inset-0 -z-10 bg-[#1b5ac63f] blur-md rounded-full"></div>
+                <div class="clock z-10">
+                    <div class="clock__second"></div>
+                    <div class="clock__minute"></div>
+                    <div class="clock__hour"></div>
+                    <div class="clock__axis"></div>
+                    <section class="clock__indicator" style="--i: 1"></section>
+                    <section class="clock__indicator" style="--i: 2"></section>
+                    <section class="clock__indicator" style="--i: 3"></section>
+                    <section class="clock__indicator" style="--i: 4"></section>
+                    <section class="clock__indicator" style="--i: 5"></section>
+                    <section class="clock__indicator" style="--i: 6"></section>
+                    <section class="clock__indicator" style="--i: 7"></section>
+                    <section class="clock__indicator" style="--i: 8"></section>
+                    <section class="clock__indicator" style="--i: 9"></section>
+                    <section class="clock__indicator" style="--i: 10"></section>
+                    <section class="clock__indicator" style="--i: 11"></section>
+                    <section class="clock__indicator" style="--i: 12"></section>
+                    <section class="clock__indicator" style="--i: 13"></section>
+                    <section class="clock__indicator" style="--i: 14"></section>
+                    <section class="clock__indicator" style="--i: 15"></section>
+                    <section class="clock__indicator" style="--i: 16"></section>
+                    <section class="clock__indicator" style="--i: 17"></section>
+                    <section class="clock__indicator" style="--i: 18"></section>
+                    <section class="clock__indicator" style="--i: 19"></section>
+                    <section class="clock__indicator" style="--i: 20"></section>
+                    <section class="clock__indicator" style="--i: 21"></section>
+                    <section class="clock__indicator" style="--i: 22"></section>
+                    <section class="clock__indicator" style="--i: 23"></section>
+                    <section class="clock__indicator" style="--i: 24"></section>
+                    <section class="clock__indicator" style="--i: 25"></section>
+                    <section class="clock__indicator" style="--i: 26"></section>
+                    <section class="clock__indicator" style="--i: 27"></section>
+                    <section class="clock__indicator" style="--i: 28"></section>
+                    <section class="clock__indicator" style="--i: 29"></section>
+                    <section class="clock__indicator" style="--i: 30"></section>
+                    <section class="clock__indicator" style="--i: 31"></section>
+                    <section class="clock__indicator" style="--i: 32"></section>
+                    <section class="clock__indicator" style="--i: 33"></section>
+                    <section class="clock__indicator" style="--i: 34"></section>
+                    <section class="clock__indicator" style="--i: 35"></section>
+                    <section class="clock__indicator" style="--i: 36"></section>
+                    <section class="clock__indicator" style="--i: 37"></section>
+                    <section class="clock__indicator" style="--i: 38"></section>
+                    <section class="clock__indicator" style="--i: 39"></section>
+                    <section class="clock__indicator" style="--i: 40"></section>
+                    <section class="clock__indicator" style="--i: 41"></section>
+                    <section class="clock__indicator" style="--i: 42"></section>
+                    <section class="clock__indicator" style="--i: 43"></section>
+                    <section class="clock__indicator" style="--i: 44"></section>
+                    <section class="clock__indicator" style="--i: 45"></section>
+                    <section class="clock__indicator" style="--i: 46"></section>
+                    <section class="clock__indicator" style="--i: 47"></section>
+                    <section class="clock__indicator" style="--i: 48"></section>
+                    <section class="clock__indicator" style="--i: 49"></section>
+                    <section class="clock__indicator" style="--i: 50"></section>
+                    <section class="clock__indicator" style="--i: 51"></section>
+                    <section class="clock__indicator" style="--i: 52"></section>
+                    <section class="clock__indicator" style="--i: 53"></section>
+                    <section class="clock__indicator" style="--i: 54"></section>
+                    <section class="clock__indicator" style="--i: 55"></section>
+                    <section class="clock__indicator" style="--i: 56"></section>
+                    <section class="clock__indicator" style="--i: 57"></section>
+                    <section class="clock__indicator" style="--i: 58"></section>
+                    <section class="clock__indicator" style="--i: 59"></section>
+                    <section class="clock__indicator" style="--i: 60"></section>
+                </div>
+            </div>
+        </div>
+        <!-- bg img -->
+        <img src="/media/hero/red_leaves.jpeg" alt="" class="absolute left-0 top-0 w-full h-full rounded-4xl object-cover">
+    </div>
+    
+    <ul class="mt-10 p-5 grid grid-cols-2 bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] rounded-box inset-shadow-sm mb-20 text-secondary gap-5">
+        {% for up in eligible_perks %}
+        <li class="flex flex-col">
+            <!-- coupon -->
+            <div class="coupon w-1/2 m-5"
+                style="--dynamic-bg: url('{{ up.perk.featured_image.url }}'); --watermark: '{{ up.perk.code }}';">
+                <div class="left text-center">
+                    <div class="text-shadow-lg text-shadow-white">
+                        <span class="text-[0.55rem]">{{ up.perk.desc_en }}</span>
+                        <br/>
+                        <span class="text-[0.75rem]">{{ up.perk.desc_cn }}</span>
+                    </div>
+                </div>
+                <div class="center">
+                    <div>
+                        <h2>{{up.perk.chinese_disc_rate}} <i class="fa-solid fa-ticket"></i>優惠券</h2>
+                        <h3 class="font-semibold text-shadow-lg text-shadow-white">{{ up.perk.discount_value|floatformat:"-2" }}{% if up.perk.discount_type == "percentage" %}%{% endif %} OFF</h3>
+                        <div class="p-1 text-secondary-content text-shadow-2xs text-shadow-primary">
+                            <b class="text-xs">{{ up.perk.formatted_expiry }}</b>
+                            {% if up.perk.max_uses < 5 %}
+                                <span class="block text-white text-[0.65rem]">
+                                    Only｜僅剩<span class="text-2xl font-black">&nbsp;{{ up.perk.remaining_uses }}&nbsp;</span>left｜張!
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="right flex flex-col">
+                    <div class="-rotate-90 text-center">
+                        <!-- The Barcode Visual -->
+                        <div class="libre-barcode-128-regular text-2xl -mb-2 tracking-widest">
+                            {{ up.unique_code|stringformat:"s" }}
+                        </div>
+                        <!-- The Readable Text for User Entry -->
+                        <div class="text-center text-[0.75rem]/[0.9rem] tracking-tight">
+                            Enter at Checkout<br>結帳時請輸入 <span id="perk_code_{{ up.pk }}" class="font-black text-sm">{{ up.unique_code|stringformat:"s" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- copy code button -->
+            <div class="px-[2rem]">
+                <button class="w-full btn btn-primary text-white join-item" onclick="copyPerkCode({{up.pk}})">
+                    Copy Code｜複製優惠碼
+                </button>
+            </div>
+            <!-- countdown -->
+            <div class="h-auto flex items-center justify-center p-3 w-full">
+                {% if up.personalized_expiry %}
+                <div class="mr-5 text-sm text-amber-300 font-bold tracking-widest">Ends in<br>優惠截止倒數</div>
+                <div class="grid grid-flow-col gap-5 text-center auto-cols-max" 
+                     id="countdown-{{ up.perk.id }}" 
+                     data-expiry="{{ up.personalized_expiry|date:'c' }}">
+                    <!-- DAYS -->
+                    <div class="flex flex-col">
+                        <div class="flex">
+                            <!-- tens -->
+                            <div id="flip_day_tens" class="flip-score-card" data-prev="">
+                                <div class="top"></div>
+                                <div class="bottom"></div>
+                            </div>
+                            <!-- ones -->
+                            <div id="flip_day_ones" class="flip-score-card" data-prev="">
+                                <div class="top"></div>
+                                <div class="bottom"></div>
+                            </div>
+                        </div>
+                        <div class="text-[0.55rem] text-white">days｜日</div>
+                    </div>
+                    <!-- HOURS -->
+                    <div class="flex flex-col">
+                        <div class="flex">
+                            <!-- tens -->
+                            <div id="flip_hour_tens" class="flip-score-card" data-prev="">
+                                <div class="top"></div>
+                                <div class="bottom"></div>
+                            </div>
+                            <!-- ones -->
+                            <div id="flip_hour_ones" class="flip-score-card" data-prev="">
+                                <div class="top"></div>
+                                <div class="bottom"></div>
+                            </div>
+                        </div>
+                        <div class="text-[0.55rem] text-white">hours｜時</div>
+                    </div>
+                    <!-- MINUTES -->
+                    <div class="flex flex-col">
+                        <div class="flex">
+                            <!-- tens -->
+                            <div id="flip_min_tens" class="flip-score-card" data-prev="">
+                                <div class="top"></div>
+                                <div class="bottom"></div>
+                            </div>
+                            <!-- ones -->
+                            <div id="flip_min_ones" class="flip-score-card" data-prev="">
+                                <div class="top"></div>
+                                <div class="bottom"></div>
+                            </div>
+                        </div>
+                        <div class="text-[0.55rem] text-white">minutes｜分</div>
+                    </div>                   
+                    <!-- SECONDS -->
+                    <div class="flex flex-col">
+                        <div class="flex">
+                            <!-- tens -->
+                            <div id="flip_sec_tens" class="flip-score-card" data-prev="">
+                                <div class="top"></div>
+                                <div class="bottom"></div>
+                            </div>
+                            <!-- ones -->
+                            <div id="flip_sec_ones" class="flip-score-card" data-prev="">
+                                <div class="top"></div>
+                                <div class="bottom"></div>
+                            </div>
+                        </div>
+                        <div class="text-[0.55rem] text-white">seconds｜秒</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </li>
+        {% endfor %}           
+    </ul>
+</div>

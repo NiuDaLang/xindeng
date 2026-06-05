@@ -25,18 +25,30 @@ from django.conf import settings
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", views.home, name="home"),
-    path("store/", include('store.urls')),
+    path("ckeditor5/", include('django_ckeditor_5.urls')),
+
+    # apps
+    path("blog/", include('blog.urls')),
     path("accounts/", include('accounts.urls')),
+    path('accounts/', include('allauth.urls')),
     path("carts/", include('carts.urls')),
     path("orders/", include('orders.urls')),
+    path("store/", include('store.urls')),
+    # pages
     path("contact/", views.contact, name="contact"),
-    path("blog/", include('blog.urls')),
-    path("error/404/", views.error_404, name="error_404"),
-    path("error/500/", views.error_500, name="error_500"),
     path("about/", views.about, name="about"),
     path("collaboration/", views.collaboration, name="collaboration"),
     path("search/", views.search, name="search"),
     path("tag/", views.tag, name="tag"),
     path("archive/", views.archive, name="archive"),
+
+    # utils
+    path("find_destined_work", views.find_destined_work, name="find_destined_work"),
+
+    # errors
+    path("error/404/", views.error_404, name="error_404"),
+    path("error/500/", views.error_500, name="error_500"),
+
+    path("test/", views.test, name="test")
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

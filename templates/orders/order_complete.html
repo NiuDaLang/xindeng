@@ -1,101 +1,208 @@
 {% extends 'base.html' %}
-
+{% load humanize %}
 {% block content %}
 <!-- BANNER -->
-<div class="relative mt-16 w-full">
+<div class="relative mt-[86px] w-full">
     {% include 'includes/banner.html' %}
 </div>
-
+<!-- http://localhost:8000/orders/order_complete/?order_number=AU-T7KT5H&transaction_id=5UA18760GW8323821 -->
+<!-- http://localhost:8000/orders/order_complete/?order_number=JP-QGP93J&transaction_id=6DY00521N4625922S -->
 <!-- MAIN -->
 <main class="px-[max(1rem,5vw)] py-10 min-h-[calc(100dvh-200px)]">
-        <!-- progress -->
+    <!-- progress -->
     <ul class="timeline w-full justify-center">
         <li>
-            <div class="timeline-start timeline-box">購物車</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-success"></i>
-            </div>
+            <div class="timeline-start timeline-box text-center">Cart<br/>購物車</div>
+            <div class="timeline-middle"><i class="fa-solid fa-circle-check text-success"></i></div>
             <hr class="bg-success-content"/>
         </li>
         <li>
             <hr class="bg-success-content"/>
-            <div class="timeline-start timeline-box">配送訊息</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-success"></i>
-            </div>
+            <div class="timeline-start timeline-box text-center">Order Details<br/>訂單詳情</div>
+            <div class="timeline-middle"><i class="fa-solid fa-circle-check text-success"></i></div>
             <hr class="bg-success-content"/>
         </li>
         <li>
             <hr class="bg-success-content" />
-            <div class="timeline-start timeline-box">支付</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-success"></i>
-            </div>
+            <div class="timeline-start timeline-box text-center">Confirm Order<br/>訂單確認</div>
+            <div class="timeline-middle"><i class="fa-solid fa-circle-check text-success"></i></div>
             <hr class="bg-success-content" />
         </li>
         <li>
             <hr class="bg-success-content"/>
-            <div class="timeline-start timeline-box">支付完成</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-success"></i>
+            <!-- 🎯 DYNAMIC TIMELINE STATUS TEXT BASED ON HOLDS -->
+            <div class="timeline-start timeline-box text-center">
+                {% if is_bank_transfer %}Inventory Held<br/>商品保留中{% else %}Payment Complete<br/>支付完成{% endif %}
             </div>
-            <!-- <hr /> -->
+            <div class="timeline-middle">
+                {% if is_bank_transfer %}
+                    <i class="fa-solid fa-clock text-warning"></i>
+                {% else %}
+                    <i class="fa-solid fa-circle-check text-success"></i>
+                {% endif %}
+            </div>
         </li>
     </ul>
 
-    <div class="w-full border border-base-300 rounded-2xl p-5 text-center">
+    <div class="w-full rounded-2xl p-5 text-center">
         <!-- receipt -->
         <div class="box zigzag p-15 text-center">
-            <!-- check mark -->
-            <i class="m-auto w-full text-success fa-solid fa-circle-check fa-6x"></i>
-            <!-- payment confirmation -->
-            <h2 class="text-4xl font-black my-5">支付完成！</h2>
+            <!-- 🎯 DYNAMIC STATUS ICON AND MESSAGE HEADER HEADLINE -->
+            {% if is_bank_transfer %}
+                <i class="m-auto w-full text-warning fa-solid fa-hourglass-half fa-6x animate-pulse"></i>
+                <h2 class="text-3xl font-black my-5 text-warning">Order Hold Confirmed!<br/>訂單保留成功！</h2>
+            {% else %}
+                <i class="m-auto w-full text-success fa-solid fa-circle-check fa-6x"></i>
+                <h2 class="text-3xl font-black my-5">Payment Successful!<br/>支付完成！</h2>
+            {% endif %}
+
             <h4 class="text-1xl">
-                我們已經收到您的付款，非常感謝！
-                <br/>
-                詳細帳單已發送至您的郵箱xxx@xxxxx.com,請注意查收。
+                {% if is_bank_transfer %}
+                    庫存已成功為您保留！請在 <strong class="text-error font-black">72小時內</strong> 完成線下轉帳以確保您的訂單生效。<br>
+                    應付總額：<span class="font-black">{{ foreign_currency_code }} {{ foreign_total_due }}</span>
+                    （約合 <span class="font-black">CNY {{ cny_total_due }}</span>），非常感謝！
+                    <br/>
+                    詳細的轉帳指南與款項收據已發送至您的郵箱：<strong class="font-bold">{{ proforma_invoice.email }}</strong>，請及時查收。
+                    <br/><br/>
+                    <span class="text-xs opacity-90 block font-sans">
+                        Your inventory has been secured successfully! Please complete your transfer within <strong class="text-error font-bold">72 hours</strong> to validate your order.<br>
+                        Total Amount Due: <span class="font-bold">{{ foreign_currency_code }} {{ foreign_total_due }}</span> 
+                        (approx. <span class="font-bold">CNY {{ cny_total_due }}</span>). Thank you for your support!<br>
+                        Detailed remittance coordinates and invoice copies have been dispatched to <strong class="font-bold">{{ proforma_invoice.email }}</strong>.
+                    </span>
+                {% else %}
+                    我們已經收到您的付款，非常感謝！<br>
+                    實付金額：
+                    {% if payment.currency != CNY and payment %}
+                        <span class="font-black">{{ payment.currency }} {{ foreign_total_due }}</span>
+                    {% else %}
+                        <span class="font-black">CNY {{ foreign_total_due }}</span>
+                    {% endif %}
+                    <br/>
+                    詳細電子帳單與購買明細已發送至您的郵箱：<strong class="font-bold">{{order.email}}</strong>,請注意查收。
+                    <br/><br/>
+                    <span class="text-xs opacity-90 block font-sans">
+                        Thanks for your purchase! We have received your payment of 
+                        {% if payment.currency != CNY and payment %}
+                            <span class="font-bold">{{ payment.currency }} {{ foreign_total_due }}</span>
+                        {% else %}
+                            <span class="font-bold">CNY {{ cny_total_due }}</span>
+                        {% endif %}.<br/>
+                        Your receipt and order fulfillment snapshots have been sent to <strong class="font-bold">{{order.email}}</strong>.
+                    </span>
+                {% endif %}
             </h4>
 
+            {% if is_bank_transfer %}
+            <div class="w-full max-w-xl mx-auto my-8 p-6 rounded-xl border border-warning/30 background-light bg-warning/5 text-left font-sans text-xs shadow-sm">
+                <h3 class="font-bold text-sm text-base-content mb-3 border-b pb-2 border-base-content/10 flex items-center gap-2">
+                    <i class="fa-solid fa-building-columns"></i> Bank Account Information ｜ 銀行匯款資訊
+                </h3>
+                <div class="grid grid-cols-1 gap-1.5 text-base-content/90">
+                    <p><strong>Bank Name ｜ 開戶銀行:</strong> Bank of China (Mainland) / Local Branch Name</p>
+                    <p><strong>Account Name ｜ 戶名:</strong> Xindeng Corporate Limited Company</p>
+                    <p><strong>Account Number ｜ 帳號:</strong> 6217 0000 0000 0000 000</p>
+                    <p><strong>Swift Code ｜ 國際代碼:</strong> BKCHCNBJXXX</p>
+                    <!-- Reference ID field is critical to allow back-office tracking lookups -->
+                    <p class="mt-2 p-2 bg-base-100 rounded border border-warning/20 text-warning-content">
+                        🚀 <strong>Payment Remark ｜ 匯款備註:</strong> 
+                        Please write your order code <span class="badge badge-warning font-mono font-bold">{{ proforma_invoice.proforma_order_number }}</span> as the transfer remark parameter.
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="divider"></div>
-            <!-- details -->
-            <div class="w-full flex flex-col justify-between">
-                <!-- product 1 -->
-                <div class="w-full grid grid-cols-8">
-                    <span class="col-span-1 text-left">2 X</span>
-                    <span class="col-span-4 text-left">product ABC</span>
-                    <span class="col-span-3 font-bold text-right">$200</span>
-                </div>
-                <!-- product 2 -->
-                <div class="w-full grid grid-cols-8">
-                    <span class="col-span-1 text-left">1 X</span>
-                    <span class="col-span-4 text-left">product DEF</span>
-                    <span class="col-span-3 font-bold text-right">$50</span>
-                </div>
-                <!-- product 3 -->
-                <div class="w-full grid grid-cols-8 border-b-2 border-primary">
-                    <span class="col-span-1 text-left">2 X</span>
-                    <span class="col-span-4 text-left">product GHI</span>
-                    <span class="col-span-3 font-bold text-right">$500</span>
-                </div>
-                <!-- subtotal -->
-                <div class="w-full flex justify-end font-bold text-lg">
-                    小計： RMB 750  
-                </div>
-                <!-- delivery -->
-                <div class="w-full flex justify-end font-bold">
-                    郵寄費用： RMB 50  
-                </div>
-                <!-- discount -->
-                <div class="w-full flex justify-end font-bold">
-                    減免優惠： -RMB 50
-                </div>
-                <!-- gift voucher -->
-                <div class="w-full flex justify-end font-bold">
-                    代金券： -RMB 50  
-                </div>
-                <!-- payment received -->
-                <div class="w-full flex justify-end font-black text-lg">
-                    總支付金額： RMB 750
+            
+            <!-- Details Product summary block table layout -->
+            <div class="w-full">
+                <!-- 1. Product Confirmation Summary Table -->
+                <table class="bg-transparent border-collapse table-fixed w-full">
+                    <thead>
+                        <tr class="font-normal border-b border-base-content/10">
+                            <th class="w-[50%] py-2 text-left text-sm font-bold">Product ｜ 商品</th>
+                            <th class="w-[10%] py-2 text-center text-sm font-bold">Qty ｜ 數量</th>
+                            <th class="w-[20%] py-2 text-right text-sm font-bold pr-3">Unit Price ｜ 單價 (CNY)</th>
+                            <th class="w-[20%] py-2 text-right text-sm font-bold pr-3">Sub Total ｜ 小計 (CNY)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in ordered_products %}
+                            <tr class="font-normal text-sm border-b border-base-content/5">
+                                <td class="py-3 text-left align-top font-medium">{{ item.product_variation }}</td>
+                                <td class="py-3 text-center align-top font-mono">{{ item.quantity }}</td>
+                                <td class="py-3 text-right pr-3 align-top font-mono">{{ item.formatted_price }}</td>
+                                <td class="py-3 text-right pr-3 align-top font-mono">{{ item.formatted_subtotal }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <br><hr><br>
+                
+                <!-- 2. Dual Ledger Financial Total Presentation -->
+                <div class="w-full flex justify-end">
+                    <table class="bg-transparent border-collapse table-fixed min-w-[35rem]">
+                        <thead>
+                            <tr>
+                                <th class="w-[44%] py-1 text-left"></th>
+                                {% if foreign_currency_code != 'CNY' %}
+                                    <th class="w-[28%] py-1 text-right text-info font-bold pr-3 text-sm">CNY</th>
+                                    <th class="w-[28%] py-1 text-right font-bold pr-3 text-sm">{{ foreign_currency_code }}</th>
+                                {% else %}
+                                    <th class="w-[56%] py-1 text-right font-bold pr-3 text-sm">CNY</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+<tbody class="align-top text-sm">
+                            <!-- products subtotal -->
+                            <tr class="font-normal border-b border-base-content/5">
+                                <td class="py-2 text-left text-xs text-base-content/70">Products｜商品小計</td>
+                                {% if foreign_currency_code != 'CNY' %}
+                                    <td class="py-2 text-right text-info font-mono pr-3">{{ cny_product_total }}</td>
+                                {% endif %}
+                                <td class="py-2 text-right pr-3 font-mono">{{ foreign_product_total }}</td>
+                            </tr>
+                            <!-- shipping cost -->
+                            <tr class="font-normal border-b border-base-content/5">
+                                <td class="py-2 text-left text-xs text-base-content/70">Shipping｜運費</td>
+                                {% if foreign_currency_code != 'CNY' %}
+                                    <td class="py-2 text-right text-info font-mono pr-3">{{ cny_shipping_cost }}</td>
+                                {% endif %}
+                                <td class="py-2 text-right pr-3 font-mono">{{ foreign_shipping_cost }}</td>
+                            </tr>
+                            <!-- discount -->
+                            <tr class="font-normal border-b border-base-content/5">
+                                <td class="py-2 text-left text-xs text-base-content/70">Offer｜優惠</td>
+                                {% if foreign_currency_code != 'CNY' %}
+                                    <td class="py-2 text-right text-info font-mono pr-3">{{ cny_discount }}</td>
+                                {% endif %}
+                                <td class="py-2 text-right pr-3 font-mono">{{ foreign_discount }}</td>
+                            </tr>
+                            <!-- cash voucher -->
+                            <tr class="font-normal border-b border-base-content/5">
+                                <td class="py-2 text-left text-xs text-base-content/70">Voucher Applied｜禮品券抵扣</td>
+                                {% if foreign_currency_code != 'CNY' %}
+                                    <td class="py-2 text-right text-info font-mono pr-3">{{ cny_voucher }}</td>
+                                {% endif %}
+                                <td class="py-2 text-right pr-3 font-mono">{{ foreign_voucher }}</td>
+                            </tr>
+                            <!-- total amount field label logic alters dynamically based on holding choice -->
+                            <tr class="font-bold text-[1.1rem] text-primary">
+                                <td class="py-3 text-left">
+                                    {% if is_bank_transfer %}
+                                        應付總額｜Total Due
+                                    {% else %}
+                                        實付總額｜Total Paid
+                                    {% endif %}
+                                </td>
+                                {% if foreign_currency_code != 'CNY' %}
+                                    <td class="py-3 text-right text-info font-mono pr-3">{{ cny_total_due }}</td>
+                                {% endif %}
+                                <td class="py-3 text-right pr-3 font-mono marker-highlight">{{ foreign_total_due }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -114,4 +221,23 @@
 
 </main>
 
+<!-- <script>
+window.addEventListener("DOMContentLoaded", (e) => {
+    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ INIT SETUPS ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
+    const currencyElements = document.querySelectorAll(".currency-display")
+    const minus_currency_els = ["discount_amount", "discount_amount_foreign", "cash_voucher_amount", "cash_voucher_amount_foreign"]
+    
+    // format foreign currency
+    currencyElements.forEach(el => {
+        const value = minus_currency_els.includes(el.id) && el.dataset.value != 0 ? -parseFloat(el.dataset.value) : parseFloat(el.dataset.value)
+        const currencyCode = el.dataset.currency || 'HKD'
+        format_currency(el, value, currencyCode)
+    });
+})
+    
+</script> -->
+
 {% endblock %}
+
+
+<!-- visit: http://localhost:8000/orders/order_complete/?order_number=JP-CJVM3T&transaction_id=4CH31416NJ781991B -->

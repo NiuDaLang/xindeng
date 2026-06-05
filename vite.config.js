@@ -25,8 +25,14 @@ export default defineConfig({
     tailwindcss(),
     glsl(),
   ],
-  // server: {
-  //   hmr: false, // Disable HMR
-  // },
-
+  server: {
+    port: 5173,
+    strictPort: true,
+    origin: 'http://localhost:5173', // Force absolute URLs for HMR
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173,
+    }
+  }
 })
