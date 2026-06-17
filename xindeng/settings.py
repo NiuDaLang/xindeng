@@ -29,14 +29,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 # DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 DEBUG = os.environ.get("DJANGO_DEBUG")
 
-if DEBUG:
-    # 🖥️ DESKTOP DEVELOPMENT CONFIGURATION
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-    SITE_DOMAIN = "http://localhost:8000"
-else:
-    # 🚀 AWS LIGHTSAIL PRODUCTION CONFIGURATION
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '52.62.142.183', "192.168.1.120", ]
-    SITE_DOMAIN = "http://52.62.142.183"
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '52.62.142.183']
 
 # DJANGO_VITE_DEV_SERVER_HOST = "192.168.1.120"
 # X_FRAME_OPTIONS = 'SAMEORIGIN'
