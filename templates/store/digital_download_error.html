@@ -1,0 +1,22 @@
+<!-- 📂 File Location: templates/store/digital_download_error.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="min-h-[70dvh] flex items-center justify-center p-4 bg-base-100">
+    <div class="card w-full max-w-md bg-base-200 shadow-xl border border-base-300 text-center rounded-2xl p-6 sm:p-8 space-y-4">
+        <div class="avatar placeholder">
+            <div class="bg-error/10 text-error rounded-full w-16 h-16 flex items-center justify-center">
+                <i class="fa-solid fa-clock-rotate-left fa-2x"></i>
+            </div>
+        </div>
+        <h2 class="text-xl font-black text-error">{{ error_headline }}</h2>
+        <div class="text-xs space-y-2 text-base-content/80 text-left bg-base-100 p-4 rounded-xl border leading-relaxed">
+            <p>{{ error_message }}</p>
+            <div class="border-t border-dashed my-2 opacity-50"></div>
+            <p class="font-medium">{{ error_message_cn }}</p>
+        </div>
+        <a href="mailto:support@xindeng.com" class="btn btn-sm btn-outline font-bold w-full rounded-lg">
+            <i class="fa-solid fa-headset"></i> Contact Support ｜ 聯絡技術客服
+        </a>
+    </div>
+</div>
+{% endblock %}

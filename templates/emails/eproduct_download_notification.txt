@@ -1,0 +1,15 @@
+Dear {{ user.username|default:order.email }},
+
+感謝您的購買！您的電子商品已成功交付。
+Thank you for your purchase! Your digital product has been fulfilled successfully.
+
+商品名稱 ｜ Item Name: {{ product.product_name }}
+
+請點擊下方連結下載您的電子商品（連結有效期為 48 小時）：
+Please click the link below to securely fetch your digital product (Valid for 48 hours):
+{{ download_url }}
+
+本下載連結將於 {{ token.expires_at|date:"Y-m-d H:i" }} 自動失效。
+This secure entry pass will automatically expire on {{ token.expires_at|date:"Y-m-d H:i" }}.
+
+xindeng.com

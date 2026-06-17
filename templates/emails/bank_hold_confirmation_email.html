@@ -5,8 +5,8 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Bank Transfer Instructions ｜ 銀行轉帳指引</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="preconnect" href="https://googleapis.com">
+        <link rel="preconnect" href="https://gstatic.com" crossorigin>
         <link href="https://googleapis.com" rel="stylesheet">
     </head>
     <body style="font-family: 'Noto Sans TC', sans-serif; margin:0; background-color:#f9f9f9; padding: 20px 0;">
@@ -14,16 +14,21 @@
             <tr>
                 <td align="center">
                     <table class="content" width="600" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse; border: 1px solid #e5e5e5; background-color:#ffffff;">
+                        <!-- 🌟 BRAND LOGO HEADLINE BANNER -->
+                        <tr>
+                            <td align="center" style="padding: 24px 0 10px 0; background-color: #ffffff;">
+                                <img src="https://i.postimg.cc/m2KRQgKs/logo-rectangle.png" width="259" height="44" alt="Hṛdayadīpa Logo" style="display: block; border: 0; outline: none;">
+                            </td>
+                        </tr>
                         <!-- Header -->
                         <tr>
-                            <td class="header" style="background-color: #c2bdb9; padding: 40px; text-align: center; color:#161616;">
+                            <td class="header" style="background-color: #ffffff; padding: 10px 40px 30px 40px; text-align: center; color:#161616;">
                                 <span style="font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 5px;">Hṛdayadīpa (हृदयदीप) ｜ 心燈</span>
-                                <span style="font-size: 1rem; line-height: 1.4rem; display: block; opacity: 0.9;">
+                                <span style="font-size: 1rem; line-height: 1.4rem; display: block; opacity: 0.9; color: #555555;">
                                     Bank Transfer Instructions<br/>銀行轉帳與線下匯款指引
                                 </span>
                             </td>
                         </tr>
-
                         <!-- Warning Banner -->
                         <tr>
                             <td style="padding: 20px 40px; background-color: #fff3cd; border-bottom: 1px solid #ffeeba; color: #856404; font-size: 0.85rem; line-height: 1.3rem; text-align: center;">
@@ -33,7 +38,6 @@
                                 請於 <strong>{{ expiry_date|date:"Y-m-d H:i" }}</strong> 前完成匯款，逾期未付訂單將被系統自動取消。
                             </td>
                         </tr>
-
                         <!-- Greeting Section -->
                         <tr>
                             <td class="body" style="padding: 40px 40px 20px 40px; text-align: left; font-size: 0.9rem; line-height: 1.4rem; color: #333333;">
@@ -43,8 +47,8 @@
                                     Dear <strong>{{ order.email }}</strong> ｜ 親愛的 <strong>{{ order.email }}</strong>，
                                 {% endif %}
                                 <br><br>
-                                Your inventory hold request has been successfully processed under order number: <strong style="color: #c2bdb9; font-size: 1rem;">{{ order.order_number }}</strong>.<br>
-                                您的商品庫存已成功鎖定！訂單號碼為：<strong style="color: #a39e9a; font-size: 1rem;">{{ order.order_number }}</strong>。
+                                Your inventory hold request has been successfully processed under order number: <strong style="color: #4b9aaa; font-size: 1rem;">{{ order.order_number }}</strong>.<br>
+                                您的商品庫存已成功鎖定！訂單號碼為：<strong style="color: #4b9aaa; font-size: 1rem;">{{ order.order_number }}</strong>。
                             </td>
                         </tr>
 
@@ -71,7 +75,32 @@
                                 </table>
                             </td>
                         </tr>
-
+                        <!-- 🌟 MOBILE SCAN ACTION: ALIPAY & WECHAT PAY QR CODES MODULE -->
+                        <tr>
+                            <td style="padding: 0 40px 30px 40px;">
+                                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border: 1px solid #e5e5e5; border-radius: 8px;">
+                                    <tr>
+                                        <td style="padding: 20px; text-align: center;">
+                                            <strong style="font-size: 0.9rem; color: #161616; display: block; margin-bottom: 12px; text-align: left;">
+                                                📱 Mobile Scan Options ｜ 行動支付掃碼（支付寶與微信）
+                                            </strong>
+                                            
+                                            <!-- Inline Content-ID Attached Embedded Graphic Asset Reference -->
+                                            <img src="https://i.postimg.cc/JhVrWzQY/QR-codes.png" width="480" alt="Alipay and WeChat Pay QR Codes" style="display: block; margin: 0 auto; max-width: 100%; height: auto; border: 0;">
+                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 15px; border-top: 1px dashed #e5e5e5; padding-top: 12px; font-size: 0.75rem; line-height: 1.2rem; color: #666666; text-align: left;">
+                                                <tr>
+                                                    <td>
+                                                        💡 <strong>Tip:</strong> Scan the QR codes above directly through your mobile app, or search using the text-based handles listed in the plain text configuration parameters if cross-checking records.
+                                                        <br>
+                                                        💡 <strong>提示：</strong>您可直接使用手機內的支付寶或微信掃描上方二維碼完成付款。手動搜尋帳號請參照下方資訊。
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>                        
                         <!-- Informational Subtext -->
                         <tr>
                             <td class="body" style="padding: 0 40px 40px 40px; text-align: left; font-size: 0.85rem; line-height: 1.35rem; color: #555555;">
@@ -82,7 +111,6 @@
                                 <a href="https://xindeng.art" style="color: #161616; font-weight: bold; text-decoration: none;">xindeng.art</a>
                             </td>
                         </tr>
-
                         <!-- Safeguard Footer Notification -->
                         <tr>
                             <td class="body" style="padding: 20px 40px; text-align: left; font-size:0.75rem; line-height: 1.1rem; border-top: 1px solid #e5e5e5; background-color: #fafafa; color: #777777;">
@@ -90,11 +118,10 @@
                                 如果您沒有在心燈 xindeng.art 申請商品保留，請忽視這份由系統自動發出的郵件。
                             </td>
                         </tr>
-
                         <!-- Corporate Footer Banner -->
                         <tr>
                             <td class="footer" style="background-color: #333333; padding: 30px; text-align: center; color: #ffffff; font-size: 0.8rem; letter-spacing: 0.5px;">
-                                Copyright &copy; 2026 | xindeng.art
+                                Copyright &copy; {{ year }} | xindeng.art
                             </td>
                         </tr>
                     </table>

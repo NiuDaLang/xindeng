@@ -16,7 +16,6 @@ import GLightbox from 'glightbox';
 import 'sharer.js'; 
 import htmx from 'htmx.org';
 
-
 // // HTMX
 // // 1. Capture a clean reference to HTMX's internal logger
 // const originalHtmxLogger = htmx.logger;
@@ -719,7 +718,6 @@ async function createOrder() {
 }
 
 
-
 async function captureOrder(data) {
     const proforma_invoice_number = JSON.parse(document.getElementById('proforma_invoice_number').textContent);
     try {
@@ -777,6 +775,21 @@ async function renderPayPalComponents(clientToken) {
         });
 
         if (methods.isEligible("paypal")) {
+            // 🌟 THE NET INTEGRATION FIX: Clear out the skeleton loader the millisecond PayPal verifies eligibility!
+            const skeletonLoader = document.getElementById("paypal-loading-skeleton");
+            const buttonsContainer = document.getElementById("paypal_btns");
+            
+            if (skeletonLoader) {
+                skeletonLoader.remove(); // Removes the loader node out of the layout completely
+                console.log("🔒 PayPal Braintree Instance Clear: Skeleton loader purged cleanly.");
+            }
+            
+            if (buttonsContainer) {
+                // Re-adjust boundaries to remove dashed borders and padding, letting your clean button button fit snugly
+                buttonsContainer.classList.remove("min-h-[90px]", "p-4", "border-dashed", "bg-base-100/50");
+                buttonsContainer.classList.add("min-h-0", "p-0", "border-0", "bg-transparent");
+            }
+
             paypalButton.removeAttribute("hidden");
         }
 
@@ -862,7 +875,6 @@ async function renderPayPalComponents(clientToken) {
         cleanButton.addEventListener("click", async (e) => {
             e.preventDefault();
             if (window.checkoutTimer && window.checkoutTimer.currencyExpired) {
-                // 🎯 SWAL Fallback for expired exchange rates
                 Swal.fire({
                     icon: 'warning',
                     title: 'Rates Lapsed ｜ 匯率過期',
@@ -875,29 +887,36 @@ async function renderPayPalComponents(clientToken) {
                 return;
             }
             
-            // Disable button layout temporarily to block duplicate double-clicks
             cleanButton.disabled = true;
             cleanButton.classList.add("btn-disabled", "opacity-50");
             
             try {
-                // 🚀 2. PRE-FLIGHT VERIFICATION PASS: Run stock checks BEFORE opening the payment portal
                 console.log("Checking database inventory allocation tracks...");
-                const orderData = await createOrder();
                 
-                // 3. Launch the secure modal layer ONLY if createOrder returns successfully
-                await paymentSession.start({ presentationMode: "auto" }, orderData);
+                // 1. Fetch your backend wrapper payload data object
+                const orderData = await createOrder(); 
+
+                // 2. Extract the explicit property key 'orderId' text string 
+                const payPalOrderIdString = orderData.orderId; 
+                
+                // 3: Wrap the tracking string inside a schema configuration object
+                // inside an unresolved Promise to satisfy BOTH modern type validation gates!
+                const wrappedConfigPromise = Promise.resolve({
+                    orderId: payPalOrderIdString
+                });
+                
+                console.log("Launching secure interface with unified configuration payload.");
+                
+                // 2. Pass the wrapped configuration Promise to clear the modern PayPal initialization rules
+                await paymentSession.start({ presentationMode: "auto" }, wrappedConfigPromise);
 
             } catch (error) {
                 console.error("PayPal initiation halted due to validation failure:", error);
-                // The customEvent logic inside createOrder will natively handle the SWAL distribution.
             } finally {
-                // Restore button interactive configurations cleanly
                 cleanButton.disabled = false;
                 cleanButton.classList.remove("btn-disabled", "opacity-50");
             }
-            // await paymentSession.start({ presentationMode: "auto" }, createOrder());
         });
-
     } catch (err) {
         console.error('PayPal Core Instance configuration assignment failed:', err);
     }
@@ -917,15 +936,29 @@ async function initializePayPalSDK() {
     const containerExists = document.getElementById("paypal_btns");
     if (!containerExists) return;
 
+
     // 💡 CNY SAFEGUARD GUARD: Block initialization loops instantly if domestic currency is selected
     const foreign_currency_code = JSON.parse(document.getElementById('foreign_currency_code').textContent);
+    // if (foreign_currency_code && foreign_currency_code.toUpperCase() === 'CNY') {
+    //     console.log("🇨🇳 CNY active: Bypassing automated script mounting pipelines.");
+    //     return;
+    // }
+
     if (foreign_currency_code && foreign_currency_code.toUpperCase() === 'CNY') {
         console.log("🇨🇳 CNY active: Bypassing automated script mounting pipelines.");
+        
+        const skeletonLoader = document.getElementById("paypal-loading-skeleton");
+        if (skeletonLoader) skeletonLoader.remove(); // Safely clear the spinner out of the way
+        
+        if (containerExists) {
+            containerExists.classList.remove("min-h-[90px]", "p-4", "border-dashed", "bg-base-100/50");
+            containerExists.classList.add("min-h-0", "p-0", "border-0", "bg-transparent");
+        }
         return;
-    }
+    }    
 
     if (window.paypal && typeof window.paypal.createInstance === "function") {
-        console.log("♻️ PayPal core SDK already present in window space. Re-rendering layouts...");
+        console.log("♻️ PayPal Core SDK already present in window space. Re-rendering layouts...");
         if (!window.cachedPayPalClientToken) {
             const data = await getBrowserSafeClientToken();
             window.cachedPayPalClientToken = data.access_token;
@@ -933,7 +966,7 @@ async function initializePayPalSDK() {
         await renderPayPalComponents(window.cachedPayPalClientToken);
         return;
     }
-
+    
     if (window.paypalSdkLoadingStarted) return;
     window.paypalSdkLoadingStarted = true;
 
@@ -953,12 +986,19 @@ async function initializePayPalSDK() {
         script.onerror = (error) => {
             console.error("Failed to load the PayPal JS SDK script", error);
             window.paypalSdkLoadingStarted = false;
+
+            // 🌟 ERROR GUARD: Remove spinner if network drops to prevent frozen layouts
+            const skeletonLoader = document.getElementById("paypal-loading-skeleton");
+            if (skeletonLoader) skeletonLoader.remove();
         };
 
         document.body.appendChild(script);
     } catch (error) {
         console.error("Error during PayPal initialization:", error);
         window.paypalSdkLoadingStarted = false;
+
+        const skeletonLoader = document.getElementById("paypal-loading-skeleton");
+        if (skeletonLoader) skeletonLoader.remove();
     }
 }
 
@@ -969,38 +1009,6 @@ document.addEventListener("DOMContentLoaded", () => {
         window.initializePayPalSDK();
     }
 });
-
-// clock animation jquery
-(function($) {
-    $(document).ready(function() {
-        initAnalogClock(); 
-    });
-
-    function initAnalogClock() {
-        let currentSec = getSecondsToday();
-
-        let seconds = (currentSec / 60) % 1;
-        let minutes = (currentSec / 3600) % 1;
-        let hours = (currentSec / 43200) % 1;
-
-        setTime(60 * seconds, "second");
-        setTime(3600 * minutes, "minute");
-        setTime(43200 * hours, "hour");
-
-        function setTime(left, hand) {
-        $(".clock__" + hand).css("animation-delay", "" + left * -1 + "s");
-        }
-
-        function getSecondsToday() {
-        let now = new Date();
-
-        let today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-        let diff = now - today; 
-        return Math.round(diff / 1000);
-        }
-    }
-})(django.jQuery);
 
 
 /**
@@ -1415,7 +1423,8 @@ function toggleProvinceFields(form) {
     }
 }
 
-
+htmx.config.ignoreOobSwapErrors = true;
+console.log("ignoreOobSwapErrors: ",  htmx.config.ignoreOobSwapErrors)
 
 window.daysBetween = daysBetween;
 window.datePicker = datePicker;
@@ -1505,4 +1514,3 @@ window.toggleProvinceFields = toggleProvinceFields;
 
 // Summary of the v6 Requirement:
 // The start() method is designed to prevent popup blockers. It needs the Promise so it can immediately open the window and then populate it with the Order ID once your server responds. By resolving it yourself first, you broke the "intent" chain required by the SDK.
-

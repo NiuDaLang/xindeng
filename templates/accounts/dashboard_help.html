@@ -152,9 +152,11 @@
 </script> -->
 
 <script>
-    const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
-    const chatSocket = new WebSocket(wsProtocol + window.location.host + '/ws/chat_notifications')
-
+    // const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+    // const chatSocket = new WebSocket(window.wsprotocol + window.location.host + '/ws/chat_notifications/');
+    const chatUrl = (window.location.protocol === "https:" ? "wss://" : "ws://" + window.location.host + '/ws/chat_notifications/');
+    const chatSocket = new WebSocket(chatUrl);
+    
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
         const event = new CustomEvent("refresh_chat", {

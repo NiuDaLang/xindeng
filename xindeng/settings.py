@@ -27,11 +27,22 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG")
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.1.120"]
+if DEBUG:
+    # 🖥️ DESKTOP DEVELOPMENT CONFIGURATION
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    SITE_DOMAIN = "http://localhost:8000"
+else:
+    # 🚀 AWS LIGHTSAIL PRODUCTION CONFIGURATION
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '52.62.142.183', "192.168.1.120", ]
+    SITE_DOMAIN = "http://52.62.142.183"
+
 # DJANGO_VITE_DEV_SERVER_HOST = "192.168.1.120"
 # X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+# 🌟 THE CORRECT SITE_DOMAIN FORMAT: Full valid URL string prefix used for link rendering.
+SITE_DOMAIN = os.environ.get("SITE_DOMAIN")
 
 # Application definition
 
@@ -83,7 +94,7 @@ ACCOUNT_AUTHENTICATION_METHODS = {'email'}
 ACCOUNT_EMAIL_VERIFICATION = 'none' # Disable Allauth's manual email verification (since YOU handle it in views.py)
 ACCOUNT_CONFIRM_EMAIL_ON_GET = True # Verifies as soon as they click the link
 
-# Google Registration (Objective a)
+# Google Registration
 SOCIALACCOUNT_ADAPTER = 'accounts.adapter.MySocialAccountAdapter'
 SOCIALACCOUNT_QUERY_EMAIL = True
 SOCIALACCOUNT_LOGIN_ON_GET = False # Skips the "Are you sure you want to log in?" page

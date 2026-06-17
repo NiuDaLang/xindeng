@@ -356,22 +356,26 @@ class UserPerk(models.Model):
         super().save(*args, **kwargs)
 
     def generate_numeric_code(self, attempt=1):
-        # Format: [PerkID(3 digits)] + [UserID(3 digits)] + Random(6 digits)
-        # This ensures the code is numeric and highly likely to be unique
+        """Generates an un-sliced numeric tracking code protecting key limits."""
         if attempt > 10:
             raise Exception("Could not generate a unique perk code after 10 attempts.")
 
-        prefix = str(self.perk.id).zfill(3)[:3]
-        user_part = str(self.user.id).zfill(3)[:3]
-        random_part = ''.join(random.choices(string.digits, k=10))
+        # 🌟 Import local Python dependencies cleanly inside the execution scope
+        import random
+        import string
+
+        # Use full string parameters instead of slicing strings at 3 characters
+        prefix = str(self.perk.id).zfill(3)
+        user_part = str(self.user.id).zfill(3)
+        random_part = ''.join(random.choices(string.digits, k=8))
 
         code = f"{prefix}{user_part}{random_part}"
 
-        # Collision check
+        # Collision check logic pass
         if UserPerk.objects.filter(unique_code=code).exists():
-            return self.generate_numeric_code(attempt + 1) # Retry if exists
+            return self.generate_numeric_code(attempt + 1)
         return code
-    
+        
     @property
     def personalized_expiry(self):
         code = self.perk.code.upper()
@@ -405,15 +409,23 @@ class CustomerVoucher(models.Model):
     id                          = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     value                       = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     balance                     = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
-    owner                       = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="vouchers")
     purchaser_email             = models.EmailField()
     registered_email            = models.EmailField(null=True, blank=True)
+    owner                       = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="vouchers")
+
     is_claimed                  = models.BooleanField(default=False)
     claimed_date                = models.DateTimeField(null=True, blank=True)
     is_used                     = models.BooleanField(default=False)
     used_date                   = models.DateTimeField(null=True, blank=True)
+
     created_date                = models.DateTimeField(auto_now_add=True)
     updated_date                = models.DateTimeField(auto_now=True)
+
+    # 🌟 SECURE EXTENSION VARIANCE TRACKING FIELDS
+    secure_pin                  = models.CharField(max_length=6, null=True, blank=True)
+    pin_expiry                  = models.DateTimeField(null=True, blank=True)
+    failed_pin_attempts         = models.PositiveSmallIntegerField(default=0)
+    is_locked                   = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.purchaser_email} - CNY {self.value}"
@@ -421,16 +433,19 @@ class CustomerVoucher(models.Model):
     def generate_registration_link(self, request):
         return request.build_absolute_uri(reverse('claim_voucher_url', args=[str(self.id)]))
     
-    def claim(self, user_email):
-        if not self.is_claimed:
-            self.registered_email = user_email
-            self.is_claimed = True
-            self.claimed_date = timezone.now()
-            self.save()
-            return True
-        return False
-
-
+    # def has_available_pin_attempts(self):
+    #     return self.failed_pin_attempts < 3 and not self.is_locked
+    
+    def claim(self, email):
+        """Executes explicit structural balance transformations."""
+        if self.is_claimed:
+            return False
+        self.is_claimed = True
+        self.claimed_date = timezone.now()
+        self.registered_email = email.strip().lower()
+        self.save()
+        return True
+    
 class ChatMessage(models.Model):
     sender = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='sent_messages')
     receiver = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='received_messages')

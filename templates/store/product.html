@@ -631,7 +631,7 @@
 
             const formData = new FormData(form);
             const url = form.getAttribute('data-url');
-
+            console.log("add to cart url: ", url)
             fetch(url, {
                 method: 'POST',
                 body: formData,
@@ -641,6 +641,7 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log("add to cart data: ", data)
                 const variation_data_cart_info = data.cart_items.filter(data => data.product_variation_id == sku_id)[0]
                 const quantity_added = data.quantity_added
                 stock -= quantity_added

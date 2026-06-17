@@ -1,0 +1,34 @@
+<!-- 📂 File Location: templates/emails/eproduct_download_notification.html -->
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: sans-serif; color: #1f2937; background-color: #f9fafb; padding: 20px 0;">
+    <div style="max-width: 550px; margin: 0 auto; padding: 32px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+        <h2 style="color: #4b9aaa; text-align: center; margin-bottom: 4px;">Digital Item Delivery ｜ 電子商品交付</h2>
+        <p style="text-align: center; font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.12em; margin-top: 0;">Secure Order Fulfillment</p>
+        <p>Dear {{ user.username|default:order.email }},</p>
+        <p>Thank you for your purchase! Your payment has cleared successfully. Your downloadable digital item is now ready for collection:</p>
+        
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 16px; margin: 20px 0; border-left: 4px solid #4b9aaa;">
+            <strong style="font-size: 14px; color: #111827;">{{ product.product_name }}</strong><br/>
+            <span style="font-size: 11px; color: #6b7280; font-family: monospace;">SKU: {{ token.order_product.product_variation.get_sku }}</span>
+        </div>
+
+        <div style="text-align: center; margin: 28px 0;">
+            <a href="{{ download_url }}" target="_blank" style="background-color: #4b9aaa; color: #ffffff; padding: 12px 28px; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                Download Digital Product ｜ 下載電子商品
+            </a>
+        </div>
+
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #fffaf0; border: 1px solid #feebc8; border-radius: 8px; margin-top: 20px;">
+            <tr>
+                <td style="padding: 12px; font-size: 11px; line-height: 1.4rem; color: #c05621;">
+                    <strong>🔒 Security Access Restrictions ｜ 存取時效安全提示：</strong><br/>
+                    • This link remains valid for exactly <strong>48 hours</strong> from the time of order settlement. It will expire automatically on {{ token.expires_at|date:"Y-m-d H:i" }}.<br/>
+                    • 本下載連結從訂單付款完成起算，有效期為 <strong>48 小時</strong>。連結將於 {{ token.expires_at|date:"Y-m-d H:i" }} 自動失效，過期後將無法下載。
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

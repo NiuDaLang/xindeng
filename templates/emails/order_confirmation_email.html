@@ -1,5 +1,5 @@
+<!-- 📂 File Location: templates/emails/order_confirmation_email.html -->
 {% autoescape off %}
-
 <!DOCTYPE html>
 <html lang="en" style="padding:0;margin:0;box-sizing:border-box;">
     <head>
@@ -10,25 +10,23 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128&family=Noto+Sans+TC:wght@100..900&family=Zalando+Sans:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
     </head>
-    <body style="font-family: 'Noto Sans TC','Zalando Sans',sans-serif; margin:0;">
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" >
+    <body style="font-family: 'Noto Sans TC','Zalando Sans',sans-serif; margin:0; background-color: #f7f5f3; padding: 20px 0;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="table-layout: fixed;">
             <tr>
-                <td align="center">
-                    <table class="content" width="600" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse; border: 1px solid #cccccc; background-color:#f7f5f3;">
+                <td align="center" style="padding: 0 10px;">
+                    <table class="content" width="600" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse; border: 1px solid #cccccc; background-color:#f7f5f3; width: 600px; max-width: 100%;">
                         <!-- Header -->
                         <tr>
-                            <td class="header" style="background-color: #c2bdb9; padding: 40px; text-align: center; color:#161616;font-size: 1.15rem;line-height: 1.35rem;">
-                                <!-- <img src="/media/images/site/ad1.png.webp" width="80" height="45" alt=""> -->
-                                <br/>
+                            <td class="header" style="background-color: #c2bdb9; padding: 40px; text-align: center; color:#161616; font-size: 1.15rem; line-height: 1.35rem; font-weight: bold;">
                                 Order Confirmation
                                 <br/>
                                 訂單確認
                             </td>
                         </tr>
 
-                        <!-- Body -->
+                        <!-- Body Greeting -->
                         <tr>
-                            <td class="body" style="padding: 40px; text-align: left; font-size: 0.85rem; line-height: 1.05rem;">
+                            <td class="body" style="padding: 40px 40px 20px 40px; text-align: left; font-size: 0.85rem; line-height: 1.35rem; color: #161616;">
                                 {% if user.username %}
                                     Dear {{user.username}} ｜ 親愛的{{user.username}}
                                 {% else %}
@@ -38,34 +36,58 @@
                                 <br><br>
                                 Thank you for shopping with us!
                                 <br/>
-                                Your order number is {{ order.order_number }}
+                                Your order number is <strong>{{ order.order_number }}</strong>
                                 <br/>
                                 感謝您在本店購物！
                                 <br/>
-                                您的訂單號碼是{{ order.order_number }}
+                                您的訂單號碼是 <strong>{{ order.order_number }}</strong>
                             </td>
                         </tr>
+
+                        <!-- 🌟 THE CONDITIONALS MODULE BLOCK FOR SELF-CREDITED CASH VOUCHERS -->
+                        {% if has_self_voucher %}
                         <tr>
-                            <td class="body" style="padding: 40px; text-align: left; font-size: 0.85rem; line-height: 1.05rem;">
+                            <td style="padding: 0 40px 20px 40px;">
+                                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; border-collapse: separate;">
+                                    <tr>
+                                        <td style="padding: 16px; text-align: left; font-size: 0.75rem; line-height: 1.15rem; color: #166534;">
+                                            <strong style="font-size: 0.8rem; display: block; margin-bottom: 4px;">
+                                                🎁 Wallet Auto-Credit Confirmation ｜ 禮品券自動充值確認
+                                            </strong>
+                                            We detected a self-purchase item in this checkout. The e-voucher has been <strong>automatically credited</strong> straight into your account wallet balance. You can apply these funds immediately on your next order by logging into your account.<br/>
+                                            <span style="display: block; margin-top: 4px; color: #15803d; opacity: 0.9;">
+                                                系統檢測到此訂單包含自用項目。禮品券面值已<strong>自動全額充值</strong>至您的個人帳戶錢包中！您隨時可以登入會員中心查看餘額，並在下一次結帳時直接抵扣使用。
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        {% endif %}
+
+                        <!-- Closing Body Text -->
+                        <tr>
+                            <td class="body" style="padding: 0 40px 40px 40px; text-align: left; font-size: 0.85rem; line-height: 1.35rem; color: #161616;">
                                 Please find the attached for order details.
                                 <br/>
                                 訂單詳情請見附件。
-                                <br/>
-                                <br/>
-                                <br/>
-                                xindeng.com
+                                <br/><br/>
+                                <strong style="color: #4b9aaa;">xindeng.com</strong>
                             </td>
                         </tr>
+
+                        <!-- Disclaimer Guard -->
                         <tr>
-                            <td class="body" style="padding: 40px; text-align: left; font-size:0.7rem; line-height: 0.9rem;">
+                            <td class="body" style="padding: 0 40px 30px 40px; text-align: left; font-size:0.7rem; line-height: 1.0rem; color: #666666; border-top: 1px dashed #cccccc; padding-top: 20px;">
                                 If you did not make a purchase at xindeng.com, please ignore this email.<br>
                                 如果您沒有在心燈 xindeng.com 購物，請忽視這份郵件。     
                             </td>
                         </tr>
+
                         <!-- Footer -->
                         <tr>
-                            <td class="footer" style="background-color: #333333; padding: 40px; text-align: center; color: white; font-size: 14px;">
-                            Copyright &copy; 2026 | xindeng.art
+                            <td class="footer" style="background-color: #333333; padding: 40px; text-align: center; color: white; font-size: 14px; font-family: sans-serif;">
+                                Copyright &copy; 2026 | xindeng.art
                             </td>
                         </tr>
                     </table>
@@ -73,17 +95,17 @@
             </tr>
         </table>
     </body>
+</html>
 
 <style>
 @media screen and (max-width: 600px) {
     .content {
         width: 100% !important;
-        display: block !important;
-        padding: 10px !important;
+        padding: 0 !important;
     }
     .header, .body, .footer {
-        padding: 20px !important;
+        padding: 25px !important;
     }
-  }
+}
 </style>
 {% endautoescape %}

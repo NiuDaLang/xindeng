@@ -43,17 +43,30 @@ class AddressAdmin(admin.ModelAdmin):
 
 
 class PerkAdmin(admin.ModelAdmin):
-    list_display = ('code', 'discount_type', 'discount_value', 'is_active', 'valid_to', 'uses_count')
-    list_filter = ('discount_type', 'is_active')
-    search_fields = ('code', 'description')
-    readonly_fields = ('uses_count', 'created_at', 'updated_at')
-    fieldsets = (
-        ('General Info', {'fields': ('code', 'description', 'featured_image', 'is_active')}),
-        ('Discount Settings', {'fields': ('discount_type', 'discount_value', 'min_spending_requirement')}),
-        ('Usage & Validity', {'fields': ('valid_from', 'valid_to', 'max_uses', 'uses_count')}),
-        ('Timestamps', {'fields': ('created_at', 'updated_at')}),
-    )
+    # 🌟 converted from tuples to list matrices for scalability
+    list_display = ['code', 'discount_type', 'discount_value', 'is_active', 'valid_to', 'uses_count']
+    list_filter = ['discount_type', 'is_active']
+    search_fields = ['code', 'description']
+    
+    # 🌟 FIXED: Removed 'uses_count' from here so it becomes fully editable!
+    readonly_fields = ['created_at', 'updated_at']
+    
+    fieldsets = [
+        ['General Info', {'fields': ['code', 'description', 'featured_image', 'is_active']}],
+        ['Discount Settings', {'fields': ['discount_type', 'discount_value', 'min_spending_requirement']}],
+        ['Usage & Validity', {'fields': ['valid_from', 'valid_to', 'max_uses', 'uses_count']}],
+        ['Timestamps', {'fields': ['created_at', 'updated_at']}],
+    ]
 
+    def save_model(self, request, obj, form, change):
+        """
+        Cleans any latent database F() expressions before saving the form data,
+        ensuring that manual edits to uses_count always overwrite code tracking fields safely.
+        """
+        if hasattr(obj.uses_count, 'resolve_expression'):
+            obj.uses_count = form.cleaned_data.get('uses_count', 0)
+        super().save_model(request, obj, form, change)
+        
 
 class UserPerkAdmin(admin.ModelAdmin):
     list_display = ('unique_code', 'user', 'perk', 'is_used', 'used_at', 'check_eligibility')

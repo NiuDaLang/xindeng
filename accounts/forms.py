@@ -92,8 +92,6 @@ class UserForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # for field in self.fields:
-        #     print(f"{field}: {self.fields[field].required}")
         self.fields["mobile_area"].required = False    
 
         # Other attributes

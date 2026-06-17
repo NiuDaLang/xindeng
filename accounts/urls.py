@@ -49,5 +49,5 @@ urlpatterns = [
 
     # path("dashboard/threed/firework", views.firework, name="firework"),
 
-    # path("claim_voucher_url/<uuid>/", views.claim_voucher_url, "claim_voucher_url")
+    path("vouchers/claim/<str:voucher_id>/", views.claim_voucher_routing_view, name="claim_voucher_url"),
 ] 

@@ -228,9 +228,9 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'Vouchers' %}" 
+                            <a href="{% url 'dashboard' 'vouchers' %}" 
                                 {% if request.resolver_match.url_Name == 'dashboard' %}
-                                hx-get="{% url 'dashboard' 'Vouchers' %}" hx-target="#dashboard-content" hx-push-url="true"
+                                hx-get="{% url 'dashboard' 'vouchers' %}" hx-target="#dashboard-content" hx-push-url="true"
                                 {% endif %}
                             >
                                 <i class="fa-solid fa-money-bill-1-wave"></i>Vouchers｜禮品券
@@ -271,7 +271,11 @@
                                     <span id="unread-count-header" 
                                         hx-swap-oob="true" 
                                         lass="badge badge-xs badge-secondary text-primary-content">
-                                        {{ unread_count }}
+                                        {% if unread_count %}
+                                            <span>{{ unread_count }}</span>
+                                        {% else %}
+                                            <span>0</span>
+                                        {% endif %}
                                     </span>
                                 </div>
                             </a>

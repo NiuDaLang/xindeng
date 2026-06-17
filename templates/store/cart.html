@@ -88,40 +88,26 @@
 
 <script>
 (function() {
-document.addEventListener('htmx:oobErrorNoTarget', function(evt) {
-    console.group("%c🚨 HTMX Out-of-Band Swap Failed!", "color: white; background: #e11d48; font-size: 12px; padding: 4px; border-radius: 4px;");
-    
-    // 1. Extract the exact missing element ID target string parameter
-    const missingTargetId = evt.detail.targetId;
-    console.error(`Missing Target ID: The webpage DOM is completely missing an element with id="${missingTargetId}"`);
-    
-    // 2. Extract and print the raw HTML string snippet payload sent down by your Django view
-    if (evt.detail.fragment) {
-        const tempDiv = document.createElement('div');
-        tempDiv.appendChild(evt.detail.fragment.cloneNode(true));
-        console.warn("Raw Incoming HTML Fragment Payload:", tempDiv.innerHTML);
-    }
-    
-    // 3. Provide an absolute production diagnostic cross-reference blueprint trace
-    console.log("Current Page Path:", window.location.pathname);
-    console.log("👉 Action Required: Go to your Django view or utility helper function (like update_cart_totals or update_shipping_cost), check the ID string attribute returned in the HTML/OOB template fragment string, and ensure a matching id container exists in your frontend HTML template file.");
-    
-    console.groupEnd();
-});
-
-// // ❌ Check for an explicit structural listener pattern like this inside main.js:
-// document.addEventListener("htmx:beforeSwap", function(evt) {
-//     // Reading an un-passed header trigger metric or an un-rendered OOB variable:
-//     let couponInputId = evt.detail.xhr.getResponseHeader("X-Offer-Input-Id"); 
-    
-//     // If the header is missing, Vanilla JS evaluates the unassigned reference 
-//     // directly as a literal text string value of "undefined"!
-//     document.getElementById(couponInputId).classList.add("hidden"); 
-// });
-
-
-
-
+    document.addEventListener('htmx:oobErrorNoTarget', function(evt) {
+        console.group("%c🚨 HTMX Out-of-Band Swap Failed!", "color: white; background: #e11d48; font-size: 12px; padding: 4px; border-radius: 4px;");
+        
+        // 1. Extract the exact missing element ID target string parameter
+        const missingTargetId = evt.detail.targetId;
+        console.error(`Missing Target ID: The webpage DOM is completely missing an element with id="${missingTargetId}"`);
+        
+        // 2. Extract and print the raw HTML string snippet payload sent down by your Django view
+        if (evt.detail.fragment) {
+            const tempDiv = document.createElement('div');
+            tempDiv.appendChild(evt.detail.fragment.cloneNode(true));
+            console.warn("Raw Incoming HTML Fragment Payload:", tempDiv.innerHTML);
+        }
+        
+        // 3. Provide an absolute production diagnostic cross-reference blueprint trace
+        console.log("Current Page Path:", window.location.pathname);
+        console.log("👉 Action Required: Go to your Django view or utility helper function (like update_cart_totals or update_shipping_cost), check the ID string attribute returned in the HTML/OOB template fragment string, and ensure a matching id container exists in your frontend HTML template file.");
+        
+        console.groupEnd();
+    });
 
     // Ensure this listener attaches EXACTLY ONCE to document.body, regardless of HTMX page swaps
     if (!window.htmxHistoryScrubberAttached) {
@@ -327,10 +313,75 @@ document.addEventListener('htmx:oobErrorNoTarget', function(evt) {
         }
     }
 
+    // change Addressbook address
+    function updateAccordionAddress() {
+        // 1. Locate the checked radio option inside the modal dialog container
+        const selectedRadio = document.querySelector('input[name="modal_addr_choice"]:checked');
+        if (!selectedRadio) {
+            console.warn("No address instance chosen from the selection modal panel.");
+            return;
+        }
+
+        // 2. Extract key tracking metadata parameters out of the data attributes configuration
+        const targetAddressId = selectedRadio.value;
+        const fullAddressText = selectedRadio.getAttribute('data-full');
+
+        // 3. Mutate the visual view layers anchors natively
+        const textDisplaySpan = document.getElementById('display-address-text');
+        const hiddenIdInputElement = document.getElementById('active-address-id');
+
+        if (textDisplaySpan) {
+            textDisplaySpan.innerText = fullAddressText;
+        }
+        if (hiddenIdInputElement) {
+            hiddenIdInputElement.value = targetAddressId;
+        }
+
+        // 4. Force check Accordion 2's radio container element natively
+        const savedAddressRadioTrigger = document.getElementById('acc-saved-address');
+        if (savedAddressRadioTrigger) {
+            savedAddressRadioTrigger.checked = true;
+            
+            // 🌟 INPUT LOCK RE-ALIGNMENT: Dynamically toggle the form input states 
+            // to match your handleCartFormChanges structural logic perfectly
+            const addressInput = document.getElementById('active-address-id');
+            if (addressInput) addressInput.disabled = false;
+            
+            document.querySelectorAll('.zone-select').forEach(sel => {
+                sel.disabled = true;
+            });
+            
+            // 5. Invoke the Master Ledger state reset pass to unlock shipping calculations
+            setTbaState("saved_address");
+        }
+
+        // 6. Gracefully close the DaisyUI/HTML5 native modal component frame
+        const addressModalDialog = document.getElementById('address_modal');
+        if (addressModalDialog && typeof addressModalDialog.close === "function") {
+            addressModalDialog.close();
+        }
+    }
+    window.updateAccordionAddress = updateAccordionAddress;
+
     // Safely replace the document change layout engine with explicit tracking
     document.body.removeEventListener('change', window.activeCartChangeHandler);
     window.activeCartChangeHandler = handleCartFormChanges;
     document.body.addEventListener('change', window.activeCartChangeHandler);
+
+// 🌟 DOM INITIALIZATION GUARD: Safely locks form inputs based on the initial accordion state
+    document.addEventListener("DOMContentLoaded", () => {
+        const defaultAccordionRadio = document.querySelector('input[name="shipping_accordion"]:checked');
+        const addressInput = document.getElementById('active-address-id');
+        
+        if (defaultAccordionRadio && defaultAccordionRadio.value === 'saved_address') {
+            if (addressInput) addressInput.disabled = false;
+            document.querySelectorAll('.zone-select').forEach(sel => sel.disabled = true);
+        } else {
+            // Dropdowns are active by default: lock the hidden address book inputs to prevent collisions
+            if (addressInput) addressInput.disabled = true;
+        }
+    });
+
 
     /**
      * FOREX LOGIC

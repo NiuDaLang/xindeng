@@ -5,6 +5,9 @@ from .managers import ProductManager
 from django.urls import reverse
 from django_ckeditor_5.fields import CKEditor5Field
 from django.contrib.contenttypes.fields import GenericRelation
+from django.conf import settings
+import uuid
+from django.utils import timezone
 
 
 # Create your models here.
@@ -87,6 +90,16 @@ class Product(models.Model):
     is_physical     = models.BooleanField(default=True)
     is_voucher      = models.BooleanField(default=False)
 
+    is_digital = models.BooleanField(default=False)
+    digital_fulfillment_type = models.CharField(
+        max_length=15,
+        choices=[
+            ('INSTANT', 'Instant Auto-Fulfillment ｜ 隨選即發'),
+            ('CUSTOM', 'Custom / Manual Processing ｜ 人工交付'),
+        ],
+        default='INSTANT'
+    )
+
     is_active       = models.BooleanField(default=True)
     created_date    = models.DateTimeField(auto_now_add=True)
     modified_date   = models.DateTimeField(auto_now=True)
@@ -139,6 +152,11 @@ class ProductVariation(models.Model):
     single_pack     = models.BooleanField(default=False)
     # weight          = models.DecimalField(max_digits=10, decimal_places=3, default=0.000, help_text="Weight in kg (e.g., 1.250)")
     weight          = models.PositiveIntegerField(default=0, help_text="Weight in g (e.g., 800)")
+
+    # 🌟 NEW: Private path pointer inside your secure local filesystem storage root
+    # Target location example: settings.BASE_DIR / 'private_digital_vault' / 'ebook1.pdf'
+    digital_file_path = models.CharField(max_length=255, blank=True, null=True)
+    
     created_date    = models.DateTimeField(auto_now_add=True)
     modified_date   = models.DateTimeField(auto_now=True)
 
@@ -152,24 +170,51 @@ class ProductVariation(models.Model):
         ]
 
     def __str__(self):
-        product_name = str(self.product.product_name) if self.product else ""
-        color_name = str(self.color.color_name) if self.color else ""
-        size_name = str(self.size.size_name) if self.size else ""
-        type_name = str(self.type.type_name) if self.type else ""
+        # 1. Cleanly extract and fallback text strings from parent relation rows safely
+        product_name = str(self.product.product_name).strip() if self.product else ""
+        
+        # 🌟 THE NET FIX: Pull the inner string property (.color_name) BEFORE evaluating the string exclusions!
+        color_val = str(self.color.color_name).strip() if self.color else ""
+        size_val = str(self.size.size_name).strip() if self.size else ""
+        type_val = str(self.type.type_name).strip() if self.type else ""
 
+        # 2. Establish a strict exclusion blacklist matrix map array
+        exclusion_blacklist = ["", "NONE", "N/A", "N/A｜不適用", "N/A ｜ 不適用"]
+
+        # 3. Surgically apply condition filters to wipe out matching string artifacts
+        color_name = color_val if color_val not in exclusion_blacklist else ""
+        size_name = size_val if size_val not in exclusion_blacklist else ""
+        type_name = type_val if type_val not in exclusion_blacklist else ""
+
+        # 4. Pack, clean, and join your structured string attributes
         sku_parts = [product_name, size_name, color_name, type_name]
         filtered_sku = [part for part in sku_parts if part.strip()]
-        return "-".join(filtered_sku) or f"Variation {self.pk}"
+        
+        return " - ".join(filtered_sku) or f"Variation #{self.pk}"
         
     def get_sku(self):
-        color_name = str(self.color.color_name) if self.color else ""
-        size_name = str(self.size.size_name) if self.size else ""
-        type_name = str(self.type.type_name) if self.type else ""
+        """
+        Generates a clean, compact SKU identification string by filtering out
+        empty values, placeholder objects, and 'N/A' language tags.
+        """
+        # 1. Safely extract the inner string values from the foreign relations
+        color_val = str(self.color.color_name).strip() if self.color else ""
+        size_val = str(self.size.size_name).strip() if self.size else ""
+        type_val = str(self.type.type_name).strip() if self.type else ""
 
-        sku = [size_name, color_name, type_name]
-        filtered_sku = [str(item) for item in sku if item is not None and str(item).strip() != ""]
-        # sku = separator.join(filtered_sku)
-        return "-".join(filtered_sku) or f"Variation {self.pk}"
+        # 2. Establish our comprehensive exclusion blacklist matrix
+        exclusion_blacklist = ["", "NONE", "N/A", "N/A｜不適用", "N/A ｜ 不適用"]
+
+        # 3. Filter the values against the blacklist
+        color_name = color_val if color_val not in exclusion_blacklist else ""
+        size_name = size_val if size_val not in exclusion_blacklist else ""
+        type_name = type_val if type_val not in exclusion_blacklist else ""
+
+        # 4. Gather, clean, and join your structured parameters
+        sku_parts = [size_name, color_name, type_name]
+        filtered_sku = [part for part in sku_parts if part.strip()]
+        
+        return "-".join(filtered_sku) or f"SKU-VAR-{self.pk}"
 
 
 class ProductGallery(models.Model):
@@ -197,3 +242,22 @@ class ProductVariationGallery(models.Model):
     class Meta:
         verbose_name = 'ProductVariationGallery'
         verbose_name_plural = 'ProductVariation Gallery'
+
+
+class DigitalDownloadToken(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="digital_tokens")
+    order_product = models.ForeignKey('orders.OrderProduct', on_delete=models.CASCADE, related_name="download_tokens")
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at or not self.is_active
+
+    def __str__(self):
+        # By referencing the properties natively, Python maps them lazily 
+        # at runtime without causing any top-level module load clashes!
+        return f"Token for Order {self.order_product.order.order_number} - Exp: {self.expires_at}"
+        

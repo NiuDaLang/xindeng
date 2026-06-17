@@ -11,12 +11,15 @@ from django.views.decorators.debug import sensitive_post_parameters
 from.models import CustomerVoucher, ChatMessage
 from store.models import ProductVariation
 from carts.models import Cart, CartItem
+from orders.models import Order
 from carts.views import _cart_id
 from django.db import transaction
 from django.db.models import Q, Count
 from django.utils.safestring import mark_safe
 import re
 from django.http import Http404
+from django.contrib.auth import login as auth_login
+from orders.tasks import send_secure_voucher_pin_email_task
 
 import uuid
 from django.views.decorators.csrf import csrf_exempt
@@ -50,6 +53,12 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.utils.timesince import timesince
 
+import random
+from django.db.models import Sum
+from decimal import Decimal
+from orders.models import OrderVoucherUsage
+from django.core.exceptions import ObjectDoesNotExist
+
 NUM_MSG_PER_LOAD = 10
 
 
@@ -58,12 +67,13 @@ NUM_MSG_PER_LOAD = 10
 def register(request):
     if request.method == "POST":
         form = RegistrationForm(request.POST)
-        username = form.cleaned_data["username"]
-        email = form.cleaned_data["email"]
-        receive_newsletter = form.cleaned_data["receive_newsletter"]
-        password = form.cleaned_data["password1"]
 
         if form.is_valid():
+            username = form.cleaned_data["username"]
+            email = form.cleaned_data["email"]
+            receive_newsletter = form.cleaned_data["receive_newsletter"]
+            password = form.cleaned_data["password1"]
+
             user = Account.objects.create_user(
                 username=username,
                 email=email,
@@ -165,11 +175,12 @@ def register(request):
         "email_errors": email_errors,
         "pw_errors": pw_errors,
         "username_errors": username_errors,
+        "page_title": "Register｜註冊"
     }
     return render(request, "pages/register.html", context)
 
 
-def activate(request, uidb64, token):
+def activate(request, uidb64, token):       
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
         user = Account._default_manager.get(pk=uid)
@@ -179,8 +190,25 @@ def activate(request, uidb64, token):
     if user is not None and default_token_generator.check_token(user, token):
         user.is_active = True
         user.save()
-        messages.success(request, "Account activated｜帳號已成功激活")
-        return redirect("login")
+
+        # 🌟 THE NET FIX: Auto-authenticate and log in the user on verification success
+        auth_login(request, user)
+
+        # 🎯 VOUCHER INTERCEPT LOGIC: Check for cached guest vouchers inside session records
+        pending_voucher_id = request.session.pop('pending_claim_voucher_id', None)
+        if pending_voucher_id:
+            try:
+                voucher = CustomerVoucher.objects.get(id=pending_voucher_id, is_claimed=False)
+                voucher.owner = user
+                voucher.claim(user.email)
+                messages.success(request, f"帳號已成功激活！且面值 CNY {voucher.value} 的禮品券已自動匯入您的錢包。 | Account activated! Voucher worth CNY {voucher.value} has been added to your wallet.")
+            except CustomerVoucher.DoesNotExist:
+                messages.success(request, "Account activated｜帳號已成功激活")
+        else:
+            messages.success(request, "Account activated｜帳號已成功激活")
+            
+        # Redirect directly into their dashboard panel since they are now fully logged in
+        return redirect("dashboard", subpage="main")
     else:
         messages.error(request, "Invalid activation link｜激活連結無效")
         return redirect("register")
@@ -189,6 +217,7 @@ def activate(request, uidb64, token):
 def login(request, user=None):
     if request.user.is_authenticated:
         return redirect("dashboard", subpage="main")
+    
     if request.method == "POST":
         email = request.POST.get("email")
         password = request.POST.get("password")
@@ -197,13 +226,26 @@ def login(request, user=None):
 
         if user is not None:
             auth.login(request, user)
-            messages.success(request, "Login successful｜登入成功")
+            # 🎯 VOUCHER AUTO-CLAIM ENGINE HOOK FOR RETURNING GUESTS
+            pending_voucher_id = request.session.pop('pending_claim_voucher_id', None)
+            if pending_voucher_id:
+                try:
+                    from store.models import CustomerVoucher
+                    voucher = CustomerVoucher.objects.get(id=pending_voucher_id, is_claimed=False)
+                    voucher.owner = user
+                    voucher.claim(user.email)
+                    messages.success(request, f"歡迎回來！面值 CNY {voucher.value} 的禮品券已自動匯入您的錢包。")
+                except CustomerVoucher.DoesNotExist:
+                    pass
+            else:
+                messages.success(request, "Login successful｜登入成功")
+    
             return redirect("dashboard", subpage="main")
         else:
             messages.error(request, "Login failed｜登入失敗")
             return redirect("login")
     
-    return render(request, "pages/login.html")
+    return render(request, "pages/login.html", {"page_title": "Login｜登入",})
 
 
 @login_required(login_url="login")
@@ -472,6 +514,17 @@ def dashboard(request, subpage):
         address_book_form = AddressBookForm()
         submit_btn = "Create｜新&nbsp;增"
     
+    # orders
+    paid_orders = None
+    pending_orders = None
+    cancelled_orders = None
+
+    if subpage == "orders":
+        all_user_orders = Order.objects.filter(user=request.user).order_by('-created_at')
+        paid_orders = all_user_orders.filter(is_ordered=True).exclude(order_status='Cancelled')
+        pending_orders = all_user_orders.filter(is_ordered=False, order_status='New', inventory_hold_expiry__gt=timezone.now())
+        cancelled_orders = all_user_orders.filter(order_status='Cancelled')
+
     # offers
     eligible_perks = None
     if subpage == "offers":
@@ -479,9 +532,7 @@ def dashboard(request, subpage):
         eligible_perks = []
 
         for perk in all_active_perks:
-            print("perk: ", perk)
             status = PerkEvaluator.get_eligibility_status(request.user, perk)
-            print("status, perk: ", status, perk)
             if status == 'VALID':
                 # Using get_or_create is smart; it ensures the unique_code is generated once
                 user_perk, created = UserPerk.objects.get_or_create(
@@ -491,6 +542,43 @@ def dashboard(request, subpage):
                 )
                 # Just append the user_perk; the template will handle the rest via 'perk' FK
                 eligible_perks.append(user_perk)
+
+    vouchers = None
+    wallet_balance = Decimal("0.00")
+    ledger_history = []
+
+    if subpage == "vouchers":        
+        # 1. Compute total aggregate unspent wallet balance cleanly
+        wallet_balance = CustomerVoucher.objects.filter(
+            owner=request.user, 
+            is_used=False, 
+            balance__gt=0
+        ).aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
+
+        # 2. Extract Credits: Vouchers claimed by this user
+        claimed_vouchers = CustomerVoucher.objects.filter(owner=request.user, is_claimed=True)
+        for v in claimed_vouchers:
+            ledger_history.append({
+                "date": v.claimed_date if v.claimed_date else v.created_date,
+                "summary": f"充值禮品券面值金額 CNY ¥{v.value}<br/><span class='text-[0.65rem] opacity-60 font-mono'>ID: {str(v.id)[:8].upper()}...</span>",
+                "amount": f"+RMB {v.value}",
+                "amount_class": "text-success font-bold",
+                "sort_date": v.claimed_date if v.claimed_date else v.created_date
+            })
+
+        # 3. Extract Debits: Voucher points spent on checkouts
+        voucher_usages = OrderVoucherUsage.objects.filter(order__user=request.user).select_related('order', 'voucher')
+        for u in voucher_usages:
+            ledger_history.append({
+                "date": u.created_at,
+                "summary": f"使用禮品券額度於訂單號：<br/><span class='font-mono font-bold text-primary'>{u.order.order_number}</span>",
+                "amount": f"-RMB {u.amount_deducted}",
+                "amount_class": "text-error font-bold",
+                "sort_date": u.created_at
+            })
+
+        # 4. Chronological Pass: Sort all actions newest-to-oldest
+        ledger_history.sort(key=lambda x: x["sort_date"], reverse=True)
 
     # wishlist
     wishlist = None
@@ -529,7 +617,6 @@ def dashboard(request, subpage):
             )
         else:
             other_user = admin if request.user != admin else request.user
-            print('other user for hybrid and member: ', other_user)
             messages_qs = ChatMessage.objects.filter(Q(sender=request.user) | Q(receiver=request.user))
 
         if search_query:
@@ -622,8 +709,18 @@ def dashboard(request, subpage):
         "submit_btn": submit_btn,
         "mainland_china_destinations": DESTINATIONS_MAINLAND_CHINA,
 
+        # orders
+        "paid_orders": paid_orders,
+        "pending_orders": pending_orders,
+        "cancelled_orders": cancelled_orders,
+        
         # offers
         "eligible_perks": eligible_perks,
+
+        # vouchers
+        "page_title": subpage_title,
+        "wallet_balance": wallet_balance,
+        "ledger_history": ledger_history,
 
         # wishlist
         "wishlist": wishlist,
@@ -652,7 +749,6 @@ def dashboard(request, subpage):
         "bread_crumb_2_url": f"/accounts/dashboard/main",
         "bread_crumb_3_url": f"/accounts/dashboard/{subpage}",
     }
-    print("other_user: ", other_user)
 
     if request.headers.get('HX-Request'):
         if request.headers.get('HX-Target') == "chat_message_list":
@@ -824,7 +920,6 @@ def get_wishlist_item(request, item_id):
 
 
 def add_to_cart_qty(request, variation_id, source):
-    print("source in cart qty: ", source)
     # Get the variation and its related wishlist item for the current user
     variation = get_object_or_404(ProductVariation, id=variation_id, is_available=True)
     if source == "wishlist":
@@ -849,7 +944,6 @@ def add_to_cart_from_dashboard(request, variation_id):
     cart, _ = Cart.objects.get_or_create(user=user, defaults={'cart_id': cart_id})
     source = request.POST.get("source")
     triggers = {}
-    print("quantity: ", quantity, " source: ", source)
 
     if not variation.is_available:
         return htmx_unavailable_response(request, "Not Available｜已下架...", "Sorry, this item is no longer available...<br>抱歉，此款已下架...")
@@ -1088,7 +1182,6 @@ def filter_message_by_member(request, member_id):
 def mark_read(request, msg_id):
     admin = Account.objects.filter(is_superadmin=True).first()
     msg = get_object_or_404(ChatMessage, id=msg_id, receiver=request.user)
-    print("mark read: ", msg.id, ": ", msg.content)
     msg.is_read = True
     msg.save()
 
@@ -1251,4 +1344,149 @@ def threed(request):
 
 def firework(request):
     return render(request, "accounts/three/firework.html")
+
+
+# def claim_voucher_routing_view(request, voucher_id):
+#     """
+#     Validates a voucher claim token. Routes unauthenticated visitors to registration
+#     while capturing the target token inside the session context.
+#     """
+#     voucher = get_object_or_404(CustomerVoucher, id=voucher_id)
+    
+#     if voucher.is_claimed:
+#         messages.error(request, "此兌換券已被領取 | This gift voucher has already been claimed.")
+#         return redirect('home')
+
+#     # 🔒 IF USER IS A GUEST: Intercept the request and cache the token in their session
+#     if not request.user.is_authenticated:
+#         request.session['pending_claim_voucher_id'] = str(voucher.id)
+#         request.session.modified = True
+#         messages.info(request, "請先註冊或登入帳戶以領取您的禮券 | Please register or log in to claim your voucher.")
+#         return redirect('login') # Point to your standard account login/register template endpoint
+
+#     # 🌟 IF USER IS LOGGED IN: Execute the atomic claim handshake instantly
+#     success = voucher.claim(request.user.email)
+#     if success:
+#         voucher.owner = request.user
+#         voucher.save()
+#         messages.success(request, f"成功領取面值 CNY {voucher.value} 的禮券！已存入您的錢包。 | Voucher worth CNY {voucher.value} successfully claimed!")
+#     else:
+#         messages.error(request, "領取失敗，該禮券可能無效。 | Claim failed. The voucher may be invalid.")
+        
+#     return redirect('dashboard', subpage='main') # Route the user to their member account dashboard panel view
+
+
+def claim_voucher_routing_view(request, voucher_id):
+    """
+    Polymorphic Multi-Step State Engine:
+    Step 1: Renders landing details and account ownership confirmation gates.
+    Step 2: Handles async/HTMX PIN generation to the registered_email channel.
+    Step 3: Validates PIN and executes final atomic wallet credit settlement.
+    """
+    try:
+        voucher = CustomerVoucher.objects.get(id=voucher_id)
+    except (CustomerVoucher.DoesNotExist, ObjectDoesNotExist):
+        # Render a premium, localized, user-friendly cancellation landing page instead of a hard 404 error!
+        context = {
+            "page_title": "Voucher Unavailable ｜ 禮品券不可用",
+            "error_headline": "Voucher Cancelled or Unavailable ｜ 該禮品券已註銷或不存在",
+            "error_message": "This gift voucher link is no longer active. It may have been canceled due to a dynamic transaction reversal, order refund, or data administrative restructurings.",
+            "error_message_cn": "此禮品券連結目前已失效。可能由於相關訂單辦理了退款退貨、轉帳超時手續關閉、或系統後台數據異動而導致此代金券被取消註銷。"
+        }
+        return render(request, "pages/voucher_cancelled_notice.html", context, status=404)
+
+    if voucher.is_claimed:
+        messages.error(request, "此兌換券已被領取 ｜ This gift voucher has already been claimed.")
+        return redirect('home')
+
+    associated_order = Order.objects.filter(recipient_email=voucher.registered_email).order_by('-created_at').first()
+    gift_message = associated_order.gift_message if associated_order else ""
+    
+    # ── STEP 3: POST PROCESS VALIDAITON ROUTINE ───────────────────────
+    if request.method == "POST" and "submit_pin" in request.POST:
+        # Enforce account gate authentication first
+        if not request.user.is_authenticated:
+            messages.error(request, "請先登入帳戶以套用此代金券 ｜ Authentication required.")
+            return redirect('login')
+
+        input_pin = request.POST.get("pin_code", "").strip()
+        session_pin = request.session.get(f"claim_pin_{voucher.id}")
+        attempts = request.session.get(f"claim_attempts_{voucher.id}", 0)
+
+        if not session_pin:
+            messages.error(request, "請先獲取驗證碼 ｜ Please request a verification PIN first.")
+            return redirect('claim_voucher_url', voucher_id=voucher.id)
+
+        if input_pin != str(session_pin):
+            attempts += 1
+            request.session[f"claim_attempts_{voucher.id}"] = attempts
+            request.session.modified = True
+
+            if attempts >= 3:
+                # Flush session token data to prevent further brute-force inputs
+                request.session.pop(f"claim_pin_{voucher.id}", None)
+                request.session.pop(f"claim_attempts_{voucher.id}", None)
+                request.session.modified = True
+                
+                # Render failure block payload matching requirement
+                context = {"voucher": voucher, "lockout": True}
+                return render(request, "pages/claim_voucher.html", context)
+
+            messages.error(request, f"驗證碼不正確，您還剩餘 {3 - attempts} 次機會 ｜ Invalid PIN code.")
+            return redirect('claim_voucher_url', voucher_id=voucher.id)
+
+        # 🚀 ATOMIC EXECUTION SETTLEMENT PASS
+        success = voucher.claim(request.user.email)
+        if success:
+            voucher.owner = request.user
+            voucher.save()
+            
+            # Flush structural session state trackers cleanly
+            request.session.pop(f"claim_pin_{voucher.id}", None)
+            request.session.pop(f"claim_attempts_{voucher.id}", None)
+            request.session.modified = True
+            
+            # Trigger 'SUCCESS' validation hook parameter to dashboard views
+            return redirect('/accounts/dashboard/vouchers/?status=claimed_success')
+        else:
+            messages.error(request, "領取失敗，該禮券可能已被使用 ｜ Claim processing exception.")
+            return redirect('home')
+
+    # ── STEP 2: HTMX/POST PIN DELIVERY SEQUENCE ──────────────────────
+    if request.headers.get("HX-Request") and request.method == "POST":
+        # Generate the single-use 6-digit cryptographic numeric token
+        secure_pin = random.randint(100000, 999999)
+        request.session[f"claim_pin_{voucher.id}"] = secure_pin
+        request.session[f"claim_attempts_{voucher.id}"] = 0
+        request.session.modified = True
+        
+        # 🌟 THE NET ARCHITECTURAL FIX: Trigger via Celery task queue!
+        # This keeps the request completely non-blocking, responding to HTMX instantly.
+        send_secure_voucher_pin_email_task.delay(str(voucher.id), str(secure_pin))
+
+        # Swap out the inner HTML container elements cleanly using out-of-bound (OOB) markers
+        response_html = f"""
+        <div id="pin-interaction-container" hx-swap-oob="true" class="space-y-4 animate-fade-in">
+            <div class="alert alert-success text-xs font-semibold text-white bg-teal-600 border-0">
+                <i class="fa-solid fa-circle-check"></i>
+                驗證碼已發送至您的郵箱 [{voucher.registered_email}]，請查收。
+            </div>
+            <div class="form-control">
+                <label class="label text-xs font-bold text-base-content/70">Enter 6-Digit PIN ｜ 請輸入6位數驗證碼</label>
+                <input type="text" name="pin_code" maxlength="6" required class="input input-bordered text-center tracking-widest font-mono font-bold text-lg focus:outline-teal-600 focus:ring-0" placeholder="******" />
+            </div>
+            <button type="submit" name="submit_pin" class="w-full btn btn-neutral text-white">Verify & Claim Wallet Balance ｜ 驗證並領取額度</button>
+        </div>
+        """
+        return HttpResponse(response_html)
+
+    # ── STEP 1: GET INITIAL LANDING VIEW RENDER ─────────────────────
+    context = {
+        "voucher": voucher,
+        "gift_message": gift_message,
+        "lockout": False,
+        "page_title": "Claim Your Voucher ｜ 領取您的電子禮卡"
+    }
+    return render(request, "pages/claim_voucher.html", context)
+
 

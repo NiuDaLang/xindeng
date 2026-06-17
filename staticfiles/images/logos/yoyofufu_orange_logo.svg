@@ -1,0 +1,35 @@
+<svg viewBox="0 0 140 140" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g id="yoyofufu_orange_logo" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" font-family="HiraMinProN-W3, Hiragino Mincho ProN" font-weight="300">
+        <g id="face" transform="translate(-14.000000, -12.000000)">
+            <g id="glasses" transform="translate(0.000000, 69.105278)" fill="#FF7800">
+                <text id="zero_1" transform="translate(52.162951, 39.162951) rotate(90.000000) translate(-52.162951, -39.162951) " font-size="70" letter-spacing="2.33333333">
+                    <tspan x="30.4162842" y="66.1629509">0</tspan>
+                </text>
+                <text id="zero_2" transform="translate(116.162951, 39.162951) rotate(90.000000) translate(-116.162951, -39.162951) " font-size="70" letter-spacing="2.33333333">
+                    <tspan x="94.4162842" y="66.1629509">0</tspan>
+                </text>
+                <text id="minus_1" transform="translate(143.162951, 26.162951) rotate(-45.000000) translate(-143.162951, -26.162951) " font-size="54" letter-spacing="1.8">
+                    <tspan x="133.352951" y="47.1629509">-</tspan>
+                </text>
+                <text id="minus_2" transform="translate(26.162951, 26.162951) scale(-1, 1) rotate(-45.000000) translate(-26.162951, -26.162951) " font-size="54" letter-spacing="1.8">
+                    <tspan x="16.3529509" y="47.1629509">-</tspan>
+                </text>
+                <text id="equal" font-size="25" letter-spacing="0.833333333">
+                    <tspan x="76.1517496" y="45.5434162">=</tspan>
+                </text>
+            </g>
+            <text id="left_bracket_1" transform="translate(118.162951, 107.268228) scale(1, -1) rotate(90.000000) translate(-118.162951, -107.268228) " font-size="38" letter-spacing="1.26666667" fill="#FFAD63">
+                <tspan x="111.563618" y="121.268228">(</tspan>
+            </text>
+            <text id="left_bracket_2" transform="translate(53.162951, 107.268228) scale(1, -1) rotate(90.000000) translate(-53.162951, -107.268228) " font-size="38" letter-spacing="1.26666667" fill="#FFAD63">
+                <tspan x="46.5636176" y="121.268228">(</tspan>
+            </text>
+            <text id="tilda_1" transform="translate(121.252787, 54.023700) rotate(43.000000) translate(-121.252787, -54.023700) " font-size="75" letter-spacing="2.5" fill="#FFAD63">
+                <tspan x="82.5027873" y="82.5236999">〜</tspan>
+            </text>
+            <text id="tilda_2" transform="translate(113.252787, 63.023700) rotate(43.000000) translate(-113.252787, -63.023700) " font-size="75" letter-spacing="2.5" fill="#FFAD63">
+                <tspan x="74.5027873" y="91.5236999">〜</tspan>
+            </text>
+        </g>
+    </g>
+</svg>

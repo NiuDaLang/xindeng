@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: sans-serif; color: #1f2937;">
+    <div style="max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
+        <h2 style="color: #0d9488; text-align: center;">Security Verification PIN ｜ 安全驗證碼</h2>
+        <p>Hello,</p>
+        <p>You have requested a secure verification PIN to claim your gift voucher asset balance (CNY ¥{{ voucher.value }}).</p>
+        <div style="background-color: #f3f4f6; border-radius: 6px; padding: 16px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 0.2em; color: #111827; margin: 24px 0; font-family: monospace;">
+            {{ pin }}
+        </div>
+        <p style="font-size: 12px; color: #6b7280; text-align: center;">
+            此驗證碼僅用於此代金券驗證。如非本人操作，請忽略此郵件。<br/>
+            Valid only for this single application entry pass. Do not share this PIN.
+        </p>
+    </div>
+</body>
+</html>

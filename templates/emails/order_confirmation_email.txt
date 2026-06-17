@@ -1,13 +1,19 @@
-{% if user.username %}
-親愛的{{user.username}} ｜ Dear {{user.username}}
-{% else %}
-親愛的{{order.email}} ｜ Dear {{order.email}}
-{% endif %}
+{% if user.username %}親愛的{{user.username}} ｜ Dear {{user.username}}{% else %}親愛的{{order.email}} ｜ Dear {{order.email}}{% endif %}
 
 訂單確認 ｜ Order Confirmation
 
-感謝您在本店購物！您的訂單號碼是{{ order.order_number }}
-Thank you for shopping with us! Your order number is {{ order.order_number }}
+感謝您在本店購物！您的訂單號碼是：{{ order.order_number }}
+Thank you for shopping with us! Your order number is: {{ order.order_number }}
+
+{% if has_self_voucher %}
+============================================================
+🎁 WALLET AUTO-CREDIT NOTIFICATION ｜ 禮品券自動充值提示
+============================================================
+We detected a self-purchase item in this checkout. The e-voucher face value has been AUTOMATICALLY CREDITED straight into your account wallet balance. You can review your statement and apply this balance on your next order by visiting your member account dashboard.
+
+系統檢測到此訂單包含自用項目。禮品券面值已「自動全額儲值」至您的個人帳戶錢包中！您隨時可以登入會員中心查看餘額，並在下一次結帳時直接抵扣使用。
+============================================================
+{% endif %}
 
 訂單詳情請見附件。
 Please find the attached for order details.

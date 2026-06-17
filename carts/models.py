@@ -1,6 +1,6 @@
 from django.db import models
 from accounts.models import Account, Perk
-from accounts.data import DESTINATIONS_FOR_INPUT, INTEGER_CURRENCIES
+from accounts.data import DESTINATIONS_INCL_DIGITAL, INTEGER_CURRENCIES
 from django.core.validators import MinValueValidator
 from store.models import ProductVariation
 from decimal import Decimal, ROUND_HALF_UP
@@ -177,6 +177,7 @@ class CheckoutInfo(models.Model):
     total_due                       = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
     # Field to track if specific destination requirements (like Taiwan ID) are validated
     requirements_validated          = models.BooleanField(default=False)
+    display_mode                    = models.CharField(max_length=25, blank=True, null=True) 
 
     cart_total_foreign              = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
     shipping_cost_amount_foreign    = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
@@ -186,9 +187,9 @@ class CheckoutInfo(models.Model):
     applied_voucher_amount_foreign  = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
     total_due_foreign               = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
     locked_exchange_rate            = models.DecimalField(max_digits=10, decimal_places=4, default=1.0)
+    currency_code                   = models.CharField(max_length=10, default="USD", blank=True, null=True)
 
     tax_calculated                  = models.BooleanField(default=False)
-    duty_amount                     = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
 
     created_at          = models.DateTimeField(auto_now_add=True)
     updated_at          = models.DateTimeField(auto_now=True)
@@ -234,16 +235,13 @@ class ProformaInvoice(models.Model):
     # Useful for shipping APIs (e.g., combined full phone if needed)
     recipient_phone         = models.CharField(max_length=20, blank=True, null=True)
 
-    # Useful for shipping APIs (FedEx/SF Express)
-    recipient_phone         = models.CharField(max_length=20, blank=True, null=True)
-
     # shipping address
     is_default_address      = models.BooleanField(default=False)
     address_line_1          = models.CharField(max_length=255, blank=True, null=True) # St, Apt, Suite, Landmark
     address_line_2          = models.CharField(max_length=255, blank=True, null=True)
     city                    = models.CharField(max_length=100, blank=True, null=True)
     state_province_region   = models.CharField(max_length=100, blank=True, null=True)
-    country                 = models.CharField(max_length=2, choices=DESTINATIONS_FOR_INPUT, default="", blank=False) # ISO 3166-1 alpha-2 (e.g., 'US', 'FR')
+    country                 = models.CharField(max_length=2, choices=DESTINATIONS_INCL_DIGITAL, default="", blank=False) # ISO 3166-1 alpha-2 (e.g., 'US', 'FR')
     postal_code             = models.CharField(max_length=20, blank=True, null=True) # Optional for global
 
     # vocher purchase
@@ -272,6 +270,7 @@ class ProformaInvoice(models.Model):
     applied_voucher_amount_foreign  = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
     total_due_foreign               = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
     locked_exchange_rate            = models.DecimalField(max_digits=10, decimal_places=4, default=1.0)
+    currency_code                   = models.CharField(max_length=10, default="USD", blank=True, null=True)
 
     google_place_id         = models.CharField(max_length=255, blank=True, null=True) # Google recommends unconstrained lengths as Place IDs can grow
     latitude                = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True) # standard accuracy cap

@@ -134,6 +134,8 @@ class ProformaInvoiceForm(forms.ModelForm):
     longitude = forms.DecimalField(required=False, widget=forms.HiddenInput(attrs={'id': 'id_longitude'}))
     is_verified_by_google = forms.BooleanField(required=False, widget=forms.HiddenInput(attrs={'id': 'id_is_verified_by_google'}))
 
+    save_to_address_book = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'toggle toggle-xs toggle-accent'}))
+
     class Meta:
         model = ProformaInvoice
         fields = [
@@ -143,12 +145,12 @@ class ProformaInvoiceForm(forms.ModelForm):
             'state_province_region', 'country', 'postal_code', 
             'recipient_email', 'gift_message', 'delivery_note', 
             'do_not_send_invoice', 'google_place_id', 'latitude', 
-            'longitude', 'is_verified_by_google'
+            'longitude', 'is_verified_by_google', 'save_to_address_book'
         ]
         widgets = {
             'email': forms.EmailInput(attrs={'id': 'id_email', 'class': 'grow font-mono text-xs font-semibold', 'placeholder': 'Email ｜ 常用電子郵件'}),
-            'recipient_first_name': forms.TextInput(attrs={'id': 'id_recipient_first_name', 'class': 'grow font-sans text-xs font-semibold', 'placeholder': 'First Name ｜ 名字'}),
-            'recipient_last_name': forms.TextInput(attrs={'id': 'id_recipient_last_name', 'class': 'grow font-sans text-xs font-semibold', 'placeholder': 'Last Name ｜ 姓氏'}),
+            'recipient_first_name': forms.TextInput(attrs={'id': 'id_recipient_first_name', 'class': 'grow font-sans text-xs font-semibold', 'placeholder': '*First Name ｜ 名字'}),
+            'recipient_last_name': forms.TextInput(attrs={'id': 'id_recipient_last_name', 'class': 'grow font-sans text-xs font-semibold', 'placeholder': '*Last Name ｜ 姓氏'}),
             'recipient_mobile_number': forms.TextInput(attrs={'id': 'id_recipient_mobile_number', 'class': 'grow join-item text-xs font-mono font-semibold', 'placeholder': 'Phone ｜ 手機號碼'}),
             
             'address_line_1': forms.TextInput(attrs={'id': 'id_address_line_1', 'class': 'grow font-sans text-xs font-semibold'}),
@@ -178,6 +180,11 @@ class ProformaInvoiceForm(forms.ModelForm):
                 self.fields.pop('country')
             if 'state_province_region' in self.fields:
                 self.fields.pop('state_province_region')
+
+        if self.display_mode in ['VOUCHER_ONLY', 'PHYSICAL_AND_VOUCHER']:
+            self.fields['recipient_email'].required = True  # 🌟 Forces validation lock!
+            if not any(isinstance(v, EmailValidator) for v in self.fields['recipient_email'].validators):
+                self.fields['recipient_email'].validators.append(EmailValidator())                
 
         # 1. Strip default required configurations completely
         for field in self.fields.values():

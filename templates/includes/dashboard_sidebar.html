@@ -34,7 +34,7 @@
         </div>
     </div>
     <!-- profile enter progress -->
-    <div id="profile_strength" hx-swap-oob="true">
+    <div id="profile_strength">
         <div class="flex flex-col items-center gap-2 p-4 rounded-xl">
             <div class="radial-progress text-white" 
                  style="--value:{{ user.profile.get_completion_percentage }}; --size:4rem; --thickness: 8px;" 
@@ -168,9 +168,12 @@
                     <div class="badge badge-xs badge-secondary"                    >
                         <i class="fa-solid fa-message text-white"></i>
                         <span id="unread-count-sidebar" 
-                            hx-swap-oob="true" 
                             lass="badge badge-xs badge-secondary text-primary-content">
-                            {{ unread_count }}
+                            {% if unread_count %}
+                                <span>{{ unread_count }}</span>
+                            {% else %}
+                                <span>0</span>
+                            {% endif %}
                         </span>
                     </div>
                 </div>

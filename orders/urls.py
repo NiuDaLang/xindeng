@@ -6,9 +6,9 @@ from . import utils
 
 urlpatterns = [
     path("place_order/<str:proforma_invoice_no>/", views.place_order, name="place_order"),
+    path('orders/cancel/<int:order_id>/', views.cancel_order, name='cancel_order'),
     path("order_complete/", views.order_complete, name="order_complete"),
-    # path("order_confirmation_pdf/<str:order_id>", views.order_confirmation_pdf, name="order_confirmation_pdf"),
-    path("view_order_pdf/<str:order_id>", views.view_order_pdf, name="view_order_pdf"),
+    path('order/download/invoice/<str:order_id>/', views.download_invoice_pdf_view, name='generate_order_confirmation_pdf'),
 
     # paypal
     path('api/paypal/token/', paypal.get_paypal_client_token, name='paypal_token'),

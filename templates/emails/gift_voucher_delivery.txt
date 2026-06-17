@@ -1,0 +1,18 @@
+Hṛdayadīpa (हृदयदीप)｜心燈 - Gift Voucher Delivery ｜ 禮品券通知
+
+Hello,
+
+You have received a digital Gift Voucher courtesy of {{ voucher.purchaser_email }}!
+
+Voucher Face Value: CNY ¥{{ voucher.value }}
+
+{% if gift_message %}
+Personal Message:
+"{{ gift_message }}"
+{% endif %}
+
+Please use this absolute tracking URL to claim this voucher balance securely into your dashboard wallet:
+{{ registration_link }}
+
+Warmest regards,
+The Hṛdayadīpa ｜ 心燈 Team

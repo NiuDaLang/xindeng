@@ -9,6 +9,8 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from accounts.data import DESTINATIONS_GLOBAL, DESTINATIONS_GREATER_CHINA, DESTINATIONS_MAINLAND_CHINA, CURRENCIES, CURRENCY_SYMBOL
 import json
+from sqids import Sqids
+
 from .utils import get_available_services, calculate_shipping_cost, \
 htmx_invalid_offer_response, handle_perk_status, htmx_invalid_voucher_response, calculate_foreign_amount, \
 get_grand_total_before_voucher, update_applied_voucher, update_total_payable, get_currency_format, broadcast_cart_change, \
@@ -43,7 +45,6 @@ def set_currency(request):
         "status": "success",
         "redirect_url": request.META.get('HTTP_REFERER', '/'),
     })
-    # print("currency_code: ", currency_code)
     # Set the cookie on this JSON response
     response.set_cookie(
         'user_currency', 
@@ -297,7 +298,6 @@ def cart(request):
         has_physical_items = cart_items.filter(product_variation__product__is_physical=True).exists()
         has_e_items = cart_items.filter(product_variation__product__is_physical=False, product_variation__product__is_voucher=False).exists()
         has_cash_voucher_items = cart_items.filter(product_variation__product__is_voucher=True).exists()
-        print("cart 1")
         
     except Exception as e:
         print("Cart View Generation Exception: ", e)
@@ -319,8 +319,6 @@ def cart(request):
     cart_total, cart_total_foreign, physical_products_total, physical_products_total_foreign, \
     e_products_total, e_products_total_foreign, voucher_products_total, voucher_products_total_foreign, \
     foreign_currency_symbol, cart_items_quantity = get_cart_totals(request, cart)
-
-    print("cart_items: ", cart_items)
 
     context = {
         "physical_products_total": physical_products_total,
@@ -383,7 +381,6 @@ def calculate_shipping(request):
     method = request.POST.get('shipping_accordion')
     region = request.POST.get("zone")
     destination_id = request.POST.get("destination") or request.POST.get("address_id")
-
     available_services = get_available_services(method, region, destination_id)
     available_services_pks = [service.pk for service in available_services]
 
@@ -496,7 +493,6 @@ def clear_shipping_session(request):
 
 
 def reset_shipping_fragment(request):
-    print("reset_shipping_fragment")
     cart = Cart.objects.filter(user=request.user).first()
 
     if "shipping_data" in request.session:
@@ -517,7 +513,6 @@ def reset_shipping_fragment(request):
     total_payable_html, amount, amount_foreign = update_total_payable(request, cart)
 
     combined_response = (shipping_oob + total_payable_html).strip().replace("\n", "").replace("    ", "")
-    print("combined_response: ", combined_response)    
 
     return HttpResponse(combined_response)
 
@@ -627,10 +622,12 @@ def reset_offer(request):
 def apply_voucher(request):
     user = request.user
     cart = Cart.objects.get(user=user)
-    voucher_balance = CustomerVoucher.objects.filter(
-            owner=request.user, 
-            is_used=False
-        ).aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
+    # voucher_balance = CustomerVoucher.objects.filter(
+    #         owner=request.user, 
+    #         is_used=False
+    #     ).aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
+
+    voucher_balance = get_cash_voucher_balance(request)
 
     try:
         user_input = Decimal(str(request.POST.get('voucher_amount', '0')).replace(",", ""))
@@ -787,7 +784,6 @@ def add_wish_to_cart(request, wish_id):
     user = request.user if request.user.is_authenticated else None
     cart, _ = Cart.objects.get_or_create(user=user, defaults={'cart_id': _cart_id(request)})
     cart_item_list_container_was_physical = cart.needs_shipping
-    print("cart_item_list_container_was_physical: ", cart_item_list_container_was_physical)
     
     wish_item = UserProductList.objects.filter(pk=wish_id, user=user, list_type="WISHLIST").first()
     is_available = ProductVariation.objects.filter(pk=wish_item.product_variation.pk).first().stock > 0
@@ -890,7 +886,6 @@ def add_wish_to_cart(request, wish_id):
     if cart_was_not_empty:
         has_physical_items_now = updated_cart_items.filter(product_variation__product__is_physical=True).exists()
         flipped_from_digital_to_physical = has_physical_items_now and not cart_item_list_container_was_physical
-        print("flipped_from_digital_to_physical: ", flipped_from_digital_to_physical)
         if flipped_from_digital_to_physical:
         # swap for shipping_section_wrapper
             context = {
@@ -899,7 +894,6 @@ def add_wish_to_cart(request, wish_id):
                 "has_physical_items": has_physical_items
             }
             shipping_section_html = render_to_string("store/partials/shipping_section_wrapper.html", context, request=request)
-            print("shipping section: ", shipping_section_html)
             final_oob_fragments.append(shipping_section_html)
 
             disabled_checkout_btn_html = """
@@ -1335,12 +1329,9 @@ def delete_wishlist_item(request, wish_id):
     }
 
     if source == "dashboard":
-        print("dashboard")
         response_html = render_to_string('accounts/partials/wishlist_item.html', context, request=request)
 
     elif source == "cart":
-        print("cart")
-        
         response_html = render_to_string('store/partials/wishlist_row.html', context, request=request)
 
 
@@ -1398,41 +1389,30 @@ def add_to_favorite(request, variation_id):
 
 
 def checkout(request):
-    user = request.user
+    user = request.user if request.user.is_authenticated else None
+    cart = Cart.objects.filter(user=user).first() if user else Cart.objects.filter(cart_id=_cart_id(request)).first()
     
     # -------------------------------------------------------------
     # 1. SHARED PRE-FLIGHT BOUNDARY CONTEXT (Executes for both GET & POST)
     # -------------------------------------------------------------
-    if user.is_authenticated:
-        cart = Cart.objects.filter(user=user).first()
-    else:
-        cart = Cart.objects.filter(cart_id=_cart_id(request)).first()
-    
-    if not cart or cart.get_items_count() == 0:
+    if not cart or not cart.cartitem_set.filter(is_active=True).exists():
         return redirect("cart")
     
-    cart_items = CartItem.objects.filter(cart=cart, is_active=True)
+    cart_items = cart.cartitem_set.filter(is_active=True)
+    has_physical_items = cart_items.filter(product_variation__product__is_physical=True).exists()
+    
+    shipping_data = request.session.get("shipping_data", {})
+    offer_data = request.session.get("offer_applied", {})
+    voucher_data = request.session.get("applied_voucher", {})
+
     is_integer, current_currency_code = get_currency_format(request)
     foreign_currency_symbol = CURRENCY_SYMBOL[current_currency_code]
-    
-    has_physical_items = cart_items.filter(product_variation__product__is_physical=True).exists()
-    has_voucher_items = cart_items.filter(product_variation__product__is_voucher=True).exists()
-    has_standard_eproducts = cart_items.filter(product_variation__product__is_physical=False, product_variation__product__is_voucher=False).exists()
 
-    # Establish display constraints based on composition metrics
-    if has_physical_items and has_voucher_items:
-        display_mode = "PHYSICAL_AND_VOUCHER"
-    elif has_physical_items:
-        display_mode = "PHYSICAL"
-    elif has_voucher_items and not has_standard_eproducts:
-        display_mode = "VOUCHER_ONLY"
-    else:
-        display_mode = "EPRODUCT_ONLY"
-
-    shipping_data = request.session.get("shipping_data", {})
     if not shipping_data or shipping_data == {}:
         if has_physical_items:
+            messages.warning(request, "請先計算運費以繼續結帳。 | Please calculate shipping first.")
             return redirect('cart')
+
         else:
             shipping_data = {
                 "method": "DEFAULT",
@@ -1444,18 +1424,31 @@ def checkout(request):
             request.session["shipping_data"] = shipping_data
             request.session.modified = True
 
+    # 🌟 THE TRANSLATION LAYER: Map lowercase session strings cleanly to database choices
+    raw_method = shipping_data.get("method", "dropdown")
+    method_to_source_map = {
+        "saved_address": "ADDRESS_BOOK",
+        "ADDRESS_BOOK": "ADDRESS_BOOK",
+        "dropdown": "DEFAULT",
+        "DEFAULT": "DEFAULT"
+    }
+    db_destination_source = method_to_source_map.get(raw_method, "DEFAULT")
+
     # 🔒 EXECUTE THE MASTER LEDGER ANCHOR RECALCULATION
     _, total_due_str, total_due_foreign_str = update_total_payable(request, cart)
     locked_rate = get_or_lock_checkout_rate(request, current_currency_code)
 
-    offer_data = request.session.get("offer_applied", {})
-    voucher_data = request.session.get("applied_voucher", {})
-
     def clean_for_db(val):
+        """
+        Surgically sanitises financial values into floating-point numbers.
+        Wipes away commas, currency signs (€, £, ¥, $, etc.), or alphabetical symbols (AUD, HKD) via regex.
+        """
         if val is None:
             return 0.00
         if isinstance(val, str):
-            sanitized = val.replace(',', '').replace('¥', '').replace('$', '').strip()
+            import re
+            # 🌟 REGEX MATCH: Keep only numbers (\d), dots (.), and minus signs (-)
+            sanitized = re.sub(r'[^\d.-]', '', val).strip()
             return float(sanitized) if sanitized else 0.00
         return float(val)
 
@@ -1464,7 +1457,7 @@ def checkout(request):
     fx_offer_clean = clean_for_db(offer_data.get("discount_amount_foreign"))
     fx_voucher_clean = clean_for_db(voucher_data.get("applied_voucher_amount_foreign"))
     fx_payable_clean = clean_for_db(total_due_foreign_str)
-    
+
     # Backward-derive the physical entry for CheckoutInfo matching your screen lines exactly
     fx_physical_clean = (
         fx_payable_clean 
@@ -1474,19 +1467,33 @@ def checkout(request):
         - clean_for_db(cart.get_e_products_subtotal_foreign(current_currency_code, locked_rate)) 
         - clean_for_db(cart.get_voucher_products_subtotal_foreign(current_currency_code, locked_rate))
     )
+   
+    has_e_items = cart_items.filter(product_variation__product__is_physical=False, product_variation__product__is_voucher=False).exists()
+    has_voucher_items = cart_items.filter(product_variation__product__is_voucher=True).exists()
+
+    # Establish display constraints based on composition metrics
+    if has_physical_items and has_voucher_items:
+        display_mode = "PHYSICAL_AND_VOUCHER"
+    elif has_physical_items:
+        display_mode = "PHYSICAL"
+    elif has_voucher_items:
+        display_mode = "VOUCHER_ONLY"
+    else:
+        display_mode = "EPRODUCT_ONLY"
+    
     checkout_info, _ = CheckoutInfo.objects.update_or_create(
         cart=cart,
         defaults={
-            "user": user if user.is_authenticated else None,
+            "user": user,
             "display_mode": display_mode,
             "cart_total": clean_for_db(cart.get_cart_total()),
             
             # Synchronised balanced metrics
             "cart_total_foreign": float(fx_physical_clean) + clean_for_db(cart.get_e_products_subtotal_foreign(current_currency_code, locked_rate)) + clean_for_db(cart.get_voucher_products_subtotal_foreign(current_currency_code, locked_rate)),
-            "destination_source": shipping_data.get("method", "DEFAULT"),
-            "default_zone": shipping_data.get("region") if shipping_data.get("method") == "dropdown" else "",
-            "default_destination": shipping_data.get("destination_id") if shipping_data.get("method") == "dropdown" else "",
-            "address_id": shipping_data.get("destination_id") if shipping_data.get("method") == "saved_address" else "",
+            "destination_source": db_destination_source,
+            "default_zone": shipping_data.get("region") if db_destination_source == "DEFAULT" else "",
+            "default_destination": shipping_data.get("destination_id") if db_destination_source == "DEFAULT" else "",
+            "address_id": shipping_data.get("destination_id") if db_destination_source == "ADDRESS_BOOK" else "",
             "shipping_cost": clean_for_db(shipping_data.get("shipping_cost")),
             "shipping_cost_amount_foreign": fx_shipping_clean,
             "offer_code": offer_data.get("offer_code", ""),
@@ -1499,6 +1506,7 @@ def checkout(request):
             "total_due": clean_for_db(total_due_str),
             "total_due_foreign": fx_payable_clean,
             "locked_exchange_rate": clean_for_db(locked_rate),
+            "currency_code": request.session.get('foreign_currency_code', 'HKD'),
         }
     )
 
@@ -1563,13 +1571,12 @@ def checkout(request):
                     proforma_invoice.save()
                     proforma_invoice = None 
 
-                # 🎯 FIX 2: Conditionally resolve country and state vectors inside the view layout
                 if display_mode in ["EPRODUCT_ONLY", "VOUCHER_ONLY"]:
-                    resolved_country = "XX"
-                    resolved_state = "Digital"
+                    cleaned_country = "XX"
+                    cleaned_state = "Digital"
                 else:
-                    resolved_country = proforma_invoice_form.cleaned_data.get("country")
-                    resolved_state = proforma_invoice_form.cleaned_data.get("state_province_region")
+                    cleaned_country = country if country else proforma_invoice_form.cleaned_data.get('country')
+                    cleaned_state = state if state else proforma_invoice_form.cleaned_data.get('state_province_region')
 
                 field_mapping_defaults = {
                     "user": user if user.is_authenticated else None,
@@ -1582,17 +1589,13 @@ def checkout(request):
                     "address_line_1": proforma_invoice_form.cleaned_data.get("address_line_1"),
                     "address_line_2": proforma_invoice_form.cleaned_data.get("address_line_2"),
                     "city": proforma_invoice_form.cleaned_data.get("city"),
-
-                    # "state_province_region": proforma_invoice_form.cleaned_data.get("state_province_region"),
-                    # "country": proforma_invoice_form.cleaned_data.get("country"),
-
-                    # Sourced securely via your conditional variables instead of form cleaned data!
-                    "state_province_region": resolved_state,
-                    "country": resolved_country,
-
+                    "state_province_region": cleaned_state,
+                    "country": cleaned_country,
                     "postal_code": proforma_invoice_form.cleaned_data.get("postal_code"),
+
                     "recipient_email": proforma_invoice_form.cleaned_data.get("recipient_email"),
                     "gift_message": proforma_invoice_form.cleaned_data.get("gift_message"),
+
                     "delivery_note": proforma_invoice_form.cleaned_data.get("delivery_note"),
                     "do_not_send_invoice": proforma_invoice_form.cleaned_data.get("do_not_send_invoice"),
                     
@@ -1600,6 +1603,7 @@ def checkout(request):
                     "latitude": proforma_invoice_form.cleaned_data.get("latitude"),
                     "longitude": proforma_invoice_form.cleaned_data.get("longitude"),
                     "is_verified_by_google": proforma_invoice_form.cleaned_data.get("is_verified_by_google", False),
+                    
                     "cart_total": checkout_info.cart_total,
                     "shipping_cost": checkout_info.shipping_cost,
                     "discount": checkout_info.discount_amount,
@@ -1613,6 +1617,7 @@ def checkout(request):
                     "applied_voucher_amount_foreign": checkout_info.applied_voucher_amount_foreign,
                     "total_due_foreign": checkout_info.total_due_foreign,
                     "locked_exchange_rate": checkout_info.locked_exchange_rate,
+                    "currency_code": request.session.get('foreign_currency_code', 'HKD'),
                 }
                 if proforma_invoice:
                     for key, value in field_mapping_defaults.items():
@@ -1621,12 +1626,14 @@ def checkout(request):
                 else:
                     proforma_invoice = ProformaInvoice.objects.create(cart=cart, **field_mapping_defaults)
                 
-                # 1. High-Security Order Number Auto Generation Loop
+                # 1. High-Security Order Number Auto Generation Loop (Sqids Fix)
                 if not proforma_invoice.proforma_order_number:
-                    from sqids import Sqids
                     sqids = Sqids(min_length=6, alphabet="ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
                     country_prefix = proforma_invoice.country if proforma_invoice.country else "XX"
+                    
+                    # 🌟 FIXED: Remove '.int' and pass the integer ID directly into the list bracket
                     invoice_num = f"{country_prefix}-{sqids.encode([proforma_invoice.id])}"
+                    
                     proforma_invoice.proforma_order_number = invoice_num
                     proforma_invoice.save()
                 else:
@@ -1639,27 +1646,62 @@ def checkout(request):
                         proforma_invoice.is_default_address = address_record.is_default
                         proforma_invoice.save()
 
-                # 3. Address Book Entry Save Sync Module for Authenticated Members
+                # 🎯 3. CONTEXT-AWARE ADDRESS PERSISTENCE ENGINE (UPGRADE MODULE)
                 if user.is_authenticated and proforma_invoice_form.cleaned_data.get('save_to_address_book'):
                     if display_mode in ["PHYSICAL", "PHYSICAL_AND_VOUCHER"]:
                         user_profile, _ = UserProfile.objects.get_or_create(user=user)
                         
-                        Address.objects.get_or_create(
-                            profile=user_profile,
-                            recipient_first_name=proforma_invoice.recipient_first_name,
-                            recipient_last_name=proforma_invoice.recipient_last_name,
-                            mobile_area=proforma_invoice.recipient_mobile_area,
-                            mobile_number=proforma_invoice.recipient_mobile_number,
-                            address_line_1=proforma_invoice.address_line_1,
-                            address_line_2=proforma_invoice.address_line_2,
-                            city=proforma_invoice.city,
-                            state_province_region=proforma_invoice.state_province_region,
-                            country=proforma_invoice.country,
-                            postal_code=proforma_invoice.postal_code,
-                            google_place_id=proforma_invoice.google_place_id,
-                            latitude=proforma_invoice.latitude,
-                            longitude=proforma_invoice.longitude,
-                        )
+                        # Determine baseline default constraints for new cards
+                        has_preexisting_default = Address.objects.filter(profile=user_profile, is_default=True).exists()
+                        target_default_flag = False if has_preexisting_default else True
+
+                        # ─────────────────────────────────────────────────────────
+                        # 🔄 JOURNEY (i): User checked out using a Saved Address Card ➔ UPDATE EXISTING
+                        # ─────────────────────────────────────────────────────────
+                        if checkout_info.destination_source == "ADDRESS_BOOK" and checkout_info.address_id:
+                            # Fetch the exact existing address row owned by this specific member profile
+                            address_record = Address.objects.filter(id=int(checkout_info.address_id), profile=user_profile).first()
+                            
+                            if address_record:
+                                # Surgically overwrite fields on the existing row instance
+                                address_record.recipient_first_name = proforma_invoice.recipient_first_name
+                                address_record.recipient_last_name = proforma_invoice.recipient_last_name
+                                address_record.mobile_area = proforma_invoice.recipient_mobile_area
+                                address_record.mobile_number = proforma_invoice.recipient_mobile_number
+                                address_record.address_line_1 = proforma_invoice.address_line_1
+                                address_record.address_line_2 = proforma_invoice.address_line_2
+                                address_record.city = proforma_invoice.city
+                                address_record.state_province_region = proforma_invoice.state_province_region
+                                address_record.country = proforma_invoice.country
+                                address_record.postal_code = proforma_invoice.postal_code
+                                address_record.google_place_id = proforma_invoice.google_place_id
+                                address_record.latitude = proforma_invoice.latitude
+                                address_record.longitude = proforma_invoice.longitude
+                                address_record.save()
+                                print(f"🔄 ADDRESS BOOK UPGRADE: Successfully updated existing card ID {address_record.id}")
+
+                        # ─────────────────────────────────────────────────────────
+                        # ✨ JOURNEY (ii): User checked out via Dropdown Destinations ➔ CREATE NEW
+                        # ─────────────────────────────────────────────────────────
+                        else:
+                            new_address = Address.objects.create(
+                                profile=user_profile,
+                                recipient_first_name=proforma_invoice.recipient_first_name,
+                                recipient_last_name=proforma_invoice.recipient_last_name,
+                                mobile_area=proforma_invoice.recipient_mobile_area,
+                                mobile_number=proforma_invoice.recipient_mobile_number,
+                                address_line_1=proforma_invoice.address_line_1,
+                                address_line_2=proforma_invoice.address_line_2,
+                                city=proforma_invoice.city,
+                                state_province_region=proforma_invoice.state_province_region,
+                                country=proforma_invoice.country,
+                                postal_code=proforma_invoice.postal_code,
+                                google_place_id=proforma_invoice.google_place_id,
+                                latitude=proforma_invoice.latitude,
+                                longitude=proforma_invoice.longitude,
+                                is_default=target_default_flag
+                            )
+                            print(f"✨ ADDRESS BOOK SAVE: Generated fresh entry card ID {new_address.id}")
 
                 # 4. Process Unified HTMX AJAX Redirect Routing
                 if request.headers.get("HX-Request"):
@@ -1668,9 +1710,11 @@ def checkout(request):
                     return response
                     
                 return redirect("place_order", proforma_invoice_no=invoice_num)
-            
+        
             except Exception as e:
-                messages.error(request, f"系統錯誤，請稍後再試 | Execution Exception: {str(e)}")
+                print(f"Checkout system processing failure: {str(e)}")
+                messages.error(request, "系統錯誤，請稍後再試 | Execution Exception.")
+
         else:
             # 🎯 DETAILED DEBUG LAYER: Print out the exact failures directly to your terminal screen
             print("\n==================================================")
@@ -1748,6 +1792,7 @@ def checkout(request):
         "locked_exchange_rate": checkout_info.locked_exchange_rate,
         "display_mode": display_mode,
         "is_china_order": (country == "CN"),
+        "destination_source": checkout_info.destination_source,
     }
     
     _, _, _ = update_total_payable(request, cart)
@@ -1762,6 +1807,8 @@ def checkout(request):
         "offer_applied_foreign": get_session_fx("offer_applied", "discount_amount_foreign", context.get("offer_applied_foreign")),
         "voucher_applied_foreign": get_session_fx("applied_voucher", "applied_voucher_amount_foreign", context.get("voucher_applied_foreign")),
     })
+
+    print("checkoutInfo: ", checkout_info)
 
     return render(request, "store/checkout.html", context)
 
@@ -1844,6 +1891,3 @@ def checkout(request):
 #         return HttpResponse("") # Return nothing for HK, AU, etc.
 
 #     return render(request, 'store/partials/compliance_field_snippet.html', context)
-
-
-

@@ -96,8 +96,8 @@
             <tr class="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">
                 <th class="text-left font-bold pb-1">Description ｜ 項目</th>
                 <!-- Fixed, wider value columns to securely prevent single-line numeric wrapping drops -->
-                <th class="w-28 text-right font-bold pb-1">Base (CNY)</th>
-                <th class="w-32 text-right font-bold pb-1">Pay ({{ foreign_currency_code }})</th>
+                <th class="w-28 text-right font-bold pb-1">Base｜基準 (CNY)</th>
+                <th class="w-32 text-right font-bold pb-1">Pay｜支付 ({{ foreign_currency_code }})</th>
             </tr>
         </thead>
         <tbody class="align-middle">
@@ -252,7 +252,7 @@
                     <!-- PORTAL 1: PayPal SDK Instant Gateway -->
                     <input type="radio" name="payment_tabs" id="paypal_tab_input" role="tab" class="tab text-xs font-semibold whitespace-nowrap" aria-label="PayPal ｜ 線上即時支付" checked />
 
-                    <div role="tabpanel" id="paypal_panel" class="tab-content bg-base-100 border-base-300 rounded-box p-4 md:p-6 pb-8 mt-2 relative h-auto box-border min-h-0 w-full left-0 right-0 overflow-visible">
+                    <div role="tabpanel" id="paypal_panel" class="tab-content bg-base-100 border-base-300 rounded-box p-4 md:p-6 pb-8 mt-2 relative h-auto box-border min-h-[12rem] w-full left-0 right-0 overflow-visible">
                         {% if foreign_currency_code|upper == "CNY" %}
                             <div class="alert alert-warning py-3 shadow-sm text-xs rounded-xl flex flex-col items-start gap-1 w-full">
                                 <div class="flex items-center gap-2 font-bold text-warning-content">
@@ -260,7 +260,7 @@
                                     <span>CNY Payments Limit ｜ 人民幣支付限制</span>
                                 </div>
                                 <p class="text-neutral-600 text-[11px] leading-relaxed">
-                                    Online checkout via PayPal is currently unavailable for CNY orders. Please toggle to the second tab to use Manual Bank Transfer or WeChat Pay options.
+                                    Online checkout via PayPal is currently unavailable for CNY orders. Please toggle to the second tab to use OFFLINE options.
                                     <br>
                                     <span class="text-neutral-500">人民幣訂單暫不支援使用 PayPal 線上支付。請切換至隔壁分頁，使用「銀行轉帳與微信線下保留」完成您的訂單。</span>
                                 </p>
@@ -271,17 +271,34 @@
                                 <br><span class="text-neutral-500">線上即時到賬確認，電子商品、禮券權限將在付款成功後隨即自動發送。</span>
                             </p>
                             
-                            <div id="paypal_btns" class="w-full min-h-[50px] flex justify-center items-center mb-4">
+                            <!-- <div id="paypal_btns" class="w-full min-h-[50px] flex justify-center items-center mb-4">
                                 <button id="paypal_action_trigger" hidden class="btn btn-primary flex gap-3 w-full max-w-xs font-bold uppercase rounded-xl h-auto py-2 min-h-0">
                                     <span><i class="fa-brands fa-paypal fa-xl"></i></span>
                                     <span>Pay with PayPal<br>使用PayPal支付</span>
                                 </button>
-                            </div>
+                            </div> -->
+<div id="paypal_btns" class="w-full min-h-[90px] flex flex-col justify-center items-center mb-4 p-4 bg-base-100/50 border border-dashed border-base-300 rounded-xl relative overflow-hidden select-none">
+    
+    <!-- 🌟 THE SKELETON LOADER CONTAINER -->
+    <div id="paypal-loading-skeleton" class="flex flex-col items-center justify-center gap-3 animate-pulse">
+        <span class="loading loading-spinner loading-md text-primary"></span>
+        <div class="text-center space-y-0.5">
+            <span class="text-xs font-bold text-base-content/80 block">Connecting to PayPal Gateway...</span>
+            <span class="text-[0.65rem] font-medium text-base-content/50 block">正在安全連接 PayPal 支付網關，請稍候...</span>
+        </div>
+    </div>
+
+    <!-- Your manual trigger button remains exactly as it is -->
+    <button id="paypal_action_trigger" hidden class="btn btn-primary flex gap-3 w-full max-w-xs font-bold uppercase rounded-xl h-auto py-2 min-h-0">
+        <span><i class="fa-brands fa-paypal fa-xl"></i></span>
+        <span>Pay with PayPal <br> 使用PayPal支付</span>
+    </button>
+</div>
                         {% endif %}
                     </div>
 
                     <!-- PORTAL 2: Manual Bank Transfer 72h Hold Rules -->
-                    <input type="radio" name="payment_tabs" role="tab" class="tab text-xs font-semibold whitespace-nowrap" aria-label="Bank / WeChat ｜ 銀行轉帳與線下匯款" />
+                    <input type="radio" name="payment_tabs" role="tab" class="tab text-xs font-semibold whitespace-nowrap" aria-label="Offline Payment ｜ 線下匯款" />
                     
                     <!-- <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-4 md:p-6 pb-8 mt-2 relative h-auto box-border min-h-0 w-full left-0 right-0 overflow-visible">
                         <div class="alert alert-info py-2 shadow-sm text-xs mb-4 rounded-xl">
@@ -314,8 +331,8 @@
                         </div>
                         
                         <p class="text-[11px] text-base-content/70 mb-4">
-                            Detailed remittance bank coordinates and custom WeChat accounts collection codes will be instantly dispatched straight onto your primary inbox upon confirmation.
-                            <br><span class="text-neutral-500">確認保留後，詳細的銀行轉帳帳號以及微信支付帳密付款細節將會自動發送到您的電子信箱中。</span>
+                            Detailed remittance bank coordinates and custom WeChat / Alipay accounts collection codes will be instantly dispatched straight onto your primary inbox upon confirmation.
+                            <br><span class="text-neutral-500">確認保留後，詳細的銀行轉帳帳號以及微信/支付寶支付帳密付款細節將會自動發送到您的電子信箱中。</span>
                         </p>
 
                         <!-- ⚠️ ATTENTION / NOTICE BOX (CRITICAL FOR CROSS-BORDER TRANSFER COMPLIANCE) -->

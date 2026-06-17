@@ -1,3 +1,4 @@
+from datetime import timedelta
 import requests
 import logging
 from celery import shared_task
@@ -5,7 +6,7 @@ from celery.signals import worker_ready
 from django.core.cache import cache
 from django.conf import settings
 from django.template.loader import render_to_string
-from emails.utils import send_order_confirmation_email
+from emails.utils import send_order_confirmation_email, send_gift_voucher_email, send_secure_voucher_pin_email
 from .utils import generate_order_confirmation_pdf
 from orders.models import Order
 from django.db import transaction
@@ -13,9 +14,16 @@ from carts.models import ProformaInvoice
 from orders.models import Payment, OrderProduct
 from store.models import ProductVariation
 from django.core.mail import EmailMultiAlternatives
-from datetime import timedelta
 from accounts.models import CustomerVoucher
 from django.utils import timezone
+from .models import OrderVoucherUsage
+from store.models import DigitalDownloadToken
+from carts.models import CartItem
+from email.mime.image import MIMEImage
+import os
+import traceback
+from carts.models import Cart
+
 
 
 logger = logging.getLogger(__name__)
@@ -46,116 +54,167 @@ def at_start(sender, **kwargs):
     update_exchange_rates.delay()
 
 
-@shared_task
+@shared_task(name="tasks.send_order_confirmation_email_task")
 def send_order_confirmation_email_task(order_id):
+    """Asynchronously generates tax PDFs and dispatches client receipt notices."""
     try:
         order = Order.objects.get(order_number=order_id, is_ordered=True)
         
-        # Guard clause: stop if email was already sent
-        if getattr(order, 'email_sent', False):
-            return f"Email already sent for Order {order_id}"
+        if getattr(order, 'payment_email_sent', False):
+            return f"Payment email already processed for Order {order.order_number}"
 
-        # 1. Generate the PDF
+        # Build custom ReportLab binary layout buffer
         pdf_buffer = generate_order_confirmation_pdf(order_id)
 
-        # 2. Call the email function
+        # Dispatch the payload
         send_order_confirmation_email(order_id, pdf_buffer)
         
-        # 3. Mark as sent to prevent duplicates on future triggers
-        order.email_sent = True
-        order.save(update_fields=['email_sent'])
+        order.payment_email_sent = True
+        order.save(update_fields=['payment_email_sent'])
         
         return f"Email sent successfully to {order.email}"
         
     except Order.DoesNotExist:
-        return f"Order {order_id} not found or not paid."
+        return f"Order {order_id} not found or unpaid state."
+    
+
+@shared_task(name="tasks.send_gift_voucher_email_task")
+def send_gift_voucher_email_task(v_id, link):
+    """Dispatches gift card claim links directly to the recipient's inbox."""
+    try:
+        voucher = CustomerVoucher.objects.get(id=v_id)
+        send_gift_voucher_email(v_id, link)
+        return f"Gift voucher tracking notification completed for ID: {v_id}"
+        
+    except CustomerVoucher.DoesNotExist:
+        return f"Voucher target tracking row ID {v_id} missing. Task aborted."
+    
+
+@shared_task(name="tasks.send_secure_voucher_pin_email_task")
+def send_secure_voucher_pin_email_task(voucher_id, pin_code):
+    print("voucher_id, pin_code: ", voucher_id, pin_code)
+    """Asynchronously executes the secure PIN transmission via background worker threads."""
+    try:
+        send_secure_voucher_pin_email(voucher_id, pin_code)
+        return f"Secure PIN delivery completed for Voucher ID {voucher_id}."
+    except Exception as e:
+        return f"Failed to execute secure PIN transmission task for ID {voucher_id}. Error: {str(e)}"
 
 
-@shared_task
+@shared_task(name="tasks.check_and_expire_hold")
 def check_and_expire_hold(order_id):
     """
-    Evaluates unpaid manual bank-transfer holds exactly 72 hours down the line.
-    Reverts product inventory pools atomically and dispatches cancellation alerts if unpaid.
+    🔒 HIGH-SECURITY CLEAN-UP ENGINE LOOP
+    Evaluates an unpaid manual bank-transfer hold exactly at its expiration time.
+    Restores inventory pools, purges orphaned cart items, and refunds voucher points on failure.
     """
+    print("check_and_expire_hold()!!!!!")
     try:
         with transaction.atomic():
-            # Apply strict row-level lock on the target Order
             order = Order.objects.select_for_update().get(id=order_id)
-            
-            # If manually moved forward by admin or cancelled prior, terminate immediately
-            if order.order_status in ['Cancelled', 'Completed', 'Shipped', 'Processing']:
-                return f"Verification skipped. Order {order.order_number} status is active at: {order.order_status}"
+            print(f"order: {order}")
+            if order.is_ordered or order.order_status in ['Cancelled', 'Completed', 'Shipped', 'Processing']:
+                return f"Verification skipped. Order {order.order_number} is actively settled."
 
-            # Check ground-truth table for a verified manual payment matching this transaction
-            payment_confirmed = Payment.objects.filter(
-                invoice__proforma_order_number=order.order_number,
-                status='Completed'
-            ).exists()
-
+            payment_confirmed = Payment.objects.filter(invoice__proforma_order_number=order.order_number, status='Completed').exists()
+            print("payment_confirmed: ", payment_confirmed)
             if not payment_confirmed:
-                # 1. Replenish database stock values back onto ProductVariation warehouse definitions
+                print("payment not confirmed")
+                # ── STEP A: RESTORE HELDF INVENTORY POOLS ─────────────────────────
                 order_items = OrderProduct.objects.filter(order=order)
                 for item in order_items:
                     if item.product_variation:
                         variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
                         variation.stock += item.quantity
-                        variation.save()
+                        variation.save(update_fields=['stock'])
 
-                # 🎯 2. AUTOMATED VOUCHER BALANCE RECOVERY MANAGEMENT
-                # Check if this specific order had a voucher deduction applied
+                # ── STEP B: SURGICAL GHOST CART PURGE ─────────────────────────────
+                try:
+                    # 1. Fetch your baseline proforma log record row matching this order string text
+                    proforma = ProformaInvoice.objects.filter(proforma_order_number=order.order_number).first()
+                    print('proforma lookup result: ', proforma)
+                    
+                    # 🌟 THE FINAL FIX: Drop the crashing 'target_hold_cart_id' line entirely!
+                    # We execute the native string lookup directly against our Cart database table index:
+                    historical_cart = Cart.objects.filter(cart_id__contains=f"_hold_{order.order_number}").first()
+                    print("Historical Cart lookup by string match token: ", historical_cart)
+
+                    if historical_cart:
+                        print("🌟 Identity validation pass: Commencing historical cart purge sequence.")
+                        
+                        # Clear out all individual CartItem lines bound to this historical hold basket
+                        CartItem.objects.filter(cart=historical_cart).delete()
+                        print(f"🗑️ AUTOMATED CLEANUP: Wiped ghost items from expired Cart ID {historical_cart.id}")
+                        
+                        # Safely delete the historical Cart row container itself to optimize database footprint
+                        historical_cart.delete()
+                        print("🎯 Target Cart row deleted from database cleanly.")
+                    else:
+                        print("⚠️ No matching hold cart row was found for this order signature.")
+
+                except Exception as cleanup_err:
+                    # This catches any syntax or reference faults inside the block
+                    print(f"❌ CRITICAL TASK BLINK EXCEPTION: {str(cleanup_err)}")
+                    traceback.print_exc() # Prints the exact line-by-line python crash log to your console!
+
+                # ── STEP C: PINPOINT VOUCHER BALANCE REVERSALS ───────────────────
                 if order.voucher_applied > 0:
-                    CustomerVoucher.objects.create(
-                        value=order.voucher_applied,
-                        balance=order.voucher_applied,
-                        owner=order.user,
-                        purchaser_email=order.email if order.email else "system-reversal@yourdomain.com",
-                        registered_email=order.user.email if order.user else order.email,
-                        is_claimed=True,
-                        claimed_date=timezone.now(),
-                        is_used=False
-                    )
+                    usages = OrderVoucherUsage.objects.filter(order=order)
+                    for usage in usages:
+                        voucher = CustomerVoucher.objects.select_for_update().get(id=usage.voucher.id)
+                        voucher.balance += usage.amount_deducted
+                        if voucher.is_used:
+                            voucher.is_used = False
+                            voucher.used_date = None
+                        voucher.save(update_fields=['balance', 'is_used', 'used_date'])
 
-                # 3. Assign cancelled status markers across your profiles
+                # ── STEP D: TRANSACTION DATA STATE CLOSEOUT ──────────────────────
                 order.order_status = 'Cancelled'
                 order.save(update_fields=['order_status'])
-                
-                # Rollback tracking visibility flags on the source Proforma invoice
-                ProformaInvoice.objects.filter(proforma_order_number=order.order_number).update(is_ordered=False)
-                
-                # 3. Queue immediate account deletion/cancellation alerts down to background handlers
-                send_bank_hold_cancelled_email_task.delay(order.id)
-                return f"72-hour threshold reached. Reverted inventory units and cancelled order {order.order_number}."
+
+                # 🌟 THE SECURITY LOCK: Keep is_ordered=True locked down inside your proforma database row!
+                # This explicitly invalidates this token, blocking checkout bypass loops from loading.
+                ProformaInvoice.objects.filter(proforma_order_number=order.order_number).update(is_ordered=True)
+            
+                # Queue your background cancellation notification mailer safely outside the core lock loop
+                transaction.on_commit(lambda: send_bank_hold_cancelled_email_task.delay(order.id))
+                return f"Hold window closed. Cancelled expired Order Hold #{order.order_number} successfully."
+            
             else:
-                # Safe-state resolution transition mapping
+                # Late-clearing payment found inside the validation window: Settle order cleanly
+                order.is_ordered = True
+                order.ordered_at = timezone.now()
                 order.order_status = 'Processing'
-                order.save(update_fields=['order_status'])
-                return f"Valid payment cleared in flight window for order {order.order_number}. Retained."
+                order.save(update_fields=['is_ordered', 'ordered_at', 'order_status'])
+                OrderProduct.objects.filter(order=order).update
+                return f"Payment verification cleared in flight window for order {order.order_number}."
 
     except Order.DoesNotExist:
-        return f"Target hold confirmation identity vector {order_id} missing."
+        return f"Identity tracking vector parameter {order_id} missing."
 
 
-@shared_task
+@shared_task(name="tasks.send_bank_hold_confirmation_email_task")
 def send_bank_hold_confirmation_email_task(order_id):
     """
     Constructs and executes transmission lines conveying your bank account numbers 
     and payment guidelines along with a PDF copy of the transaction statement.
     """
     try:
-        order = Order.objects.get(id=order_id, is_ordered=True)
+        order = Order.objects.get(id=order_id)
         if getattr(order, 'email_sent', False):
             return f"Bank hold summary alert distribution sequence already logged for Order {order.order_number}"
 
-        mail_subject = f"Hṛdayadīpa (हृदयदीप)｜心燈 - Bank Transfer Instructions｜銀行轉帳指引 [#{order.order_number}]"
+        mail_subject = f"Hṛdayadīpa (हृदयदीप) ｜ 心燈 - Bank Transfer Instructions ｜ 銀行轉帳指引 [#{order.order_number}]"
         from_email = settings.DEFAULT_FROM_EMAIL
-        to_email = [order.email]
+        to_email = [order.email.strip()]
 
+        # 🌟 THE SYNCED CONTEXT DICTIONARY MATRIX
+        # Captures identical expiration time constraints and matches the dynamic year property
         context = {
             "user": order.user,
             "order": order,
-            # "expiry_date": order.created_at + timedelta(hours=72),
-            "expiry_date": order.created_at + timedelta(minutes=5),
-            # "expiry_date": order.created_at + timedelta(seconds=20),
+            "expiry_date": order.created_at + timedelta(minutes=60), # Standardized match for your 15-minute hold validation
+            "year": timezone.now().year,
         }
 
         html_message = render_to_string("emails/bank_hold_confirmation_email.html", context)
@@ -169,12 +228,14 @@ def send_bank_hold_confirmation_email_task(order_id):
             bcc=[from_email],
         )
         mail.attach_alternative(html_message, "text/html")
-        
-        # Pull your application context settings directly to pass order strings onto standard templates
-        pdf_buffer = generate_order_confirmation_pdf(order.order_number)
-        mail.attach(f"轉帳明細｜Hold_Details_{order.order_number}.pdf", pdf_buffer.getvalue(), "application/pdf")
-        
         mail.encoding = 'utf-8'
+
+        # ── ATTACHMENT A: GENERATED WATERMARK STATEMENT PDF OVERLAY ──────
+        pdf_buffer = generate_order_confirmation_pdf(order.order_number)
+        if pdf_buffer:
+            mail.attach(f"轉帳明細｜Hold_Details_{order.order_number}.pdf", pdf_buffer.getvalue(), "application/pdf")
+
+        # Stream the full envelope payload out to your mail configuration server pipelines
         mail.send()
 
         order.email_sent = True
@@ -211,6 +272,49 @@ def send_bank_hold_cancelled_email_task(order_id):
         return f"Order contextual layout instance {order_id} missing."
 
 
+@shared_task
+def send_e_product_email_task(token_id):
+    """Asynchronously executes the time-locked download token transmission via background workers."""
+    try:
+        token = DigitalDownloadToken.objects.select_related('user', 'order_product__order', 'order_product__product_variation__product').get(id=token_id)
+        order = token.order_product.order
+        product = token.order_product.product_variation.product
+        
+        mail_subject = f"✨ Ready for Download: Your Digital Content ｜ 電子商品下載連結 [#{order.order_number}]"
+        
+        # Base site URL routing pass (Adjust variable based on your local vs live deployment keys)
+        site_domain = getattr(settings, "SITE_DOMAIN", "http://localhost:8000")
+        download_url = f"{site_domain}/store/digital/download/{str(token.id)}/"
+        
+        context = {
+            "token": token,
+            "order": order,
+            "product": product,
+            "download_url": download_url,
+            "user": token.user
+        }
+        
+        # Render clean email template variations
+        html_message = render_to_string("emails/eproduct_download_notification.html", context)
+        plain_message = render_to_string("emails/eproduct_download_notification.txt", context)
+        
+        mail = EmailMultiAlternatives(
+            subject=mail_subject,
+            body=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[order.email.strip()],
+            bcc=[settings.DEFAULT_FROM_EMAIL]
+        )
+        mail.attach_alternative(html_message, "text/html")
+        mail.encoding = 'utf-8'
+        mail.send()
+        
+        return f"Digital item delivery completed securely for Token ID {token_id}."
+    except Exception as e:
+        return f"Failed to execute digital link dispatch for Token ID {token_id}. Error: {str(e)}"
+
+
+
 # For scheduled tasks to work, you must run two separate processes simultaneously: 
 # 1. The Worker: Executes the tasks.
 # [BASH]
@@ -232,4 +336,41 @@ def send_bank_hold_cancelled_email_task(order_id):
 # Production Service Pattern:
 # Service 1 (Worker): celery -A proj worker -l info
 # Service 2 (Beat): celery -A proj beat -l info
+
+# 6/7:
+# confirm_bank_payment_admin_action()
+# send_bank_hold_confirmation_email_task()
+# check_and_expire_hold()
+# send_gift_voucher_email_task()
+# send_order_confirmation_email_task()
+# send_gift_voucher_email()
+# send_order_confirmation_email()
+# execute_atomic_voucher_deduction()
+# generate_order_confirmation_pdf()
+# paypal_order_success()
+# order_complete()
+# place_order()
+# clear_expired_bank_holds --- stil need? 
+
+
+
+# [Buyer Completes Payment]
+#          │
+#          ▼
+# [Execute Order Finalization (Atomic Transaction)]
+#          │
+#          ├─► Generate Order & OrderProducts
+#          └─► Loop item.quantity: Create unclaimed CustomerVoucher records
+#                  │
+#                  ▼
+# [Dispatch Celery Notification Pipeline]
+#          │
+#          ├─► Send PDF Tax Invoice to Buyer (A-i)
+#          └─► Send Notification + Unique Claim Link to Recipient (A-ii)
+#                  │
+#                  ▼
+# [Recipient Clicks Link] ──► Not Logged In? ──► Redirect to Custom Registration Page
+#                  │
+#                  ▼ (Authenticated)
+# [Execute voucher.claim(user.email)] ──► Lock owner field ──► Done!
 

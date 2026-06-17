@@ -1,469 +1,114 @@
-{% extends 'base.html' %}
-{% load humanize %}
-{% block content %}
-<!-- BANNER -->
-<div class="relative mt-16 w-full">
-    {% include 'includes/banner.html' %}
-</div>
+{% autoescape off %}
+<!DOCTYPE html>
+<html lang="en" style="padding:0;margin:0;box-sizing:border-box;">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bank Transfer Instructions ｜ 銀行轉帳指引</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://googleapis.com" rel="stylesheet">
+    </head>
+    <body style="font-family: 'Noto Sans TC', sans-serif; margin:0; background-color:#f9f9f9; padding: 20px 0;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+                <td align="center">
+                    <table class="content" width="600" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse; border: 1px solid #e5e5e5; background-color:#ffffff;">
+                        <!-- Header -->
+                        <tr>
+                            <td class="header" style="background-color: #c2bdb9; padding: 40px; text-align: center; color:#161616;">
+                                <span style="font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 5px;">Hṛdayadīpa (हृदयदीप) ｜ 心燈</span>
+                                <span style="font-size: 1rem; line-height: 1.4rem; display: block; opacity: 0.9;">
+                                    Bank Transfer Instructions<br/>銀行轉帳與線下匯款指引
+                                </span>
+                            </td>
+                        </tr>
 
-<!-- MAIN -->
-<main class="px-[max(1rem,5vw)] py-10 min-h-[calc(100dvh-200px)]">
-    {{ proforma_invoice_number|json_script:"proforma_invoice_number" }}
-    {{ foreign_currency_code|json_script:"foreign_currency_code" }}
-    {{ locked_rate|json_script:"locked_rate" }}
-    {{ country_code|json_script:"country_code" }}
-    <!-- progress -->
-    <ul class="timeline w-full justify-center text-xs">
-        <li>
-            <div class="timeline-start timeline-box text-center">Cart<br/>購物車</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-success"></i>
-            </div>
-            <hr class="bg-success-content"/>
-        </li>
-        <li>
-            <hr class="bg-success-content"/>
-            <div class="timeline-start timeline-box text-center">Order Details<br/>訂單詳情</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-success"></i>
-            </div>
-            <hr class="bg-success-content"/>
-        </li>
-        <li>
-            <hr class="bg-success-content" />
-            <div class="timeline-start timeline-box text-center">Confirm Order<br/>訂單確認</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-success"></i>
-            </div>
-            <hr class="bg-success-content" />
-        </li>
-        <li>
-            <hr class="bg-success-content"/>
-            <div class="timeline-start timeline-box text-center">Payment Complete<br/>支付完成</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-base-300"></i>
-            </div>
-            <!-- <hr /> -->
-        </li>
-    </ul>
+                        <!-- Warning Banner -->
+                        <tr>
+                            <td style="padding: 20px 40px; background-color: #fff3cd; border-bottom: 1px solid #ffeeba; color: #856404; font-size: 0.85rem; line-height: 1.3rem; text-align: center;">
+                                ⚠️ <strong>Items Held Secure for 72 Hours</strong><br>
+                                Please complete your transfer before <strong>{{ expiry_date|date:"Y-m-d H:i" }}</strong>. Unpaid holds will be cancelled automatically.<br>
+                                ⚠️ <strong>商品庫存已為您安全鎖定 72小時</strong><br>
+                                請於 <strong>{{ expiry_date|date:"Y-m-d H:i" }}</strong> 前完成匯款，逾期未付訂單將被系統自動取消。
+                            </td>
+                        </tr>
 
-    <div class="w-full border border-base-300 rounded-2xl p-5">
-        <div class="flex w-full flex-col lg:flex-row">
-            <!-- LEFT - address -->
-            <div class="w-[58%] card bg-base-300 rounded-box p-3">
-                <h3 class="my-3 text-center font-bold"><i class="fa-solid fa-clipboard-check"></i>&nbsp;內容確認｜Confirmation</h3>
-                <!-- delivery address -->
-                <div class="card w-full bg-base-100 card-sm shadow-sm rounded-2xl mb-5">
-                    <div class="flex flex-auto flex-col gap-0.5 text-[0.875rem]">
-                        <!-- heading -->
-                        <h2 class="card-title w-full text-primary-content bg-accent rounded-t-2xl p-2">配送地址·聯繫方式｜Delivery·Contact</h2>
-                        <!-- details -->
-                        <div class="p-2">
-                            <table class="table bg-transaparent">
-                                <tbody class="text-[0.85rem]">
+                        <!-- Greeting Section -->
+                        <tr>
+                            <td class="body" style="padding: 40px 40px 20px 40px; text-align: left; font-size: 0.9rem; line-height: 1.4rem; color: #333333;">
+                                {% if user.username %}
+                                    Dear <strong>{{ user.username }}</strong> ｜ 親愛的 <strong>{{ user.username }}</strong>，
+                                {% else %}
+                                    Dear <strong>{{ order.email }}</strong> ｜ 親愛的 <strong>{{ order.email }}</strong>，
+                                {% endif %}
+                                <br><br>
+                                Your inventory hold request has been successfully processed under order number: <strong style="color: #c2bdb9; font-size: 1rem;">{{ order.order_number }}</strong>.<br>
+                                您的商品庫存已成功鎖定！訂單號碼為：<strong style="color: #a39e9a; font-size: 1rem;">{{ order.order_number }}</strong>。
+                            </td>
+                        </tr>
+
+                        <!-- Remittance Coordinates Box -->
+                        <tr>
+                            <td style="padding: 0 40px 20px 40px;">
+                                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f7f5f3; border: 1px solid #cccccc; border-radius: 8px;">
                                     <tr>
-                                        <td class="w-[16rem]"><i class="fa-solid fa-person-arrow-down-to-line"></i>&nbsp;收件人｜To：</td>
-                                        <td>{{ proforma_invoice.first_name }}&nbsp;{{ proforma_invoice.last_name }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="w-[16rem]"><i class="fa-solid fa-address-book"></i>&nbsp;地址｜Address：</td>
-                                        <td>
-                                            <span>{{ proforma_invoice.address_line_1 }},</span>&nbsp;
-                                            {% if proforma_invoice.address_line_2 %}<span>{{ proforma_invoice.address_line_2 }},</span><br>{% endif %}
-                                            <span>{{ proforma_invoice.city }},</span>&nbsp;
-                                            <span>{{ proforma_invoice.state_province_region }}</span><br>
-                                            <span>{{ proforma_invoice.get_country_display }}</span>&nbsp;
-                                            {% if proforma_invoice.postal_code %}<span>{{ proforma_invoice.postal_code }}</span>{% endif %}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="w-[16rem]"><i class="fa-solid fa-square-phone"></i>&nbsp;手機/電話號碼｜Mobile/Phone：</td>
-                                        <td>{{ proforma_invoice.mobile_area }}&nbsp;{{ proforma_invoice.mobile_number }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="w-[16rem]"><i class="fa-solid fa-truck"></i>&nbsp;配送備注｜Delivery Note</td>
-                                        <td>{{ proforma_invoice.delivery_note }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="w-[16rem]"><i class="fa-solid fa-gift"></i>&nbsp;同捆帳單｜Include invoice</td>
-                                        {% if proforma_invoice.do_not_send_invoice %}
-                                            <td>同捆｜Include invoice</td>
-                                        {% else %}
-                                            <td class="text-warning">不同捆｜Do NOT include invoice!</td>
-                                        {% endif %}
-                                    </tr>
-                                    <tr>
-                                        <td class="w-[16rem]"><i class="fa-solid fa-envelope"></i>&nbsp;聯繫郵箱｜Email*</td>
-                                        <td>{{ proforma_invoice.email }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div class="pl-4 text-[0.6rem]">*聯繫內容包含帳單信息｜Price info will be sent to this email address.</div>
-                        </div>
-                    </div>
-                </div>                
-                <!-- products -->
-                <div class="card w-full bg-base-100 card-sm shadow-sm rounded-2xl mb-5">
-                    <div class="flex flex-auto flex-col gap-0.5 text-[0.875rem]">
-                        <!-- heading -->
-                        <h2 class="card-title w-full text-primary-content bg-accent rounded-t-2xl p-2">產品一覽｜Details</h2>
-                        <!-- products -->
-                        <table class="table table-xs bg-transparent">
-                            <!-- head -->
-                            <thead class="text-[0.8rem] text-base-content">
-                                <tr >
-                                    <th></th>
-                                    <th>商品｜Product</th>
-                                    <th>價格｜Price</th>
-                                    <th>數量｜Qty</th>
-                                    <th>小計｜Sub-Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for cart_item in cart_items %}
-                                    <tr >
-                                        <th>{{ forloop.counter }}</th>
-                                        <td>
-                                            <div class="flex w-full py-3">
-                                                <div class="w-1/2 h-[5rem]">
-                                                    <img src="{{ cart_item.product_variation.images.url }}" alt="" class="rounded-md w-full h-full aspect-video object-cover">
-                                                </div>
-                                                <div class="ml-[0.5rem] w-1/2">
-                                                    <span class="font-bold">{{ cart_item.product_variation.product.product_name }}</span>
-                                                    <br/>
-                                                    <span class="text-[10px]">{{ cart_item.product_variation.get_sku }}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="text-right">CNY {{ cart_item.product_variation.price|floatformat:2|intcomma }}</td>
-                                        <td class="text-center">{{ cart_item.quantity }}</td>
-                                        <td class="font-semibold text-right">CNY {{ cart_item.subtotal|floatformat:2|intcomma }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>                
-            </div>
-
-            <!-- MIDDLE -->
-            <div class="divider lg:divider-horizontal w-[2%]"></div>
-
-            <!-- RIGHT - items list -->
-            <div class="w-[40%] card bg-base-300 rounded-box p-3 ">
-                <h3 class="my-3 text-center font-bold"><i class="fa-solid fa-money-bill-wave"></i>&nbsp;付款｜Pay</h3>
-                <!-- payment summary -->
-                <div class="card w-full bg-base-100 card-sm shadow-sm rounded-2xl mb-5">
-                    <div class="flex flex-auto flex-col gap-0.5 text-[0.875rem]">
-                        <!-- heading -->
-                        <h2 class="card-title w-full text-primary-content bg-accent rounded-t-2xl p-2">金額｜Amount</h2>
-                        <!-- sub-total & other costs/discounts -->
-                        <div class="w-full text-right text-sm px-3 mb-5 py-5">
-                            <!-- <table class="w-full bg-transparent border-collapse font-extralight">
-                                <tbody>
-                                    <tr class="w-full">
-                                        <td class="w-full truncate font-medium">商品小計|Products</td>
-                                        <td class="whitespace-nowrap font-normal min-w-[120px] pl-4">
-                                            <div class="flex justify-between">
-                                                <span>CNY </span>
-                                                <span>{{ proforma_invoice.cart_total|floatformat:2|intcomma }}</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr >
-                                        <td class="w-full truncate font-medium">運費|Shipping</td>
-                                        <td class="whitespace-nowrap font-normal min-w-[120px] pl-4">
-                                            <div class="flex justify-between">
-                                                <span>CNY</span>
-                                                <span>{{ proforma_invoice.shipping_cost|floatformat:2|intcomma }}</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr >
-                                        <td class="w-full truncate font-medium">優惠|Discount</td>
-                                        <td class="whitespace-nowrap font-normal min-w-[120px] pl-4">
-                                            <div class="flex justify-between">
-                                                <span>CNY</span>
-                                                <span>
-                                                    {% if proforma_invoice.discount > 0 %}-{% endif %}   
-                                                    {{ proforma_invoice.discount|floatformat:2|intcomma }}
-                                                </span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr >
-                                        <td class="w-full truncate font-medium">稅&通關费用|Tax & Duty</td>
-                                        <td class="whitespace-nowrap font-normal min-w-[120px] pl-4">
-                                            <div class="flex justify-between">
-                                                <span>CNY</span>
-                                                <span>{{ proforma_invoice.tax|floatformat:2|intcomma }}</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr class="border-b-4 border-double border-gray-400 font-medium">
-                                        <td class="w-full truncate font-medium">禮品券|Voucher</td>
-                                        <td class="whitespace-nowrap font-normal min-w-[120px] pl-4">
-                                            <div class="flex justify-between">
-                                                <span>CNY</span>
-                                                <span>
-                                                    {% if proforma_invoice.voucher_applied > 0 %}-{% endif %}
-                                                    {{ proforma_invoice.voucher_applied|floatformat:2|intcomma }}
-                                                </span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr class="font-bold text-sm">
-                                        <td class="w-full truncate">總支付金額|Total Due</td>
-                                        <td class="whitespace-nowrap font-semibold min-w-[120px] pl-4">
-                                            <div class="flex justify-between">
-                                                <span>CNY</span>
-                                                <span>{{ proforma_invoice.total_due|floatformat:2|intcomma }}</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table> -->
-
-                            <table class="w-full bg-transparent border-collapse table-fixed">
-                                <thead>
-                                    <tr>
-                                        <!-- 50% Width -->
-                                        <th class="w-[32%] py-1 text-left"></th>
-                                        <!-- 25% Width -->
-                                        <th class="w-[32%] py-1 text-right">CNY</th>
-                                        <!-- 25% Width -->
-                                        <th class="w-[36%] py-1 text-right text-info-content">{{foreign_currency_code}}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- products subtotal -->
-                                    <tr class="font-normal">
-                                        <td class="py-1 text-left text-xs/4">商品小計<br>Products</td>
-                                        <td class="py-1 mr-2 text-right">
-                                            <span id="products_subtotal_amount" data-value="{{ cart_total }}" data-currency="CNY" class="currency-display">
-                                                {{ cart_total }}
-                                            </span>
-                                        </td>
-                                        <td class="py-1 text-right text-info-content">
-                                            <span class="currency-display" id="products_subtotal_amount_foreign" 
-                                                data-value="{{ proforma_invoice.cart_total_foreign }}" data-currency="{{ foreign_currency_code }}">
-                                                {{ proforma_invoice.cart_total_foreign }}
+                                        <td style="padding: 25px; font-size: 0.85rem; line-height: 1.5rem; color: #444444;">
+                                            <strong style="font-size: 0.95rem; color: #161616; display: block; border-bottom: 1px solid #cccccc; padding-bottom: 8px; margin-bottom: 12px;">
+                                                🏦 Remittance Details ｜ 銀行轉帳帳號資訊
+                                            </strong>
+                                            <strong>Bank Name ｜ 開戶銀行:</strong> Bank of China (Mainland) / Tailored Bank Name<br>
+                                            <strong>Account Name ｜ 開戶名稱:</strong> Xindeng Corporate Entity Ltd.<br>
+                                            <strong>Account Number ｜ 銀行帳號:</strong> 6217 0000 0000 0000 000<br>
+                                            <strong>Swift Code ｜ 國際代碼:</strong> BKCHCNBJXXX<br>
+                                            <strong>Total Due ｜ 應付總額:</strong> <span style="font-size: 1.1rem; color: #d32f2f; font-weight: bold;">¥ {{ order.total_due }}</span> (or currency equivalent)<br>
+                                            <span style="font-size: 0.75rem; color: #777777; display: block; margin-top: 10px; line-height: 1.1rem;">
+                                                *Important: Please include your order number <strong>{{ order.order_number }}</strong> in the payment remark/memo context.<br>
+                                                *重要提示：請務必在匯款備註/附言中填寫您的訂單號碼 <strong>{{ order.order_number }}</strong>。
                                             </span>
                                         </td>
                                     </tr>
-                                    <!-- shipping cost -->
-                                    <tr class="font-normal">
-                                        <td class="py-1 text-left text-xs/4">運費<br>Shipping</td>
-                                        <td class="py-1 mr-2 text-right">
-                                            <span id="shipping_cost_amount" data-value="{{ proforma_invoice.shipping_cost }}"  data-currency="CNY" class="currency-display">
-                                                {{ proforma_invoice.shipping_cost }}
-                                            </span>
-                                        </td>
-                                        <td class="py-1 text-right text-info-content">
-                                            <span id="shipping_cost_amount_foreign" data-value="{{proforma_invoice.shipping_cost_amount_foreign}}" data-currency="{{ foreign_currency_code }}" class="currency-display">
-                                                {{proforma_invoice.shipping_cost_amount_foreign}}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                    <!-- discount -->
-                                    <tr class="font-normal">
-                                        <td class="py-1 text-left text-xs/4">優惠<br>Discount</td>
-                                        <td class="py-1 mr-2 text-right">
-                                            <span id="discount_amount" data-value="{{proforma_invoice.discount}}" data-currency="CNY" class="currency-display">
-                                                {{proforma_invoice.discount}}
-                                            </span>
-                                        </td>
-                                        <td class="py-1 text-right text-info-content">
-                                            <span id="discount_amount_foreign" data-value="{{proforma_invoice.discount_amount_foreign}}" data-currency="{{ foreign_currency_code }}" class="currency-display">
-                                                {{proforma_invoice.discount_amount_foreign}}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                    <!-- tax -->
-                                    <tr class="font-normal">
-                                        <td class="py-1 text-left text-xs/4">稅&通關费用<br>Tax & Duty</td>
-                                        <td class="py-1 mr-2 text-right">
-                                            <span id="tax_amount" data-value="{{proforma_invoice.tax}}" data-currency="CNY" class="currency-display">
-                                                {{proforma_invoice.tax}}
-                                            </span>
-                                        </td>
-                                        <td class="py-1 text-right text-info-content">
-                                            <span id="tax_amount_foreign" data-value="{{proforma_invoice.tax_amount_foreign}}" data-currency="{{ foreign_currency_code }}" class="currency-display">
-                                                {{proforma_invoice.tax_amount_foreign}}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                    <!-- cash voucher -->
-                                    <tr class="font-normal">
-                                        <td class="py-1 text-left text-xs/4">禮品券<br>Voucher</td>
-                                        <td class="py-1 mr-2 text-right">
-                                            <span id="cash_voucher_amount" data-value="{{proforma_invoice.voucher_applied}}" data-currency="CNY" class="currency-display">
-                                                {{proforma_invoice.voucher_applied}}
-                                            </span>
-                                        </td>
-                                        <td class="py-1 text-right text-info-content">
-                                            <span id="cash_voucher_amount_foreign" data-value="{{proforma_invoice.applied_voucher_amount_foreign}}" data-currency="{{ foreign_currency_code }}" class="currency-display">
-                                                {{proforma_invoice.applied_voucher_amount_foreign}}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                    <!-- total amount -->
-                                    <tr class="font-semibold text-[0.8rem]">
-                                        <td class="py-1 text-left text-xs/4">總支付金額<br>Total Due</td>
-                                        <td class="py-1 mr-2 text-right">
-                                            <span id="total_payable_amount" data-value="{{proforma_invoice.total_due}}" data-currency="CNY" class="currency-display">
-                                                {{proforma_invoice.total_due}}
-                                            </span>
-                                        </td>
-                                        <td class="py-1 text-right text-info-content">
-                                            <span class="currency-display" id="total_amount_foreign"
-                                                data-value="{{ proforma_invoice.total_due_foreign }}" data-currency="{{ foreign_currency_code }}">
-                                                {{ proforma_invoice.total_due_foreign }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                </table>
+                            </td>
+                        </tr>
 
-                            <!-- exchange rate expiry warning -->
-                            <div class="w-full text-left text-[0.65rem]">
-                                <p id="locked_exchange_rate" data-value="{{ proforma_invoice.locked_exchange_rate|floatformat:4|intcomma }}">
-                                    *兌換率｜Exchange Rate：{{ proforma_invoice.locked_exchange_rate|floatformat:4|intcomma }}
-                                </p>
-                                <p>**非人民幣金額可能因計算進位而略有不同｜Minor rounding differences may occur for non-CNY currency.</p>
-                            </div>
-                            <div id="price-warning" data-value="{{ proforma_invoice.locked_exchange_rate|floatformat:4|intcomma }}" class="w-full text-left hidden bg-primary-content p-2 text-xs">
-                                兌換率 <strong>{{ proforma_invoice.locked_exchange_rate|floatformat:4|intcomma }}</strong> 已失效。煩請<a href="{% url 'cart' %}" class="underline font-semibold">返回購物車</a>重新計算。
-                                <br>
-                                Exchange rate <strong>{{ proforma_invoice.locked_exchange_rate|floatformat:4|intcomma }}</strong> has expired. <a href="{% url 'cart' %}" class="underline font-semibold">Back to cart page</a> to recalculate.
-                            </div>
-                            
-                        </div>
-                    </div>
-                </div>
+                        <!-- QR Code re -->
 
-                <!-- payment method -->
-                <div class="card w-full bg-base-100 card-sm shadow-sm rounded-2xl mb-5">
-                    <div class="flex flex-auto flex-col gap-0.5 text-[0.875rem]">
-                        <!-- heading -->
-                        <h2 class="card-title w-full text-primary-content bg-accent rounded-t-2xl p-2">付款方式｜Payment Method</h2>
-                        <!-- options -->
-                        <div id="payment_selections" class="p-2 gap-3">
-                            <label for="paypal" class="flex items-center">
-                                <input id="paypal_option" type="radio" name="payment_selection" class="radio radio-xs" />
-                                <span>貝寶｜PayPal </span>
-                            </label>
-                            <label for="alipay" class="flex items-center">
-                                <input id="alipay_option" type="radio" name="payment_selection" class="radio radio-xs" />
-                                <span>支付寶｜Alipay</span>
-                            </label>
-                            <label for="wechat" class="flex items-center">
-                                <input id="wechat_option" type="radio" name="payment_selection" class="radio radio-xs" />
-                                <span>微信｜WeChat Pay</span>
-                            </label>
-                        </div>
+                        <!-- Informational Subtext -->
+                        <tr>
+                            <td class="body" style="padding: 0 40px 40px 40px; text-align: left; font-size: 0.85rem; line-height: 1.35rem; color: #555555;">
+                                Once you complete the transaction, a PDF copy of your statement invoice remains attached for record-keeping. Our back-office verification ledger updates fields automatically upon receipt.<br>
+                                匯款完成後請保留憑證。訂單詳細水單明細已隨附於本郵件之附件 PDF 檔案中。我們將在收到款項後第一時間核對並為您發貨。<br><br>
+                                Thank you for your support!<br>感謝您對我們的支持！
+                                <br><br>
+                                <a href="https://xindeng.art" style="color: #161616; font-weight: bold; text-decoration: none;">xindeng.art</a>
+                            </td>
+                        </tr>
 
-                        <!-- NOTE -->
-                        <div class="m-2">*****備注：支付方式表格後期將進一步完善*****</div>
-                    </div>
-                </div>
+                        <!-- Safeguard Footer Notification -->
+                        <tr>
+                            <td class="body" style="padding: 20px 40px; text-align: left; font-size:0.75rem; line-height: 1.1rem; border-top: 1px solid #e5e5e5; background-color: #fafafa; color: #777777;">
+                                If you did not request an inventory hold at xindeng.art, please disregard this automated notification.<br>
+                                如果您沒有在心燈 xindeng.art 申請商品保留，請忽視這份由系統自動發出的郵件。
+                            </td>
+                        </tr>
 
-                <style>
-                    .buttons-container {
-                        display: flex;
-                        flex-direction: column;
-                        gap: 12px;
-                    }
-                </style>
-                <!-- payment buttons -->
-                <div id="payment_btns_wrapper" hidden class="w-full flex flex-col gap-2">
-                    <button id="payment_gateway_btn"  class="w-full btn btn-success pointer-events-none cursor-default select-none">
-                        請選擇支付方式｜Please Select Payment Method
-                    </button>
-                    <!-- <button class="w-full btn btn-secondary">各類支付按鈕</button> -->
-
-                    <!-- Client Side PayPal -->
-                    <!-- <div id="paypal-button-container"></div>
-                    <div id="result-message"></div> -->
-
-                    <div id="paypal_btns" class="buttons-container">
-                        <!-- All buttons are hidden until eligibility is confirmed -->
-                        <paypal-button type="pay" class="w-full" hidden></paypal-button>
-                        <paypal-pay-later-button class="w-full" hidden></paypal-pay-later-button>
-                        <paypal-credit-button class="w-full" hidden></paypal-credit-button>
-                    </div>
-                    {% csrf_token %}
-                    
-                </div>
-
-                <!-- 繼續購物 -->
-                <button class="btn btn-accent btn-outline mb-3 my-10 py-5 text-[1.05rem]">
-                    <i class="fa-solid fa-person-walking-arrow-loop-left"></i>繼續購物
-                </button>
-            </div>
-        </div>
-    </div>
-
-</main>
-
-<script>
-document.addEventListener('DOMContentLoaded', (event) => {
-    console.log("loaded")
-    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ REFs ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
-    // inputs
-    const paypal_btn = document.querySelector("#paypal_option")
-    const alipay_btn = document.querySelector("#alipay_option")
-    const wechat_btn = document.querySelector("#wechat_option")
-    // payment buttons
-    const payment_selections = document.querySelector("#payment_selections")
-    const payment_gateway_btn = document.querySelector("#payment_gateway_btn")
-    const payment_btns_wrapper = document.querySelector("#payment_btns_wrapper")
-    // currency related
-    const currencyElements = document.querySelectorAll('.currency-display')
-    const minus_currency_els = ["discount_amount", "discount_amount_foreign", "cash_voucher_amount", "cash_voucher_amount_foreign"]
-
-    
-    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ FUNCTIONS ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
-    function activate_payment(e){
-        e.preventDefault()
-        payment_gateway_btn.classList.remove("pointer-events-none", "cursor-default", "select-none")
-    }
-
-    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ EVENT LISTENER ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
-    payment_selections.addEventListener("change", activate_payment)
-    
-
-    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ FUNCTIONS ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
-    // check foreign currency rate expiry
-    function check_foreign_currency_expiry() {
-        if (Date.now() > expiryTime) {
-            document.getElementById('price-warning').classList.remove('hidden');
-            // disable the 'Pay' button
-            payment_btns_wrapper.hidden = true
-            payment_gateway_btn.innerText = "請選擇支付方式｜Please Select Payment Method"
-        } else {
-            payment_btns_wrapper.hidden = false
-        }                                                
-    } 
-
-    // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ INIT SETUPS ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ //
-    // format foreign currency
-    currencyElements.forEach(el => {
-        const value = minus_currency_els.includes(el.id) && el.dataset.value != 0 ? -parseFloat(el.dataset.value) : parseFloat(el.dataset.value)
-        const currencyCode = el.dataset.currency || 'HKD'
-        format_currency(el, value, currencyCode)
-    });
-
-    // refresh page for exchange rate update
-    const lockedAt = new Date("{{ request.session.locked_at }}");
-    console.log("lockedAt: ", lockedAt)
-    // const expiryTime = lockedAt.getTime() + (24 * 60 * 60 * 1000);
-    const expiryTime = lockedAt.getTime() + (2 * 60 * 1000);
-
-    check_foreign_currency_expiry()
-    setInterval(check_foreign_currency_expiry, 5000); // Check every minute
-
-})
-</script>
-
-{% endblock %}
+                        <!-- Corporate Footer Banner -->
+                        <tr>
+                            <td class="footer" style="background-color: #333333; padding: 30px; text-align: center; color: #ffffff; font-size: 0.8rem; letter-spacing: 0.5px;">
+                                Copyright &copy; 2026 | xindeng.art
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
+<style>
+@media screen and (max-width: 600px) {
+    .content { width: 100% !important; border: none !important; }
+    .header, .body, .footer { padding: 25px 20px !important; }
+}
+</style>
+{% endautoescape %}

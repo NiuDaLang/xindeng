@@ -14,7 +14,62 @@ import 'glightbox/dist/css/glightbox.min.css';
 import GLightbox from 'glightbox';
 
 import 'sharer.js'; 
+import htmx from 'htmx.org';
 
+// // HTMX
+// // 1. Capture a clean reference to HTMX's internal logger
+// const originalHtmxLogger = htmx.logger;
+
+// // 2. Override the logger with a custom filter hook
+// htmx.logger = function(elt, event, detail) {
+//     // Check if the current error is a history-restoration OOB error
+//     if (event === 'htmx:oobErrorNoTarget') {
+//         // If detail.xhr is missing, it is a history popstate restoration event
+//         if (!detail || detail.xhr === undefined) {
+//             console.log("🤫 Muted false-positive HTMX out-of-band history error.");
+//             return; // Exit early to prevent printing the default error to the console
+//         }
+//     }
+
+//     // Pass all normal operations and genuine errors to the original logger
+//     if (originalHtmxLogger) {
+//         originalHtmxLogger(elt, event, detail);
+//     }
+// };
+
+// // 3. Keep your custom event listener clean for catch-all handling if needed
+// document.body.addEventListener('htmx:oobErrorNoTarget', function(evt) {
+//     if (!evt.detail || !evt.detail.targetId || evt.detail.xhr === undefined) return;
+
+//     console.error("--- GENUINE HTMX OOB TARGET ERROR CAUGHT ---");
+//     console.error("Target ID:", evt.detail.targetId);
+//     console.error("Content:", evt.detail.content);
+// });
+
+// 1. Maintain a clean backup reference to the browser's native error engine
+const originalConsoleError = console.error;
+
+// 2. Listen for the native popstate event (fires the instant a user hits the back button)
+window.addEventListener('popstate', function() {
+    // Override console.error temporarily to filter out the HTMX internal string
+    console.error = function(...args) {
+        const errorMsg = args[0] ? String(args[0]) : '';
+        
+        // Mute if it matches HTMX's signature error for missing out-of-band targets
+        if (errorMsg.includes('htmx:oobErrorNoTarget')) {
+            console.log("🤫 Muted false-positive HTMX out-of-band history log.");
+            return; // Swallows the log completely
+        }
+        
+        // Allow all other genuine errors to pass through normally
+        originalConsoleError.apply(console, args);
+    };
+
+    // 3. Restore the native console behavior immediately after HTMX completes history rendering
+    setTimeout(() => {
+        console.error = originalConsoleError;
+    }, 100); // 100ms is plenty of time for doSwap and restoreHistory execution frames
+});
 
 // ***** change theme *****
 // let checkbox = document.querySelector("#day_night_checkbox")
@@ -55,19 +110,82 @@ import 'sharer.js';
 // })
 
 // ***** change navbar color on-scroll *****
+let scrollTimer = null;
+const header = document.querySelector("#navbar");
+const logo_landscape = header.querySelector("#logo_landscape"); // Assumes your logo is an img tag inside #navbar
+const logo_square = header.querySelector("#logo_square"); // Assumes your logo is an img tag inside #navbar
+const canvasElem = document.querySelector("#canvas_wrapper"); // Using your wrapper ID
+const footerElem = document.querySelector("footer");
+const login_btn = document.querySelector("#login_btn")
+const register_btn = document.querySelector("#register_btn")
+
+// Configuration
+const scrollThreshold = 100;
+const normalLogo_landscape = "/static/images/logos/logo_full_landscape.svg";
+const altLogo_landscape = "/static/images/logos/logo_full_landscape_light.svg";
+const normalLogo_square = "/static/images/logos/logo_transparent.svg";
+const altLogo_square = "/static/images/logos/logo_transparent_light.svg";
+
+
+
 window.addEventListener('scroll', function() {
-    // const header = document.querySelector("#navbar")
-    const header = check_element_exist(this.document, "#navbar")
-    if(header) {
-        const scrollThreshold = 100; // Change color after scrolling 100 pixels
-    
-        if (window.scrollY > scrollThreshold) {
-            header.classList.add('scrolled-background');
-        } else {
+    if (!header) return;
+
+    // --- Part A: Logic for scrolling vs. stopped ---
+    // Clear the timer every time a scroll event fires
+    header.classList.add('scrolled-background');
+    clearTimeout(scrollTimer);
+
+    // Set a timer to run when scrolling stops (200ms delay)
+    scrollTimer = setTimeout(() => {
+        // Only remove transparency if we aren't in the "bottom zone"
+        if (!isAtBottomZone()) {
             header.classList.remove('scrolled-background');
         }
+    }, 200);
+
+    // --- Part B: Logic for Bottom Elements (Canvas & Footer) ---
+    if (isAtBottomZone()) {
+        header.classList.add('scrolled-background'); // Keep transparent
+        logo_landscape.src = altLogo_landscape; // Change logo
+        logo_square.src = altLogo_square; // Change logo
+        header.classList.add('text-[var(--xindeng-light-color)]')
+        if(login_btn && register_btn){
+            login_btn.classList.remove("bg-gray-200", "text-gray-700")
+            login_btn.classList.add("bg-transparent")
+            register_btn.classList.remove("bg-neutral-content", "text-primary-content")
+            register_btn.classList.add("bg-transparent")
+        }
+    } else {
+        logo_landscape.src = normalLogo_landscape; // Revert logo
+        logo_square.src = normalLogo_square; // Revert logo
+        header.classList.remove('text-[var(--xindeng-light-color)]')
+        if(login_btn && register_btn){
+            login_btn.classList.add("bg-gray-200", "text-gray-700")
+            login_btn.classList.remove("bg-transparent")
+            register_btn.classList.add("bg-neutral-content", "text-primary-content")
+            register_btn.classList.remove("bg-transparent")
+        }
+
     }
-});    
+}); 
+
+// Helper function to check if Canvas or Footer is in view
+function isAtBottomZone() {
+    if(document.querySelector("#canvas_wrapper")){
+        const canvasRect = canvasElem?.getBoundingClientRect();
+        const footerRect = footerElem?.getBoundingClientRect();
+    
+        // Check if the top of the canvas has reached the top of the viewport
+        // or if the footer is visible
+        const canvasReached = canvasRect && canvasRect.top <= 100; 
+        const footerReached = footerRect && footerRect.top <= window.innerHeight;
+    
+        return canvasReached || footerReached;
+    } else {
+        return false
+    }
+}
 
 // ***** swiper *****
 // const swiper = new Swiper('.swiper', {
@@ -348,6 +466,7 @@ function check_element_exist(parent, selector) {
         return false
     }
 }
+
 function check_elements_exist(parent, selector) {
     const elements = parent.querySelectorAll(selector);
     if (elements) {
@@ -392,14 +511,37 @@ function format_currency(el, value, currencyCode) {
 }
 
 // Header Cart Update
-const updateHeaderCartDetails = (items_count, items_total) => {
+const updateHeaderCartDetails = (items_count, items_total, cart_items) => {
     document.querySelector("#cart_count_icon").innerText = items_count;
     document.querySelector("#cart_count").innerText = `${items_count} Items`
     document.querySelector("#cart_sub_total").innerText = `CNY ${items_total}`
+
+    const product_list_item_html = cart_items.map(item => `
+
+            <li class="flex hover:bg-base-200 transition-colors duration-300 ease-in-out rounded-2xl items-center mt-2">
+                <a href="${item.url}" class="flex flex-col flex-grow-0 items-start p-2">
+                    <span class="text-sm"><strong>${item.product}</strong></span>
+                    <span class="text-[0.65rem]">${item.product_variation}</span>
+                    <img src="${item.image_url}" alt="product image" class="rounded-e-4xl">
+                </a>
+                <div class="h-full flex gap-1 items-center mr-2">
+                    <span class="">X</span>
+                    <span id="header_item_qty_${item.id}" class="flex-grow-1">${item.quantity }</span>
+                </div>
+            </li>
+
+        `).join('')
+    console.log("[updateHeaderCartDetails] cart_items: ", cart_items)
+
+    const cart_items_list = document.querySelector("#cart_items_list")
+    cart_items_list.innerHTML = product_list_item_html
 }
 
 // share function
 const share_link = async (title, text, link) => {
+    console.log("title: ", title)
+    console.log("text: ", text)
+    console.log("link: ", link)
     // 1. Define the data we want to share
     const shareData = {
         title: title,
@@ -465,143 +607,144 @@ async function post_and_fetch_data(url, headers, body){
 }
 
 /*************************  PAYPAL  **************************/ 
+window.paypalSdkLoadingStarted = window.paypalSdkLoadingStarted || false;
+
 function get_csrf_token(){
     const csrf_element = document.querySelector("[name=csrfmiddlewaretoken]");
     if (!csrf_element) {
-        console.error("CSRF tokenelement not found in template!")
-        return null
+        console.error("CSRF token element not found in template!");
+        return null;
     }
     return csrf_element.value;
 }
 
+// async function createOrder() {
+//     const proforma_invoice_number = JSON.parse(document.getElementById('proforma_invoice_number').textContent);
+//     const foreign_currency_code = JSON.parse(document.getElementById('foreign_currency_code').textContent);
+//     const locked_rate = JSON.parse(document.getElementById('locked_rate').textContent);
+
+//     try {
+//         const url = `/orders/api/paypal/create_paypal_order/?invoice=${proforma_invoice_number}&foreign_currency_code=${foreign_currency_code}&locked_rate=${locked_rate}`;
+//         const response = await fetch(url, {
+//             method: "POST",
+//             headers: {
+//                 "X-CSRFToken": get_csrf_token(),
+//                 "Content-Type": "application/json",
+//                 "mode": 'same-origin',
+//             }
+//         });
+//         if (!response.ok) {
+//             const error_data = await response.json();
+//             if (error_data.error_code === "OUT_OF_STOCK") {
+//                 // Dispatch native custom event to your working errorMssg listener instantly
+//                 const evt = new CustomEvent("errorMssg", {
+//                     detail: {
+//                         title: error_data.title,
+//                         text: error_data.text,
+//                         redirect_url: error_data.redirect_url
+//                     }
+//                 });
+//                 document.dispatchEvent(evt);
+                
+//                 // Return an empty promise rejection to stop the PayPal SDK loop cleanly
+//                 return Promise.reject(new Error("Stock allocation threshold reached."));
+//             }
+//             throw new Error("Failed to create order due to gateway issues.");
+//         }
+
+//         const response_data = await response.json();
+//         console.log("Returning PayPal Order ID: ", response_data.id);
+//         return { orderId: response_data.id };
+//     } catch(error) {
+//         console.error("Failed to create order:", error);
+//         throw error;
+//     }
+// }
+
 async function createOrder() {
-    // User authentication
-    const proforma_invoice_number = JSON.parse(document.getElementById('proforma_invoice_number').textContent)
-    const foreign_currency_code = JSON.parse(document.getElementById('foreign_currency_code').textContent)
-    const locked_rate = JSON.parse(document.getElementById('locked_rate').textContent)
+    const proforma_invoice_number = JSON.parse(document.getElementById('proforma_invoice_number').textContent);
+    const foreign_currency_code = JSON.parse(document.getElementById('foreign_currency_code').textContent);
+    const locked_rate = JSON.parse(document.getElementById('locked_rate').textContent);
 
     try {
-        // const response = await fetch(`/orders/api/paypal/create_paypal_order/?invoice=${proforma_invoice_number}&foreign_currency_code=${foreign_currency_code}&locked_rate=${locked_rate}`, {
-        //     method: "POST",
-        //     headers: {
-        //         "X-CSRFToken": get_csrf_token(),
-        //         "Content-Type": "application/json",
-        //     },
-        // });
-        const url = `/orders/api/paypal/create_paypal_order/?invoice=${proforma_invoice_number}&foreign_currency_code=${foreign_currency_code}&locked_rate=${locked_rate}`
-        const headers = {
+        const url = `/orders/api/paypal/create_paypal_order/?invoice=${proforma_invoice_number}&foreign_currency_code=${foreign_currency_code}&locked_rate=${locked_rate}`;
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
                 "X-CSRFToken": get_csrf_token(),
                 "Content-Type": "application/json",
                 "mode": 'same-origin',
             }
-        const body = null
-        const response_data = await post_and_fetch_data(url, headers, body)
-        // const data = await response.json()
-        // if(!response.ok){throw new Error(errorData.error || "Failed to create order");}
+        });
         
-        console.log("Returning Order ID: ", response_data.id)
-        return {orderId: response_data.id}
-
+        // 🎯 INTERCEPT PIPELINE: Read JSON error dictionaries from non-200 responses
+        if (!response.ok) {
+            const error_data = await response.json();
+            
+            if (error_data.error_code === "OUT_OF_STOCK") {
+                // Dispatch native custom event to your working errorMssg listener instantly
+                const evt = new CustomEvent("errorMssg", {
+                    detail: {
+                        title: error_data.title,
+                        text: error_data.text,
+                        redirect_url: error_data.redirect_url
+                    }
+                });
+                document.dispatchEvent(evt);
+            } else {
+                // Fallback catch for alternate system errors
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error ｜ 驗證失敗',
+                    text: error_data.error || 'An unexpected verification error occurred.',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+            // Throwing stops execution so paymentSession.start does not run
+            throw new Error(error_data.error || "Stock allocation threshold reached.");
+        }
+        
+        const response_data = await response.json();
+        console.log("Database secured. Passing PayPal Order ID:", response_data.id);
+        
+        // 🎯 RETURN ALIGNMENT: Returns exactly what paymentSession.start expects
+        return { orderId: response_data.id };
+        
     } catch(error) {
-        console.error("Failed to create order:", error);
+        console.error("Failed to execute pre-flight creation sequence:", error);
         throw error;
     }
 }
 
+
 async function captureOrder(data) {
+    const proforma_invoice_number = JSON.parse(document.getElementById('proforma_invoice_number').textContent);
     try {
-        // const response = await fetch(
-        //     `/orders/api/paypal/capture_paypal_order/?paypal_order_id=${data.orderId}`,
-        //     {
-        //         method: "POST",
-        //         headers: {
-        //             "Content-Type": "application/json",
-        //             "X-CSRFToken": csrf_token,
-        //             "mode": 'same-origin',
-        //         },
-        //         body: JSON.stringify(data),
-        //     }
-        // );
-
-        const url = `/orders/api/paypal/capture_paypal_order/?paypal_order_id=${data.orderId}`
-        const headers = {
+        // 💡 FIXED: Appended missing invoice number parameter required by backend
+        const url = `/orders/api/paypal/capture_paypal_order/?paypal_order_id=${data.orderId}&invoice=${proforma_invoice_number}`;
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
                 "X-CSRFToken": get_csrf_token(),
                 "Content-Type": "application/json",
                 "mode": 'same-origin',
-            }
-        const body = JSON.stringify(data)
-        const response_data = await post_and_fetch_data(url, headers, body)
-
-        // if(!response.ok){
-        //     const errorData = await response.json();
-        //     throw new Error(errorData.error || "Failed to capture order");
-        // }
-
-        // const res_data = await response.json()
-        console.log("captured res_data: ", response_data)
-
-        return response_data
-        
+            },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error("Failed to capture order");
+        return await response.json();
     } catch (error) {
-        console.error("Failed to capture order", error)
-        throw error
+        console.error("Failed to capture order", error);
+        throw error;
     }
 }
 
-async function orderSuccess(data) {
-    // const invoice_id = data.purchase_units[0].invoice_id // production
-    const invoice_id = JSON.parse(document.getElementById('proforma_invoice_number').textContent)
-    const locked_rate = JSON.parse(document.getElementById('locked_rate').textContent)
-    console.log("invoice_id: ", invoice_id)
-    console.log("locked_rate: ", locked_rate)
-
-    try {
-        // const response = await fetch(
-        //     `/orders/api/paypal/paypal_order_success/?invoice_id=${invoice_id}`,
-        //     {
-        //         method: "POST",
-        //         headers: {
-        //             "Content-Type": "application/json",
-        //             "X-CSRFToken": csrf_token,
-        //             "mode": 'same-origin',
-        //         },
-        //         body: JSON.stringify(data),
-        //     }
-        // )
-
-        const url = `/orders/api/paypal/paypal_order_success/?invoice_id=${invoice_id}&exchange_rate=${locked_rate}`
-        const headers = {
-                "X-CSRFToken": get_csrf_token(),
-                "Content-Type": "application/json",
-                "mode": 'same-origin',
-            }
-        const body = JSON.stringify(data)
-        const response_data = await post_and_fetch_data(url, headers, body)
-
-        // if(!response.ok){
-        //     const errorData = await response.json();
-        //     throw new Error(errorData.error || "Failed to process successful order");
-        // }
-
-        // const res_data = await response.json()
-        console.log("order_success res_data: ", response_data)
-
-        return response_data
-        
-    } catch (error) {
-        console.error("Failed to record order", error)
-        throw error
-    }
-}
-
-// fetch token
+// Fetch OAuth Token from your custom backend proxy gateway
 async function getBrowserSafeClientToken() {
-    const csrf_element = document.querySelector("[name=csrfmiddlewaretoken]");
-    if (!csrf_element) {
-        console.error("CSRF tokenelement not found in template!")
-        return null
-    }
-    const csrf_token = csrf_element.value;
+    const csrf_token = get_csrf_token();
+    if (!csrf_token) return null;
+    
     const response = await fetch("/orders/api/paypal/token/", {
         method: "POST",
         headers: {
@@ -609,100 +752,679 @@ async function getBrowserSafeClientToken() {
             "Content-Type": "application/json",
         },
     });
-    const data = await response.json();
-    console.log("data: ", data);
-    return data;
+    return await response.json();
 }
 
-// init function to be run if paypal container is found in the page
-async function initializePayPalSDK() {
-    const paypalButton = document.querySelector("paypal-button");
-    const foreign_currency_code = JSON.parse(document.getElementById('foreign_currency_code').textContent)
-    const country_code = JSON.parse(document.getElementById('country_code').textContent)
+
+async function renderPayPalComponents(clientToken) {
+    const paypalButton = document.getElementById("paypal_action_trigger");
+    if (!paypalButton) return;
+
+    const foreign_currency_code = JSON.parse(document.getElementById('foreign_currency_code').textContent);
+    const country_code = JSON.parse(document.getElementById('country_code').textContent);
 
     try {
-        // 1. Fetch the client token securely from the server
-        const data = await getBrowserSafeClientToken();
-        const clientToken = await data.access_token
+        const sdkInstance = await window.paypal.createInstance({
+            clientToken: clientToken,
+            components: ["paypal-payments"],
+        });
 
-        // 2. Load the PayPal SDK script dynamically
-        // Note: In v6, you load the general script first, then initialize with the token.
-        const script = document.createElement('script');
-        script.src = "https://www.sandbox.paypal.com/web-sdk/v6/core"; // Use v6 specific URL (production: paypal instead of sandbox)
-        script.async = true;
-        
-        script.onload = async () => {
-            // 3. Initialize the SDK instance with the clientToken after the script loads
-            try {
-                const sdkInstance = await window.paypal.createInstance({
-                    clientToken: clientToken,
-                    components: ["paypal-payments"],
-                    // pageType: "checkout",
-                    // locale: "en-US",
-                    // clientMetadataId: crypto.randomUUID(),
-                });
-                // 4. check available methods
-                console.log("foreign_currency_code: ", foreign_currency_code)
-                console.log("locale: ", country_code)
-                const methods = await sdkInstance.findEligibleMethods({
-                    currencyCode: foreign_currency_code,
-                    countryCode: country_code,
-                });
+        const methods = await sdkInstance.findEligibleMethods({
+            currencyCode: foreign_currency_code,
+            countryCode: country_code,
+        });
 
-                // 5. if method(s) available, render PayPal button
-                if (methods.isEligible("paypal")) {
-                    //   show button
-                    paypalButton.removeAttribute("hidden");
-                }
-                // 6. setup one-time payment session
-                const paymentSession = sdkInstance.createPayPalOneTimePaymentSession({
-                    onApprove: async (data) => {
-                        console.log("Payment approved:", data);
-                        try {
-                            const captured_data = await captureOrder(data);
-                            console.log("captured_data: ", captured_data)
-                            
-                            if(captured_data.status === "COMPLETED"){
-                                const payment_success_data = await orderSuccess(captured_data)
-                                console.log("payment_success: ", payment_success_data)
-                                window.location.href = `/orders/order_complete/?order_number=${payment_success_data.order_number}&transaction_id=${payment_success_data.transaction_id}`
-                            }
-                        } catch (error) {
-                            throw new Error("Payment capture failed:", error);
-                        }
-                    },
-
-                    // Called when user cancels a payment
-                    onCancel(data) {console.log("Payment cancelled:", data);},
-                    
-                    // Called when an error occurs during payment
-                    onError(error) {console.error("Payment error:", error);},
-                })
-                // 7. attach click listener to button
-                paypalButton.addEventListener("click", async () => {
-                    await paymentSession.start({ presentationMode: "auto" }, createOrder())
-                })
-            } catch (createInstanceError) {
-                console.error('PayPal createInstance failed:', createInstanceError);
+        if (methods.isEligible("paypal")) {
+            // 🌟 THE NET INTEGRATION FIX: Clear out the skeleton loader the millisecond PayPal verifies eligibility!
+            const skeletonLoader = document.getElementById("paypal-loading-skeleton");
+            const buttonsContainer = document.getElementById("paypal_btns");
+            
+            if (skeletonLoader) {
+                skeletonLoader.remove(); // Removes the loader node out of the layout completely
+                console.log("🔒 PayPal Braintree Instance Clear: Skeleton loader purged cleanly.");
             }
-        };
+            
+            if (buttonsContainer) {
+                // Re-adjust boundaries to remove dashed borders and padding, letting your clean button button fit snugly
+                buttonsContainer.classList.remove("min-h-[90px]", "p-4", "border-dashed", "bg-base-100/50");
+                buttonsContainer.classList.add("min-h-0", "p-0", "border-0", "bg-transparent");
+            }
 
-        script.onerror = (error) => {console.error("Failed to load the PayPal JS SDK script", error);};
+            paypalButton.removeAttribute("hidden");
+        }
 
-        document.body.appendChild(script);
+        const paymentSession = sdkInstance.createPayPalOneTimePaymentSession({
+            onApprove: async (data) => {
+                console.log("Payment approved by buyer:", data);
+                
+                // 🔄 Visual Anchor: Show a non-dismissible loading block while our backend processes stock subtractions
+                Swal.fire({
+                    title: 'Processing Payment... ｜ 正在處理支付',
+                    text: 'Please do not close this window. ｜ 請勿關閉此頁面。',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
 
-    } catch (error) {
-        console.error("Error during PayPal initialization:", error);
+                try {
+                    const backendResult = await captureOrder(data);
+                    
+                    if (backendResult.status === "SUCCESS") {
+                        // Close loading state and move cleanly to confirmation screen
+                        Swal.close();
+                        window.location.href = `/orders/order_complete/?order_number=${backendResult.order_number}&transaction_id=${backendResult.transaction_id}`;
+                    } else {
+                        // 🎯 SWAL Fallback for internal database error
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Order Sync Failed ｜ 訂單同步失敗',
+                            text: 'Database validation failed. Please check your network or contact support.',
+                            confirmButtonText: 'OK ｜ 確定',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                } catch (error) {
+                    console.error("Payment capture execution exception:", error);
+                    // 🎯 SWAL Fallback for pipeline capture connection exception
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Capture Error ｜ 捕獲交易失敗',
+                        text: 'Unable to communicate with payment settlement gateway.',
+                        confirmButtonText: 'Retry ｜ 重試',
+                        confirmButtonColor: '#3085d6'
+                    });
+                }
+            },
+            onCancel(data) { 
+                console.log("Payment cancelled:", data); 
+                // Optional: Gentle Toast alert for cancellations
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Cancelled｜已取消',
+                    html: `
+                        <div class="font-sans text-sm text-center">
+                            <p class="font-bold">Payment has been cancelled.</p>
+                            <p class="text-xs text-base-content/70 mt-1">支付已被取消。</p>
+                        </div>
+                    `,
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            },
+            onError(error) { 
+                console.error("PayPal system encounter exception error:", error); 
+                
+                // 🎯 FIX: Elegant SWAL replacement handling unexpected gateway failures
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Payment Exception｜支付遭遇異常',
+                    html: `
+                        <div class="text-left font-sans text-sm">
+                            <p class="font-bold">An unexpected error occurred during the window handshake.</p>
+                            <p class="text-xs text-base-content/70 mt-1">手續校驗失敗，可能由於信用卡受限或安全政策拦截。</p>
+                        </div>
+                    `,
+                    confirmButtonText: 'Try Alternative Method ｜ 更換支付方式',
+                    confirmButtonColor: '#3085d6'
+                });
+            },
+        });
+
+        const cleanButton = paypalButton.cloneNode(true);
+        paypalButton.parentNode.replaceChild(cleanButton, paypalButton);
+
+        cleanButton.addEventListener("click", async (e) => {
+            e.preventDefault();
+            if (window.checkoutTimer && window.checkoutTimer.currencyExpired) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Rates Lapsed ｜ 匯率過期',
+                    text: 'Transaction halted. Please refresh to fetch current market parameters.',
+                    confirmButtonText: 'Refresh ｜ 刷新頁面',
+                    confirmButtonColor: '#d33'
+                }).then(() => {
+                    window.location.reload();
+                });
+                return;
+            }
+            
+            cleanButton.disabled = true;
+            cleanButton.classList.add("btn-disabled", "opacity-50");
+            
+            try {
+                console.log("Checking database inventory allocation tracks...");
+                
+                // 1. Fetch your backend wrapper payload data object
+                const orderData = await createOrder(); 
+
+                // 2. Extract the explicit property key 'orderId' text string 
+                const payPalOrderIdString = orderData.orderId; 
+                
+                // 3: Wrap the tracking string inside a schema configuration object
+                // inside an unresolved Promise to satisfy BOTH modern type validation gates!
+                const wrappedConfigPromise = Promise.resolve({
+                    orderId: payPalOrderIdString
+                });
+                
+                console.log("Launching secure interface with unified configuration payload.");
+                
+                // 2. Pass the wrapped configuration Promise to clear the modern PayPal initialization rules
+                await paymentSession.start({ presentationMode: "auto" }, wrappedConfigPromise);
+
+            } catch (error) {
+                console.error("PayPal initiation halted due to validation failure:", error);
+            } finally {
+                cleanButton.disabled = false;
+                cleanButton.classList.remove("btn-disabled", "opacity-50");
+            }
+        });
+    } catch (err) {
+        console.error('PayPal Core Instance configuration assignment failed:', err);
     }
 }
 
-// if (place_order_pattern.test(window.location.href)) {
-const paypal_btns = check_element_exist(document, "#paypal_btns")
-if (paypal_btns) {
-    initializePayPalSDK()
+
+async function initializePayPalSDK() {
+    // 💡 FIX: Check the browser URL parameters early.
+    // If the active window is already on the order_complete page, exit immediately 
+    // to prevent the PayPal framework from spinning up and throwing telemetry logs errors!
+    const urlParams = new URLSearchParams(window.location.search);
+    if (window.location.pathname.includes('order_complete') || urlParams.has('order_number')) {
+        console.log("🏁 Order finalized page detected. Suppressing PayPal engine initialization loops.");
+        return;
+    }
+
+    const containerExists = document.getElementById("paypal_btns");
+    if (!containerExists) return;
+
+
+    // 💡 CNY SAFEGUARD GUARD: Block initialization loops instantly if domestic currency is selected
+    const foreign_currency_code = JSON.parse(document.getElementById('foreign_currency_code').textContent);
+    // if (foreign_currency_code && foreign_currency_code.toUpperCase() === 'CNY') {
+    //     console.log("🇨🇳 CNY active: Bypassing automated script mounting pipelines.");
+    //     return;
+    // }
+
+    if (foreign_currency_code && foreign_currency_code.toUpperCase() === 'CNY') {
+        console.log("🇨🇳 CNY active: Bypassing automated script mounting pipelines.");
+        
+        const skeletonLoader = document.getElementById("paypal-loading-skeleton");
+        if (skeletonLoader) skeletonLoader.remove(); // Safely clear the spinner out of the way
+        
+        if (containerExists) {
+            containerExists.classList.remove("min-h-[90px]", "p-4", "border-dashed", "bg-base-100/50");
+            containerExists.classList.add("min-h-0", "p-0", "border-0", "bg-transparent");
+        }
+        return;
+    }    
+
+    if (window.paypal && typeof window.paypal.createInstance === "function") {
+        console.log("♻️ PayPal Core SDK already present in window space. Re-rendering layouts...");
+        if (!window.cachedPayPalClientToken) {
+            const data = await getBrowserSafeClientToken();
+            window.cachedPayPalClientToken = data.access_token;
+        }
+        await renderPayPalComponents(window.cachedPayPalClientToken);
+        return;
+    }
+    
+    if (window.paypalSdkLoadingStarted) return;
+    window.paypalSdkLoadingStarted = true;
+
+    try {
+        const data = await getBrowserSafeClientToken();
+        window.cachedPayPalClientToken = data.access_token;
+
+        const script = document.createElement('script');
+        script.src = "https://www.sandbox.paypal.com/web-sdk/v6/core";
+        script.async = true;
+        
+        script.onload = async () => {
+            console.log("✨ PayPal Web SDK v6 Core asset injected completely.");
+            await renderPayPalComponents(window.cachedPayPalClientToken);
+        };
+
+        script.onerror = (error) => {
+            console.error("Failed to load the PayPal JS SDK script", error);
+            window.paypalSdkLoadingStarted = false;
+
+            // 🌟 ERROR GUARD: Remove spinner if network drops to prevent frozen layouts
+            const skeletonLoader = document.getElementById("paypal-loading-skeleton");
+            if (skeletonLoader) skeletonLoader.remove();
+        };
+
+        document.body.appendChild(script);
+    } catch (error) {
+        console.error("Error during PayPal initialization:", error);
+        window.paypalSdkLoadingStarted = false;
+
+        const skeletonLoader = document.getElementById("paypal-loading-skeleton");
+        if (skeletonLoader) skeletonLoader.remove();
+    }
+}
+
+window.initializePayPalSDK = initializePayPalSDK;
+
+document.addEventListener("DOMContentLoaded", () => {
+    if (document.getElementById("paypal_btns")) {
+        window.initializePayPalSDK();
+    }
+});
+
+
+/**
+ * SWAL alerts 
+ */
+// SWAL - Error
+document.addEventListener("noService", function(evt) {
+    Swal.fire({
+        title: evt.detail.title,
+        text: evt.detail.message,
+        icon: 'error',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+    });
+});
+document.addEventListener("errorMssg", function(evt) {
+    Swal.fire({
+        title: evt.detail.title,
+        html: evt.detail.text,
+        icon: 'error',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+    });
+});
+document.addEventListener("infoMssg", function(evt) {
+    Swal.fire({
+        title: evt.detail.title,
+        html: evt.detail.html,
+        icon: evt.detail.icon,
+        confirmButtonColor: '#3EC3EE',
+        showConfirmButton: true,
+        confirmButtonText: 'OK',
+    });
+});
+document.addEventListener("successMssg", function(evt) {
+    Swal.fire({
+        title: evt.detail.title,
+        html: evt.detail.html,
+        icon: evt.detail.icon,
+        confirmButtonColor: '#A5DB86',
+        showConfirmButton: false,
+        timer: 5000
+    });
+});
+document.body.addEventListener('showDapDisclaimer', (evt) => {
+    Swal.fire({
+        icon: 'info',
+        iconColor: '#f59e0b', 
+        title: `<div class="text-lg font-bold">${evt.detail.title_en}<br><span class="text-base font-semibold text-neutral-500">${evt.detail.title_zh}</span></div>`,
+        html: `
+            <div class="text-left text-sm space-y-4 max-h-60 overflow-y-auto px-1 py-2">
+                <p class="text-neutral-700 leading-relaxed">${evt.detail.text_en}<strong>${evt.detail.text_en_bold}</strong></p>
+                <div class="border-t border-dashed border-gray-200 my-2"></div>
+                <p class="text-neutral-600 leading-relaxed font-sans">${evt.detail.text_zh}<strong>${evt.detail.text_zh_bold}</strong></p>
+                <p class="text-neutral-400 text-xs text-center"><a href=${evt.detail.delivery_policy_link}>${evt.detail.delivery_policy_link_label}</a></p>
+            </div>
+        `,
+        confirmButtonText: 'I Understand & Agree / 我明白並同意',
+        confirmButtonColor: '#10b981', // Tailwind success emerald green
+        allowOutsideClick: false, // Enforce acknowledgment
+        allowEscapeKey: false,
+        customClass: {
+            // Adds padding to the bottom of the actions row (where the button sits)
+            actions: 'pb-6' 
+        }
+    });
+});
+
+// document.body.addEventListener('triggerOutOfStockSwal', function(evt) {
+//     console.log("📥 Out of Stock Event Detected! Payload:", evt.detail);
+    
+//     const payload = evt.detail; // Extract our custom payload dictionary object
+    
+//     if (typeof Swal !== 'undefined') {
+//         Swal.fire({
+//             title: payload.title,
+//             text: payload.text,
+//             icon: 'warning',
+//             confirmButtonText: '返回購物車 ｜ Return to Cart',
+//             confirmButtonColor: '#3085d6',
+//             allowOutsideClick: false,
+//             allowEscapeKey: false
+//         }).then((result) => {
+//             if (result.isConfirmed) {
+//                 // Instantly push the browser back to your cart view route
+//                 window.location.href = payload.redirect_url;
+//             }
+//         });
+//     } else {
+//         // Fallback framework in case SWAL scripts are still initializing
+//         alert(payload.text);
+//         window.location.href = payload.redirect_url;
+//     }
+// });
+
+
+// SWAL general
+function confirmAction(button, title, html, icon, show_cancel, confirm_btn_color, cancel_btn_color, confirm_btn_text, cancel_btn_text) {
+    Swal.fire({
+        title: title,
+        html: html,
+        icon: icon,
+        showCancelButton: show_cancel,
+        confirmButtonColor: confirm_btn_color, // Red for delete
+        cancelButtonColor: cancel_btn_color,
+        confirmButtonText: confirm_btn_text,
+        cancelButtonText: cancel_btn_text
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Manually trigger the HTMX request
+            htmx.trigger(button, 'confirmed');
+        }
+    })
 }
 
 
+/*************************  GOOGLE AUTO COMPLETE  **************************/ 
+// call before init AutoComplete:
+function preAutoComplete(){
+    const originalAttachShadow = Element.prototype.attachShadow;
+    Element.prototype.attachShadow = function(init) {
+        // Intercept ONLY the Google Autocomplete component
+        if (this.localName === 'gmp-place-autocomplete') {
+            init.mode = 'open'; // Force it to be open
+        }
+        const shadowRoot = originalAttachShadow.call(this, init);
+
+        // Inject the CSS directly into the component's internal root
+        if (this.localName === 'gmp-place-autocomplete') {
+            const style = document.createElement('style');
+            style.textContent = `
+                /* 1. Kills the blue focus ring div */
+                .focus-ring { 
+                    display: none !important; 
+                    opacity: 0 !important;
+                }
+                /* 2. Kills the magnifier icon div */
+                .autocomplete-icon { 
+                    display: none !important; 
+                }
+                /* 3. Ensures the input fills the space and stays day-mode */
+                input { 
+                    padding-left: 12px !important; 
+                    color: #333 !important;
+                    background: transparent !important;
+                    outline: none !important;
+                    box-shadow: none !important;
+                }
+                /* Ensure no hover/active grey circles appear */
+                .clear-button:hover, 
+                .clear-button:active, 
+                .clear-button:focus {
+                    background-color: transparent !important;
+                    background: none !important;
+                }
+                /* 1. Style the typed text and its position */
+                input { 
+                    padding-left: 15px !important; /* Adjust this to move the cursor/text */
+                    font-size: 0.875rem !important;    /* Match your Django form font size */
+                    font-family: var(--font-sans);
+                    color: #333 !important;
+                    background: transparent !important;
+                    outline: none !important;
+                }
+
+                /* 2. SPECIFICALLY STYLE THE PLACEHOLDER */
+                input::placeholder {
+                    font-size: 0.75rem !important;    /* Make it slightly smaller if desired */
+                    font-weight: 100 !important;
+                    color: #9ca3af !important;     /* Gray color */
+                    opacity: 1 !important;         /* Ensure it's fully visible */
+                    font-weight: 400 !important;
+                }
+                
+            `;
+            shadowRoot.appendChild(style);
+        }
+        return shadowRoot;
+    };
+}
+
+// init AutoComplete
+async function initAutoComplete(form_id) {
+    const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
+    const { Place } = await google.maps.importLibrary("routes"); 
+
+    const form = document.getElementById(form_id);
+    if (!form) return;
+            
+    // 1. Find the target input (whether it's the original Django one or the Web Component)
+    // Using [id$="..."] helps if Django prefixes IDs (common in FormSets)
+    const oldInput = form.querySelector('[id$="id_address_line_1"]');
+    if (!oldInput || oldInput.tagName === 'GMP-PLACE-AUTOCOMPLETE') return;
+
+    // 2. Create and configure the New Web Component
+    const allowedCountries = ["au", "nz", "jp", "kr", "tw", "hk", "mo", "sg", "my"]
+    const autocomplete = new PlaceAutocompleteElement({
+        includedRegionCodes: allowedCountries,
+        includedPrimaryTypes: ["geocode"],
+        componentRestrictions: { country: allowedCountries }
+    });
+
+    const hiddenAddressInput = document.createElement('input');
+    hiddenAddressInput.type='hidden'
+    hiddenAddressInput.name = 'address_line_1'
+    hiddenAddressInput.id = 'hidden_address_line_1'
+    form.appendChild(hiddenAddressInput)
+
+    // avoid duplication of name
+    if (oldInput) {
+        // 1. STRIP THE NAME from the old element so it isn't sent in the POST
+        oldInput.removeAttribute('name'); 
+        
+        // 2. ONLY the hidden input should have name="address_line_1"
+        hiddenAddressInput.name = 'address_line_1';
+    }
+
+    autocomplete.removeAttribute('name')
+
+    autocomplete.addEventListener("gmp-select", async (event) => {
+        const prediction = event.placePrediction;
+        if (!prediction) return;
+
+        const place = await prediction.toPlace();
+        // 1. MUST fetch 'id' and 'location' for Place ID and Lat/Lng
+        await place.fetchFields({ fields: ["addressComponents", "displayName", "id", "location"] });
+
+        // 2. Define target inputs FIRST (Fixes ReferenceError)
+        const cityInput = form.querySelector('[id$="id_city"]');
+        const stateInput = form.querySelector('[id$="id_state_province_region"]');
+        const zipInput = form.querySelector('[id$="id_postal_code"]');
+        const countrySelect = form.querySelector('[id$="id_country"]');
+        const verifiedInput = form.querySelector('[id$="id_is_verified_by_google"]');
+        const idInput = form.querySelector('[id$="id_google_place_id"]');
+        const latInput = form.querySelector('[id$="id_latitude"]');
+        const lngInput = form.querySelector('[id$="id_longitude"]');
+        const line2Input = form.querySelector('[id$="id_address_line_2"]');
+        const hiddenInput = form.querySelector('#hidden_address_line_1');
+
+        if (place.id && idInput) {
+            idInput.value = place.id;
+            // SET VERIFIED TO TRUE
+            if (verifiedInput) verifiedInput.value = "True"; 
+        }
+
+        // 3. Helper to get address components
+        const getComp = (type, short = false) => {
+            const c = place.addressComponents.find(c => c.types.includes(type));
+            return c ? (short ? c.shortText : c.longText) : "";
+        };
+
+        // 4. Extract data
+        const city = getComp("locality") || getComp("ward") || getComp("sublocality_level_1");
+        const state = getComp("administrative_area_level_1");
+        const country = getComp("country", true);
+        const zip = getComp("postal_code");
+        const addressLine1 = place.displayName || "";
+        
+        // Calculate Line 2
+        const excludedTypes = ["locality", "ward", "sublocality_level_1", "administrative_area_level_1", "country", "postal_code"];
+        const addressLine2 = place.addressComponents
+            .filter(c => !c.types.some(type => excludedTypes.includes(type)))
+            .map(c => c.longText)
+            .reverse()
+            .join(" ");
+
+        // 5. Populate fields
+        if (cityInput && !cityInput.readOnly) cityInput.value = city;
+        if (stateInput && !stateInput.readOnly) stateInput.value = state;
+        if (zipInput && !zipInput.readOnly) zipInput.value = zip;
+
+        // Protect Country field from being overwritten if it is locked
+        if (countrySelect && !countrySelect.hasAttribute('readonly') && !countrySelect.disabled) {
+            countrySelect.value = country;
+            // Trigger change event to keep your custom region UI logic synced
+            countrySelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (line2Input && !line2Input.readOnly) line2Input.value = addressLine2;
+
+        // Populate Google Metadata
+        if (idInput) idInput.value = place.id || "";
+        if (latInput) latInput.value = place.location?.lat().toFixed(6) || "";
+        if (lngInput) lngInput.value = place.location?.lng().toFixed(6) || "";
+
+        // 6. Update Address Line 1 and Sync
+        if (hiddenInput) {
+            hiddenInput.value = addressLine1;
+            // This triggers your 'input' listeners to clear red errors
+            hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        setTimeout(() => {
+            autocomplete.value = addressLine1;
+            // REMOVE name from the component again to be safe against re-renders
+            autocomplete.removeAttribute('name');
+        }, 1);
+    });
+
+    // Sync attributes so Django POST/HTMX works
+    autocomplete.id = oldInput.id;
+    autocomplete.name = "address_line_1";
+    autocomplete.className = oldInput.className; 
+    autocomplete.placeholder = oldInput.placeholder || "Input Address...｜輸入地址..."; 
+    autocomplete.style.colorScheme = 'light';
+
+    // 3. Swap the elements
+    oldInput.replaceWith(autocomplete);
+
+    // 4. Listener for manual clearing (when user backspaces or clicks 'X')
+    // autocomplete.addEventListener('input', (e) => {
+    //     const val = e.target.value;
+    //     hiddenAddressInput.value = val
+
+    //     if (!val) {
+    //         hiddenAddressInput.value = '';
+    //         // Remove error classes if they were added by a previous failed submit
+    //         const wrapper = autocomplete.closest('label');
+    //         wrapper?.classList.remove('border-error');
+    //     }
+    // });
+
+    // Inside your autocomplete.addEventListener('input', ...
+    autocomplete.addEventListener('input', (e) => {
+        const val = e.target.value;
+        hiddenAddressInput.value = val;
+
+        // IF USER MANUALLY CHANGES TEXT, THEY ARE NO LONGER VERIFIED
+        const verifiedInput = form.querySelector('[id$="id_is_verified_by_google"]');
+        if (verifiedInput) verifiedInput.value = "False";
+
+        if (!val) {
+            // Clear Google data if input is wiped
+            ['id_google_place_id', 'id_latitude', 'id_longitude'].forEach(suffix => {
+                const el = form.querySelector(`[id$="${suffix}"]`);
+                if (el) el.value = '';
+            });
+            
+            const wrapper = autocomplete.closest('label');
+            wrapper?.classList.remove('border-error');
+        }
+    });
+
+    // 5. Enable BOTH manual and autocomplete
+    autocomplete.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            // If the autocomplete dropdown is NOT open, allow the form to submit
+            const pacContainer = document.querySelector('.pac-container');
+            if (!pacContainer || pacContainer.style.display === 'none') {
+                // Let it submit manually
+                return;
+            }
+            // If dropdown IS open, prevent submit so user can select a place
+            e.preventDefault();
+        }
+    });
+}
+
+function initRegionLogic(form_id) {
+    const form = document.getElementById(form_id)
+    if (!form) return;
+
+    // initial toggle on load
+    toggleProvinceFields(form);
+
+    // watch for country changes
+    const countrySelect = form.querySelector('[name="country"]')
+    if (countrySelect) {
+        countrySelect.addEventListener('change', function() {
+            toggleProvinceFields(form)
+        })
+    }
+
+    const chinaProvinceSelect = document.querySelector('select[name="china_province"]');
+    if (chinaProvinceSelect) {
+        chinaProvinceSelect.addEventListener('change', function() {
+            if (this.value) {
+                // 1. Remove error class from the select itself
+                this.classList.remove('select-error');
+                // 2. Remove error styling from the parent label wrapper if it exists
+                const wrapper = document.querySelector('.china_field_wrapper');
+                if (wrapper) wrapper.classList.remove('border-error!', 'ring-error!');
+                // 3. (Optional) Hide the error text message below it
+                const errorLabel = wrapper?.nextElementSibling;
+                if (errorLabel && errorLabel.classList.contains('label')) {
+                    console.log("error label")
+                    errorLabel.classList.add('hidden');
+                }
+            }
+        });
+    }
+}
+
+function toggleProvinceFields(form) {
+    const country = form.querySelector('[name="country"]').value;
+    const address1 = form.querySelector('[id$="id_address_line_1"]').value;
+    const isChina = country === 'CN';
+    const isFillingAddress = address1 && address1.trim() !== "";
+    
+    const chinaWrapper = form.querySelector('.china_field_wrapper');
+    const regionWrapper = form.querySelector('.region_field_wrapper');
+    
+    if (chinaWrapper && regionWrapper) {
+        chinaWrapper.classList.toggle('hidden', !isChina);
+        regionWrapper.classList.toggle('hidden', isChina);
+
+        // Dynamic Browser-Level Required toggle
+        const chinaSelect = chinaWrapper.querySelector('select');
+        const regionInput = regionWrapper.querySelector('input');
+
+        if (chinaSelect) chinaSelect.required = (isChina && isFillingAddress);
+        if (regionInput) regionInput.required = (!isChina && isFillingAddress);
+    }
+}
+
+htmx.config.ignoreOobSwapErrors = true;
+console.log("ignoreOobSwapErrors: ",  htmx.config.ignoreOobSwapErrors)
 
 window.daysBetween = daysBetween;
 window.datePicker = datePicker;
@@ -714,12 +1436,18 @@ window.updateHeaderCartDetails = updateHeaderCartDetails;
 window.check_element_exist = check_element_exist;
 window.check_elements_exist = check_elements_exist;
 window.Swal = Swal
+window.confirmAction = confirmAction
 window.share_link = share_link
 window.delete_wish = delete_wish
 window.GLightbox = GLightbox
 window.change_thumbnail_image = change_thumbnail_image
 window.post_and_fetch_data = post_and_fetch_data
+window.htmx = htmx;
 
+window.preAutoComplete = preAutoComplete;
+window.initAutoComplete = initAutoComplete;
+window.initRegionLogic = initRegionLogic;
+window.toggleProvinceFields = toggleProvinceFields;
 
 // The SdkInitError: .start() expects a Promise. Received 'string' occurs 
 // because you are await-ing the createOrder() function before passing it to the PayPal session.
@@ -786,5 +1514,3 @@ window.post_and_fetch_data = post_and_fetch_data
 
 // Summary of the v6 Requirement:
 // The start() method is designed to prevent popup blockers. It needs the Promise so it can immediately open the window and then populate it with the Order ID once your server responds. By resolving it yourself first, you broke the "intent" chain required by the SDK.
-
-

@@ -184,7 +184,6 @@ def find_destined_work(request):
     gender = request.GET.get("gender")
     blood = request.GET.get("blood")
     color = request.GET.get("color")
-    print("name:", name, "dob:", dob, "gender:", gender, "blood:", blood, "color:", color)
     
     painting_products = Product.objects.filter(category__category_name="Oil Painting | 油畫")
 
@@ -212,16 +211,12 @@ def find_destined_work(request):
     painting_products_scores.sort(key=lambda d: list(d.values())[0], reverse=True)
     product_pk = next(iter(painting_products_scores[0]))
     destined_work = Product.objects.filter(pk=product_pk)
-
-    # destined_work = Post.objects.filter(pk=int(painting_products_scores[0]))
-    print("destined_work: ", destined_work)
     distined_work_json = {
         "product_name": destined_work[0].product_name,
         "product_description": destined_work[0].description,
         "product_image_url": str(destined_work[0].images.url),
         "product_url": destined_work[0].get_url(),
     }
-    print("distined_work_json: ", distined_work_json)
     
     # Example logic to select a post
     destined_data = {

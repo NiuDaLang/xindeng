@@ -223,7 +223,7 @@ label:hover ~ input:checked ~ label
   padding: 30px 10px;
 } */
 
-.dashboard_hero:after {
+/* .dashboard_hero:after {
     content: "";
     position: absolute;
     left: 0.5rem;
@@ -233,7 +233,7 @@ label:hover ~ input:checked ~ label
     background: transparent;
     border: 0.5rem solid #4b4743;
     border-radius: 1.8rem;
-}
+} */
 
 
 /* ##### dashboard sidebar pinup ##### */
@@ -987,98 +987,111 @@ body::selection {
     left: 100%;
     width: 4px;
     height: 100%;
-    background-color: theme('colors.base-content'); /* Tailwind theme helper */
+    background-color: theme('colors.neutral-content'); /* Tailwind theme helper */
 }
 
 /* round clock */
+/* 1. MAIN OUTER DIAL CONTAINER */
 .clock {
   --clock-size: 200px;
   --clock-black: #1b59c6;
   --clock-white: #f4eed7;
-  --clock-feature : #4b9aaa;
+  --clock-feature: #4b9aaa;
   --clock-bg: #1b5ac68a;
-}
-.clock {
+  
   height: var(--clock-size);
   width: var(--clock-size);
-  border-radius: calc(var(--clock-size) / 2);
+  border-radius: 50%;
   display: flex;
   justify-content: center;
+  align-items: center;
   position: relative;
 }
 
+/* 2. UNIFIED MOVING HANDS BASELINE MATRIX */
 .clock__second,
 .clock__minute,
-.clock__hour,
-.clock__indicator {
+.clock__hour {
   position: absolute;
-  left: calc(50% - 1px);
+  /* 🌟 THE GRID ALIGNMENT FIX: Position width explicitly and use left to center perfectly */
   width: 2px;
-  background: var(--clock-white);
-  transform-origin: bottom center;
-  z-index: 2;
-  border-radius: 1px;
+  left: calc(50% - 1px); 
+  bottom: 50%; 
+  
+  /* 🌟 TRANSFORM FIX: Keep ONLY transform-origin here so it doesn't clash with keyframe rotations! */
+  transform-origin: bottom center; 
+  border-radius: 9999px;
 }
 
+/* 3. SURGICAL HAND STYLING SPECS */
 .clock__second {
   height: calc((var(--clock-size) / 2) - 10px);
-  margin-top: 10px;
   background: var(--clock-feature);
-  animation: time 60s infinite steps(60);
-  z-index: 3;
+  /* animation: time 60s linear infinite; */
+  animation: time 60s steps(60) infinite;
+  z-index: 5;
 }
 
 .clock__minute {
   height: calc((var(--clock-size) / 2) - 20px);
-  margin-top: 20px;
-  opacity: 0.75;
+  background: var(--clock-white);
+  opacity: 0.85;
   animation: time 3600s linear infinite;
+  z-index: 4;
 }
 
 .clock__hour {
   height: calc((var(--clock-size) / 2) - 40px);
-  margin-top: 40px;
+  background: var(--clock-white);
   animation: time 43200s linear infinite;
+  z-index: 3;
 }
 
+/* 4. STATIC GEOMETRIC TICK MARKS EXCLUSION MATRIX */
 .clock__indicator {
-  height: calc((var(--clock-size) / 2) - 2px);
-  border-top: 2px solid var(--clock-feature);
-  background: none;
-
   position: absolute;
+  width: 2px;
+  height: calc((var(--clock-size) / 2) - 2px);
+  left: calc(50% - 1px);
+  top: 0;
+  
+  border-top: 2px solid var(--clock-feature);
+  background: none !important; /* Forces background clear out to reveal crisp tick lines */
+  transform-origin: bottom center;
+  z-index: 1;
+
   transform: rotateZ(calc(6deg * var(--i)));
 }
 
+/* Hourly structural ticks emphasis markers pass */
 .clock__indicator:nth-of-type(5n) {
   opacity: 1;
-  height: calc((var(--clock-size) / 2) - 7px);
   border-top: 7px solid var(--clock-white);
 }
 
+/* 5. CENTER PIVOT AXIS CAPSULE */
 .clock__axis {
   background: var(--clock-feature);
-  width: 5px;
-  height: 5px;
-  border-radius: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   position: absolute;
-  z-index: 4;
-  top: calc(var(--clock-size) / 2 - 3px);
+  z-index: 10;
+  top: calc(50% - 3px);
+  left: calc(50% - 3px);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
-/* 
-   The loop below handles the rotation for each section. 
-   In modern CSS, you can use --i to avoid writing 60 lines.
-*/
-/* .clock__indicator:nth-of-type(n) {
-  transform: rotateZ(calc(6deg * var(--i, 0)));
-} */
-
+/* 6. LINEAR ROTATIONAL TIMELINE TRACK */
 @keyframes time {
+  from {
+    transform: rotateZ(0deg);
+  }
   to {
     transform: rotateZ(360deg);
   }
 }
+
 
 /* Form errors */
 .input:has(+ .errorlist), .input:has(~ .text-error) {
@@ -1484,4 +1497,69 @@ gmp-place-autocomplete::part(clear-button):hover {
     color: white !important;
     border-radius: 2px;
     box-shadow: 0 0 5px rgba(59, 130, 246, 0.8);
+}
+
+/* Order_Complete html */
+/* 🌟 THE PRODUCTION CLEAN RECEIPT MATRIX */
+.box {
+    display: block; /* Changes to block display to allow standard downward content expansion */
+    width: 100%;
+    max-width: 42rem; /* Keeps table columns neat and centered on desktop viewports */
+    margin: 0 auto;
+    position: relative;
+    background-color: var(--fallback-b1, rgb(var(--b1))); /* Pulls your DaisyUI theme's white background safely */
+    /* box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); */
+}
+/* Premium accounting underline accent highlights */
+.zigzag-marker-highlight {
+    border-bottom: 4px double currentColor;
+    padding-bottom: 2px;
+}
+/* 🌟 THE MODERN ZIGZAG EDGE SYSTEM: Adds premium serrated edges to top and bottom borders */
+.zigzag {
+    background: conic-gradient(from -45deg at bottom, var(--color-base-300) 90deg, transparent 0) 50%/17px 100%;
+}
+.zigzag {
+    padding: 3rem 2rem;
+    border-radius: 4px;
+    position: relative;
+}  
+.zigzag::before,
+.zigzag::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background-size: 16px 10px;
+}
+/* Top serrated edge strip configuration */
+.zigzag::before {
+    top: -10px;
+    background-image: linear-gradient(135deg, var(--fallback-b1, rgb(var(--b1))) 25%, transparent 25%), 
+                      linear-gradient(225deg, var(--fallback-b1, rgb(var(--b1))) 25%, transparent 25%);
+    background-position: 0 0;
+}
+/* Bottom serrated edge strip configuration */
+.zigzag::after {
+    bottom: -10px;
+    background-image: linear-gradient(45deg, var(--fallback-b1, rgb(var(--b1))) 25%, transparent 25%), 
+                      linear-gradient(-45deg, var(--fallback-b1, rgb(var(--b1))) 25%, transparent 25%);
+    background-position: 0 0;
+}
+/* Fluid responsive stacking controls for tiny mobile layouts */
+@media screen and (max-width: 640px) {
+    .zigzag {
+        padding: 2rem 1rem !important;
+    }
+    .zigzag table {
+        font-size: 0.75rem !important;
+    }
+    .zigzag div.flex {
+        justify-content: center !important;
+    }
+    .zigzag table.min-w-\[35rem\] {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
 }

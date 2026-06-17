@@ -1,6 +1,6 @@
 {% block content %}
 {% load static %}
-    <div class="swiper">
+    <!-- <div class="swiper"> -->
         <!-- slides -->
         <!-- <div class="swiper-wrapper">
             <div class="swiper-slide">
@@ -25,14 +25,61 @@
         <!-- <div class="swiper-btn-prev text-primary"><i class="fa-solid fa-circle-chevron-left fa-2xl"></i></div>
         <div class="swiper-btn-next text-primary"><i class="fa-solid fa-circle-chevron-right fa-2xl"></i></div> -->
         <!-- scroll-bar -->
-        <!-- <div class="swiper-scrollbar"></div> -->
-    
-    
-        <!-- Video -->
-        <video style="width: 100%;" muted loop autoplay>
+        <!-- <div class="swiper-scrollbar"></div> -->   
+    <!-- </div> -->
+    <!-- Video -->
+    <div class="swiper min-h-[40dvh] sm:min-h-[50dvh] md:min-h-[60dvh] flex items-center justify-center rounded-2xl bg-base-300 shadow-xl relative z-10">
+        
+        <!-- LAYER 1: THE ANIMATED LOADING SKELETON LAYER -->
+        <div id="video-skeleton" class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-base-300 to-base-200 animate-pulse z-20 select-none">
+            <span class="loading loading-spinner loading-lg text-primary/40"></span>
+            <span class="text-[0.65rem] uppercase font-bold tracking-widest text-base-content/40 font-mono">Streaming Canvas...</span>
+        </div>
+
+        <!-- LAYER 2: THE HIGH-PERFORMANCE VIDEO CONTAINER -->
+        <!-- We upgrade the layering tag to z-30 so it sits cleanly on top of the skeleton loader -->
+        <video id="hero-video-player" 
+            class="w-full h-full object-cover opacity-0 transition-opacity duration-700 ease-in-out relative z-30" 
+            muted 
+            loop 
+            autoplay 
+            playsinline 
+            preload="auto">
             <source src="/static/videos/hero_video1.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
         </video>  
     </div>
 
+    <script>
+    {
+        // 🌟 INSULATED LIFECYCLE CONTROLLER ENGINE: Captures frame mounting loops cleanly
+        const videoPlayer = document.getElementById("hero-video-player");
+        const videoSkeleton = document.getElementById("video-skeleton");
 
+        if (videoPlayer && videoSkeleton) {
+            // The 'canplaythrough' event fires the exact millisecond the browser calculates 
+            // that it can play the asset end-to-end without stopping to buffer.
+            videoPlayer.addEventListener("canplaythrough", () => {
+                console.log("🎬 Hero Video Streaming Buffer Complete. Commencing fluid fade-in pass.");
+                
+                // 1. Fade the player into view using clean, hardware-accelerated transitions
+                videoPlayer.classList.remove("opacity-0");
+                videoPlayer.classList.add("opacity-100");
+                
+                // 2. Safely wipe the heavy animated loading skeleton from the DOM memory context
+                setTimeout(() => {
+                    videoSkeleton.remove();
+                }, 750); // Small matching delay allows the opacity transition to finish smoothly
+            }, { once: true }); // Ensure this handler only fires once per initial page mount loop
+
+            // # 🛡️ FALLBACK SAFETY GATE: If the video was already fully cached in browser memory,
+            // # it might have loaded before our event listener attached. Trigger the activation pass instantly if true.
+            if (videoPlayer.readyState >= 3) {
+                videoPlayer.classList.remove("opacity-0");
+                videoPlayer.classList.add("opacity-100");
+                videoSkeleton.remove();
+            }
+        }
+    }
+    </script>
 {% endblock %}

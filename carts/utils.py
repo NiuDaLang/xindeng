@@ -93,7 +93,6 @@ def calculate_shipping_cost(request, physical_items, available_services):
             if single_package_economy_charge is not None:
                 total_economy_shipping_charge += single_package_economy_charge
                 total_single_package_economy_charge += single_package_economy_charge
-        # print(f"个别包装总费用: Standard: {total_single_package_standard_charge}, Economy: {total_single_package_economy_charge}", )
 
     # calculate costs - BULK packages
     if len(bulk_package_items) > 0:
@@ -105,13 +104,11 @@ def calculate_shipping_cost(request, physical_items, available_services):
             total_standard_shipping_charge += bulk_package_standard_charge
         if bulk_package_economy_charge is not None:
             total_economy_shipping_charge += bulk_package_economy_charge
-        # print(f"捆包装产品总费用: {bulk_package_standard_charge}, Economy: {bulk_package_economy_charge}", )
 
     shipping_charge = min(total_standard_shipping_charge, total_economy_shipping_charge) \
                          if total_standard_shipping_charge != 0 \
                          and total_economy_shipping_charge != 0 \
                          else max(total_standard_shipping_charge, total_economy_shipping_charge)
-    # print("shipping_charge: ", shipping_charge)
     print("caluclated shipping cost: ", shipping_charge)
     return shipping_charge
 
@@ -408,9 +405,13 @@ def get_row_oob(row_id, label_en, label_zh, id_local, id_foreign, amount=0.00, a
 
 
 def get_cash_voucher_balance(request):
+    """Calculates true unallocated voucher funds remaining in a user's wallet."""
+    if not request.user.is_authenticated:
+        return Decimal('0.00')
     return CustomerVoucher.objects.filter(
         owner=request.user, 
-        is_used=False
+        is_used=False,
+        balance__gt=0
     ).aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
 
 
@@ -424,11 +425,9 @@ def update_applied_voucher(request, cart):
     updated_oob_string = []
 
     if voucher_applied > 0 and new_total_payable < voucher_applied:
-        # print("voucher needs update")
         updated_voucher_context = {'voucher_applied': new_total_payable}
         formatted_new_voucher_applied = intcomma(f"{new_total_payable:.2f}")
         formatted_new_remaining_balance = intcomma(f"{(voucher_balance - new_total_payable):.2f}")
-        # print("******** formatted_new_remaining_balance *******: ", formatted_new_remaining_balance )
 
         request.session["applied_voucher"]["applied_voucher_amount"] = str(new_total_payable)
         request.session["applied_voucher"]["applied_voucher_amount_foreign"] = str(new_total_payable_foreign)
@@ -643,13 +642,6 @@ def get_or_lock_checkout_rate(request, currency_code):
     return locked_rate
 
 
-def get_cash_voucher_balance(request):
-    return CustomerVoucher.objects.filter(
-        owner=request.user, 
-        is_used=False
-    ).aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
-
-
 def update_shipping_cost(request, cart):
     print("update_shipping_cost triggered")
     if not cart or cart.get_items_count() == 0:
@@ -672,7 +664,6 @@ def update_shipping_cost(request, cart):
     if shipping_data and shipping_data.get("is_calculated"):
         # If cart still has physical items
         if len(physical_cart_items) > 0:
-            print("update shipping case 1")
             available_services = ShippingCharge.objects.filter(pk__in=shipping_data['available_services_pks'])
             raw_new_shipping_cost = calculate_shipping_cost(request, physical_cart_items, available_services)
             formatted = intcomma(f"{raw_new_shipping_cost:.2f}")
@@ -682,7 +673,6 @@ def update_shipping_cost(request, cart):
                 # Strip out any commas if they were pre-applied inside the helper function
                 clean_foreign_decimal = Decimal(str(raw_foreign_amount).replace(',', ''))
             except (ValueError, TypeError):
-                print("value error")
                 clean_foreign_decimal = 0.0
             
             if is_integer:
@@ -716,7 +706,6 @@ def update_shipping_cost(request, cart):
 
         # If cart no longer has physical items
         else:
-            print("update shipping case 2")
             foreign_currency_symbol = CURRENCY_SYMBOL[foreign_currency_code]
             request.session.pop('shipping_data', None)
             request.session.modified = True
@@ -758,7 +747,6 @@ def update_shipping_cost(request, cart):
     # IF NO PHYSICAL ITEMS WERE THERE BEFORE
     elif not request.session.get("has_physical_items"):
         if len(physical_cart_items) > 0:
-            print("update shipping case 3")
             shipping_section_context = {
                 "cart": cart,
                 "addresses": addresses,
@@ -785,7 +773,6 @@ def update_shipping_cost(request, cart):
                 show=True
             )
         else:
-            print("update shipping case 4")
             shipping_html = """
                 <div id="shipping-section-wrapper" hx-swap-oob="true">
                     <h2 class="text-[1.25rem] mb-5">Shipping｜配送</h2>
@@ -824,10 +811,8 @@ def update_shipping_cost(request, cart):
     elif request.session.get("has_physical_items"):
         if len(physical_cart_items) > 0:
             if shipping_data:
-                print("update shipping case 5")
                 return "", ""
             else:
-                print("update shipping case 6")
                 shipping_section_context = {
                     "cart": cart,
                     "addresses": addresses,
@@ -858,7 +843,6 @@ def update_shipping_cost(request, cart):
                     show=True
                 )
         else:
-            print("update shipping case 7")
             shipping_html = """
                 <div id="shipping-section-wrapper" hx-swap-oob="true">
                     <h2 class="text-[1.25rem] mb-5">Shipping｜配送</h2>
@@ -912,7 +896,6 @@ def update_offer(request, cart):
 
     # If no coupon code is active, return clean empty strings
     if not code:
-        print("update offer 1 - No code active, keeping layouts safe.")
         return "", "", None
 
     perk = None
@@ -932,7 +915,6 @@ def update_offer(request, cart):
     if not perk:
         request.session.pop("offer_applied", None)
         request.session.modified = True
-        print("update offer 2 - Code has expired or been deleted.")
         
         fresh_input_html = render_to_string('store/partials/offer_input.html', {}, request=request)
         fresh_input_wrapper = f'<div id="offer-form-wrapper" hx-swap-oob="true">{fresh_input_html}</div>'
@@ -999,7 +981,6 @@ def update_offer(request, cart):
             <span id="summary-discount" hx-swap-oob="true">¥ ({intcomma(f"{discount_amount:.2f}")})</span>
             <span id="discount_amount_foreign" hx-swap-oob="true">{foreign_currency_symbol} ({format_fx_value(fx_offer, currency_code)})</span>
         '''
-        print("update offer 3 - Validated and updated successfully.")
         
         # 💡 Return exactly three items cleanly
         return offer_oob_html + pricing_oob, "", None
@@ -1007,7 +988,6 @@ def update_offer(request, cart):
     # Invalid / Ineligible Track
     if offer_input_html is not None and update_offer_error_trigger_data is not None:
         updated_offer_input_oob = f'<div id="offer-form-wrapper" hx-swap-oob="true">{offer_input_html}</div>'
-        print("offer no longer valid")
         
         fx_offer_zero = "0" if is_integer else "0.00"
         pricing_resets_oob = f'''
@@ -1017,11 +997,9 @@ def update_offer(request, cart):
 
         request.session.pop("offer_applied", None)
         request.session.modified = True
-        print("update offer 4")
         return pricing_resets_oob, updated_offer_input_oob, update_offer_error_trigger_data
 
     else:
-        print("update offer 5")
         return "", "", None
 
 
@@ -1214,49 +1192,50 @@ def get_cart_totals(request, cart):
     voucher_products_total_foreign = cart.get_voucher_products_subtotal_foreign(foreign_currency_code, locked_rate)
 
     cart_items_quantity = cart.get_items_count()
+    print("get_cart_totals - cart_items_quantity: ",  cart.get_items_count())
     return cart_grand_total, cart_total_foreign, physical_products_total, physical_products_total_foreign, \
         e_products_total, e_products_total_foreign, voucher_products_total, voucher_products_total_foreign, \
         foreign_currency_symbol, cart_items_quantity
 
 
-def checkout_apply_voucher(request, user_input): # save for later use
-    try:
-        with transaction.atomic():
-            # 1. Lock the user's voucher row so no other tab can read the balance yet
-            vouchers = (
-                CustomerVoucher.objects
-                .filter(owner=request.user, is_used=False, balance__gt=0)
-                .select_for_update()
-                .order_by('created_date')
-            )
-            remaining_to_deduct = user_input
+# def checkout_apply_voucher(request, user_input): # save for later use
+#     try:
+#         with transaction.atomic():
+#             # 1. Lock the user's voucher row so no other tab can read the balance yet
+#             vouchers = (
+#                 CustomerVoucher.objects
+#                 .filter(owner=request.user, is_used=False, balance__gt=0)
+#                 .select_for_update()
+#                 .order_by('created_date')
+#             )
+#             remaining_to_deduct = user_input
 
-            for voucher in vouchers:
-                if remaining_to_deduct <= 0:
-                    break
+#             for voucher in vouchers:
+#                 if remaining_to_deduct <= 0:
+#                     break
 
-                # Determine how much to take from THIS specific voucher
-                deduction = min(voucher.balance, remaining_to_deduct)
+#                 # Determine how much to take from THIS specific voucher
+#                 deduction = min(voucher.balance, remaining_to_deduct)
 
-                # Update voucher balance
-                voucher.balance = F('balance') - deduction
-                voucher.save()
+#                 # Update voucher balance
+#                 voucher.balance = F('balance') - deduction
+#                 voucher.save()
 
-                # Refresh to check if it's now empty
-                voucher.refresh_from_db()
-                if voucher.balance <= 0:
-                    voucher.is_used = True
-                    voucher.used_date = timezone.now()
-                    voucher.save()
+#                 # Refresh to check if it's now empty
+#                 voucher.refresh_from_db()
+#                 if voucher.balance <= 0:
+#                     voucher.is_used = True
+#                     voucher.used_date = timezone.now()
+#                     voucher.save()
 
-                remaining_to_deduct -= deduction
+#                 remaining_to_deduct -= deduction
 
-            # Final safety check
-            if remaining_to_deduct > 0:
-                # This should technically not happen due to initial total_avilable check
-                raise ValueError("Balance mismatch during processing.")
-    except Exception as e:
-        return htmx_invalid_offer_response(request, "Input Error\輸入錯誤", f"An error occurred while applying your balance.<br>禮品券適用過程中有錯誤。")
+#             # Final safety check
+#             if remaining_to_deduct > 0:
+#                 # This should technically not happen due to initial total_avilable check
+#                 raise ValueError("Balance mismatch during processing.")
+#     except Exception as e:
+#         return htmx_invalid_offer_response(request, "Input Error\輸入錯誤", f"An error occurred while applying your balance.<br>禮品券適用過程中有錯誤。")
 
 
 

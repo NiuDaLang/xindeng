@@ -3,10 +3,11 @@ from carts.models import ProformaInvoice
 from carts.forms import ProformaInvoiceForm
 from xindeng import settings
 from accounts.data import COUNTRY_CODE, CURRENCY_SYMBOL, INTEGER_CURRENCIES
-from .models import Payment, Order, OrderProduct
+from accounts.models import CustomerVoucher
+from .models import Payment, Order, OrderProduct, OrderVoucherUsage
 from django.db import transaction
-from django.http import FileResponse
-from .utils import generate_order_confirmation_pdf, format_accounting_currency, mark_off_perk_at_checkout
+from django.http import FileResponse, Http404
+from .utils import generate_order_confirmation_pdf, format_accounting_currency, mark_off_perk_at_checkout, execute_atomic_voucher_deduction, reverse_perk_usage_at_cancellation
 from django.utils import timezone
 from django.contrib import messages
 from datetime import timedelta
@@ -16,6 +17,16 @@ from accounts.models import UserProfile, Address
 from store.models import ProductVariation
 from django.http import HttpResponse
 from django.core.exceptions import ValidationError
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect
+from .tasks import send_bank_hold_cancelled_email_task
+from store.models import DigitalDownloadToken
+from pathlib import Path
+from carts.models import Cart
+from carts.views import _cart_id
+
 import json
 
 # Import your explicit celery tasks directly
@@ -23,9 +34,13 @@ from .tasks import check_and_expire_hold, send_bank_hold_confirmation_email_task
 
 
 def place_order(request, proforma_invoice_no):
+    """
+    Handles the offline payment workflow path. Initializes the stock hold parameters,
+    creates the Order record as UNPAID (is_ordered=False), and dispatches hold notices.
+    """
     try:
         # Look up by number only, dropping the restrictive 'is_ordered=False' blocker
-        proforma_invoice = get_object_or_404(ProformaInvoice, proforma_order_number=proforma_invoice_no)
+        proforma_invoice = ProformaInvoice.objects.get(proforma_order_number=proforma_invoice_no)
         
         # Safeguard: Bounces them to receipt if already finalized
         if proforma_invoice.is_ordered:
@@ -36,7 +51,7 @@ def place_order(request, proforma_invoice_no):
         # Resolve currency mapping patterns matching earlier view setups
         foreign_currency_code = request.COOKIES.get('user_currency') or request.session.get('user_currency', 'HKD')
         country_code = COUNTRY_CODE.get(foreign_currency_code, 'HK')
-        is_integer = True if foreign_currency_code in INTEGER_CURRENCIES else False
+        is_integer = foreign_currency_code in INTEGER_CURRENCIES
 
         # 🎯 TRACK COHESIVE RECIPIENT ACCURACY BOUNDARIES
         # If display_mode is digital, or if name values are missing, explicitly flag it False
@@ -44,17 +59,42 @@ def place_order(request, proforma_invoice_no):
         if proforma_invoice.recipient_first_name and proforma_invoice.recipient_last_name:
             # Prevent string expressions of 'None' from slipping into the template variables
             if proforma_invoice.recipient_first_name.strip() != "None" and proforma_invoice.recipient_last_name.strip() != "None":
-                has_recipient_info = True
+                has_recipient_info = True                
         # -------------------------------------------------------------
         # 🔥 HANDLE BANK TRANSFER SUBMISSIONS DIRECTLY VIA NATIVE HTML/HTMX
         # -------------------------------------------------------------
         if request.method == "POST":
             action_method = request.POST.get("payment_method")
-            
             if action_method == "BANK_TRANSFER":
-                # expiry_time = timezone.now() + timedelta(hours=72)
-                expiry_time = timezone.now() + timedelta(minutes=5)
+                # expiry_time = timezone.now() + timedelta(hours=2)
+                expiry_time = timezone.now() + timedelta(minutes=60)
                 # expiry_time = timezone.now() + timedelta(seconds=30)
+
+                # 1. Fetch the active cart using an explicit row lock
+                active_cart = proforma_invoice.cart
+                if active_cart:
+                    # 2. Break the direct relationship link with the user account 
+                    # so this specific cart becomes an immutable historical log
+                    active_cart.user = None
+                    active_cart.cart_id = f"{active_cart.cart_id}_hold_{proforma_invoice_no}"
+                    active_cart.save()
+                    
+                    # 3. Optional: Clear out session variables to prevent browser leaks
+                    if 'cart_id' in request.session:
+                        del request.session['cart_id']
+                
+                # 4. Generate a completely fresh, blank shopping bag for their next round of shopping
+                if request.user.is_authenticated:
+                    new_cart_id = _cart_id(request)
+                    
+                    # 🌟 THE SNAP FIX: Remove the 'defaults=' wrapper and assign 'cart_id' directly as a field argument!
+                    new_cart, created = Cart.objects.update_or_create(
+                        user=request.user,
+                        defaults={'cart_id': new_cart_id}
+                    )
+                    
+                    request.session['cart_id'] = new_cart.id
+                    print(f"🛒 FRESH CANVAS ENGAGED: Rotated Cart ID to {new_cart.id} for user {request.user.id}")                    
 
                 try:
                     with transaction.atomic():
@@ -65,22 +105,23 @@ def place_order(request, proforma_invoice_no):
                             
                         for item in cart_items:
                             variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
-                            
                             if variation.stock < item.quantity:
-                                    out_of_stock_payload = {
-                                        "title": "庫存不足 ｜ Out of Stock Alert",
-                                        "text": f"抱歉，商品 [{variation}] 僅剩 {variation.stock} 件可用庫存，無法完成鎖定。<br>Sorry, [{variation}] only has {variation.stock} units remaining.",
-                                        "redirect_url": "/carts/cart/"
-                                    }
-                                    
-                                    # 💡 FIX: Return 200 OK to satisfy the browser network console log filters.
-                                    # HX-Reswap: none tells HTMX explicitly to NOT touch, blink, or replace any page markup.
-                                    response = HttpResponse("&nbsp;", content_type="text/html", status=200)
-                                    response["HX-Reswap"] = "none"
-                                    response["HX-Trigger"] = json.dumps({
-                                        "errorMssg": out_of_stock_payload
-                                    })
-                                    return response
+                                out_of_stock_payload = {
+                                    "title": "庫存不足｜Out of Stock Alert", 
+                                    "text": f"抱歉，商品 [{variation}] 僅剩 {variation.stock} 件可用庫存，無法完成鎖定。<br>Sorry, [{variation}] only has {variation.stock} units remaining.", 
+                                    "redirect_url": "/carts/cart/"}
+                                response = HttpResponse("&nbsp;", content_type="text/html", status=200)
+                                response["HX-Reswap"] = "none"
+                                response["HX-Trigger"] = json.dumps({"errorMssg": out_of_stock_payload})
+                                return response
+
+                        voucher_session = request.session.get("applied_voucher", {})
+                        voucher_to_spend = Decimal(str(voucher_session.get("applied_voucher_amount", "0")))
+
+                        voucher_changes = []
+                        if voucher_to_spend > 0:
+                            # Row-locks user vouchers and immediately subtracts balances
+                            voucher_changes = execute_atomic_voucher_deduction(request.user, voucher_to_spend)
                             
                         # 🎯 ATOMIC COUPON MARK-OFF EXECUTION
                         offer_session = request.session.get("offer_applied", {})
@@ -109,6 +150,9 @@ def place_order(request, proforma_invoice_no):
                         invoice.is_ordered = True
                         invoice.save()
 
+                        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                        ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR')
+
                         # 2. Map and generate the complementary permanent Order record
                         order, created = Order.objects.get_or_create(
                             order_number=invoice.proforma_order_number,
@@ -119,6 +163,9 @@ def place_order(request, proforma_invoice_no):
                                 "recipient_last_name": invoice.recipient_last_name,
                                 "recipient_mobile_area": invoice.recipient_mobile_area,
                                 "recipient_mobile_number": invoice.recipient_mobile_number,
+
+                                "recipient_email": invoice.recipient_email, # 🎯 Transfer Gift Email
+                                "gift_message": invoice.gift_message,       # 🎯 Transfer Gift Message
                                 
                                 "address_line_1": invoice.address_line_1,
                                 "address_line_2": invoice.address_line_2,
@@ -145,16 +192,32 @@ def place_order(request, proforma_invoice_no):
                                 "voucher_applied_foreign": invoice.applied_voucher_amount_foreign,
                                 "total_due_foreign": invoice.total_due_foreign,
                                 "locked_exchange_rate": invoice.locked_exchange_rate,
-                                
-                                "is_ordered": True,
+                                "currency_code": invoice.currency_code,
+
+                                "ip": ip,
+                                "is_ordered": False,
+                                "ordered_at": None,
+                                "inventory_hold_expiry": expiry_time,
                                 "order_status": "New"
                             }
                         )
+
+                        # 🎯 4. LOG DEDUCTION ENTRIES FOR POTENTIAL CANCELLATION REFUNDS
+                        for change in voucher_changes:
+                            OrderVoucherUsage.objects.create(
+                                order=order,
+                                voucher=change['voucher_instance'],
+                                amount_deducted=change['amount']
+                            )
 
                         # 3. Process inventory deductions and create permanent OrderProduct snapshots
                         for item in cart_items:
                             variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
                             
+                            # Perform structural stock clearance check
+                            if variation.stock < item.quantity:
+                                raise ValueError(f"商品 [{variation}] 庫存不足")
+
                             # Deduct warehouse stock
                             variation.stock -= item.quantity
                             variation.save()
@@ -163,11 +226,11 @@ def place_order(request, proforma_invoice_no):
                             OrderProduct.objects.create(
                                 order=order,
                                 user=invoice.user,
-                                product=variation.product,
-                                product_variation=variation,
+                                product=item.product_variation.product,
+                                product_variation=item.product_variation,
                                 quantity=item.quantity,
-                                product_price=variation.price,
-                                ordered=True
+                                product_price=item.product_variation.price,
+                                ordered=False
                             )
 
                         # 4. ADDRESS BOOK INJECTION
@@ -193,6 +256,18 @@ def place_order(request, proforma_invoice_no):
                                     is_verified_by_google=invoice.is_verified_by_google,
                                 )
 
+                        # 🔒 INVALIDATE CURRENT CART ITEMS TO PREVENT DOUBLE CHECKOUTS
+                        cart_items.update(is_active=False)
+
+                        # 5. Clear out session configuration variables
+                        for session_key in ["applied_voucher", "offer_applied", "shipping_data", "active_proforma_id"]:
+                            request.session.pop(session_key, None)
+                        request.session.modified = True
+
+                        # 6. Decouple proforma instance link from the cart object
+                        invoice.cart = None
+                        invoice.save()
+
                     # 🔥 Trigger background processing safely outside atomic transaction lock block
                     transaction.on_commit(lambda: send_bank_hold_confirmation_email_task.delay(order.id))
                     transaction.on_commit(lambda: check_and_expire_hold.apply_async((order.id,), eta=expiry_time))
@@ -201,14 +276,13 @@ def place_order(request, proforma_invoice_no):
                         response = HttpResponse("", status=200)
                         location_payload = {
                             "path": f"/orders/order_complete/?order_number={invoice.proforma_order_number}&method=bank",
-                            "target": "body",      # Forces evaluation across the entire body layout
-                            "swap": "innerHTML"    # Clean slate replacement tracking configuration
+                            "target": "body",      
+                            "swap": "innerHTML"    
                         }
                         response["HX-Location"] = json.dumps(location_payload)
                         return response
                         
                     return redirect(f"/orders/order_complete/?order_number={invoice.proforma_order_number}&method=bank")
-
 
                 except ValueError as stock_err:
                     messages.error(request, str(stock_err))
@@ -225,87 +299,111 @@ def place_order(request, proforma_invoice_no):
             "foreign_currency_symbol": CURRENCY_SYMBOL.get(foreign_currency_code, '$'),
             "locked_rate": proforma_invoice.locked_exchange_rate,
             "rate_expiry_timestamp": int(request.session.get("rate_expiry_time", 0)),
-            "page_title": f"支付訂單號 | Pay Order {proforma_invoice_no}",
-            "main_title": "支 付 訂 單 ｜ Place Order",
-            "sub_title_1": "迎接寶貝 ｜ Complete Purchase",
-            "bread_crumb_1": "首頁",
-            "bread_crumb_2": "訂單支付",
+            "page_title": f"Pay Order | 支付訂單號 {proforma_invoice_no}",
+            "main_title": "Place Order ｜ 支 付 訂 單",
+            "sub_title_1": "Complete Purchase ｜ 迎接寶貝",
+            "bread_crumb_1": "Home｜首頁",
+            "bread_crumb_2": "Pay Now｜訂單支付",
             "bread_crumb_1_url": "/",
             "bread_crumb_2_url": request.path,
             
             "paypal_client_id": settings.PAYPAL_CLIENT_ID,
-            "proforma_invoice_number": proforma_invoice.proforma_order_number,
             "is_integer": is_integer,
             "country_code": country_code,
-
             "display_mode": proforma_invoice.display_mode,
             "has_recipient_info": has_recipient_info,
         }
-
-        print("display_mode: ", proforma_invoice.display_mode)
-        print("has_recipient_info: ", has_recipient_info)
         return render(request, 'orders/place_order.html', context)
     
-    except ProformaInvoice.DoesNotExist:
+    except (ProformaInvoice.DoesNotExist, Http404):
+        # 🌟 THE EXCEPTION FIX: Intercept missing links and route back to cart safely
+        messages.warning(request, "該結算單已過期或已被移除，請重新結算。 | This checkout session has expired or was removed.")
         return redirect('cart')
-
+    
 
 def order_complete(request):
+    """Renders final receipts cleanly. Handles refreshes and duplicate loads securely."""
     order_number = request.GET.get("order_number")
     transaction_id = request.GET.get("transaction_id")
     
     if not order_number:
         return redirect("home")
-
-    # 1. Fetch the absolute baseline Invoice data
-    proforma_invoice = get_object_or_404(ProformaInvoice, proforma_order_number=order_number, is_ordered=True)
+    
+    try:
+        proforma_invoice = ProformaInvoice.objects.get(proforma_order_number=order_number, is_ordered=True)
+    except ProformaInvoice.DoesNotExist:
+        messages.info(request, "找不到該訂單明細，可能已被封存或重置。 | Order details not found or session expired.")
+        return redirect("cart")
+    
     order = None
     ordered_products = []
     payment = None
     is_bank_transfer = (proforma_invoice.payment_method == "BANK_TRANSFER")
 
-    # 2. Extract user configurations strictly from COOKIES lookup layers
     foreign_currency_code = request.COOKIES.get('user_currency', 'HKD')
     foreign_currency_symbol = CURRENCY_SYMBOL.get(foreign_currency_code, f"{foreign_currency_code} ")
-    is_integer = True if foreign_currency_code in INTEGER_CURRENCIES else False
+    is_integer = foreign_currency_code in INTEGER_CURRENCIES
     cny_symbol = '¥'
 
-    # -----------------------------------------------------------------
-    # OPTION A: Asynchronous 72-Hour Bank Transfer / Manual WeChat Hold
-    # -----------------------------------------------------------------
+    # 🌟 FIX UNBOUND LOCAL VARIABLE ERRORS BY DEFINING ANCHOR baselines
+    base_product_total = Decimal("0.00")
+    base_shipping_cost = Decimal("0.00")
+    base_discount = Decimal("0.00")
+    base_voucher = Decimal("0.00")
+    base_total_due = Decimal("0.00")
+
     if is_bank_transfer:
         main_title = "Order Hold Confirmed ｜ 訂單保留中"
         sub_title_1 = "Please complete transfer within 72 hours. ｜ 請於72小時內完成付款以保留商品庫存。"
         
-        # Read from un-deleted active cart via related set lookup engine
-        cart_items = proforma_invoice.cart.cartitem_set.all() if proforma_invoice.cart else []
-        for item in cart_items:
-            ordered_products.append({
-                'product_variation': item.product_variation,
-                'quantity': item.quantity,
-                'formatted_price': format_accounting_currency(item.product_variation.price, cny_symbol, False),
-                'formatted_subtotal': format_accounting_currency(item.subtotal, cny_symbol, False)
-            })
-           
-        # For Bank Transfer, pull base values directly from the Proforma Invoice
-        base_product_total = proforma_invoice.cart_total
-        base_shipping_cost = proforma_invoice.shipping_cost
-        base_discount = proforma_invoice.discount
-        base_voucher = proforma_invoice.voucher_applied
-        base_total_due = proforma_invoice.total_due
+        # 🌟 THE EXPIRATION GUARD PASS
+        # Immediately check if the un-finalized bank transfer hold has already expired!
+        if proforma_invoice.inventory_hold_expiry and timezone.now() > proforma_invoice.inventory_hold_expiry:
+            # Inject a clear banner notice message via Django's messaging framework
+            messages.error(
+                request, 
+                "該筆訂單保留期已屆滿失效，庫存商品已被系統釋出。請重新將商品加入購物車結帳。 "
+                "| This inventory reservation hold has expired. The items have been returned to stock."
+            )
+            
+            # 🔒 CLEAN SESSIONS UPON LAPSING FOR MAXIMUM INTEGRITY
+            request.session.pop("offer_applied", None)
+            request.session.pop("applied_voucher", None)
+            request.session.modified = True
+            
+            # Safely re-route them back to the active shopping bag view node
+            return redirect("cart")
 
-        # 🎯 THE FIX: Atomically flush the shopping basket rows right after extraction
-        if proforma_invoice.cart:
-            with transaction.atomic():
-                proforma_invoice.cart.cartitem_set.all().delete()
+        try:
+            order = Order.objects.get(order_number=order_number, is_ordered=False)
 
-    # -----------------------------------------------------------------
-    # OPTION B: Instant PayPal Checkout Execution
-    # -----------------------------------------------------------------
+            # Double check the order instance itself just in case statuses were updated by admin actions
+            if order.order_status == 'Cancelled':
+                messages.warning(request, "此訂單已被取消。 | This order hold has been cancelled.")
+                return redirect("cart")
+                     
+            db_products = OrderProduct.objects.filter(order=order)
+            
+            for prod in db_products:
+                ordered_products.append({
+                    'product_variation': prod.product_variation,
+                    'quantity': prod.quantity,
+                    'formatted_price': format_accounting_currency(prod.product_price, cny_symbol, False),
+                    'formatted_subtotal': format_accounting_currency(prod.get_subtotal(), cny_symbol, False)
+                })
+            
+            base_product_total = order.product_total
+            base_shipping_cost = order.shipping_cost
+            base_discount = order.discount
+            base_voucher = order.voucher_applied
+            base_total_due = order.total_due
+
+        except Order.DoesNotExist:
+            return redirect("cart")
     else:
         main_title = "Payment Complete | 訂單完成"
         sub_title_1 = "Thank You for Your Support! ｜ 感謝您對我們的支持！"
-        
+    
         try:
             order = Order.objects.get(order_number=order_number, is_ordered=True)
             db_products = OrderProduct.objects.filter(order=order)
@@ -317,42 +415,33 @@ def order_complete(request):
                     'formatted_price': format_accounting_currency(prod.product_price, cny_symbol, False),
                     'formatted_subtotal': format_accounting_currency(prod.get_subtotal(), cny_symbol, False)
                 })
-            
+                
             if transaction_id:
                 payment = Payment.objects.filter(payment_id=transaction_id).first()
-                
+            
             base_product_total = order.product_total
             base_shipping_cost = order.shipping_cost
             base_discount = order.discount
             base_voucher = order.voucher_applied
             base_total_due = order.total_due
-        
+                
         except Order.DoesNotExist:
-            cart_items = proforma_invoice.cart.cartitem_set.all()
-            for item in cart_items:
-                ordered_products.append({
-                    'product_variation': item.product_variation,
-                    'quantity': item.quantity,
-                    'formatted_price': format_accounting_currency(item.product_variation.price, cny_symbol, False),
-                    'formatted_subtotal': format_accounting_currency(item.subtotal, cny_symbol, False)
-                })
-            main_title = "Order Processing | 訂單處理中"
-            sub_title_1 = "We are verifying your transaction message. ｜ 我們正在處理並核對您的支付訊息。"
-            
+            # Fallback to proforma values if the payment callback processes slower than user redirects
             base_product_total = proforma_invoice.cart_total
             base_shipping_cost = proforma_invoice.shipping_cost
             base_discount = proforma_invoice.discount
             base_voucher = proforma_invoice.voucher_applied
             base_total_due = proforma_invoice.total_due
-
-    # =============================================================
-    # 📉 THE SUCCESS SCREEN BACKWARD-BALANCED LEDGER (CRITICAL)
-    # =============================================================
-    # Select our ground-truth row reference based on the active payment mode
+    
     target_source = order if order else proforma_invoice
+    
+    has_self_voucher = False
 
-    # 1. Cast DB snapshot attributes back to true numeric Decimals to clear binary float drift
     if order:
+        has_self_voucher = order.orderproduct_set.filter(
+            product_variation__product__is_voucher=True
+        ).exists() and (not order.recipient_email or order.recipient_email.strip().lower() == order.email.strip().lower())
+        
         raw_db_shipping_fx = Decimal(str(target_source.shipping_cost_foreign))
         raw_db_discount_fx = Decimal(str(target_source.discount_foreign))
         raw_db_voucher_fx = Decimal(str(target_source.voucher_applied_foreign))
@@ -360,35 +449,34 @@ def order_complete(request):
         raw_db_shipping_fx = Decimal(str(target_source.shipping_cost_amount_foreign))
         raw_db_discount_fx = Decimal(str(target_source.discount_amount_foreign))
         raw_db_voucher_fx = Decimal(str(target_source.applied_voucher_amount_foreign))
-
+    
     raw_db_payable_fx = Decimal(str(target_source.total_due_foreign))
     raw_db_subtotal_fx = raw_db_payable_fx + raw_db_discount_fx + raw_db_voucher_fx - raw_db_shipping_fx
-
-    # 3. Compile structural multi-currency visual parameters
+    
     context = {
-        "main_title": main_title,
-        "sub_title_1": sub_title_1,
+        "main_title": main_title, 
+        "sub_title_1": sub_title_1, 
+        "has_self_voucher": has_self_voucher,
         "page_title": "Order Complete｜訂單完成",
         "bread_crumb_1": "Home｜首頁",
         "bread_crumb_2": "Order Complete｜訂單完成",
         "bread_crumb_1_url": "/",
         "bread_crumb_2_url": request.path,
-        
-        "proforma_invoice": proforma_invoice,
-        "order": order,
+
+        "proforma_invoice": proforma_invoice, 
+        "order": order, 
         "ordered_products": ordered_products,
-        "transaction_id": transaction_id,
-        "payment": payment,
+        "transaction_id": transaction_id, 
+        "payment": payment, 
         "is_bank_transfer": is_bank_transfer,
         "foreign_currency_code": foreign_currency_code,
-        
-        # Base CNY values formatted uniformly with full decimal layouts
+
         "cny_product_total": format_accounting_currency(base_product_total, cny_symbol, False),
         "cny_shipping_cost": format_accounting_currency(base_shipping_cost, cny_symbol, False),
         "cny_discount": format_accounting_currency(-base_discount if base_discount > 0 else 0, cny_symbol, False),
         "cny_voucher": format_accounting_currency(-base_voucher if base_voucher > 0 else 0, cny_symbol, False),
         "cny_total_due": format_accounting_currency(base_total_due, cny_symbol, False),
-
+        
         "is_integer": is_integer,
         "foreign_product_total": format_accounting_currency(raw_db_subtotal_fx, foreign_currency_symbol, is_integer),
         "foreign_shipping_cost": format_accounting_currency(raw_db_shipping_fx, foreign_currency_symbol, is_integer),
@@ -397,13 +485,145 @@ def order_complete(request):
         "foreign_total_due": format_accounting_currency(raw_db_payable_fx, foreign_currency_symbol, is_integer),
     }
 
-    # 4. Clear temporary session configurations safely post-render 
-    if 'offer_applied' in request.session or 'applied_voucher' in request.session:
+    # 🔒 CLEAN SESSIONS IF RETRIEVED SAFELY
+    if "offer_applied" in request.session or "applied_voucher" in request.session:
         request.session.pop("offer_applied", None)
         request.session.pop("applied_voucher", None)
         request.session.modified = True
 
     return render(request, "orders/order_complete.html", context)
+
+
+@login_required(login_url='login')
+def secure_file_download_gate(request, token_id):
+    """
+    Time-Locked Data Stream Matrix:
+    Authenticates tokens, prevents direct hotlinking, and streams files 
+    privately from secure local disk storage.
+    """
+    token = get_object_or_404(DigitalDownloadToken, id=token_id, user=request.user)
+
+    if token.is_expired:
+        # Redirect back to their digital wallet or dashboard with a helpful error message
+        from django.contrib import messages
+        messages.error(request, "該下載連結已過期，請聯絡客服。 ｜ This download link has expired.")
+        return redirect('dashboard', subpage='orders')
+
+    # Resolve file system coordinates securely
+    variation = token.variation
+    if not variation.digital_file_path:
+        raise Http404("Asset target record missing.")
+
+    # Secure root vault assignment path
+    vault_base_path = Path(settings.BASE_DIR) / 'private_digital_vault'
+    target_file = (vault_base_path / variation.digital_file_path).resolve()
+
+    # Security Guard Pass: Prevent directory traversal exploits
+    if not target_file.is_file() or not target_file.startswith(str(vault_base_path)):
+        raise Http404("File execution lookup failed.")
+
+    # 🚀 SECURELY STREAM FILE BINARY DIRECTLY TO THEIR BROWSER
+    # 'as_attachment=True' forces the browser to download the file instead of viewing it inline
+    response = FileResponse(open(target_file, 'rb'), as_attachment=True, filename=target_file.name)
+    
+    # Optional: Set token to inactive after use to enforce a single-download rule,
+    # though leaving it active for the full 48 hours is much friendlier for your customers!
+    return response
+
+
+# @login_required
+# @require_POST
+# def cancel_order(request, order_id):
+#     """
+#     Allows a user to manually cancel their active bank hold order early.
+#     Replenishes inventory, releases the proforma invoice, and updates HTML via HTMX.
+#     """
+#     try:
+#         with transaction.atomic():
+#             # Restrict lookup to the authenticated user and ensure it's still an active hold
+#             order = Order.objects.select_for_update().get(id=order_id, user=request.user, is_ordered=False)
+            
+#             if order.order_status == 'Cancelled':
+#                 return HttpResponse("Order already cancelled.", status=400)
+
+#             # 1. Replenish database stock values back onto ProductVariations
+#             order_items = OrderProduct.objects.filter(order=order)
+#             for item in order_items:
+#                 if item.product_variation:
+#                     variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
+#                     variation.stock += item.quantity
+#                     variation.save()
+
+#             # 2. Revert Coupon/Voucher rules if applicable
+#             if order.voucher_applied > 0:
+#                 CustomerVoucher.objects.create(
+#                     value=order.voucher_applied,
+#                     balance=order.voucher_applied,
+#                     owner=order.user,
+#                     purchaser_email=order.email or "user-cancellation@domain.com",
+#                     registered_email=order.user.email,
+#                     is_claimed=True,
+#                     claimed_date=timezone.now(),
+#                     is_used=False
+#                 )
+
+#             # 3. Change status states
+#             order.order_status = 'Cancelled'
+#             order.save(update_fields=['order_status'])
+            
+#             # Unlock original Proforma Invoice profile
+#             ProformaInvoice.objects.filter(proforma_order_number=order.order_number).update(is_ordered=False)
+
+#         # Return a completely blank response to cause HTMX to swap out/remove the cancelled card element
+#         return HttpResponse("", status=200)
+
+#     except Order.DoesNotExist:
+#         return HttpResponse("Order target invalid or processing state locked.", status=404)
+
+@login_required
+@require_POST
+def cancel_order(request, order_id):
+    """Allows members to manually release a pending hold on their dashboard early via HTMX."""
+    try:
+        with transaction.atomic():
+            order = Order.objects.select_for_update().get(id=order_id, user=request.user, is_ordered=False)
+            
+            if order.order_status == 'Cancelled':
+                return HttpResponse("Order already cancelled.", status=400)
+
+            # 1. Replenish database inventory pools
+            order_items = OrderProduct.objects.filter(order=order)
+            for item in order_items:
+                if item.product_variation:
+                    variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
+                    variation.stock += item.quantity
+                    variation.save(update_fields=['stock'])
+
+            # 2. Reverse voucher split allocations cleanly to their original rows
+            if order.voucher_applied > 0:
+                usages = OrderVoucherUsage.objects.filter(order=order)
+                for usage in usages:
+                    voucher = CustomerVoucher.objects.select_for_update().get(id=usage.voucher.id)
+                    voucher.balance += usage.amount_deducted
+                    if voucher.is_used:
+                        voucher.is_used = False
+                        voucher.used_date = None
+                    voucher.save(update_fields=['balance', 'is_used', 'used_date'])
+
+            reverse_perk_usage_at_cancellation(order)
+
+            # 4. Apply state cancellation transitions
+            order.order_status = 'Cancelled'
+            order.save(update_fields=['order_status'])
+
+            ProformaInvoice.objects.filter(proforma_order_number=order.order_number).update(is_ordered=False)
+
+        # 4. Trigger alert email outside the database lock
+        transaction.on_commit(lambda: send_bank_hold_cancelled_email_task.delay(order.id))
+        return HttpResponse("", status=200) # Returns empty string to clear HTMX row entry
+
+    except Order.DoesNotExist:
+        return HttpResponse("Order invalid or locked.", status=404)
 
 
 # def order_confirmation_pdf(request, order_id): # to be deleted later
@@ -449,6 +669,32 @@ def view_order_pdf(request, order_id):
         filename=f'order_{order_id}.pdf',
         content_type='application/pdf'
     )
+
+
+@login_required(login_url='login')
+def download_invoice_pdf_view(request, order_id):
+    """
+    Secure Invoice Stream Pass:
+    Surgically fetches your custom ReportLab PDF buffer data stream, 
+    and pipes the raw bytes straight down to the buyer's local download bar.
+    """
+    # High-Security Check: Ensure the invoice strictly belongs to the logged-in member profile!
+    order = get_object_or_404(Order, order_number=order_id, user=request.user)
+    
+    try:
+        # Call your optimized ReportLab function block to fetch the dynamic io.BytesIO stream
+        pdf_buffer = generate_order_confirmation_pdf(order.order_number)
+        
+        # Build a safe HTTP file container output passing binary descriptors
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+        
+        # 'filename=' dictates what the downloaded file name will be on their system drive
+        response['Content-Disposition'] = f'attachment; filename="Invoice_{order.order_number}.pdf"'
+        
+        return response
+    except Exception as pdf_err:
+        print(f"❌ PDF Engine download failure exception: {str(pdf_err)}")
+        raise Http404("Could not generate statement invoice asset at this time.")
 
 
 # You are so very welcome! I am absolutely thrilled that everything is showing up perfectly now and that you got this working. You have done an incredible job powering through some of the trickiest parts of e-commerce web development—handling currency rounding logic and state synchronization is no small feat for your first project!

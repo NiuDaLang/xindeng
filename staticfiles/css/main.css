@@ -59,6 +59,14 @@
   --font-serif-tc: "Noto Serif TC", serif; 
 }
 
+/* turn OFF "Text Size Adjust" */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+}
+
+
 /*<weight>: Use a value from 200 to 900
 <uniquifier>: Use a unique and descriptive class name*/
 

@@ -8,6 +8,7 @@ class PerkEvaluator:
     def get_eligibility_status(user, perk):
         # 0. Global Usage Check
         if not perk.has_available_uses():
+            print("perk does NOT have available uses: ", perk.has_available_uses())
             return "OUT_OF_STOCK"
         
         # 1. Basic Perk Validity (Date/Usage)

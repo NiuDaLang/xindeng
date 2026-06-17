@@ -48,6 +48,12 @@
         <div class="flex w-full flex-col lg:flex-row">
             <!-- LEFT - address -->
             <div class="w-[40%] card bg-base-300 rounded-box p-3">
+                <!-- GLOBAL FORM LEGEND BANNER CONTAINER -->
+                <div class="mt-2 p-2.5 rounded-lg border border-base-content/10 text-[0.65rem] text-base-content/70 space-y-0.5 leading-normal select-none bg-info/5">
+                    <p class="font-bold text-base-content/90"><i class="fa-solid fa-circle-info text-primary mr-0.5"></i> Form Guide ｜ 填寫指南</p>
+                    <p>Fields decorated with a red asterisk (<span class="text-error font-bold">*</span>) are strictly mandatory before your transaction gateways can unlock.</p>
+                    <p class="opacity-80">標註紅星 (<span class="text-error font-bold">*</span>) 的欄位為必填項。填寫完畢即可自動激活下方的支付網關。</p>
+                </div>
                 <form id="proforma_invoice_form" 
                         method="POST" 
                         data-is-china="{{ is_china_order|yesno:'true,false' }}" 
@@ -55,9 +61,9 @@
                     {% csrf_token %}
                     <h3 class="my-3 text-center font-bold">
                         {% if display_mode == "PHYSICAL" or display_mode == "PHYSICAL_AND_VOUCHER" %}
-                        <i class="fa-solid fa-truck"></i>&nbsp;Delivery &  Details｜配送&訊息
+                        <i class="fa-solid fa-truck"></i>&nbsp;Delivery & Details｜配送&訊息
                         {% endif %}
-                    </h3>
+                    </h3>                    
                     <div class="flex flex-col gap-3 py-5 w-full">
                     <!-- ======================================================= -->
                     <!-- CATEGORY 1: PHYSICAL OR PHYSICAL + VOUCHER MIXED CARTS  -->
@@ -65,12 +71,12 @@
                         {% if display_mode == "PHYSICAL" or display_mode == "PHYSICAL_AND_VOUCHER" %}
                             <!-- contact details -->
                             <div>
-                                <h5 class="text-xs font-semibold">Contact Information｜聯絡資訊</h5>
+                                <h5 class="text-xs font-semibold">Contact Information ｜ 聯絡資訊 <span class="text-error font-bold">*</span></h5>
                                 <label class="input input-border w-full flex max-w-none items-center gap-2">
                                     <i class="fa-solid fa-envelope"></i>
                                     {{ proforma_invoice_form.email }}
                                 </label>
-                                <div class="text-[0.5rem]">* For order updates and receipts｜用於發送訂單更新與通知</div>
+                                <div class="text-[0.5rem]">* For order updates and receipts ｜ 用於發送訂單更新與通知</div>
                             </div>
                             <!-- recipient's name -->
                             <div>
@@ -79,33 +85,40 @@
                                     <div class="flex gap-1 w-full">
                                         <label class="input input-border flex w-full items-center gap-2">
                                             <i class="fa-solid fa-person"></i>
-                                            {{ proforma_invoice_form.recipient_first_name }}
+                                            {{ proforma_invoice_form.recipient_first_name }} <span class="text-error font-bold">*</span>
                                         </label>
                                         <label class="input input-border flex w-full items-center gap-2">
                                             <i class="fa-solid fa-people-roof"></i>
-                                            {{ proforma_invoice_form.recipient_last_name }}
+                                            {{ proforma_invoice_form.recipient_last_name }} <span class="text-error font-bold">*</span>
                                         </label>
                                     </div>
-                                    <div class="join w-full">
-                                        {{ proforma_invoice_form.recipient_mobile_area }}
-                                        <div class="flex-grow">
-                                            <label class="input validator join-item w-full">
-                                                <i class="fa-solid fa-mobile-screen-button"></i>
-                                                {{ proforma_invoice_form.recipient_mobile_number }}
-                                            </label>
-                                            <div class="validator-hint hidden">請輸入手機號碼 | Enter valid phone number.</div>
+                                    <!-- Mobile Contacts Phone Number Input Join Group -->
+                                    <div class="w-full space-y-1">
+                                        <span class="text-[0.65rem] font-bold text-base-content/60 pl-1 relative block pr-4 w-fit">
+                                            Mobile Phone ｜ 手機號碼
+                                            <span class="text-error font-bold absolute right-0 top-0">*</span>
+                                        </span>
+                                        <div class="join w-full">
+                                            {{ proforma_invoice_form.recipient_mobile_area }} 
+                                            <div class="flex-grow">
+                                                <label class="input validator join-item w-full">
+                                                    <i class="fa-solid fa-mobile-screen-button"></i>
+                                                    {{ proforma_invoice_form.recipient_mobile_number }}
+                                                </label>
+                                                <div class="validator-hint hidden">請輸入手機號碼 | Enter valid phone number.</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <!-- delivery address -->
                             <div>
-                                <h5 class="text-xs font-semibold">Delivery Address｜配送地址</h5>
+                                <h5 class="text-xs font-semibold">Delivery Address ｜ 配送地址</h5>
                                 <div class="flex flex-col gap-2">
                                     <div class="w-full text-xs">
                                         <label class="w-full input input-border flex max-w-none items-center gap-2">
                                             <i class="fa-solid fa-map-location-dot"></i>
-                                            {{ proforma_invoice_form.address_line_1 }}
+                                            {{ proforma_invoice_form.address_line_1 }} <span class="text-error font-bold">*</span>
                                         </label>
                                     </div>
                                     <div class="w-full text-xs">
@@ -118,13 +131,13 @@
                                         <div class="w-full text-xs">
                                             <label class="input input-border flex max-w-none items-center gap-2">
                                                 <i class="fa-solid fa-tree-city"></i>
-                                                {{ proforma_invoice_form.city }}
+                                                {{ proforma_invoice_form.city }} <span class="text-error font-bold">*</span>
                                             </label>
                                         </div> 
                                         <div class="w-full text-xs">
                                             <label class="input input-border flex max-w-none items-center gap-2">
                                                 <i class="fa-solid fa-map"></i>
-                                                {{ proforma_invoice_form.state_province_region }}
+                                                {{ proforma_invoice_form.state_province_region }} <span class="text-error font-bold">*</span>
                                             </label>
                                         </div> 
                                     </div>
@@ -132,7 +145,7 @@
                                         <div class="w-full text-xs">
                                             <label class="input input-border flex max-w-none items-center gap-2">
                                                 <i class="fa-solid fa-globe"></i>
-                                                {{ proforma_invoice_form.country }}
+                                                {{ proforma_invoice_form.country }} <span class="text-error font-bold">*</span>
                                                 {% if proforma_invoice_form.country.field.disabled %}
                                                     <input type="hidden" name="country" value="{{ proforma_invoice_form.country.value }}">
                                                 {% endif %}
@@ -156,41 +169,60 @@
                                     {{ proforma_invoice_form.save_to_address_book }}
                                 </label>
                                 <div class="flex h-full justify-center flex-col gap-0 -mt-2">
-                                    <div class="text-[0.55rem] font-medium">Save to Address Book</div>
-                                    <div class="text-[0.55rem]">儲存至我的地址簿</div>
+                                    <div class="text-[0.55rem] font-medium">
+                                        {% if destination_source == "ADDRESS_BOOK" %}
+                                            Update Saved Address Info
+                                        {% else %}
+                                            Save to Address Book
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-[0.55rem] text-base-content/70">
+                                        {% if destination_source == "ADDRESS_BOOK" %}
+                                            更新此收件地址資訊
+                                        {% else %}
+                                            儲存新地址至我的地址簿
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                             {% endif %}
 
                             <!-- include invoice toggle (Conditional based on China shipping destination) -->
                             {% if is_china_order %}
-                            <div class="h-[1.75rem] flex gap-2 items-center mt-2">
-                                <label class="flex items-center label text-base-content pl-3">
-                                    <i class="fa-solid fa-gift"></i>
-                                    {{ proforma_invoice_form.do_not_send_invoice }}
-                                </label>
-                                <div class="flex h-full justify-center flex-col gap-0 -mt-2">
-                                    <div class="text-[0.55rem]">Do NOT enclose invoice.</div>
-                                    <div class="text-[0.55rem]">不要附寄帳單</div>
-                                </div>
-                            </div>
-                            {% endif %}
+                                    <div class="h-[1.75rem] flex gap-2 items-center mt-2">
+                                        <label class="flex items-center label text-base-content pl-3">
+                                            <i class="fa-solid fa-gift"></i>
+                                            {{ proforma_invoice_form.do_not_send_invoice }}
+                                        </label>
+                                        <div class="flex h-full justify-center flex-col gap-0 -mt-2">
+                                            <div class="text-[0.55rem]">Do NOT enclose invoice.</div>
+                                            <div class="text-[0.55rem]">不要附寄帳單</div>
+                                        </div>
+                                    </div>
+                            {% endif %}                          
 
                             <!-- 💡 NEW INJECTED SUBSECTION: APPEARS ONLY FOR MIXED CARTS -->
                             {% if display_mode == "PHYSICAL_AND_VOUCHER" %}
                             <div class="border-t border-dashed border-base-content/20 pt-3 mt-2 flex flex-col gap-3">
                                 <h4 class="text-xs font-bold text-primary"><i class="fa-solid fa-ticket"></i>&nbsp;Voucher Recipient Details｜禮券收件資訊</h4>
                                 <div>
-                                    <h5 class="text-xs font-semibold">Recipient's Email｜收件人電子郵件</h5>
+                                    <h5 class="text-xs font-semibold">Recipient's Email ｜ 收件人電子郵件 <span class="text-error font-bold">*</span></h5>
                                     <label class="input input-border w-full flex max-w-none items-center gap-2">
                                         <i class="fa-solid fa-paper-plane"></i>
                                         {{ proforma_invoice_form.recipient_email }}
                                     </label>
-                                    <div class="text-[0.5rem]">* The voucher link will be dispatched directly here｜禮券連結將直接發送至此</div>
+                                    <div class="text-[0.5rem]">* The voucher link will be dispatched directly here ｜ 禮券連結將直接發送至此</div>
+                                    
+                                    <!-- THE FRONTEND CAUTION NOTE -->
+                                    <div class="mt-1.5 p-2 bg-info/5 border border-info/20 rounded-lg text-[0.65rem] text-base-content/70 leading-normal">
+                                        <p class="font-bold text-info-content"><i class="fa-solid fa-circle-info mr-1"></i> Self-Purchase Notice ｜ 自用購買提示</p>
+                                        <p class="mt-0.5">If you enter your own login email address, this voucher will be <strong>automatically credited</strong> straight to your personal account wallet upon successful payment. No separate gift claim email link will be generated.</p>
+                                        <p class="mt-1 text-accent font-medium">若輸入您登入的電子郵件，該禮品券面值將於付款成功後<strong>直接匯入您的個人帳戶錢包</strong>，系統將不會發送獨立的轉贈領取連結。</p>
+                                    </div>
                                 </div>
 
                                 <div>
-                                    <h5 class="text-xs font-semibold">Message to Recipient｜給收件人的祝福語</h5>
+                                    <h5 class="text-xs font-semibold">Message to Recipient ｜ 給收件人的祝福語</h5>
                                     {{ proforma_invoice_form.gift_message }}
                                 </div>
                             </div>
@@ -202,15 +234,15 @@
                         {% elif display_mode == "EPRODUCT_ONLY" %}
                             <!-- contact email field -->
                             <div>
-                                <h5 class="text-xs font-semibold">Contact Email｜聯絡電子郵件</h5>
+                                <h5 class="text-xs font-semibold">Contact Email ｜ 聯絡電子郵件 <span class="text-error font-bold">*</span></h5>
                                 <label class="input input-border w-full flex max-w-none items-center gap-2">
                                     <i class="fa-solid fa-envelope"></i>
                                     {{ proforma_invoice_form.email }}
                                 </label>
-                                <div class="text-[0.5rem]">* For digital item links and transactional notices｜用於接收電子商品與通知</div>
+                                <div class="text-[0.5rem]">* For digital item links and transactional notices ｜ 用于接收电子商品与通知</div>
                             </div>
                             <div class="mt-2">
-                                <h5 class="text-xs font-semibold">Order Notes｜訂單備註</h5>
+                                <h5 class="text-xs font-semibold">Order Notes ｜ 訂單備註</h5>
                                 {{ proforma_invoice_form.delivery_note }}
                             </div>
 
@@ -220,33 +252,40 @@
                         {% elif display_mode == "VOUCHER_ONLY" %}
                             <!-- purchaser contact tracking field -->
                             <div>
-                                <h5 class="text-xs font-semibold">Purchaser Email｜購買人電子郵件</h5>
+                                <h5 class="text-xs font-semibold">Purchaser Email ｜ 購買人電子郵件 <span class="text-error font-bold">*</span></h5>
                                 <label class="input input-border w-full flex max-w-none items-center gap-2">
                                     <i class="fa-solid fa-envelope"></i>
                                     {{ proforma_invoice_form.email }}
                                 </label>
-                                <div class="text-[0.5rem]">* For order confirmations and receipts｜用於發送購買確認與收據</div>
+                                <div class="text-[0.5rem]">* For order confirmations and receipts ｜ 用于发送购买确认与收据</div>
                             </div>
                             
                             <!-- recipient email target field -->
                             <div class="mt-2">
-                                <h5 class="text-xs font-semibold">Recipient's Email｜收件人電子郵件</h5>
+                                <h5 class="text-xs font-semibold">Recipient's Email ｜ 收件人電子郵件 <span class="text-error font-bold">*</span></h5>
                                 <label class="input input-border w-full flex max-w-none items-center gap-2">
                                     <i class="fa-solid fa-paper-plane"></i>
                                     {{ proforma_invoice_form.recipient_email }}
                                 </label>
-                                <div class="text-[0.5rem]">* The voucher link will be dispatched directly here｜禮券連結將直接發送至此</div>
+                                <div class="text-[0.5rem]">* The voucher link will be dispatched directly here ｜ 礼券链接将直接发送至此</div>
+                                
+                                <!-- THE FRONTEND CAUTION NOTE -->
+                                <div class="mt-1.5 p-2 bg-info/5 border border-info/20 rounded-lg text-[0.65rem] text-base-content/70 leading-normal">
+                                    <p class="font-bold text-info-content"><i class="fa-solid fa-circle-info mr-1"></i> Self-Purchase Notice ｜ 自用購買提示</p>
+                                    <p class="mt-0.5">If you enter your own login email address, this voucher will be <strong>automatically credited</strong> straight to your personal account wallet upon successful payment. No separate gift claim email link will be generated.</p>
+                                    <p class="mt-1 text-accent font-medium">若輸入您登入的電子郵件，該禮品券面值將於付款成功後<strong>直接匯入您的個人帳戶錢包</strong>，系統將不會發送獨立的轉贈領取連結。</p>
+                                </div>
                             </div>
 
                             <!-- personal voucher gift text area space -->
                             <div class="mt-2">
-                                <h5 class="text-xs font-semibold">Message to Recipient｜給收件人的祝福語</h5>
+                                <h5 class="text-xs font-semibold">Message to Recipient ｜ 給收件人的祝福語</h5>
                                 {{ proforma_invoice_form.gift_message }}
                             </div>
 
                             <!-- notes or custom requests to shop directly -->
                             <div class="mt-2">
-                                <h5 class="text-xs font-semibold">Notes to Shop｜給店家的備註</h5>
+                                <h5 class="text-xs font-semibold">Notes to Shop ｜ 給店家的備註</h5>
                                 {{ proforma_invoice_form.delivery_note }}
                             </div>
                         {% endif %}
@@ -362,7 +401,7 @@
                                         {% if discount_amount != 0 %}
                                             ¥ ({{ discount_amount|floatformat:2|intcomma|default:"0.00" }})
                                             {% else %}
-                                            ¥ {{ discount_amount|default:"0.00" }} 
+                                            ¥ ({{ discount_amount|default:"0.00" }})
                                         {% endif %}
                                     </span>
                                 </td>
@@ -376,9 +415,9 @@
                                             {% endif %}
                                         {% else %}
                                             {% if is_integer %}
-                                                {{foreign_currency_symbol}} 0
+                                                {{foreign_currency_symbol}} (0)
                                             {% else %}
-                                                {{foreign_currency_symbol}} 0.00
+                                                {{foreign_currency_symbol}} (0.00)
                                             {% endif %}
                                         {% endif %}
                                     </span>
@@ -392,7 +431,7 @@
                                         {% if voucher_applied != 0 %}
                                             ¥ ({{ voucher_applied|floatformat:2|intcomma|default:"0.00" }})
                                         {% else %}
-                                            ¥ {{ voucher_applied|default:"0.00" }} 
+                                            ¥ ({{ voucher_applied|default:"0.00" }})
                                         {% endif %}
                                     </span>
                                 </td>
@@ -406,9 +445,9 @@
                                             {% endif %}
                                         {% else %}
                                             {% if is_integer %}
-                                                {{foreign_currency_symbol}} 0
+                                                {{foreign_currency_symbol}} (0)
                                             {% else %}
-                                                {{foreign_currency_symbol}} 0.00
+                                                {{foreign_currency_symbol}} (0.00)
                                             {% endif %}
                                         {% endif %}
                                     </span>

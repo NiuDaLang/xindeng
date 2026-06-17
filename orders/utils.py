@@ -14,7 +14,7 @@ from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.contrib.humanize.templatetags.humanize import intcomma
 from accounts.models import CustomerVoucher
-
+from django.db.models import F
 
 # reportlab
 from reportlab.lib import colors
@@ -30,6 +30,10 @@ from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
 # paypal
 from paypalserversdk.models.item import Item
 from paypalserversdk.models.money import Money
+
+# from reportlab.lib.styles import ParagraphStyle
+# from reportlab.lib.enums import TA_LEFT
+# from reportlab.lib import colors
 
 
 
@@ -131,6 +135,17 @@ def get_pdf_styles():
     styles.add(ParagraphStyle(name='AlignRight', alignment=TA_RIGHT))
     styles.add(ParagraphStyle(name='AlignJustify',alignment=TA_JUSTIFY))
 
+    styles.add(ParagraphStyle(
+        name='SectionHeading', 
+        fontName='NotoSansTC-bold', 
+        fontSize=11, 
+        leading=14, 
+        textColor=colors.HexColor('#686461'), 
+        spaceBefore=10, 
+        spaceAfter=6, 
+        alignment=TA_LEFT
+    ))
+
     return styles
 
 
@@ -139,7 +154,6 @@ def get_header_element(styles):
         "<font name='SanskritFont' size='15'>Hṛdayadīpa (हृदयदीप)</font>｜"
         "心燈"
     )
-
     mixed_style = ParagraphStyle(
         "MixedStyle",
         fontName="NotoSansTC-bold",
@@ -165,7 +179,11 @@ def generate_order_confirmation_pdf(order_id):
     payment = order.payment
     user = order.user if order.user else None
     proforma_invoice = ProformaInvoice.objects.get(proforma_order_number=order_id)
-    
+    # Safely extract your local currency code assignment
+    currency_code = getattr(order, 'currency_code', 'CNY') or 'CNY'
+    currency_code = currency_code.upper().strip()
+    is_integer = currency_code in INTEGER_CURRENCIES
+
     buffer = io.BytesIO()
     styles = get_pdf_styles()
 
@@ -179,9 +197,9 @@ def generate_order_confirmation_pdf(order_id):
     elements = []
 
     # (a) Top Line (Logo + Shop Name)
-    logo_path = os.path.join(settings.STATIC_ROOT, 'images/miscellaneous/logo.png')
+    logo_path = os.path.join(settings.STATIC_ROOT, 'images/miscellaneous/logo_square.png')
     logo = Image(logo_path, 15*mm, 15*mm) if os.path.exists(logo_path) else "[Logo]"
-    shop_paragraph = get_header_element(styles)
+    shop_paragraph = get_header_element(styles) # Hṛdayadīpa (हृदयदीप)｜心燈
 
     header_table = Table([[logo, shop_paragraph]], colWidths=[15*mm, 130*mm])
     header_table.hAlign = 'LEFT'
@@ -197,7 +215,6 @@ def generate_order_confirmation_pdf(order_id):
     ]]
     title_table = Table(title_data, colWidths=[120*mm, 40*mm])
     title_table.hAlign = 'LEFT'
-
     title_table.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('LEFTPADDING', (0,0), (0,0), 0),
@@ -207,56 +224,42 @@ def generate_order_confirmation_pdf(order_id):
     # (c) Greeting & Paragraphs
     username = user.username if user else "Guest｜訪客"
 
-    p1 = f"Thank you for shopping with us!<br/>\
-          感謝您在本店購物！"
-
+    p1 = f"Thank you for shopping with us!<br/>感謝您在本店購物！"
     p2 = "We will notify you when your physical product(s) parcel is dispatched.<br/>我們會在您的實體產品包裹發出時通知您。"
-
     p3 = "Your e-product(s), if any, will be sent via another email.<br/>如果您有購買電子產品，我們將透過另一封電子郵件發送給您。"
 
     # (d) Order Details Section
     # *** Name ***
     if user:
         name_data = [[
-            [Paragraph("First Name｜名", styles['LabelXS']), Paragraph(f"<b>{user.first_name if user.first_name else "&nbsp;"}</b>", styles['BodyTextCustom'])],
-            [Paragraph("Last Name｜姓", styles['LabelXS']), Paragraph(f"<b>{user.last_name if user.last_name else "&nbsp;"}</b>", styles['BodyTextCustom'])],
-            [Paragraph("Username｜用戶名", styles['LabelXS']), Paragraph(f"<b>{username if username else "&nbsp;"}</b>", styles['BodyTextCustom'])]
+            [Paragraph("First Name｜名", styles['LabelXS']), Paragraph(f"<b>{user.first_name if user.first_name else '&nbsp;'}</b>", styles['BodyTextCustom'])],
+            [Paragraph("Last Name｜姓", styles['LabelXS']), Paragraph(f"<b>{user.last_name if user.last_name else '&nbsp;'}</b>", styles['BodyTextCustom'])],
+            [Paragraph("Username｜用戶名", styles['LabelXS']), Paragraph(f"<b>{username if username else '&nbsp;'}</b>", styles['BodyTextCustom'])]
         ]]
         name_table = Table(name_data, colWidths=[58*mm, 58*mm, 58*mm])
     else:
         name_data = [[Paragraph("Guest User｜訪客用戶", styles["BodyTextCustom"]), "", ""]]
         name_table = Table(name_data, colWidths=[174*mm])
-
     name_table.hAlign = "LEFT"
 
     # *** contact ***
     contact_data = [[
-        [Paragraph("Email｜電郵", styles['LabelXS']), Paragraph(f"<b>{order.email if order.email else "&nbsp;"}</b>", styles['BodyTextCustom'])],
-        [Paragraph("Phone｜電話", styles['LabelXS']), Paragraph(f"<b>{order.recipient_mobile_area if order.recipient_mobile_area else ""}&nbsp;{order.recipient_mobile_number}</b>", styles['BodyTextCustom'])]
+        [Paragraph("Email｜電郵", styles['LabelXS']), Paragraph(f"<b>{order.email if order.email else '&nbsp;'}</b>", styles['BodyTextCustom'])],
+        [Paragraph("Phone｜電話", styles['LabelXS']), Paragraph(f"<b>{order.recipient_mobile_area if order.recipient_mobile_area else ''}&nbsp;{order.recipient_mobile_number}</b>", styles['BodyTextCustom'])]
     ]]
     contact_table = Table(contact_data, colWidths=[87*mm, 87*mm])
     contact_table.hAlign = "LEFT"
 
     # *** payment line_1 ***
     payment_1_data = [[
-        [
-            Paragraph("Payment Method｜支付方式", styles['LabelXS']), 
-            Paragraph(f"<b>{order.payment.payment_method if order.payment else 'Bank Transfer ｜ 銀行轉帳'}</b>", styles['BodyTextCustom'])
-        ],
-        [
-            Paragraph("Transaction ID｜交易ID", styles['LabelXS']), 
-            Paragraph(f"<b>{order.payment.payment_id if order.payment else 'Pending Manual Hold ｜ 待核對'}</b>", styles['BodyTextCustom'])
-        ]        
+        [Paragraph("Payment Method｜支付方式", styles['LabelXS']), Paragraph(f"<b>{order.payment.payment_method if order.payment else 'Bank Transfer ｜ 銀行轉帳'}</b>", styles['BodyTextCustom'])],
+        [Paragraph("Transaction ID｜交易ID", styles['LabelXS']), Paragraph(f"<b>{order.payment.payment_id if order.payment else 'Pending Manual Hold ｜ 待核對'}</b>", styles['BodyTextCustom'])]        
     ]]
-
     payment_1_table = Table(payment_1_data, colWidths=[87*mm, 87*mm])
     payment_1_table.hAlign = "LEFT"
 
     # *** payment line_2 ***
-    # payment_amount = f"{Decimal(str(payment.amount_paid).replace(",", "")):,.2f}" if payment.currency not in INTEGER_CURRENCIES else f"{Decimal(str(payment.amount_paid).replace(",", "")):,.0f}"
-    # currency_symbol = CURRENCY_SYMBOL[payment.currency]
     if order.payment:
-        currency_code = order.payment.currency.upper().strip()
         amount_to_format = order.payment.amount_paid
     else:
         # Fall back to your multi-currency names matching earlier ledger setups
@@ -265,26 +268,21 @@ def generate_order_confirmation_pdf(order_id):
         amount_to_format = order.total_due
 
     # Execute string formatting matching your integer currency array constraints
-    if currency_code in INTEGER_CURRENCIES:
-        payment_amount = f"{Decimal(str(amount_to_format).replace(',', '')):,.0f}"
-    else:
-        payment_amount = f"{Decimal(str(amount_to_format).replace(',', '')):,.2f}"
-        currency_symbol = CURRENCY_SYMBOL[currency_code]
+    payment_amount = f"{Decimal(str(amount_to_format).replace(',', '')):,.0f}" if is_integer else f"{Decimal(str(amount_to_format).replace(',', '')):,.2f}"
+    currency_symbol = CURRENCY_SYMBOL.get(currency_code, "")
 
     payment_2_data = [[
         [Paragraph("Payment Currency｜付款貨幣", styles['LabelXS']), Paragraph(f"<b>{currency_code if currency_code else '&nbsp;'}</b>", styles['BodyTextCustom'])],
-        # 💡 FIX: Removed the trailing "if payment.amount_paid else ..." condition.
-        # This safely prints the formatted payment_amount variable we derived earlier!
-        [Paragraph("Payment Amount｜支付金額", styles['LabelXS']), Paragraph(f"<b>{currency_code} {currency_symbol}{payment_amount}</b>", styles['BodyTextCustom'])]
+        [Paragraph("Payment Amount｜支付金額", styles['LabelXS']), Paragraph(f"<b>{currency_code} {currency_symbol}{payment_amount}</b>", styles['BodyTextCustom'])]    
     ]]
     payment_2_table = Table(payment_2_data, colWidths=[87*mm, 87*mm])
     payment_2_table.hAlign = "LEFT"
 
     # *** shipping info_1 ***
     shipping_1_data = [[
-        [Paragraph("Recipient Last Name｜收件人 姓", styles['LabelXS']), Paragraph(f"<b>{order.recipient_first_name if order.recipient_first_name else "&nbsp;"}</b>", styles['BodyTextCustom'])],
-        [Paragraph("Recipient First Name｜收件人 名", styles['LabelXS']), Paragraph(f"<b>{order.recipient_last_name if order.recipient_last_name else "&nbsp;"}</b>", styles['BodyTextCustom'])],
-        [Paragraph("Recipient Phone｜收件人電話", styles['LabelXS']), Paragraph(f"<b>{ order.recipient_mobile_area }&nbsp;{ order.recipient_mobile_number }</b>" if order.recipient_mobile_area and order.recipient_mobile_number else "&nbsp;", styles['BodyTextCustom'])]
+        [Paragraph("Recipient Last Name｜收件人 姓", styles['LabelXS']), Paragraph(f"<b>{order.recipient_first_name if order.recipient_first_name else '&nbsp;'}</b>", styles['BodyTextCustom'])],
+        [Paragraph("Recipient First Name｜收件人 名", styles['LabelXS']), Paragraph(f"<b>{order.recipient_last_name if order.recipient_last_name else '&nbsp;'}</b>", styles['BodyTextCustom'])],
+        [Paragraph("Recipient Phone｜收件人電話", styles['LabelXS']), Paragraph(f"<b>{order.recipient_mobile_area}&nbsp;{order.recipient_mobile_number}</b>" if order.recipient_mobile_area and order.recipient_mobile_number else "&nbsp;", styles['BodyTextCustom'])]
     ]]
     shipping_1_table = Table(shipping_1_data, colWidths=[58*mm, 58*mm, 58*mm])
     shipping_1_table.hAlign = "LEFT"
@@ -292,26 +290,26 @@ def generate_order_confirmation_pdf(order_id):
     # *** shipping info_2 ***
     street_address_data = f"{order.address_line_1}, {order.address_line_2}" if order.address_line_2 else f"{order.address_line_1}"
     shipping_2_data = [[
-        [Paragraph("Street Address｜街道地址", styles['LabelXS']), Paragraph(f"<b>{street_address_data if order.address_line_1 else "&nbsp;"}</b>", styles['BodyTextCustom'])],
+        [Paragraph("Street Address｜街道地址", styles['LabelXS']), Paragraph(f"<b>{street_address_data if order.address_line_1 else '&nbsp;'}</b>", styles['BodyTextCustom'])],
     ]]
     shipping_2_table = Table(shipping_2_data, colWidths=[174*mm])
     shipping_2_table.hAlign = "LEFT"
 
     # *** shipping info_3 ***
     shipping_3_data = [[
-        [Paragraph("City｜城市", styles['LabelXS']), Paragraph(f"<b>{order.city if order.city else "&nbsp;"}</b>", styles['BodyTextCustom'])],
-        [Paragraph("State / Province｜州/省/縣", styles['LabelXS']), Paragraph(f"<b>{order.state_province_region if order.state_province_region else "&nbsp;"}</b>", styles['BodyTextCustom'])],
+        [Paragraph("City｜城市", styles['LabelXS']), Paragraph(f"<b>{order.city if order.city else '&nbsp;'}</b>", styles['BodyTextCustom'])],
+        [Paragraph("State/Province ｜ 州/省/縣", styles['LabelXS']), Paragraph(f"<b>{order.state_province_region if order.state_province_region else '&nbsp;'}</b>", styles['BodyTextCustom'])],
     ]]
     shipping_3_table = Table(shipping_3_data, colWidths=[87*mm, 87*mm])
     shipping_3_table.hAlign = "LEFT"
 
     # *** shipping info_4 ***
-    raw_country = order.get_country_display() # 'Thailand 🇹🇭'
-    name_part = raw_country[:-2].strip()       # 'Thailand'
+    raw_country = order.get_country_display() if hasattr(order, 'get_country_display') else ""
+    name_part = raw_country[:-2].strip() if raw_country and " " in raw_country else raw_country
 
     shipping_4_data = [[
-        [Paragraph("Country / Region｜國家/地區", styles['LabelXS']), Paragraph(f"<b>{name_part if order.country else "&nbsp;"}</b>", styles['BodyTextCustom'])],
-        [Paragraph("Post Code｜郵編", styles['LabelXS']), Paragraph(f"<b>{order.postal_code if order.postal_code else "&nbsp;"}</b>", styles['BodyTextCustom'])],
+        [Paragraph("Country / Region｜國家/地區", styles['LabelXS']), Paragraph(f"<b>{name_part if order.country else '&nbsp;'}</b>", styles['BodyTextCustom'])],
+        [Paragraph("Post Code｜郵編", styles['LabelXS']), Paragraph(f"<b>{order.postal_code if order.postal_code else '&nbsp;'}</b>", styles['BodyTextCustom'])],
     ]]
     shipping_4_table = Table(shipping_4_data, colWidths=[87*mm, 87*mm])
     shipping_4_table.hAlign = "LEFT"
@@ -324,7 +322,7 @@ def generate_order_confirmation_pdf(order_id):
     shipping_5_table.hAlign = "LEFT"
 
     # *** shipping info_6 ***
-    send_invoice = "Yes, include invoice with delivery.｜是，將帳單一起配送。" if order.do_not_send_invoice == False \
+    send_invoice = "Yes, include invoice with delivery. ｜ 是，將帳單一起配送。" if order.do_not_send_invoice == False \
                     else "No, do NOT include invoice with delivery.｜不，不要將帳單一起配送。"
 
     shipping_6_data = [[
@@ -388,24 +386,19 @@ def generate_order_confirmation_pdf(order_id):
     cny_vouch = Decimal(str(order.voucher_applied).replace(",", ""))
     cny_due = Decimal(str(order.total_due).replace(",", ""))
 
-    # 💡 FIX: Query our safe extracted variable 'currency_code' instead of 'payment.currency'
     if currency_code != "CNY":
         fx_currency = currency_code
-        
-        # Load foreign primitives directly from database snapshot rows
         fx_ship = Decimal(str(order.shipping_cost_foreign).replace(",", ""))
         fx_disc = Decimal(str(order.discount_foreign).replace(",", ""))
         fx_tax = Decimal(str(order.tax_foreign).replace(",", ""))
         fx_vouch = Decimal(str(order.voucher_applied_foreign).replace(",", ""))
         fx_due = Decimal(str(order.total_due_foreign).replace(",", ""))
-
-        # 🔥 BACKWARD-BALANCE APPLICATION: Derived linearly from absolute transaction totals
         fx_subtotal = fx_due + fx_disc + fx_vouch - fx_tax - fx_ship
 
         summary_data = [
             ["", "CNY", f"{fx_currency}"],
             ["Products｜商品小計", f"¥ {intcomma(f'{cny_prod:.2f}')}", foreign_currency_formatter(fx_subtotal, fx_currency)],
-            ["Shipping｜運費費率", f"¥ {intcomma(f'{cny_ship:.2f}')}", foreign_currency_formatter(fx_ship, fx_currency)]
+            ["Shipping｜運費費率", f"¥ {intcomma(f'{cny_ship:.2f}')}", foreign_currency_formatter(fx_ship, fx_currency)],
         ]
 
         if cny_disc > 0:
@@ -425,29 +418,85 @@ def generate_order_confirmation_pdf(order_id):
             ["Products｜商品小計", f"¥ {intcomma(f'{cny_prod:.2f}')}"],
             ["Shipping｜運費費率", f"¥ {intcomma(f'{cny_ship:.2f}')}"]
         ]
-
         if cny_disc > 0:
-            summary_data.append(["Discount (Less)｜優惠折抵 (扣減)", f"¥ {intcomma(f'{cny_disc:.2f}')}"])
+            summary_data.append(["Discount (Less)｜優惠折抵 (扣減)", f"¥ ({intcomma(f'{cny_disc:.2f}')})"])
         if cny_tax > 0:
             summary_data.append(["Tax & Duty｜代繳稅金", f"¥ {intcomma(f'{cny_tax:.2f}')}"])
         if cny_vouch > 0:
-            summary_data.append(["Voucher (Less)｜禮品卡折抵 (扣減)", f"¥ {intcomma(f'{cny_vouch:.2f}')}"])
+            summary_data.append(["Voucher (Less)｜禮品卡折抵 (扣減)", f"¥ ({intcomma(f'{cny_vouch:.2f}')})"])
             
         summary_data.append(["Total Received｜總計應收", f"¥ {intcomma(f'{cny_due:.2f}')}"])
-        s_table = Table(summary_data, colWidths=[70*mm, 104*mm])
+        s_table = Table(summary_data, colWidths=[100*mm, 74*mm])
 
-    s_table.hAlign = "LEFT"    
+    # Apply global summary layout aesthetics
+    s_table.hAlign = 'LEFT'
     s_table.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#e8e7e7")),
+        ('FONTNAME', (0,0), (-1,-1), 'NotoSansTC-regular'),
+        ('FONTNAME', (0,-1), (-1,-1), 'NotoSansTC-bold'),
         ('ALIGN', (1,0), (-1,-1), 'RIGHT'),
-        ("FONTNAME", (0,0), (-1,0), "NotoSansTC-bold"),
-        ("FONTNAME", (0,1), (-1,-2), "NotoSansTC-regular"),
-        ('FONTNAME', (0, -1), (-1, -1), 'NotoSansTC-bold'),
-        ('TOPPADDING', (0,0), (-1,-1), 10),
-        ('BOTTOMPADDING', (0,-1), (-1,-1), 15),
-        ('LEFTPADDING', (0, 0), (0, -1), 10),
-        ('RIGHTPADDING', (-1, 0), (-1, -1), 10),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LINEBELOW', (0,0), (-1,-2), 0.5, colors.lightgrey),
+        ('LINEABOVE', (0,-1), (-1,-1), 1, colors.HexColor("#686461")),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
     ]))
+
+    # 🌟 NEW INJECTED SUBSECTION: OFFLINE REMITTANCE & MOBILE QR CODES (CONDITIONAL)
+    is_bank_transfer = (proforma_invoice.payment_method == "BANK_TRANSFER")
+    offline_payment_table = None
+    if is_bank_transfer:
+        bank_title_para = Paragraph("🏦 Remittance Bank Details｜銀行轉帳帳號資訊", styles['BodyTextCustom'])
+        qr_title_para = Paragraph("📱 Mobile App Payment Directory｜行動支付搜尋明細", styles['BodyTextCustom'])
+        bank_details_html = (
+            f"Bank Name｜開戶銀行: Bank of China (Mainland)"
+            f"Account Name｜開戶名稱: Xindeng Corporate Entity Ltd."
+            f"Account Number｜銀行帳號: 6217 0000 0000 0000 000"
+            f"Swift Code｜國際代碼: BKCHCNBJXXX"
+            f"Total Due (CNY)｜應付總額: ¥ {order.total_due}"
+            f"*Important: Please include your order number {order.order_number} in the transfer memo."
+            f"*重要提示：請務必在匯款備註/附言中填寫您的訂單號碼 {order.order_number}。"
+        )
+        bank_text_block = Paragraph(bank_details_html, styles['BodyTextCustom'])
+        mobile_details_html = (
+            f"Alipay ID｜支付寶帳號: alipay@xindeng.art"
+            f"Real Name｜實名認證: 心燈藝術 (Xindeng Art)"
+            f"WeChat ID｜微信支付: wechat_xindeng"
+            f"Real Name｜實名認證: 上海心燈文化傳播有限公司"
+            f"*Tip: Scan the QR code or search using the Account IDs listed above."
+            f"*提示：可直接掃描右側二維碼，或在App中搜尋上述帳號完成轉帳。")
+        mobile_text_block = Paragraph(mobile_details_html, styles['BodyTextCustom'])
+        
+    # 🌟 EXTRACT AND SCALE YOUR STATIC ROOT QR GRAPHIC BINARY SAFELY
+    qr_code_path = os.path.join(settings.STATIC_ROOT, 'images', 'miscellaneous', 'QR_codes.png')
+    if os.path.exists(qr_code_path):
+        qr_graphic_element = Image(qr_code_path, 40*mm, 26*mm)
+        qr_graphic_element.hAlign = 'CENTER'
+    
+    # else:
+    #     qr_graphic_element = Paragraph("[Payment QR Code Graphic Missing]", styles['LabelXS'])
+    #     payment_instructions_matrix = [
+    #         [bank_title_para, qr_title_para],
+    #         [
+    #             bank_text_block, 
+    #             [
+    #                 qr_graphic_element, 
+    #                 Spacer(1, 1*mm), 
+    #                 mobile_text_block
+    #             ]
+    #         ]
+    #     ]
+    #     offline_payment_table = Table(payment_instructions_matrix, colWidths=[87*mm, 87*mm])
+    #     offline_payment_table.hAlign = 'LEFT'
+    #     offline_payment_table.setStyle(TableStyle([
+    #         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    #         ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f7f5f3')),
+    #         ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#cccccc')),
+    #         ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#e5e5e5')),
+    #         ('TOPPADDING', (0, 0), (-1, -1), 8),
+    #         ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+    #         ('LEFTPADDING', (0, 0), (-1, -1), 10),
+    #         ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+    #     ]))
 
     # (g) Footer
     footer_text = Paragraph(
@@ -455,10 +504,11 @@ def generate_order_confirmation_pdf(order_id):
         "若您有任何疑問，請隨時透過郵件聯絡我們：admin@xindeng.com<br/>",
         styles["FooterBold"]
     )
+    current_year = timezone.now().year
     footer_html = (
-        "<font name='SanskritFont' size='10'>© Hṛdayadīpa (हृदयदीप)｜</font>"
-        "2026 心燈"
-        " All Rights Reserved."
+        f"© {current_year} "
+        "<font name='SanskritFont' size='10'>Hṛdayadīpa (हृदयदीप)｜</font> "
+        "心燈 All Rights Reserved."
     )
     footer_mixed_style = ParagraphStyle(
         "MixedStyle",
@@ -468,27 +518,36 @@ def generate_order_confirmation_pdf(order_id):
     )
     footer_html_p = Paragraph(footer_html, footer_mixed_style)
 
-    # Compile the final document canvas elements array list cleanly
+    # Append all compiled components sequentially over to ReportLab structural array pipelines
     elements.extend([
-        header_table, Spacer(1, 5), 
-        title_table, Spacer(1, 20), 
-        Paragraph(f"Hello {username}!｜您好 {username}！", styles['Greeting']),
-        Paragraph(p1, styles['BodyTextCustom']),
-        Paragraph(p2, styles['BodyTextCustom']),
-        Paragraph(p3, styles['BodyTextCustom']),
-        Spacer(1, 10),
-        Paragraph("α Customer Details｜客戶訊息", styles['SectionTitle']),
-        name_table, contact_table,
-        Spacer(1, 10),
-        Paragraph("β Payment Details｜支付訊息", styles['SectionTitle']),
-        payment_1_table, payment_2_table,
-        Spacer(1, 10),
-        Paragraph("γ Shipping Information｜配送詳情", styles['SectionTitle']),
-        shipping_1_table, shipping_2_table, shipping_3_table, shipping_4_table, shipping_5_table, shipping_6_table,
-        Spacer(1, 20),
-        p_table, Spacer(1, 15),
-        s_table, Spacer(1, 25),
-        footer_text, Spacer(1, 5), footer_html_p
+        header_table, Spacer(1, 5*mm),
+        title_table, Spacer(1, 5*mm),
+        Paragraph(p1, styles['BodyTextCustom']), Spacer(1, 2*mm),
+        Paragraph(p2, styles['BodyTextCustom']), Spacer(1, 2*mm),
+        Paragraph(p3, styles['BodyTextCustom']), Spacer(1, 6*mm),
+        Paragraph("Customer Information｜客戶訊息", styles['SectionHeading']),
+        name_table, contact_table, Spacer(1, 6*mm),
+        Paragraph("Payment Parameters｜支付參數", styles['SectionHeading']),
+        payment_1_table, payment_2_table, Spacer(1, 6*mm),
+        Paragraph("Shipping Manifest｜物流詳情", styles['SectionHeading']),
+        shipping_1_table, shipping_2_table, shipping_3_table, shipping_4_table, shipping_5_table, shipping_6_table, Spacer(1, 10*mm),
+        Paragraph("Ordered Items｜訂購明細", styles['SectionHeading']),
+        p_table, Spacer(1, 6*mm),
+        Paragraph("Financial Summary｜財務總結", styles['SectionHeading']),
+        s_table,
+    ])
+
+    # 🌟 SURGICAL INJECTION: Mount the offline banking block conditionally right below calculations!
+    if is_bank_transfer and offline_payment_table:
+        elements.extend([
+            Spacer(1, 6*mm),
+            offline_payment_table
+        ])
+
+    elements.extend([
+        Spacer(1, 8*mm),
+        footer_text, Spacer(1, 5*mm),
+        footer_html_p
     ])
 
     doc.build(elements)
@@ -651,53 +710,109 @@ def mark_off_perk_at_checkout(user, session_code_string):
     return perk
 
 
+@transaction.atomic
+def reverse_perk_usage_at_cancellation(order_instance):
+    """
+    Atomically rolls back coupon usage counts and restores individual customer 
+    Perk vouchers if a bank transfer hold expires or is aborted.
+    """
+    # Look at your Order model parameters: we store the string snapshot in order.payment or proforma reference
+    # Assuming your Order model captures the applied coupon code as a plain text string field
+    # (e.g., if order.coupon_code or proforma_invoice.offer_code was stored during views.py)
+    
+    # Let's extract the clean coupon string via your ProformaInvoice or Order snapshots:
+    offer_code_string = getattr(order_instance, 'coupon_code', None)
+    if not offer_code_string:
+        # Fallback tracking lookup: parse from your settings or related ProformaInvoice table
+        # from store.models import ProformaInvoice
+        proforma = ProformaInvoice.objects.filter(proforma_order_number=order_instance.order_number).first()
+        offer_code_string = proforma.offer_code if proforma else None
+
+    if not offer_code_string:
+        return f"No coupon code associated with Order {order_instance.order_number}. Rollback skipped."
+
+    code_clean = offer_code_string.strip().upper()
+    user = order_instance.user
+
+    # 1. Row-lock and decrement the Global Perk counter
+    perk = Perk.objects.select_for_update().filter(code=code_clean).first()
+    if not perk and user:
+        # Check if they used a unique personal UserPerk alphanumeric tracking code identifier
+        user_perk = UserPerk.objects.filter(user=user, unique_code=code_clean).first()
+        if user_perk:
+            perk = Perk.objects.select_for_update().get(pk=user_perk.perk.pk)
+
+    if perk:
+        # Surgically subtract 1 from the global counter, preventing it from slipping below 0
+        if perk.uses_count > 0:
+            perk.uses_count = F('uses_count') - 1
+            perk.save(update_fields=['uses_count'])
+
+    # 2. Row-lock and Restore the User's personal allocation eligibility
+    if user and user.is_authenticated and perk:
+        # Check if they checked out using their unique specific code first
+        up = UserPerk.objects.select_for_update().filter(
+            user=user, 
+            perk=perk, 
+            is_used=True
+        ).order_by('-used_at').first()  # Grabs the most recently consumed instance row
+        
+        if up:
+            up.is_used = False
+            up.used_at = None
+            up.save(update_fields=['is_used', 'used_at'])
+            return f"Successfully restored personal voucher code {code_clean} for user {user.email}."
+
+    return f"Successfully decremented global counter for code {code_clean}."
+
+
 def execute_atomic_voucher_deduction(user, session_input_amount):
     """
     Locks and drains user cash voucher profiles oldest-to-newest inside a transaction block.
-    Raises ValueError if there is an insufficient balance or state collision.
+    Returns the usage metrics mapping list necessary for OrderVoucherUsage creation loops.
     """
     if not session_input_amount or Decimal(str(session_input_amount)) <= 0:
-        return Decimal('0.00')
+        return []
 
     target_deduction = Decimal(str(session_input_amount).replace(",", ""))
     
-    # 1. Row-lock available claimed vouchers using your model's explicit parameters
+    # Row-lock available claimed vouchers using select_for_update()
     vouchers = (
         CustomerVoucher.objects.select_for_update()
         .filter(owner=user, is_claimed=True, is_used=False, balance__gt=0)
-        .order_by('created_date')  # Spends oldest vouchers first
+        .order_by('created_date')  # Strict FIFO execution tracking anchor
     )
     
-    # Pre-flight total balance validation check
     total_available_balance = sum(v.balance for v in vouchers)
     if target_deduction > total_available_balance:
         raise ValueError(f"餘額不足 ｜ Insufficient voucher balance. Available: CNY {total_available_balance:.2f}")
 
     remaining_to_deduct = target_deduction
+    usage_records = [] 
 
     for voucher in vouchers:
         if remaining_to_deduct <= 0:
             break
 
-        # Calculate deduction for this specific voucher row instance
         deduction = min(voucher.balance, remaining_to_deduct)
-
-        # Apply subtraction to the balance property
         voucher.balance -= deduction
-        
-        # Check if the voucher has been completely spent
+               
         if voucher.balance <= 0:
             voucher.is_used = True
-            voucher.used_date = timezone.now()  # Aligns with your model's used_date field
+            voucher.used_date = timezone.now()
         
         voucher.save(update_fields=['balance', 'is_used', 'used_date'])
+        
+        usage_records.append({
+            'voucher_instance': voucher,
+            'amount': deduction
+        })
         remaining_to_deduct -= deduction
 
-    # Integrity safeguard check
     if remaining_to_deduct > 0:
         raise ValueError("交易校驗失敗 ｜ Voucher balance tracking drift caught during deduction execution.")
         
-    return target_deduction
+    return usage_records  # 🌟 Net Fix: Correctly returns the list matrix for your views to iterate over!
 
 
 # @@@@@@ PAYPAL @@@@@@ #
@@ -902,4 +1017,3 @@ def get_paypal_items(cart_items, foreign_currency_code, locked_rate, cart_total_
 # * margin-top: 2rem
 # * paragraph2: "© 2024 心燈｜Hṛdayadīpa (हृदयदीप) All Rights Reserved."
 # * text-align: center
-

@@ -188,3 +188,6 @@ django-app-key.pem
 # misc
 accounts_errors.html
 test.html
+
+# Redis database background snapshot files
+dump.rdb

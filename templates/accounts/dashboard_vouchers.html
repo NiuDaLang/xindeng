@@ -2,19 +2,103 @@
 
 <div id="dashboard_vouchers" class="subpage">
     <!-- hero -->
-    <div class="relative w-full h-[14rem]">
-        <img src="/media/hero/red_leaves.jpeg" alt="" class="reel -z-1 absolute left-0 top-0 h-full w-full object-cover">
-        <div class="absolute top-[47%] left-[20%]">
-            <h2 class="text-5xl text-primary-content">霜降</h2>
+    <div class="dashboard_hero w-full min-h-72 rounded-2xl text-white relative flex justify-center items-center">
+        <!-- season & date -->
+        <div class="flex flex-col z-10 p-5">
+            {% if solar_term %}
+                <div class="solar-timeline">
+                    <div class="flex flex-col">
+                        <span id="solar_term" class="text-4xl">{{ solar_term }}</span>
+                        <span id="solar_term_en" class="text-[16px]">{{ solar_term_en }}</span>
+                    </div>
+                    {% if next_solar_term %}
+                    <div class="solar-arrow-container">
+                        <div class="solar-arrow"></div>
+                    </div>
+                    <div class="flex flex-col">
+                        <span id="next_solar_term" class="text-4xl">{{ next_solar_term }}</span>
+                        <span id="next_solar_term_en" class="text-[16px]">{{ next_solar_term_en }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+            <span id="dynamic-date" hx-preserve="true" class="text-sm text-center"></span>
         </div>
-        <div class="absolute right-8 bottom-12 text-right text-primary-content">
-            <div id="dynamic-date"></div>
-            <div id="dynamic-clock"></div>
+        <!-- clock -->
+        {% include 'accounts/partials/clock_analog.html' %}
+        <!-- bg img -->
+        <img src="/media/hero/red_leaves.jpeg" alt="" class="absolute left-0 top-0 w-full h-full rounded-4xl object-cover">
+    </div>
+
+    <!-- WALLET SUMMARY BALANCE MATRICES -->
+    <div class="mt-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="stats shadow-md border border-base-300 bg-base-200 w-full sm:w-auto">
+            <div class="stat px-6 py-4">
+                <div class="stat-title text-xs font-bold uppercase tracking-wider text-base-content/60">Wallet Balance ｜ 人民幣帳戶餘額</div>
+                <div class="flex items-baseline gap-3 mt-1">
+                    <div class="stat-value text-3xl font-black text-base-content font-mono">
+                        RMB <span class="text-teal-600 font-extrabold">{{ wallet_balance|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Action Trigger Route Buttons -->
+        <div class="flex gap-2 w-full sm:w-auto">
+            <!-- 🌟 THE NET FIX: Completely remove hx-boost="true" to force a clean, hard page transition! -->
+            <a href="{% url 'products' 'gift-voucher' %}" class="btn btn-sm btn-teal text-white shadow-sm grow sm:grow-0">
+                <i class="fa-solid fa-circle-plus"></i> Buy Voucher ｜ 購買禮品券
+            </a>
         </div>
     </div>
     
-    <!-- RMB -->
-    <div>
+    <!-- CHRONOLOGICAL TRANSACTION LEDGER SHEET -->
+    <div class="mt-6">
+        <h3 class="text-sm font-bold text-base-content/70 mb-3 uppercase tracking-wider flex items-center gap-2 pl-1">
+            <i class="fa-solid fa-clock-history text-teal-600"></i> Wallet History ｜ 交易明細帳目
+        </h3>
+        
+        <div class="bg-base-200 border border-base-300 rounded-box overflow-hidden shadow-inner">
+            <div class="overflow-x-auto max-h-[26rem] w-full">
+                <table class="table table-sm table-pin-rows table-pin-cols w-full">
+                    <thead>
+                        <tr class="bg-base-300/80 text-base-content/80 text-xs font-bold">
+                            <th class="w-[20%] font-sans">Date ｜ 日期</th>
+                            <th class="w-[50%] font-sans">Summary ｜ 交易摘要</th>
+                            <th class="w-[30%] text-right font-sans pr-6">Amount ｜ 金額</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-base-300">
+                        {% if ledger_history %}
+                            {% for record in ledger_history %}
+                            <tr class="hover:bg-base-100/40 transition-colors text-xs font-medium">
+                                <td class="font-mono opacity-70 align-top pt-3">{{ record.date|date:"Y-m-d H:i" }}</td>
+                                <td class="align-top leading-relaxed pt-3 text-base-content/90">{{ record.summary|safe }}</td>
+                                <td class="text-right align-top font-mono text-sm pr-6 pt-3 {{ record.amount_class }}">
+                                    {{ record.amount }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <!-- EMPTY STATE BLOCK FALLBACK -->
+                            <tr>
+                                <td colspan="3" class="text-center py-16 text-base-content/50">
+                                    <div class="flex flex-col items-center gap-2">
+                                        <i class="fa-solid fa-wallet fa-2x opacity-40"></i>
+                                        <p class="font-medium text-sm">暫無任何交易記錄 ｜ No wallet transactions logged.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Vouchers -->
+    <!-- sample draft (per voucher) -->
+    <!-- <div>
         <div class="mt-10 flex justify-between">
             <div class="stats shadow">
                 <div class="stat">
@@ -97,177 +181,32 @@
                 </table>
             </div>
         </ul>
-    </div>
+    </div> -->
     
-    <!-- HKD -->
-    <div>
-        <div class="mt-10 flex justify-between">
-            <div class="stats shadow">
-                <div class="stat">
-                    <div class="stat-title">港幣餘額</div>
-                    <div class="flex items-center gap-5">
-                        <div class="stat-value">HKD&nbsp;<span class="text-success-content">1,400</span></div>
-                        <div class="stat-actions">
-                            <button class="btn btn-xs btn-success">充值</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <ul class="mt-5 p-5 list bg-base-200 rounded-box inset-shadow-sm mb-10 text-secondary gap-5">
-            <div class="overflow-x-scroll overflow-y-scroll h-96 w-full">
-                <table class="table table-xs table-pin-rows table-pin-cols  w-full">
-                    <thead>
-                        <tr>
-                            <td class="w-[6rem]">日期</td>
-                            <td class="w-[15rem]">摘要</td>
-                            <td class="w-[5rem]">金額</td>
-                            <td class="w-[5rem]">餘額</td>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>2025-10-1</td>
-                            <td>使用充值金額HKD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-HKD&nbsp;100</td>
-                            <td>HKD&nbsp;800</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-30</td>
-                            <td>使用充值金額HKD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-HKD&nbsp;100</td>
-                            <td>HKD&nbsp;900</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-29</td>
-                            <td>使用充值金額HKD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-HKD&nbsp;100</td>
-                            <td>HKD&nbsp;1,000</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-28</td>
-                            <td>使用充值金額HKD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-HKD&nbsp;100</td>
-                            <td>HKD&nbsp;1,100</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-27</td>
-                            <td>使用充值金額HKD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-HKD&nbsp;100</td>
-                            <td>HKD&nbsp;1,200</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-26</td>
-                            <td>使用充值金額HKD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-HKD&nbsp;100</td>
-                            <td>HKD&nbsp;1,300</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-25</td>
-                            <td>使用充值金額HKD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-HKD&nbsp;100</td>
-                            <td>HKD&nbsp;1,400</td>
-                        </tr>
-                            <td>2025-09-24</td>
-                            <td>使用充值金額HKD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-HKD&nbsp;100</td>
-                            <td>HKD&nbsp;1,500</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-24</td>
-                            <td>充值禮品券金額HKD1,500<br/>禮品券編號XXXXXX</td>
-                            <td>HKD&nbsp;1,500</td>
-                            <td>HKD&nbsp;1,500</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </ul>
-    </div>
-    
-    <!-- AUD -->
-    <div>
-        <div class="mt-10 flex justify-between">
-            <div class="stats shadow">
-                <div class="stat">
-                    <div class="stat-title">澳幣餘額</div>
-                    <div class="flex items-center gap-5">
-                        <div class="stat-value">AUD&nbsp;<span class="text-success-content">1,400</span></div>
-                        <div class="stat-actions">
-                            <button class="btn btn-xs btn-success">充值</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <ul class="mt-5 p-5 list bg-base-200 rounded-box inset-shadow-sm mb-10 text-secondary gap-5">
-            <div class="overflow-x-scroll overflow-y-scroll h-96 w-full">
-                <table class="table table-xs table-pin-rows table-pin-cols  w-full">
-                    <thead>
-                        <tr>
-                            <td class="w-[6rem]">日期</td>
-                            <td class="w-[15rem]">摘要</td>
-                            <td class="w-[5rem]">金額</td>
-                            <td class="w-[5rem]">餘額</td>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>2025-10-1</td>
-                            <td>使用充值金額AUD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-AUD&nbsp;100</td>
-                            <td>AUD&nbsp;800</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-30</td>
-                            <td>使用充值金額AUD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-AUD&nbsp;100</td>
-                            <td>AUD&nbsp;900</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-29</td>
-                            <td>使用充值金額AUD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-AUD&nbsp;100</td>
-                            <td>AUD&nbsp;1,000</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-28</td>
-                            <td>使用充值金額AUD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-AUD&nbsp;100</td>
-                            <td>AUD&nbsp;1,100</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-27</td>
-                            <td>使用充值金額AUD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-AUD&nbsp;100</td>
-                            <td>AUD&nbsp;1,200</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-26</td>
-                            <td>使用充值金額AUD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-AUD&nbsp;100</td>
-                            <td>AUD&nbsp;1,300</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-25</td>
-                            <td>使用充值金額AUD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-AUD&nbsp;100</td>
-                            <td>AUD&nbsp;1,400</td>
-                        </tr>
-                            <td>2025-09-24</td>
-                            <td>使用充值金額AUD100於<br/>訂單號XXX-XXX-XX</td>
-                            <td>-AUD&nbsp;100</td>
-                            <td>AUD&nbsp;1,500</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-24</td>
-                            <td>充值禮品券金額AUD1,500<br/>禮品券編號XXXXXX</td>
-                            <td>AUD&nbsp;1,500</td>
-                            <td>AUD&nbsp;1,500</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </ul>
-    </div>
 </div>
+
+<!-- Place inside your dashboard vouchers subpage panel layout scripts section -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        if (urlParams.get('status') === 'claimed_success') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Congratulations! ｜ 領取成功 🎉',
+                html: `
+                    <div class="text-center font-sans">
+                        <p class="font-bold text-teal-600 text-lg">禮品券已成功存入您的錢包！</p>
+                        <p class="text-xs text-base-content/70 mt-2">Voucher has been securely credited. You can now apply this balance directly on your next checkout.</p>
+                    </div>
+                `,
+                confirmButtonText: 'Excellent ｜ 太棒了',
+                confirmButtonColor: '#0d9488'
+            }).then(() => {
+                // Clear the query parameters out of browser navigation stack natively
+                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+            });
+        }
+    });
+</script>

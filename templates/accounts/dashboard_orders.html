@@ -2,118 +2,593 @@
 
 <div id="dashboard_orders" class="subpage">
     <!-- hero -->
-    <div class="relative w-full h-[14rem]">
-        <img src="/media/hero/red_leaves.jpeg" alt="" class="reel -z-1 absolute left-0 top-0 h-full w-full object-cover">
-        <div class="absolute top-[47%] left-[20%]">
-            <h2 class="text-5xl text-primary-content">霜降</h2>
+    <!-- 🌟 PRODUCTION GRID HERO CONTAINER BANNER (min-h-[19rem] protects the 200px clock canvas) -->
+    <!-- <div class="dashboard_hero relative w-full min-h-[19rem] rounded-2xl overflow-hidden shadow-xl border border-base-300 mb-6 p-6 flex flex-col md:grid md:grid-cols-12 items-center justify-between gap-6"> -->
+    <div class="dashboard_hero relative w-full min-h-[19rem] overflow-hidden shadow-xl border rounded-2xl border-gray-400 mb-6 p-6 flex flex-col md:grid md:grid-cols-12 items-center justify-between gap-6">
+        <!-- COLUMN 1: SEASONAL SOLAR TIMELINE LOGIC GATE (Grid Span: 4) -->
+        <div class="z-10 w-full md:col-span-4 flex flex-col items-center justify-center space-y-3 p-2 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+            {% if solar_term %}
+                <div class="solar-timeline flex items-center justify-center gap-4 select-none">
+                    <!-- Active Solar Term State -->
+                    <div class="flex flex-col text-center">
+                        <span id="solar_term" class="text-2xl font-black tracking-wide">{{ solar_term }}</span>
+                        <span id="solar_term_en" class="text-[11px] uppercase tracking-wider font-mono opacity-80 mt-0.5">{{ solar_term_en }}</span>
+                    </div>
+                    
+                    {% if next_solar_term %}
+                    <!-- Restored Your Previous Custom Arrow Layout Wrapper -->
+                    <div class="solar-arrow-container">
+                        <div class="solar-arrow"></div>
+                    </div>
+
+                    <!-- Approaching Solar Term State -->
+                    <div class="flex flex-col text-center">
+                        <span id="next_solar_term" class="text-2xl font-black tracking-wide opacity-90">{{ next_solar_term }}</span>
+                        <span id="next_solar_term_en" class="text-[11px] uppercase tracking-wider font-mono opacity-70 mt-0.5">{{ next_solar_term_en }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+            
+            <!-- Real-time Text Date Output -->
+            <div id="dynamic-date" hx-preserve="true" class="text-[11px] font-mono font-bold tracking-widest bg-black/20 px-3 py-1 rounded-full border border-white/10 uppercase"></div>
         </div>
-        <div class="absolute right-8 bottom-12 text-right text-primary-content">
-            <div id="dynamic-date"></div>
-            <div id="dynamic-clock"></div>
+        
+        <!-- COLUMN 2: DYNAMIC BILINGUAL TITLES (Grid Span: 4) -->
+        <!-- 🌟 THE CENTERING FIX: Swapped md:text-left for md:text-center to balance headers perfectly -->
+        <div class="z-10 w-full text-center md:text-center md:col-span-4 space-y-1.5 self-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+            <h2 class="text-xl font-bold text-white uppercase tracking-wider font-sans opacity-90">Order History Log</h2>
+            <h3 class="text-3xl font-black text-white tracking-normal font-sans">歷史購物紀錄</h3>
+            <span class="text-[0.65rem] uppercase tracking-[0.2em] text-teal-300 font-mono font-bold block text-center">Fulfillment Ledger</span>
         </div>
+
+        <!-- COLUMN 3: PROTECTED ANALOG CLOCK MOUNT (Grid Span: 4) -->
+        <!-- 🌟 THE CENTERING FIX: Swapped md:justify-end for md:justify-center to center the clock dial axis -->
+        <div class="z-10 w-full md:col-span-4 flex items-center justify-center md:justify-center pr-0 select-none">
+            <div class="w-[200px] h-[200px] relative flex items-center justify-center flex-shrink-0">
+                {% include 'accounts/partials/clock_analog.html' %}
+            </div>
+        </div>
+
+        <!-- BACKGROUND VISUAL IMAGE ASSET COVER (z-0 sits safely beneath input/output contents) -->
+        <img src="/media/hero/red_leaves.jpeg" alt="Background" class="absolute left-0 top-0 w-full h-full object-cover z-0 rounded-2xl">
+        <div class="absolute inset-0 bg-black/15 z-0 pointer-events-none"></div> <!-- Soft overlay maximizes textual readability profiles -->
+    </div>
+
+    <h3 class="text-xs font-bold text-base-content/40 mb-4 uppercase tracking-widest flex items-center gap-2 pl-1 select-none border-b border-base-content/5 pb-2">
+        <i class="fa-solid fa-box-open text-info-content"></i> Historical Log Summary ｜ 訂單明細
+    </h3>
+
+    <!-- ================================================================= -->
+    <!-- 🏦 SECTION 1: AWAITING BANK WIRE CONFIRMATION (ACTIVE HOLDS)       -->
+    <!-- ================================================================= -->
+    {% if pending_orders %}
+    <div class="mt-6 mb-4 flex items-center gap-2 pl-1 select-none animate-fade-in">
+        <span class="w-2 h-2 rounded-full bg-warning animate-ping"></span>
+        <h4 class="text-sm font-black text-warning uppercase tracking-wider">待付款項目 ｜ Awaiting Bank Transfer</h4>
     </div>
     
-    <!-- orders -->
-    <div class="grid grid-cols-2 gap-4 my-5">
-        <!-- order1 -->
-        <div class="card col-span-1 bg-primary-content shadow-sm">
-            <div class="card-body">
-                <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
-                <div class="text-xs flex justify-start w-full">
-                    訂單日期：2025年11月25日
-                    <br/>
-                    狀態：已完成
-                    <br/>
-                    快遞單號：UPS 123443590345
-                </div>
-                <ul class="mt-6 flex flex-col gap-2 text-xs">
-                    <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
-                    <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
-                </ul>
-                <hr class="text-primary"/>
-                <div class="flex justify-between w-full">
-                    <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
-                    <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
-                </div>
-                <div class="mt-6">
-                <a href="#" class="btn btn-primary btn-block">查 看 明 細</a>
-                </div>
-            </div>
-        </div>
-        <!-- order2 -->
-        <div class="card col-span-1 bg-primary-content shadow-sm">
-            <div class="card-body">
-                <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
-                <div class="text-xs flex justify-start w-full">
-                    訂單日期：2025年11月25日
-                    <br/>
-                    狀態：已完成
-                    <br/>
-                    快遞單號：UPS 123443590345
-                </div>
-                <ul class="mt-6 flex flex-col gap-2 text-xs">
-                    <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
-                    <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
-                </ul>
-                <hr class="text-primary"/>
-                <div class="flex justify-between w-full">
-                    <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
-                    <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
-                </div>
-                <div class="mt-6">
-                <a href="" class="btn btn-primary btn-block">查 看 明 細</a>
-                </div>
-            </div>
-        </div>
-        <!-- order3 -->
-        <div class="card col-span-1 bg-primary-content shadow-sm">
-            <div class="card-body">
-                <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
-                <div class="text-xs flex justify-start w-full">
-                    訂單日期：2025年11月25日
-                    <br/>
-                    狀態：已完成
-                    <br/>
-                    快遞單號：UPS 123443590345
-                </div>
-                <ul class="mt-6 flex flex-col gap-2 text-xs">
-                    <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
-                    <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
-                </ul>
-                <hr class="text-primary"/>
-                <div class="flex justify-between w-full">
-                    <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
-                    <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
-                </div>
-                <div class="mt-6">
-                <a href="" class="btn btn-primary btn-block">查 看 明 細</a>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+        {% for order in pending_orders %}
+            <div class="card bg-base-100 border border-base-300 shadow-sm rounded-xl overflow-hidden hover:border-info-content/30 hover:shadow-md transition-all duration-300 group relative">
+        
+                <div class="p-5 flex flex-col justify-between h-full relative">
+                    
+                    <!-- Top Meta Row -->
+                    <div class="border-b border-warning/10 pb-3 space-y-1">
+                        <span class="text-[0.6rem] font-mono font-bold uppercase tracking-widest text-warning/60 block">Hold Reservation Reference</span>
+                        <div class="font-mono text-sm font-black text-warning select-all">Order No. {{ order.order_number }}</div>
+                    </div>
+
+                    <div class="card order-card col-span-1 bg-warning/10 border border-warning/30 shadow-md rounded-xl transition-all duration-300">
+                        <div class="card-body p-5">
+                            <div class="text-base flex justify-between w-full font-black text-warning">
+                                <span>Order No. {{ order.order_number }}</span>
+                            </div>
+                        </div>                
+                    </div>
+
+                    <!-- Timing & Hold Specs -->
+                    <div class="text-xs space-y-2 my-4 leading-relaxed text-base-content/80">
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-calendar-plus opacity-50"></i>
+                            <span><strong>建立日期：</strong>{{ order.created_at|date:"Y-m-d H:i" }}</span>
+                        </div>
+                        <div class="flex items-start gap-1.5 p-2 bg-error/10 border border-error/20 rounded-lg text-error font-semibold">
+                            <i class="fa-solid fa-clock-rotate-left mt-0.5 text-xs animate-pulse"></i>
+                            <span>庫存保留截止期限：{{ order.inventory_hold_expiry|date:"Y-m-d H:i" }}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-warning font-medium">
+                            <i class="fa-solid fa-hourglass-half"></i>
+                            <span><strong>狀態：</strong>待轉帳確認 (Awaiting Verification)</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Financial Ledger Breakdown -->
+                    <ul class="space-y-1.5 text-xs border-t border-dashed border-warning/20 pt-3 font-mono">
+                        <li class="flex justify-between text-base-content/70">
+                            <span>應付總額 (CNY Total):</span>
+                            <span class="font-bold text-base-content">RMB {{ order.total_due }}</span>
+                        </li>
+                        {% if order.total_due_foreign != order.total_due %}
+                        <li class="flex justify-between p-1.5 bg-warning/10 rounded border border-warning/10 font-bold text-warning mt-1">
+                            <span>應匯外幣總金額:</span>
+                            <span>{{ order.total_due_foreign }} 外幣</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+
+                    <!-- Action Button Matrix Row -->
+                    <div class="grid grid-cols-2 gap-3 mt-5">
+                        <button 
+                            hx-post="{% url 'cancel_order' order.id %}"
+                            hx-target="closest .order-card"
+                            hx-swap="delete"
+                            hx-confirm="您確定要取消此筆保留訂單嗎？釋出的商品庫存將無法恢復。 Are you sure you want to cancel this order hold?"
+                            class="btn btn-xs btn-outline btn-error font-bold rounded-lg py-2 h-auto min-h-0 shadow-sm transition-all">
+                            <i class="fa-solid fa-trash-can text-[0.65rem]"></i> 取消保留
+                        </button>
+                        <a href="#" class="btn btn-xs bg-warning text-warning-content hover:bg-warning/80 font-bold rounded-lg py-2 h-auto min-h-0 text-center shadow-sm transition-all">
+                            <i class="fa-solid fa-building-columns text-[0.65rem]"></i> 查看匯款帳號
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
-        <!-- order4 -->
-        <div class="card col-span-1 bg-primary-content shadow-sm">
-            <div class="card-body">
-                <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
-                <div class="text-xs flex justify-start w-full">
-                    訂單日期：2025年11月25日
-                    <br/>
-                    狀態：已完成
-                    <br/>
-                    快遞單號：UPS 123443590345
+
+            <!-- DYNAMIC ITEM MANIFEST DETAILS MODAL DRAWER CONTAINER -->
+            <dialog id="modal_{{ order.order_number }}" class="modal modal-bottom sm:modal-middle bg-black/60 backdrop-blur-sm select-none">
+                <div class="modal-box bg-base-100 border border-base-300 rounded-2xl max-w-xl p-0 overflow-hidden shadow-2xl animate-fade-in relative text-base-content">
+                    
+                    <!-- MODAL TITLE HEADER STRIP (Matching your elegant dark info-content theme accents) -->
+                    <div class="bg-info-content text-white p-4 flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-receipt text-accent text-sm"></i>
+                            <div class="flex flex-col">
+                                <h4 class="font-black text-sm tracking-wide">Order Specifications ｜ 訂單明細摘要</h4>
+                                <span class="text-[0.6rem] opacity-70 font-mono tracking-widest uppercase">Invoice Pass: {{ order.order_number }}</span>
+                            </div>
+                        </div>
+                        <button onclick="closeOrderDetailsModal('{{ order.order_number }}')" class="btn btn-xs btn-circle btn-ghost text-white font-bold">✕</button>
+                    </div>
+                    
+                    <!-- INNER SUMMARY GRID DETAILS -->
+                    <div class="p-5 space-y-4 text-xs font-sans max-h-[30rem] overflow-y-auto">
+                        
+                        <!-- 1. BASELINE ACCOUNTING TRANSACTION LEDGER SUMMARY BOX -->
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-2 bg-base-200/60 border border-base-300 p-3 rounded-xl font-mono text-[0.7rem] shadow-inner text-base-content/80">
+                            <div><span class="opacity-50">Order Date ｜ 訂單日期:</span> <span class="font-bold text-base-content">{{ order.created_at|date:"Y-m-d H:i" }}</span></div>
+                            <div><span class="opacity-50">Recipient ｜ 收件人:</span> <span class="font-bold text-base-content">{{ order.recipient_first_name|default:"Self ｜ 自用" }}</span></div>
+                            <div><span class="opacity-50">Base Total ｜ 產品實付:</span> <span class="font-bold text-base-content">¥{{ order.product_total|default:order.total_due }}</span></div>
+                            <div><span class="opacity-50">Grand Total ｜ 總計結算:</span> <span class="font-black text-info-content">¥{{ order.total_due }}</span></div>
+                        </div>
+
+                        <!-- 2. DYNAMIC PURCHASED ORDERPRODUCT manifest LIST -->
+                        <div class="space-y-1.5">
+                            <span class="text-[0.65rem] font-bold uppercase tracking-widest text-base-content/40 block pl-0.5">Purchased Lines ｜ 訂購商品清單</span>
+                            <div class="divide-y divide-base-300 bg-base-50 rounded-xl border border-base-300 px-3.5">
+                                {% for item in order.orderproduct_set.all %}
+                                <div class="flex justify-between items-center py-3 text-[0.7rem] gap-4">
+                                    <div class="flex flex-col space-y-0.5 max-w-[65%]">
+                                        <span class="font-black text-base-content/90 text-xs leading-tight">{{ item.product.product_name }}</span>
+                                        <span class="opacity-50 font-mono text-[0.6rem]">SKU: {{ item.product_variation.get_sku }} × {{ item.quantity }}</span>
+                                        
+                                        <!-- Inline Shipping Dispatch Tracking Indicators -->
+                                        {% if item.product_variation.product.is_physical %}
+                                        <div class="text-[0.6rem] mt-1">
+                                            {% if item.is_dispatched %}
+                                                <span class="text-success font-medium"><i class="fa-solid fa-circle-check"></i> Dispatched ｜ 已發貨</span>
+                                            {% else %}
+                                                <span class="text-info font-medium"><i class="fa-solid fa-hourglass-half"></i> Processing ｜ 備貨中</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="text-right flex-shrink-0">
+                                        <!-- 🌟 THE INSTANT DIGITAL SECURE ENTRY LINK ROUTER -->
+                                        {% if item.product_variation.product.is_digital and item.product_variation.product.digital_fulfillment_type == 'INSTANT' %}
+                                            {% for tok in item.download_tokens.all %}
+                                                {% if not tok.is_expired %}
+                                                    <a href="{% url 'secure_file_download_gate' tok.id %}" class="btn btn-xs btn-accent text-white font-bold rounded-lg px-2.5 shadow-sm py-1.5 h-auto min-h-0">
+                                                        <i class="fa-solid fa-download text-[0.65rem]"></i> Download ｜ 下載
+                                                    </a>
+                                                {% else %}
+                                                    <div class="badge badge-sm badge-ghost text-error font-mono font-bold border border-error/10">Expired ｜ 已失效</div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% elif item.product_variation.product.is_voucher %}
+                                            <span class="text-[0.65rem] bg-accent/10 text-accent font-bold px-2 py-0.5 rounded border border-accent/20 font-mono">E-Voucher</span>
+                                        {% else %}
+                                            <span class="font-bold font-mono text-base-content/70">¥{{ item.get_subtotal }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- 3. LOGISTICS SHIPPINGS AND DELIVERY NOTE SPEC BOXES -->
+                        {% if order.delivery_note or order.tracking_number %}
+                        <div class="space-y-1.5">
+                            <span class="text-[0.65rem] font-bold uppercase tracking-widest text-base-content/40 block pl-0.5">Courier Instructions ｜ 物流配送備註</span>
+                            <div class="bg-base-200/40 border border-base-300 p-3 rounded-xl space-y-2 text-[0.7rem] text-base-content/80">
+                                {% if order.tracking_number %}
+                                <p class="font-mono"><strong>Tracking Reference ｜ 運單號碼:</strong> <span class="badge badge-sm font-bold bg-base-100 border text-info-content select-all font-mono">{{ order.tracking_number }}</span></p>
+                                {% endif %}
+                                {% if order.delivery_note %}
+                                <p class="leading-relaxed"><strong>Delivery Remark ｜ 配送附言:</strong> <span class="text-base-content">{{ order.delivery_note }}</span></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- 4. OPERATIONAL MANAGER ACTION ROW TRIGGERS -->
+                        <div class="border-t border-base-content/10 pt-3 mt-4 flex flex-col sm:flex-row gap-2 justify-between items-stretch sm:items-center">
+                            
+                            <!-- Invoice Print Pass -->
+                            {% if order.is_ordered %}
+                            <a href="{% url 'generate_order_confirmation_pdf' order.order_number %}" target="_blank" class="btn btn-xs btn-outline border-base-content/20 text-base-content/80 hover:bg-base-content hover:text-base-100 font-bold flex gap-1 items-center justify-center py-2 h-auto min-h-0 rounded-lg shadow-sm">
+                                <i class="fa-solid fa-file-pdf"></i> Download Receipt ｜ 下載 PDF 水單
+                            </a>
+                            {% else %}
+                            <div></div> <!-- Safe alignment spacer token -->
+                            {% endif %}
+                            
+                            <div class="flex gap-2">
+                                {% if order.order_status == 'Processing' or order.order_status == 'Hold_Pending' %}
+                                    <!-- Self-cancellation hook allowed only before active fulfillment runs -->
+                                    <button onclick="triggerOrderCancellation('{{ order.order_number }}')" class="btn btn-xs btn-error btn-outline font-bold rounded-lg px-3 py-2 h-auto min-h-0 shadow-sm grow sm:grow-0">
+                                        Cancel Order ｜ 取消訂單
+                                    </button>
+                                {% endif %}
+                                <button onclick="closeOrderDetailsModal('{{ order.order_number }}')" class="btn btn-xs btn-neutral font-bold rounded-lg px-4 py-2 h-auto min-h-0 shadow-sm grow sm:grow-0">
+                                    Close ｜ 關閉
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
-                <ul class="mt-6 flex flex-col gap-2 text-xs">
-                    <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
-                    <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
-                </ul>
-                <hr class="text-primary"/>
-                <div class="flex justify-between w-full">
-                    <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
-                    <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
-                </div>
-                <div class="mt-6">
-                <a href="" class="btn btn-primary btn-block">查 看 明 細</a>
-                </div>
-            </div>
-        </div>
+            </dialog>
+        {% endfor %}
     </div>
+    {% endif %}
+
+
+    <!-- ================================================================= -->
+    <!-- 💳 SECTION 2: SETTLED & COMPLETED ORDERS HISTORY                   -->
+    <!-- ================================================================= -->
+    <div class="mt-8 mb-4 pl-1 select-none animate-fade-in border-t border-base-content/5 pt-5">
+        <h4 class="text-sm font-black text-info-content uppercase tracking-wider">歷史購物紀錄 ｜ Order History</h4>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+        {% for order in paid_orders %}
+            <div class="card bg-base-200/50 border border-base-300 backdrop-blur-md shadow-sm rounded-xl overflow-hidden hover:border-info-content/30 hover:bg-base-200/80 hover:shadow-md transition-all duration-300 group relative">
+                
+                <!-- DESIGN ACCENT STRIP: Anchors your custom sidebar info-content background theme -->
+                <div class="absolute left-0 top-0 bottom-0 w-[4px] bg-info-content/20 group-hover:bg-info-content transition-colors duration-300"></div>
+
+                <div class="p-5 flex flex-col justify-between h-full pl-6">
+                    <!-- Top Meta Row -->
+                    <div class="flex justify-between items-start gap-2 border-b border-base-content/5 pb-3">
+                        <div class="space-y-0.5">
+                            <span class="text-[0.6rem] font-mono font-bold uppercase tracking-widest text-base-content/40 block">Settled Order Pass</span>
+                            <div class="font-mono text-sm font-black text-info-content select-all group-hover:text-primary transition-colors">ID: {{ order.order_number }}</div>
+                        </div>
+                        
+                        <!-- Dynamic Fulfillment Badge State Router -->
+                        <div>
+                            {% if order.order_status == 'Processing' %}
+                            <div class="badge border-0 bg-info text-info-content font-bold text-[0.6rem] py-2 px-2.5 rounded-md shadow-sm"><i class="fa-solid fa-spinner animate-spin mr-1 text-[0.55rem]"></i>Processing｜處理中</div>
+                            {% elif order.order_status == 'Partly_Dispatched' %}
+                            <div class="badge border-0 bg-warning text-warning-content font-bold text-[0.6rem] py-2 px-2.5 rounded-md shadow-sm">Partly Sent｜部分發貨</div>
+                            {% elif order.order_status == 'All_Dispatched' %}
+                            <div class="badge border-0 bg-secondary text-secondary-content font-bold text-[0.6rem] py-2 px-2.5 rounded-md shadow-sm">Dispatched｜已發貨</div>
+                            {% elif order.order_status == 'Delivered' %}
+                            <div class="badge border-0 bg-success text-success-content font-bold text-[0.6rem] py-2 px-2.5 rounded-md shadow-sm">Delivered｜已送達</div>
+                            {% else %}
+                            <div class="badge border-0 bg-success/20 text-success font-bold text-[0.6rem] py-2 px-2.5 rounded-md">Paid ｜ 已付款</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Delivery Specs Timeline -->
+                    <div class="text-xs space-y-1.5 my-4 leading-normal text-base-content/80 font-sans">
+                        <div class="flex items-center gap-1.5">
+                            <span class="opacity-50">訂單日期：</span>
+                            <span class="font-mono">{{ order.ordered_at|date:"Y-m-d H:i"|default:order.created_at }}</span>
+                        </div>
+                        {% if order.tracking_number %}
+                        <div class="flex items-center gap-1.5 p-1.5 bg-base-100 rounded border border-base-300 w-fit font-mono text-[0.65rem] text-info-content">
+                            <i class="fa-solid fa-truck opacity-70"></i>
+                            <span>快遞單號：<strong class="select-all">{{ order.tracking_number }}</strong></span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Ledger Pricing Summary -->
+                    <div class="border-t border-base-content/5 pt-3 space-y-2">
+                        <div class="grid grid-cols-2 gap-1 text-[0.7rem] font-mono opacity-60">
+                            <div class="text-left">產品實付金額:</div>
+                            <div class="text-right">¥{{ order.product_total|default:order.total_due }}</div>
+                            {% if order.shipping_cost %}
+                            <div class="text-left">運費:</div>
+                            <div class="text-right">¥{{ order.shipping_cost }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="border-t border-dashed border-base-content/10 pt-2 flex justify-between items-baseline w-full">
+                            <span class="text-xs font-bold text-base-content/70">總計金額 (Grand Total):</span>
+                            <span class="font-mono text-lg font-black text-info-content group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                                RMB {{ order.total_due }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 🌟 THE COMPLETE VIEW DETAIL INTERACTION HOOK BUTTON GROUP -->
+                    <div class="mt-4">
+                        <button onclick="openOrderDetailsModal('{{ order.order_number }}')" 
+                                class="btn btn-xs btn-outline border-info-content/20 text-info-content hover:bg-info-content hover:text-white font-bold w-full rounded-lg py-2 h-auto min-h-0 shadow-sm transition-all duration-200">
+                            View Order Details ｜ 查看明細
+                        </button>
+                    </div> <!-- Closes <div class="mt-4"> -->
+
+                </div> <!-- Closes <div class="p-5 flex flex-col..."> -->
+            </div> <!-- Closes the individual .card container div -->
+            
+            <!-- DYNAMIC ITEM MANIFEST DETAILS MODAL DRAWER CONTAINER -->
+            <dialog id="modal_{{ order.order_number }}" class="modal modal-bottom sm:modal-middle bg-black/60 backdrop-blur-sm select-none">
+                <div class="modal-box bg-base-100 border border-base-300 rounded-2xl max-w-xl p-0 overflow-hidden shadow-2xl animate-fade-in relative text-base-content">
+                    
+                    <!-- MODAL TITLE HEADER STRIP (Matching your elegant dark info-content theme accents) -->
+                    <div class="bg-info-content text-white p-4 flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-receipt text-accent text-sm"></i>
+                            <div class="flex flex-col">
+                                <h4 class="font-black text-sm tracking-wide">Order Specifications ｜ 訂單明細摘要</h4>
+                                <span class="text-[0.6rem] opacity-70 font-mono tracking-widest uppercase">Invoice Pass: {{ order.order_number }}</span>
+                            </div>
+                        </div>
+                        <button onclick="closeOrderDetailsModal('{{ order.order_number }}')" class="btn btn-xs btn-circle btn-ghost text-white font-bold">✕</button>
+                    </div>
+                    
+                    <!-- INNER SUMMARY GRID DETAILS -->
+                    <div class="p-5 space-y-4 text-xs font-sans max-h-[30rem] overflow-y-auto">
+                        
+                        <!-- 1. BASELINE ACCOUNTING TRANSACTION LEDGER SUMMARY BOX -->
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-2 bg-base-200/60 border border-base-300 p-3 rounded-xl font-mono text-[0.7rem] shadow-inner text-base-content/80">
+                            <div><span class="opacity-50">Order Date ｜ 訂單日期:</span> <span class="font-bold text-base-content">{{ order.created_at|date:"Y-m-d H:i" }}</span></div>
+                            <div><span class="opacity-50">Recipient ｜ 收件人:</span> <span class="font-bold text-base-content">{{ order.recipient_first_name|default:"Self ｜ 自用" }}</span></div>
+                            <div><span class="opacity-50">Base Total ｜ 產品實付:</span> <span class="font-bold text-base-content">¥{{ order.product_total|default:order.total_due }}</span></div>
+                            <div><span class="opacity-50">Grand Total ｜ 總計結算:</span> <span class="font-black text-info-content">¥{{ order.total_due }}</span></div>
+                        </div>
+
+                        <!-- 2. DYNAMIC PURCHASED ORDERPRODUCT manifest LIST -->
+                        <div class="space-y-1.5">
+                            <span class="text-[0.65rem] font-bold uppercase tracking-widest text-base-content/40 block pl-0.5">Purchased Lines ｜ 訂購商品清單</span>
+                            <div class="divide-y divide-base-300 bg-base-50 rounded-xl border border-base-300 px-3.5">
+                                {% for item in order.orderproduct_set.all %}
+                                <div class="flex justify-between items-center py-3 text-[0.7rem] gap-4">
+                                    <div class="flex flex-col space-y-0.5 max-w-[65%]">
+                                        <span class="font-black text-base-content/90 text-xs leading-tight">{{ item.product.product_name }}</span>
+                                        <span class="opacity-50 font-mono text-[0.6rem]">SKU: {{ item.product_variation.get_sku }} × {{ item.quantity }}</span>
+                                        
+                                        <!-- Inline Shipping Dispatch Tracking Indicators -->
+                                        {% if item.product_variation.product.is_physical %}
+                                        <div class="text-[0.6rem] mt-1">
+                                            {% if item.is_dispatched %}
+                                                <span class="text-success font-medium"><i class="fa-solid fa-circle-check"></i> Dispatched ｜ 已發貨</span>
+                                            {% else %}
+                                                <span class="text-info font-medium"><i class="fa-solid fa-hourglass-half"></i> Processing ｜ 備貨中</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="text-right flex-shrink-0">
+                                        <!-- 🌟 THE INSTANT DIGITAL SECURE ENTRY LINK ROUTER -->
+                                        {% if item.product_variation.product.is_digital and item.product_variation.product.digital_fulfillment_type == 'INSTANT' %}
+                                            {% for tok in item.download_tokens.all %}
+                                                {% if not tok.is_expired %}
+                                                    <a href="{% url 'secure_file_download_gate' tok.id %}" class="btn btn-xs btn-accent text-white font-bold rounded-lg px-2.5 shadow-sm py-1.5 h-auto min-h-0">
+                                                        <i class="fa-solid fa-download text-[0.65rem]"></i> Download ｜ 下載
+                                                    </a>
+                                                {% else %}
+                                                    <div class="badge badge-sm badge-ghost text-error font-mono font-bold border border-error/10">Expired ｜ 已失效</div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% elif item.product_variation.product.is_voucher %}
+                                            <span class="text-[0.65rem] bg-accent/10 text-accent font-bold px-2 py-0.5 rounded border border-accent/20 font-mono">E-Voucher</span>
+                                        {% else %}
+                                            <span class="font-bold font-mono text-base-content/70">¥{{ item.get_subtotal }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- 3. LOGISTICS SHIPPINGS AND DELIVERY NOTE SPEC BOXES -->
+                        {% if order.delivery_note or order.tracking_number %}
+                        <div class="space-y-1.5">
+                            <span class="text-[0.65rem] font-bold uppercase tracking-widest text-base-content/40 block pl-0.5">Courier Instructions ｜ 物流配送備註</span>
+                            <div class="bg-base-200/40 border border-base-300 p-3 rounded-xl space-y-2 text-[0.7rem] text-base-content/80">
+                                {% if order.tracking_number %}
+                                <p class="font-mono"><strong>Tracking Reference ｜ 運單號碼:</strong> <span class="badge badge-sm font-bold bg-base-100 border text-info-content select-all font-mono">{{ order.tracking_number }}</span></p>
+                                {% endif %}
+                                {% if order.delivery_note %}
+                                <p class="leading-relaxed"><strong>Delivery Remark ｜ 配送附言:</strong> <span class="text-base-content">{{ order.delivery_note }}</span></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- 4. OPERATIONAL MANAGER ACTION ROW TRIGGERS -->
+                        <div class="border-t border-base-content/10 pt-3 mt-4 flex flex-col sm:flex-row gap-2 justify-between items-stretch sm:items-center">
+                            
+                            <!-- Invoice Print Pass -->
+                            {% if order.is_ordered %}
+                            <a href="{% url 'generate_order_confirmation_pdf' order.order_number %}" target="_blank" class="btn btn-xs btn-outline border-base-content/20 text-base-content/80 hover:bg-base-content hover:text-base-100 font-bold flex gap-1 items-center justify-center py-2 h-auto min-h-0 rounded-lg shadow-sm">
+                                <i class="fa-solid fa-file-pdf"></i> Download Receipt ｜ 下載 PDF 水單
+                            </a>
+                            {% else %}
+                            <div></div> <!-- Safe alignment spacer token -->
+                            {% endif %}
+                            
+                            <div class="flex gap-2">
+                                {% if order.order_status == 'Processing' or order.order_status == 'Hold_Pending' %}
+                                    <!-- Self-cancellation hook allowed only before active fulfillment runs -->
+                                    <button onclick="triggerOrderCancellation('{{ order.order_number }}')" class="btn btn-xs btn-error btn-outline font-bold rounded-lg px-3 py-2 h-auto min-h-0 shadow-sm grow sm:grow-0">
+                                        Cancel Order ｜ 取消訂單
+                                    </button>
+                                {% endif %}
+                                <button onclick="closeOrderDetailsModal('{{ order.order_number }}')" class="btn btn-xs btn-neutral font-bold rounded-lg px-4 py-2 h-auto min-h-0 shadow-sm grow sm:grow-0">
+                                    Close ｜ 關閉
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </dialog>
+
+            {% empty %}
+            <!-- EMPTY FALLBACK NOTIFICATION SYSTEM INTERFACE -->
+            {% if not pending_orders %}
+            <div class="col-span-1 md:col-span-2 bg-base-200/40 border border-base-300 rounded-2xl p-16 text-center text-base-content/40 shadow-inner select-none animate-fade-in">
+                <div class="flex flex-col items-center gap-3">
+                    <i class="fa-solid fa-receipt fa-3x opacity-20"></i>
+                    <p class="font-medium text-sm">尚無任何購物紀錄。 No order records found.</p>
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- 🚫 SECTION 3: CANCELLED ORDERS HISTORY LOGS                       -->
+    <!-- ================================================================= -->
+    {% if cancelled_orders %}
+    <div class="mt-8 mb-4 pl-1 select-none animate-fade-in border-t border-base-content/10 pt-5">
+        <h4 class="text-sm font-black text-neutral-content/40 uppercase tracking-wider">Cancelled Orders ｜ 已取消的訂單紀錄</h4>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-4 opacity-75">
+        {% for order in cancelled_orders %}
+        <div class="card bg-base-100 border border-base-300 shadow-sm rounded-xl overflow-hidden grayscale group relative">
+            <div class="absolute left-0 top-0 bottom-0 w-[4px] bg-neutral/30"></div>
+            
+            <div class="p-5 flex flex-col justify-between h-full pl-6">
+                <div class="flex justify-between items-start gap-2 border-b border-base-content/5 pb-3">
+                    <div class="space-y-0.5">
+                        <span class="text-[0.6rem] font-mono font-bold uppercase tracking-widest text-base-content/40 block">Cancelled Transaction Pass ｜ 作廢憑證</span>
+                        <div class="font-mono text-sm font-black text-base-content/60 select-all">ID: {{ order.order_number }}</div>
+                    </div>
+                    
+                    <div class="badge border-0 bg-neutral text-neutral-content/60 font-bold text-[0.65rem] tracking-wide py-2.5 px-3 rounded-md">
+                        <i class="fa-solid fa-rectangle-xmark mr-1.5 text-[0.65rem]"></i>已取消 ｜ Cancelled
+                    </div>
+                </div>
+
+                <div class="text-xs space-y-1.5 my-4 text-base-content/60">
+                    <div>Order Date ｜ 訂單日期：<span class="font-mono">{{ order.created_at|date:"Y-m-d H:i" }}</span></div>
+                </div>
+
+                <div class="border-t border-base-content/5 pt-3 flex justify-between items-baseline w-full font-mono">
+                    <span class="text-xs font-sans text-base-content/50">Voided Total ｜ 作廢總計:</span>
+                    <span class="text-base font-black text-base-content/60">RMB ¥{{ order.total_due }}</span>
+                </div>
+
+                <div class="mt-4">
+                    <!-- The click action works identically by passing the unique ID string pass -->
+                    <button onclick="openOrderDetailsModal('{{ order.order_number }}')" 
+                            class="btn btn-xs btn-outline btn-neutral w-full rounded-lg py-2.5 h-auto min-h-0 transition-all font-bold">
+                        View Log Details ｜ 查看取消明細
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🌟 THE CELL LOCK: Injected safely inside the cancelled loop boundaries to resolve variables -->
+        <dialog id="modal_{{ order.order_number }}" class="modal modal-bottom sm:modal-middle bg-black/60 backdrop-blur-sm text-base-content">
+            <div class="modal-box bg-base-100 border border-base-300 rounded-2xl max-w-xl p-0 overflow-hidden shadow-2xl relative">
+                
+                <div class="bg-neutral text-neutral-content/80 p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-ban text-sm"></i>
+                        <div class="flex flex-col">
+                            <h4 class="font-black text-sm tracking-wide">Cancelled Manifest Summary ｜ 已作廢訂單摘要</h4>
+                            <span class="text-[0.6rem] font-mono opacity-70">REF: {{ order.order_number }}</span>
+                        </div>
+                    </div>
+                    <button onclick="closeOrderDetailsModal('{{ order.order_number }}')" class="btn btn-xs btn-circle btn-ghost text-white">✕</button>
+                </div>
+                
+                <div class="p-5 space-y-4 text-xs font-sans max-h-[30rem] overflow-y-auto">
+                    <div class="bg-base-200 border border-base-300 p-3 rounded-xl font-mono text-[0.7rem] text-base-content/70">
+                        <div><span class="opacity-50">Date :</span> {{ order.created_at|date:"Y-m-d H:i" }}</div>
+                        <div><span class="opacity-50">Fulfillment Status :</span> <span class="text-error font-bold">CANCELLED ｜ 交易已關閉</span></div>
+                        <div><span class="opacity-50">Voided Amount :</span> ¥{{ order.total_due }}</div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <span class="text-[0.65rem] font-bold uppercase tracking-widest text-base-content/40 block pl-0.5">Purchased Lines ｜ 項目明細</span>
+                        <div class="divide-y divide-base-300 bg-base-50 rounded-xl border px-3.5 opacity-60">
+                            {% for item in order.orderproduct_set.all %}
+                            <div class="flex justify-between items-center py-3 text-[0.7rem]">
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-base-content/80">{{ item.product.product_name }}</span>
+                                    <span class="opacity-50 font-mono text-[0.6rem]">SKU: {{ item.product_variation.get_sku }} × {{ item.quantity }}</span>
+                                </div>
+                                <span class="font-bold font-mono">¥{{ item.get_subtotal }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="border-t border-base-content/10 pt-3 mt-4 flex justify-end">
+                        <button onclick="closeOrderDetailsModal('{{ order.order_number }}')" class="btn btn-xs btn-neutral font-bold rounded-lg px-5 py-2 h-auto min-h-0 shadow-sm">
+                            Close ｜ 關閉
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </dialog>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+
 </div>
+<script>
+    function openOrderDetailsModal(orderNumber) {
+        const targetModal = document.getElementById(`modal_${orderNumber}`);
+        if (targetModal) targetModal.showModal();
+    }
+    function closeOrderDetailsModal(orderNumber) {
+        const targetModal = document.getElementById(`modal_${orderNumber}`);
+        if (targetModal) targetModal.close();
+    }
+    function triggerOrderCancellation(orderNumber) {
+        closeOrderDetailsModal(orderNumber);
+        Swal.fire({
+            title: 'Cancel Order?｜申請取消訂單？',
+            text: `Are you sure you want to request cancellation for order #${orderNumber}?｜您確定要取消此訂單嗎？`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, Cancel｜確定取消',
+            cancelButtonText: 'No, Keep｜保持原狀'
+        })
+        .then((result) => {
+            if (result.isConfirmed) {
+                // Point this to your standard HTMX cancellation or Django view endpoint route
+                window.location.href = `/orders/cancel-request/${orderNumber}/`;
+            } else { 
+                openOrderDetailsModal(orderNumber);
+            }
+        });
+    }
+</script>

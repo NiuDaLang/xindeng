@@ -791,6 +791,19 @@ DESTINATIONS_FOR_INPUT = [
     # ('ZM',	              'Zambia 🇿🇲'),
     # ('ZW',	            'Zimbabwe 🇿🇼'),
 ]
+DESTINATIONS_INCL_DIGITAL = [
+    ('AU',	           'Australia 🇦🇺'),
+    ('CN',	               'China 🇨🇳'),
+    ('HK',             'Hong Kong 🇭🇰'),
+    ('JP',	               'Japan 🇯🇵'),
+    ('MO',	           'Macao SAR 🇲🇴'),
+    ('MY',	            'Malaysia 🇲🇾'),
+    ('NZ',	         'New Zealand 🇳🇿'),
+    ('SG',	           'Singapore 🇸🇬'),
+    ('KR',	         'South Korea 🇰🇷'),
+    ('TW',	          'Taiwan ROC 🇹🇼'),
+    ('XX', 'Digital Goods / E-Voucher'),
+]
 GENDER = [
         ('DEFAULT',     '♂♀⚥'),
         ('MALE',        '男性 | Male'),

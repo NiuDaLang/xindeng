@@ -5,8 +5,6 @@
 <div class="relative mt-[86px] w-full">
     {% include 'includes/banner.html' %}
 </div>
-<!-- http://localhost:8000/orders/order_complete/?order_number=AU-T7KT5H&transaction_id=5UA18760GW8323821 -->
-<!-- http://localhost:8000/orders/order_complete/?order_number=JP-QGP93J&transaction_id=6DY00521N4625922S -->
 <!-- MAIN -->
 <main class="px-[max(1rem,5vw)] py-10 min-h-[calc(100dvh-200px)]">
     <!-- progress -->
@@ -48,7 +46,7 @@
         <!-- receipt -->
         <div class="box zigzag p-15 text-center">
             <!-- 🎯 DYNAMIC STATUS ICON AND MESSAGE HEADER HEADLINE -->
-            {% if is_bank_transfer %}
+            {% if is_bank_transfer and order %}
                 <i class="m-auto w-full text-warning fa-solid fa-hourglass-half fa-6x animate-pulse"></i>
                 <h2 class="text-3xl font-black my-5 text-warning">Order Hold Confirmed!<br/>訂單保留成功！</h2>
             {% else %}
@@ -57,8 +55,8 @@
             {% endif %}
 
             <h4 class="text-1xl">
-                {% if is_bank_transfer %}
-                    庫存已成功為您保留！請在 <strong class="text-error font-black">72小時內</strong> 完成線下轉帳以確保您的訂單生效。<br>
+                {% if is_bank_transfer and order %}
+                    <!-- 庫存已成功為您保留！請在 <strong class="text-error font-black">72小時內</strong> 完成線下轉帳以確保您的訂單生效。<br>
                     應付總額：<span class="font-black">{{ foreign_currency_code }} {{ foreign_total_due }}</span>
                     （約合 <span class="font-black">CNY {{ cny_total_due }}</span>），非常感謝！
                     <br/>
@@ -69,7 +67,59 @@
                         Total Amount Due: <span class="font-bold">{{ foreign_currency_code }} {{ foreign_total_due }}</span> 
                         (approx. <span class="font-bold">CNY {{ cny_total_due }}</span>). Thank you for your support!<br>
                         Detailed remittance coordinates and invoice copies have been dispatched to <strong class="font-bold">{{ proforma_invoice.email }}</strong>.
-                    </span>
+                    </span> -->
+                    <!-- ⏳ LIVE COUNTDOWN TIMER FRAME LAYER -->
+                    <div class="alert alert-warning border border-warning/30 rounded-xl bg-warning/5 p-4 my-5 flex items-start gap-3 text-warning-content select-none animate-fade-in shadow-sm">
+                        <i class="fa-solid fa-clock-rotate-left text-lg mt-0.5 animate-pulse text-warning"></i>
+                        <div class="text-xs space-y-1 w-full">
+                            <h4 class="font-bold text-sm flex items-center justify-between gap-2 flex-wrap">
+                                <span>Payment Window Clock Running ｜ 轉帳倒數計時中</span>
+                                <span id="hold-live-timer" class="font-mono text-error font-black bg-base-100 border px-2.5 py-0.5 rounded shadow-sm text-xs">--:--:--</span>
+                            </h4>
+                            <p>Your inventory allocation is locked until: <strong class="font-mono font-bold">{{ proforma_invoice.inventory_hold_expiry|date:"Y-m-d H:i:s" }}</strong></p>
+                            <p class="opacity-80">商品庫存將為您保留至上述時間。一旦超時未上傳或確認匯款，系統將會<strong>自動取消此訂單並釋出庫存</strong>。屆時本頁面將不再可用。</p>
+                        </div>
+                    </div>
+
+                    <!-- INSULATED RUNTIME TICK ENGINE -->
+                    <script>
+                    (() => {
+                        // Parse the ISO timestamp target straight out of Django templates parameters context
+                        const holdExpiryTime = new Date("{{ proforma_invoice.inventory_hold_expiry|date:'c' }}").getTime();
+                        const displayOutput = document.getElementById("hold-live-timer");
+                        
+                        if (!displayOutput || isNaN(holdExpiryTime)) return;
+
+                        function tick() {
+                            const now = new Date().getTime();
+                            const timeRemaining = holdExpiryTime - now;
+
+                            if (timeRemaining <= 0) {
+                                displayOutput.innerText = "EXPIRED ｜ 已過期";
+                                clearInterval(window.holdReceiptIntervalInstance);
+                                // Dynamically refresh the page! The view's new time guard will catch them and boot them to the cart
+                                window.location.reload();
+                                return;
+                            }
+
+                            // Convert remaining milliseconds payload into human-scannable metrics strings [STEM calculative problem solving]
+                            const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                            const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                            const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+
+                            // Format numbers with a clean leading zero pass
+                            const pad = (num) => String(num).padStart(2, '0');
+                            displayOutput.innerText = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+                        }
+
+                        // Initialize and lock onto a persistent window instance execution thread loop
+                        if (window.holdReceiptIntervalInstance) clearInterval(window.holdReceiptIntervalInstance);
+                        tick();
+                        window.holdReceiptIntervalInstance = setInterval(tick, 1000);
+                    })();
+                    </script>
+
+
                 {% else %}
                     我們已經收到您的付款，非常感謝！<br>
                     實付金額：
@@ -93,21 +143,89 @@
                 {% endif %}
             </h4>
 
+            {% if has_self_voucher and not is_bank_transfer %}
+                <!-- 🌟 THE SELF-CREDITED SUCCESS WALLET ALERT BANNER -->
+                <div class="alert alert-success shadow-md rounded-xl border border-success/20 my-4 flex items-center gap-3 p-4 bg-success/10 text-success-content">
+                    <i class="fa-solid fa-wallet fa-xl mt-0.5 animate-bounce-once"></i>
+                    <div class="text-xs space-y-1">
+                        <h3 class="font-bold text-sm">Voucher Auto-Credited Successfully! ｜ 禮品券已自動儲存</h3>
+                        <p>We detected this was a self-purchase transaction. The voucher face value has been <strong>instantly credited</strong> to your account wallet balance.</p>
+                        <p>You can view and apply this balance on your next checkout by visiting your <a href="/accounts/dashboard/vouchers/" class="link link-primary font-bold">Member Vouchers Dashboard</a>.</p>
+                        <div class="border-t border-success/20 border-dashed my-1"></div>
+                        <p class="opacity-90">系統檢測到此為自用購買項目。禮品券面值已<strong>自動匯入您的個人帳戶錢包</strong>！您可以前往會員中心查看餘額，並在下一次結帳時直接抵扣使用。</p>
+                    </div>
+                </div>
+            {% endif %}
+
             {% if is_bank_transfer %}
-            <div class="w-full max-w-xl mx-auto my-8 p-6 rounded-xl border border-warning/30 background-light bg-warning/5 text-left font-sans text-xs shadow-sm">
-                <h3 class="font-bold text-sm text-base-content mb-3 border-b pb-2 border-base-content/10 flex items-center gap-2">
-                    <i class="fa-solid fa-building-columns"></i> Bank Account Information ｜ 銀行匯款資訊
+            <div class="w-full max-w-4xl mx-auto my-10 p-5 sm:p-8 rounded-2xl border border-warning/30 bg-warning/5 backdrop-blur-sm text-left font-sans text-xs shadow-md animate-fade-in text-base-content select-none">
+                
+                <!-- MASTER BLOCK HEADER -->
+                <h3 class="text-base font-black border-b pb-3 border-base-content/10 flex items-center gap-2 text-warning mb-6">
+                    <i class="fa-solid fa-wallet"></i> Offline Payment Options ｜ 線下自主付款指引
                 </h3>
-                <div class="grid grid-cols-1 gap-1.5 text-base-content/90">
-                    <p><strong>Bank Name ｜ 開戶銀行:</strong> Bank of China (Mainland) / Local Branch Name</p>
-                    <p><strong>Account Name ｜ 戶名:</strong> Xindeng Corporate Limited Company</p>
-                    <p><strong>Account Number ｜ 帳號:</strong> 6217 0000 0000 0000 000</p>
-                    <p><strong>Swift Code ｜ 國際代碼:</strong> BKCHCNBJXXX</p>
-                    <!-- Reference ID field is critical to allow back-office tracking lookups -->
-                    <p class="mt-2 p-2 bg-base-100 rounded border border-warning/20 text-warning-content">
-                        🚀 <strong>Payment Remark ｜ 匯款備註:</strong> 
-                        Please write your order code <span class="badge badge-warning font-mono font-bold">{{ proforma_invoice.proforma_order_number }}</span> as the transfer remark parameter.
-                    </p>
+                
+                <!-- TWO-COLUMN FLEXIBLE GRID (Stacks on mobile, displays side-by-side on md screens) -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+                    
+                    <!-- COLUMN 1: BANK WIRE DETAILS (Grid Span: 5) -->
+                    <div class="md:col-span-5 flex flex-col justify-between bg-base-100/60 rounded-xl p-5 border border-base-content/5 shadow-sm">
+                        <div class="space-y-3">
+                            <h4 class="font-bold text-xs uppercase tracking-wider text-base-content/60 flex items-center gap-1.5 border-b pb-2 border-base-content/5">
+                                <i class="fa-solid fa-building-columns text-warning"></i> 1. Bank Remittance ｜ 銀行轉帳
+                            </h4>
+                            <div class="space-y-2 text-base-content/90 leading-relaxed text-[0.75rem]">
+                                <p><strong>Bank Name ｜ 開戶銀行:</strong><br><span class="font-medium">Bank of China (Mainland) / Local Branch Name</span></p>
+                                <p><strong>Account Name ｜ 戶名:</strong><br><span class="font-medium">Xindeng Corporate Limited Company</span></p>
+                                <p><strong>Account Number ｜ 帳號:</strong><br><span class="font-mono font-bold tracking-wide select-all text-sm">6217 0000 0000 0000 000</span></p>
+                                <p><strong>Swift Code ｜ 國際代碼:</strong><br><span class="font-mono font-bold select-all">BKCHCNBJXXX</span></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Reference Memo Guard (Critical Step Highlighted) -->
+                        <div class="mt-4 p-3 bg-base-100 rounded-xl border border-warning/30 text-warning-content leading-normal shadow-inner">
+                            <p class="font-bold flex items-center gap-1">
+                                <i class="fa-solid fa-circle-exclamation text-xs animate-pulse text-warning"></i>
+                                Payment Remark ｜ 匯款備註
+                            </p>
+                            <p class="mt-1 text-[0.7rem] opacity-90">
+                                Please ensure you write your unique order reference code <span class="badge badge-warning font-mono font-bold text-xs select-all mx-0.5 px-2 py-0.5">{{ proforma_invoice.proforma_order_number }}</span> as the transfer remark parameter.
+                            </p>
+                            <p class="mt-1 text-[0.7rem] font-medium text-primary">
+                                請務必在線下匯款或網銀轉帳的「備註/附言/附註」中填寫您的專屬訂單號碼。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- COLUMN 2: MOBILE SCANNERS & HANDLES (Grid Span: 7) -->
+                    <div class="md:col-span-7 flex flex-col justify-between bg-base-100 rounded-xl p-5 border border-base-300 shadow-sm">
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-xs uppercase tracking-wider text-base-content/60 flex items-center gap-1.5 border-b pb-2 border-base-content/5">
+                                <i class="fa-solid fa-qrcode text-success"></i> 2. Mobile App Scan ｜ 行動支付掃碼
+                            </h4>
+                            
+                            <!-- CDN Image Wrapper Frame -->
+                            <div class="w-full flex justify-center py-2 bg-base-200/40 rounded-xl border border-base-content/5">
+                                <img src="https://i.postimg.cc/JhVrWzQY/QR-codes.png" 
+                                    width="400" 
+                                    alt="Alipay and WeChat Pay QR Codes" 
+                                    class="block max-w-full h-auto border-0 rounded-lg shadow-sm hover:scale-[1.02] transition-transform duration-300 select-none pointer-events-none">
+                            </div>
+                        </div>
+
+                        <!-- Manual Lookup Handles and Tips Subtext Row -->
+                        <div class="mt-4 border-t border-dashed border-base-content/10 pt-3 space-y-2 text-[0.7rem] text-base-content/70 leading-normal">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 bg-base-200/50 rounded-xl border font-mono">
+                                <p>🔵 <strong>Alipay ID ｜ 支付寶:</strong><br><span class="select-all font-bold text-base-content/90">alipay@xindeng.art</span><br><span class="opacity-60 font-sans">(*YOKO)</span></p>
+                                <p>🟢 <strong>WeChat ID ｜ 微信:</strong><br><span class="select-all font-bold text-base-content/90">wechat_xindeng</span><br><span class="opacity-60 font-sans">(潘琪 Yoko***O)</span></p>
+                            </div>
+                            <div class="px-1 text-[0.68rem] leading-relaxed opacity-80">
+                                <p>💡 <strong>Tip:</strong> Long-press or download this page to save the QR codes, then scan inside Alipay or WeChat to fulfill payment. Alternatively, manually search the ID handles listed above. Please append your order code to the payment note.</p>
+                                <p class="mt-1 font-medium text-primary">提示：您可以保存此頁面截圖，並打開手機內的支付寶或微信掃描二維碼進行付款；亦可透過上方實名認證帳號手動搜尋添加收款人。轉帳時請同樣備註訂單編號。</p>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
             {% endif %}
@@ -154,7 +272,7 @@
                                 {% endif %}
                             </tr>
                         </thead>
-<tbody class="align-top text-sm">
+                        <tbody class="align-top text-sm">
                             <!-- products subtotal -->
                             <tr class="font-normal border-b border-base-content/5">
                                 <td class="py-2 text-left text-xs text-base-content/70">Products｜商品小計</td>
@@ -199,7 +317,7 @@
                                 {% if foreign_currency_code != 'CNY' %}
                                     <td class="py-3 text-right text-info font-mono pr-3">{{ cny_total_due }}</td>
                                 {% endif %}
-                                <td class="py-3 text-right pr-3 font-mono marker-highlight">{{ foreign_total_due }}</td>
+                                <td class="py-3 text-right pr-3 font-mono zigzag-marker-highlight">{{ foreign_total_due }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -207,19 +325,8 @@
             </div>
         </div>
     </div>
-
-    <style>
-        .box {
-            display:inline-grid;
-            place-content:center;
-            aspect-ratio:1;
-        }
-        .zigzag {
-            background: conic-gradient(from -45deg at bottom, var(--color-base-300) 90deg, transparent 0) 50%/17px 100%;
-        }
-    </style>
-
 </main>
+
 
 <!-- <script>
 window.addEventListener("DOMContentLoaded", (e) => {
