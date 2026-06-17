@@ -27,7 +27,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
-DEBUG = os.environ.get("DJANGO_DEBUG")
+DEBUG = os.environ.get("DJANGO_DEBUG", "True").strip() == "True"
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '52.62.142.183']
 
@@ -35,7 +35,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', '52.62.142.183']
 # X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # 🌟 THE CORRECT SITE_DOMAIN FORMAT: Full valid URL string prefix used for link rendering.
-SITE_DOMAIN = os.environ.get("SITE_DOMAIN")
+SITE_DOMAIN = os.environ.get("SITE_DOMAIN", "http://localhost:8000")
 
 # Application definition
 
