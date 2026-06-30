@@ -148,7 +148,11 @@
             const cups = [...document.querySelectorAll(".cup")];
             const cup_order = Array.from({length: cups.length}, (_, i) => i)
             const shuffled_order = shuffle(cup_order)
-            const cup_stroke_drawing_time = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cup_drawing_time')); // :root css
+            const rootStyle = document.documentElement ? getComputedStyle(document.documentElement) : null;
+            const cup_stroke_drawing_time = rootStyle 
+                ? parseInt(rootStyle.getPropertyValue('--cup_drawing_time')) || 1000 
+                : 1000;
+            // const cup_stroke_drawing_time = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cup_drawing_time')); // :root css
 
             const options = {threshold: 0.3}; // x% of the element must be visible
             
