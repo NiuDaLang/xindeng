@@ -8,11 +8,31 @@ import { Sky } from 'three/examples/jsm/Addons.js'
 
 const firework = () => {
     /**
+     * Loader
+     */
+    const loadingManager = new THREE.LoadingManager();
+
+    // Update progress bar percentage values during load sequences
+    loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+        const progressPercent = (itemsLoaded / itemsTotal) * 100;
+        if (window.threeSceneLoader) {
+            window.threeSceneLoader.updateProgress(progressPercent);
+        }
+    };
+
+    // 🌟 TRIGGER THE DISMISSAL WHEN EVERYTHING IS COMPILED:
+    loadingManager.onLoad = () => {
+        if (window.threeSceneLoader) {
+            window.threeSceneLoader.hide();
+        }
+    };
+
+    /**
      * Base
      */
     // Debug
     const gui = new GUI({ width: 300, title: "Background Tweak｜背景調整" })
-    gui.name
+    // gui.name
     gui.close();
 
     // Canvas
@@ -22,7 +42,7 @@ const firework = () => {
     const scene = new THREE.Scene()
 
     // Loaders
-    const textureLoader = new THREE.TextureLoader()
+    const textureLoader = new THREE.TextureLoader(loadingManager)
 
     /**
      * Sizes
@@ -32,8 +52,7 @@ const firework = () => {
     console.log(header.offsetHeight)
     const sizes = {
         width: window.innerWidth,
-        // height: window.innerHeight - (header.offsetHeight + footer.offsetHeight),
-        height: window.innerHeight - header.offsetHeight,
+        height: window.innerHeight - (header ? header.offsetHeight : 0),
         pixelRatio: Math.min(window.devicePixelRatio, 2)
     }
     sizes.resolution = new THREE.Vector2(sizes.width * sizes.pixelRatio, sizes.height * sizes.pixelRatio)
@@ -42,11 +61,9 @@ const firework = () => {
     {
         // Update sizes
         sizes.width = window.innerWidth
-        // sizes.height = window.innerHeight - (header.offsetHeight + footer.offsetHeight)
-        sizes.height = window.innerHeight - header.offsetHeight
+        sizes.height = window.innerHeight - (header ? header.offsetHeight : 0)
         sizes.pixelRatio = Math.min(window.devicePixelRatio, 2)
         sizes.resolution.set(sizes.width * sizes.pixelRatio, sizes.height * sizes.pixelRatio)
-        console.log(sizes.resolution)
 
         // Update camera
         camera.aspect = sizes.width / sizes.height
@@ -79,6 +96,11 @@ const firework = () => {
     renderer.setSize(sizes.width, sizes.height)
     renderer.setPixelRatio(sizes.pixelRatio)
 
+    // FORCE EXPLICIT FAILURE IF WEBGL IS DISABLED/UNSUPPORTED
+    if (!renderer.capabilities.isWebGL2 && !renderer.getContext()) {
+        throw new Error("WebGL context creation failed");
+    }
+        
     /**
      * Firework
      */
@@ -116,7 +138,6 @@ const firework = () => {
             positionsArray[i3 + 2] = position.z
 
             sizesArray[i] = Math.random()
-
             timeMultipliersArray[i] = 1 + Math.random()
         }
 
@@ -183,7 +204,8 @@ const firework = () => {
 
     createRandomFirework()
 
-    window.addEventListener('click', () => {
+    // Target click events to ONLY trigger via canvas, avoiding layout UI button conflicts
+    canvas.addEventListener('click', () => {
         createRandomFirework()
     })
 
@@ -217,13 +239,15 @@ const firework = () => {
 
         const phi = THREE.MathUtils.degToRad(90 - skyParameters.elevation)
         const theta = THREE.MathUtils.degToRad(skyParameters.azimuth)
-
         sun.setFromSphericalCoords(1, phi, theta)
-
         uniforms['sunPosition'].value.copy(sun)
 
         renderer.toneMappingExposure = skyParameters.exposure
-        renderer.render(scene, camera)
+        // renderer.render(scene, camera)
+
+        // if (window.threeSceneLoader) {
+        //     window.threeSceneLoader.hide();
+        // }
     }
 
     gui.add(skyParameters, 'turbidity').min(0).max(20).step(0.1).onChange(updateSky)

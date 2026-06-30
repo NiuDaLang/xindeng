@@ -2,8 +2,23 @@
 
 {% block content %}
 
-<!-- <canvas class="webgl"></canvas> -->
-<div class="mt-[86px]">
+<div class="mt-[86px] relative w-full h-[calc(100vh-86px)] overflow-hidden bg-black">
+    <!-- 🌟 THE HOLLYWOOD LOADING SCREEN OVERLAY -->
+    <div id="three-scene-loader" class="absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-700 ease-out bg-neutral text-neutral-content">
+        <div class="flex flex-col items-center max-w-xs text-center space-y-4">
+            <!-- DaisyUI Loading Widget Loop -->
+            <span class="loading loading-infinity loading-lg text-primary scale-150 animate-pulse"></span>
+            
+            <div class="space-y-1">
+                <h4 class="text-sm font-bold tracking-wider uppercase text-base-content">Initializing Engine</h4>
+                <p class="text-xs text-base-content/60">Igniting WebGL environment matrix...<br>正在加載三維粒子視窗...</p>
+            </div>
+            
+            <!-- Optional: Progress percentage monitor bar container hook -->
+            <progress id="loader-progress-bar" class="progress progress-primary w-56 hidden" value="0" max="100"></progress>
+        </div>
+    </div>
+
     <canvas class="firework_gl"></canvas>
 </div>
 
@@ -16,4 +31,28 @@
     }
 </style>
 
+<!-- 🎯 LOADING MANAGEMENT ENGINE BRIDGE -->
+<script>
+    window.threeSceneLoader = {
+        // Expose a public method callable directly inside your main Three.js source file
+        hide: function() {
+            const loader = document.getElementById('three-scene-loader');
+            if (loader) {
+                console.log("✨ WebGL asset compilation complete. Fading layout loader shield.");
+                // Smooth CSS transition fade out
+                loader.classList.add('opacity-0', 'pointer-events-none');
+                
+                // Completely drop the node out of the layout layer structure after fade animation finishes
+                setTimeout(() => loader.remove(), 750);
+            }
+        },
+        updateProgress: function(percent) {
+            const bar = document.getElementById('loader-progress-bar');
+            if (bar) {
+                bar.classList.remove('hidden');
+                bar.value = percent;
+            }
+        }
+    };
+</script>
 {% endblock %}

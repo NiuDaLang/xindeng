@@ -408,13 +408,15 @@ window.onload = function() {
     
     if (fireworkEl) {
         try {
-            firework();         
-            Swal.fire({
-                title: "Click to fire｜點擊場景點燃🎆",
-                text: "🖱️Left Click to Drag Scene｜左鍵拖拽可觀看3D景色",
-                icon: "info"
-            });
-
+            firework();
+            
+            setTimeout(() => {
+                Swal.fire({
+                    title: "Click to fire｜點擊場景點燃🎆",
+                    text: "🖱️Left Click to Drag Scene｜左鍵拖拽可觀看3D景色",
+                    icon: "info"
+                });
+            }, 100);
         } catch (error) {
             console.error("Caught Three.js initialization failure:", error);
             
@@ -455,7 +457,6 @@ window.onload = function() {
                 `,
                 confirmButtonText: "Got it / 我知道了"
             });
-
         }
     }
 };
