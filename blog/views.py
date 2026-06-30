@@ -6,6 +6,8 @@ from django.core.paginator import Paginator
 import random
 from django.http import Http404
 from taggit.models import Tag
+from accounts.models import UserProfile
+from reviews.models import Comment
 
 
 # Create your views here.
@@ -64,56 +66,53 @@ def all_posts_display(request, category):
     return render(request, "blog/all_posts_display.html", context)
 
 
-# def post(request, slug):
 def post(request, post_slug):
-    post = get_object_or_404(Post, slug=post_slug)
-    posts = Post.objects.filter(status="Published").order_by('?')[:3]
-    paginator = Paginator(posts, 1)
-    page_range = paginator.page_range
-    has_prev = False
-    previous_post = None
-    has_next = False
-    next_post = None
-    page_num = 0
-    for i in page_range:
-        page = paginator.page(i)
-        if page.object_list[0].slug == post_slug:
-            page_num = i
-            if page.has_previous():
-                has_prev = True
-                previous_page_number = i - 1
-                previous_post = paginator.page(previous_page_number).object_list[0]
-            if page.has_next():
-                has_next = True
-                next_page_number = i + 1
-                next_post = paginator.page(next_page_number).object_list[0]
-        
-    form = CommentForm(request.POST or None, initial={
-        "content_type": ContentType.objects.get_for_model(post).id,
-        "object_id": post.id
-    })
+    # Retrieve the primary target blog entry record safely
+    current_post = get_object_or_404(Post, slug=post_slug)
+    
+    # 🌟 RESTORED/FIXED STORYBOARD NAVIGATIONS: Chronological lookup replaces fragile paginator subsets
+    previous_post = Post.objects.filter(status="Published", created_at__lt=current_post.created_at).order_by('-created_at').first()
+    next_post = Post.objects.filter(status="Published", created_at__gt=current_post.created_at).order_by('created_at').first()
+    
+    has_prev = previous_post is not None
+    has_next = next_post is not None
 
+    # Sidebar Highlights Panel: Pulls a dynamic subset from other published records
+    sidebar_highlights = Post.objects.filter(status="Published").exclude(id=current_post.id).order_by('?')[:3]
+
+    # 🌟 NEW MULTI-FRONT DATA MAPPING: Fetches comments securely using your GenericRelation path properties
+    comments_list = current_post.comments.filter(is_approved=True, parent_comment__isnull=True)
+    post_content_type = ContentType.objects.get_for_model(current_post)
+
+    if request.user.is_authenticated:
+        # Enforce profile structure instantiation to prevent NoneType rendering crashes on the card images
+        UserProfile.objects.get_or_create(user=request.user)
+
+    # Maintain your baseline randomized background asset index mappings
     random_img_num = random.randint(0, 4)
     random_img_path = f"/static/images/post/img_{random_img_num}.JPG"
 
     context = {
-        "main_title": "店主筆記",
-        "sub_title_1": post.title,
-        "bread_crumb_1": "首頁",
-        "bread_crumb_2": "筆記",
-        "bread_crumb_3": post.title,
+        "main_title": "店主筆記 ｜ Notes",
+        "sub_title_1": current_post.title,
+        "bread_crumb_1": "首頁 ｜ Home",
+        "bread_crumb_2": "筆記 ｜ Notes",
+        "bread_crumb_4": current_post.title,
         "bread_crumb_1_url": "/",
         "bread_crumb_2_url": "/blog/posts",
-        "bread_crumb_3_url": f"/blog/post/{post.slug}",
-        "post":post,
-        "posts": posts,
-        "form":form,
-        "page_num": page_num,
+        
+        "post": current_post,
+        "posts": sidebar_highlights, # Maps smoothly into your existing highlights grid template loops
+        
         "has_prev": has_prev,
         "previous_post": previous_post,
         "has_next": has_next,
         "next_post": next_post,
         "random_img_path": random_img_path,
+        
+        # Discussion Module Attributes Injections
+        "comments_list": comments_list,
+        "post_content_type_id": post_content_type.id,
     }
 
     return render(request, 'blog/post.html', context)

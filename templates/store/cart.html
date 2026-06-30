@@ -380,6 +380,28 @@
             // Dropdowns are active by default: lock the hidden address book inputs to prevent collisions
             if (addressInput) addressInput.disabled = true;
         }
+
+        // Evaluate the Django template boolean statement
+        {% if stale_checkout_alert %}
+            const alertData = {
+                title: "{{ stale_checkout_alert.title|escapejs }}",
+                html: "{{ stale_checkout_alert.text|escapejs }}"
+            };
+            
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: alertData.title,
+                    html: alertData.html,
+                    icon: 'warning',
+                    confirmButtonText: 'OK ｜ 確定',
+                    confirmButtonColor: '#10b981',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                });
+            } else {
+                alert(alertData.title + "\n\n" + alertData.html.replace(/<br>/g, '\n'));
+            }
+        {% endif %}
     });
 
 
@@ -527,6 +549,18 @@
         document.body.removeEventListener('htmx:beforeLeave', cleanupCartPage);
     });
 
+    // Add to the bottom of cart.html inside your script tags
+    // window.addEventListener('pageshow', function(event) {
+    //     // If navigating back from checkout to the cart page via history
+    //     if (event.persisted || (window.performance && window.performance.getEntriesByType("navigation")[0]?.type === "back_forward")) {
+    //         console.log("🔄 History navigation detected on Cart. Syncing shipping calculation state.");
+            
+    //         // Check if shipping was invalidated/cleared in the session by refreshing the container fragment
+    //         if (typeof htmx !== 'undefined') {
+    //             htmx.trigger('body', 'refresh_shipping');
+    //         }
+    //     }
+    // });
 })();
 </script>
 {% endblock %}

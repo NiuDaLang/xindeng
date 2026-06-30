@@ -14,13 +14,28 @@ class PerkEvaluator:
         # 1. Basic Perk Validity (Date/Usage)
         if not perk.is_active or not perk.is_within_validity_period():
             return "EXPIRED"
-
+        
+        # 🌟 GUEST INTERCEPT GATEKEEPER
+        # If the shopper is an anonymous guest user, bypass all user-profile database dependencies!
+        if not user or not user.is_authenticated:
+            # Prevent guests from using highly exclusive account-bound tokens
+            code_upper = perk.code.upper()
+            if any(token in code_upper for token in ["NEW_MEMBER", "BIRTHDAY", "FEMALE_ONLY"]):
+                return "MEMBER_ONLY_PERK"
+                
+            print(f"Guest session verified. Coupon code [{perk.code}] passed global eligibility benchmarks.")
+            return "VALID"
+        
+        # -----------------------------------------------------------------
+        # 🔒 MEMBER-ONLY LIFECYCLE TRACKERS (Only runs if user.is_authenticated)
+        # -----------------------------------------------------------------
         # 2. Check if already used
         if UserPerk.objects.filter(user=user, perk=perk, is_used=True).exists():
             return "ALREADY_USED"
 
         # 3. Type-Specific Logic
         code = perk.code.upper()
+        
         # (1) New Member Discount (First 30 days)
         if "NEW_MEMBER" in code:
             thirty_days_ago = timezone.now() - timedelta(days=30)

@@ -26,6 +26,7 @@ from store.models import DigitalDownloadToken
 from pathlib import Path
 from carts.models import Cart
 from carts.views import _cart_id
+from django.contrib.auth import get_user_model
 
 import json
 
@@ -39,16 +40,37 @@ def place_order(request, proforma_invoice_no):
     creates the Order record as UNPAID (is_ordered=False), and dispatches hold notices.
     """
     try:
-        # Look up by number only, dropping the restrictive 'is_ordered=False' blocker
         proforma_invoice = ProformaInvoice.objects.get(proforma_order_number=proforma_invoice_no)
-        
+        print("proforma_invoice.email: ", proforma_invoice.email)
         # Safeguard: Bounces them to receipt if already finalized
         if proforma_invoice.is_ordered:
             return redirect(f"/orders/order_complete/?order_number={proforma_invoice_no}&method=bank")
 
+       # 🌟 BACKUP LOCKPOINT: Ensure an unauthenticated checkout hasn't snuck through with a member email
+        if not request.user.is_authenticated and proforma_invoice.email:
+            User = get_user_model()
+            print("User: ", User)
+            if User.objects.filter(email__iexact=proforma_invoice.email).exists():
+                request.session["prior_session_key"] = _cart_id(request)
+                request.session["next_url"] = request.path
+                request.session.modified = True
+                print("place order next_url: ", request.session.get("next_url"))
+                if request.headers.get("HX-Request"):
+                    response = HttpResponse("&nbsp;", status=200)
+                    response["HX-Trigger"] = json.dumps({
+                        "errorMssg": {
+                            "title": "Login Required｜請先登入",
+                            "text": "Please log in to complete this transaction.<br>檢測到此電子郵件已註冊會員。請先登入以合併您的購物車並完成交易！",
+                            "redirect_url": "/accounts/login/" # Replace with your login URL path
+                        }
+                    })
+                    return response
+                
+                messages.warning(request, "Please log in to your account to continue checkout.｜該電子郵件已註冊。請先登入會員帳號以繼續結帳。")
+                return redirect("login")
+
         cart_items = proforma_invoice.cart.cartitem_set.all() if proforma_invoice.cart else []
 
-        # Resolve currency mapping patterns matching earlier view setups
         foreign_currency_code = request.COOKIES.get('user_currency') or request.session.get('user_currency', 'HKD')
         country_code = COUNTRY_CODE.get(foreign_currency_code, 'HK')
         is_integer = foreign_currency_code in INTEGER_CURRENCIES
@@ -57,7 +79,6 @@ def place_order(request, proforma_invoice_no):
         # If display_mode is digital, or if name values are missing, explicitly flag it False
         has_recipient_info = False
         if proforma_invoice.recipient_first_name and proforma_invoice.recipient_last_name:
-            # Prevent string expressions of 'None' from slipping into the template variables
             if proforma_invoice.recipient_first_name.strip() != "None" and proforma_invoice.recipient_last_name.strip() != "None":
                 has_recipient_info = True                
         # -------------------------------------------------------------
@@ -92,7 +113,6 @@ def place_order(request, proforma_invoice_no):
                         user=request.user,
                         defaults={'cart_id': new_cart_id}
                     )
-                    
                     request.session['cart_id'] = new_cart.id
                     print(f"🛒 FRESH CANVAS ENGAGED: Rotated Cart ID to {new_cart.id} for user {request.user.id}")                    
 
@@ -108,7 +128,7 @@ def place_order(request, proforma_invoice_no):
                             if variation.stock < item.quantity:
                                 out_of_stock_payload = {
                                     "title": "庫存不足｜Out of Stock Alert", 
-                                    "text": f"抱歉，商品 [{variation}] 僅剩 {variation.stock} 件可用庫存，無法完成鎖定。<br>Sorry, [{variation}] only has {variation.stock} units remaining.", 
+                                    "text": f"Sorry, [{variation}] only has {variation.stock} units remaining.<br>抱歉，商品 [{variation}] 僅剩 {variation.stock} 件可用庫存，無法完成鎖定。", 
                                     "redirect_url": "/carts/cart/"}
                                 response = HttpResponse("&nbsp;", content_type="text/html", status=200)
                                 response["HX-Reswap"] = "none"
@@ -119,15 +139,14 @@ def place_order(request, proforma_invoice_no):
                         voucher_to_spend = Decimal(str(voucher_session.get("applied_voucher_amount", "0")))
 
                         voucher_changes = []
-                        if voucher_to_spend > 0:
-                            # Row-locks user vouchers and immediately subtracts balances
+                        if voucher_to_spend > 0 and request.user.is_authenticated:
                             voucher_changes = execute_atomic_voucher_deduction(request.user, voucher_to_spend)
-                            
+
                         # 🎯 ATOMIC COUPON MARK-OFF EXECUTION
                         offer_session = request.session.get("offer_applied", {})
                         offer_code = offer_session.get("offer_code")
                         
-                        if offer_code:
+                        if offer_code and request.user.is_authenticated:
                             try:
                                 # This will raise a ValidationError if coupon checks fail
                                 mark_off_perk_at_checkout(request.user, offer_code)
@@ -137,13 +156,13 @@ def place_order(request, proforma_invoice_no):
                                 response["HX-Reswap"] = "none"
                                 response["HX-Trigger"] = json.dumps({
                                     "errorMssg": {
-                                        "title": "優惠校驗失敗 ｜ Offer Verification Failed",
+                                        "title": "Offer Verification Failed｜優惠校驗失敗",
                                         "text": str(perk_err.message),
                                         "redirect_url": "/carts/cart/"
                                     }
                                 })
                                 return response
-
+                            
                         # 1. Update Proforma Invoice state parameters
                         invoice.payment_method = "BANK_TRANSFER"
                         invoice.inventory_hold_expiry = expiry_time
@@ -317,7 +336,7 @@ def place_order(request, proforma_invoice_no):
     
     except (ProformaInvoice.DoesNotExist, Http404):
         # 🌟 THE EXCEPTION FIX: Intercept missing links and route back to cart safely
-        messages.warning(request, "該結算單已過期或已被移除，請重新結算。 | This checkout session has expired or was removed.")
+        messages.warning(request, "This checkout session has expired or was removed.｜該結算單已過期或已被移除，請重新結算。")
         return redirect('cart')
     
 
@@ -332,7 +351,7 @@ def order_complete(request):
     try:
         proforma_invoice = ProformaInvoice.objects.get(proforma_order_number=order_number, is_ordered=True)
     except ProformaInvoice.DoesNotExist:
-        messages.info(request, "找不到該訂單明細，可能已被封存或重置。 | Order details not found or session expired.")
+        messages.info(request, "Order details not found or session expired.｜找不到該訂單明細，可能已被封存或重置。")
         return redirect("cart")
     
     order = None
@@ -354,7 +373,7 @@ def order_complete(request):
 
     if is_bank_transfer:
         main_title = "Order Hold Confirmed ｜ 訂單保留中"
-        sub_title_1 = "Please complete transfer within 72 hours. ｜ 請於72小時內完成付款以保留商品庫存。"
+        sub_title_1 = "Please complete transfer within 72 hours.｜請於72小時內完成付款以保留商品庫存。"
         
         # 🌟 THE EXPIRATION GUARD PASS
         # Immediately check if the un-finalized bank transfer hold has already expired!
@@ -362,8 +381,8 @@ def order_complete(request):
             # Inject a clear banner notice message via Django's messaging framework
             messages.error(
                 request, 
-                "該筆訂單保留期已屆滿失效，庫存商品已被系統釋出。請重新將商品加入購物車結帳。 "
-                "| This inventory reservation hold has expired. The items have been returned to stock."
+                "This inventory reservation hold has expired. The items have been returned to stock."
+                "｜該筆訂單保留期已屆滿失效，庫存商品已被系統釋出。請重新將商品加入購物車結帳。 "
             )
             
             # 🔒 CLEAN SESSIONS UPON LAPSING FOR MAXIMUM INTEGRITY
@@ -379,7 +398,7 @@ def order_complete(request):
 
             # Double check the order instance itself just in case statuses were updated by admin actions
             if order.order_status == 'Cancelled':
-                messages.warning(request, "此訂單已被取消。 | This order hold has been cancelled.")
+                messages.warning(request, "This order hold has been cancelled.｜此訂單已被取消。")
                 return redirect("cart")
                      
             db_products = OrderProduct.objects.filter(order=order)
@@ -401,8 +420,8 @@ def order_complete(request):
         except Order.DoesNotExist:
             return redirect("cart")
     else:
-        main_title = "Payment Complete | 訂單完成"
-        sub_title_1 = "Thank You for Your Support! ｜ 感謝您對我們的支持！"
+        main_title = "Payment Complete｜訂單完成"
+        sub_title_1 = "Thank You for Your Support!｜感謝您對我們的支持！"
     
         try:
             order = Order.objects.get(order_number=order_number, is_ordered=True)

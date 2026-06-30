@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- BANNER -->
+<div class="relative mt-[86px] w-full">
+    <div class="relative w-full bg-base-300 py-16 text-center border-b border-base-200 select-none">
+        <div class="max-w-xl mx-auto px-4">
+            <h1 class="text-2xl md:text-3xl font-serif tracking-widest text-base-content mb-3">
+                How to Order <span class="font-sans font-light text-xl opacity-60 ml-2">/ 購物流程</span>
+            </h1>
+            <p class="text-xs md:text-sm tracking-wide text-base-content/70 leading-relaxed font-serif">
+                Meticulously designed, guiding your collection journey with absolute clarity.<br>
+                <span class="block mt-1 font-sans font-light text-[11px] md:text-xs opacity-60 italic">
+                    考究於心，步履從容。
+                </span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN CONTAINER -->
+<main class="flex flex-row justify-center lg:px-[max(2rem,8vw)] xl:px-[max(3rem,8vw)] pt-[1.5rem] sm:pt-[3rem] md:pt-15 lg:pt-25 pb-[30vh] min-h-[calc(100dvh-200px)]" style="background-color: #f7f5f5;">
+    <!-- Reading Content Wrapper (888px Column Constraint) -->
+    <div class="md:max-w-[888px] md:w-4/5 w-9/10 font-sans text-base-content/80 leading-relaxed text-sm md:text-base">
+        
+        <!-- ========================================== -->
+        <!-- ENGLISH SEGMENT (英文)                      -->
+        <!-- ========================================== -->
+        <section class="border-b border-base-300/60 pb-12 mb-12">
+            <h1 class="text-xl md:text-2xl font-semibold tracking-wide text-base-content mb-2">Order Fulfillment Protocol</h1>
+            <p class="text-xs text-base-content/50 mb-8 font-mono">Last Updated: June 2026</p>
+
+            <div class="space-y-8">
+                <!-- Step 1 -->
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base flex items-center">
+                        <span class="badge badge-secondary badge-sm mr-2 font-mono text-white">01</span> Asset Selection & Cart Addition
+                    </h2>
+                    <p>On the respective product overview page, specify your desired art **Variation**, assign the volume metrics, and execute "Add to Cart".</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base flex items-center">
+                        <span class="badge badge-secondary badge-sm mr-2 font-mono text-white">02</span> Cart Reconciliation Matrix (Cart Page)
+                    </h2>
+                    <p class="mb-2">Upon reviewing the Cart layout, the core logic engine requires the completion of the following prerequisite allocations:</p>
+                    <ul class="list-disc pl-5 space-y-2 text-sm bg-base-200/40 p-4 rounded-box">
+                        <li><b>Shipping Calculations:</b> For physical assets, <b>you must designate your destination directory</b> (select Country/Region for international paths; select Province for Mainland China) to process logistical pricing weights.</li>
+                        <li><b>Promo Codes:</b> Input standard promotional strings distributed on our index view or collected within your "Curated Accords" interface.</li>
+                        <li><b>E-Vouchers:</b> Authenticated members can choose to redeem active cash vouchers against the balance. <i>(Note: Vouchers are strictly non-applicable to virtual voucher inventory itself)</i>.</li>
+                        <li><b>Settlement Currency Selector:</b> Use the dropdown selector to dictate your preferred clearing currency. This choice acts as the final legal settlement currency transferred to PayPal.</li>
+                    </ul>
+                    <p class="mt-2 text-xs text-base-content/60">*Note: The main "CHECKOUT" button remains locked until shipping calculations are evaluated for physical payloads.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base flex items-center">
+                        <span class="badge badge-secondary badge-sm mr-2 font-mono text-white">03</span> Delivery Registry Verification
+                    </h2>
+                    <p>On the formal Checkout path, map out your shipping directories, email accounts, and contact nodes. Once the validation engine clears all mandatory string fields, the "PAY NOW" interface button unlocks, allowing transition to the final PLACE_ORDER sequence.</p>
+                </div>
+
+                <!-- Step 4 Continued -->
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base flex items-center">
+                        <span class="badge badge-secondary badge-sm mr-2 font-mono text-white">04</span> Clearing Protocols & Currency Divergence (PLACE_ORDER)
+                    </h2>
+                    <p class="mb-3">Depending on your designated <b>Settlement Currency</b>, our payment application routes into two separate execution protocols:</p>
+                    
+                    <!-- Currency Split Nested Structure -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-4 font-sans text-xs">
+                        <!-- Pathway A: International (USD/EUR) -->
+                        <div class="p-4 bg-base-100 rounded-lg border border-base-300">
+                            <h3 class="font-bold text-primary mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-globe"></i> 方案 A：境外外幣結算 (USD/EUR)
+                            </h3>
+                            <p class="leading-relaxed opacity-80">通過 Stripe / PayPal 進行即時卡片授權。一旦網關回傳交易成功的 Webhook 令牌，系統會將 <code>is_ordered</code> 設為 True，並將 <code>order_status</code> 變更為 <b>"Processing"</b>。</p>
+                        </div>
+                        
+                        <!-- Pathway B: Mainland (CNY Offline) -->
+                        <div class="p-4 bg-base-100 rounded-lg border border-base-300">
+                            <h3 class="font-bold text-neutral mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-building-columns"></i> 方案 B：境內人民幣線下匯款 (CNY)
+                            </h3>
+                            <p class="leading-relaxed opacity-80">訂單初始狀態為 <b>"Hold_Pending"</b>。系統會自動鎖定為期 72 小時的 <code>inventory_hold_expiry</code> 庫存保留期，等待財務進行人工對賬核銷。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5 -->
+                <div class="mt-4">
+                    <h2 class="font-medium text-base-content mb-2 text-base flex items-center">
+                        <span class="badge badge-secondary badge-sm mr-2 font-mono text-white">05</span> Automated Dispatch & Multi-Channel Notifications
+                    </h2>
+                    <p class="mb-3">Once payment validation clears the ledger boundaries, the fulfillment engine fires multi-channel transactional dispatches:</p>
+                    
+                    <ul class="list-disc pl-5 space-y-2 text-xs leading-relaxed opacity-80">
+                        <li><b>Bank Hold Instructions:</b> For CNY offline bank transfers, an instruction layout is triggered to the buyer's inbox, setting <code>email_sent=True</code>.</li>
+                        <li><b>Paid Confirmation Receipts:</b> For verified instant clearings, a formal invoice receipt is dispatched separately, updating <code>payment_email_sent=True</code>.</li>
+                        <li><b>HTMX Out-of-Band Syncs:</b> Concurrently, an async script pushes OOB updates back to the client storefront, updating navigation total badges and updating header shopping arrays dynamically on the fly.</li>
+                    </ul>
+                </div>
+
+                <!-- Step 6 -->
+                <div class="mt-4">
+                    <h2 class="font-medium text-base-content mb-2 text-base flex items-center">
+                        <span class="badge badge-secondary badge-sm mr-2 font-mono text-white">06</span> Chrono Fulfillment Engine Sync (DELIVERED)
+                    </h2>
+                    <p>When goods leave the art studio, the warehouse updates dispatch variables. The model's <code>update_fulfillment_status()</code> method loops through all lines, switching physical tracks to <b>"All_Dispatched"</b> and auto-fulfilling digital goods straight to <b>"Delivered"</b> without any intermediate client delays.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- CHINESE SEGMENT (繁體中文)                  -->
+        <!-- ========================================== -->
+        <section>
+            <h1 class="text-xl md:text-2xl font-semibold tracking-wide text-base-content mb-2">線上訂購指引</h1>
+            <p class="text-xs text-base-content/50 mb-8 font-mono">最後更新日期：2026年6月</p>
+
+            <div class="space-y-8">
+                <!-- Step 1 -->
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base flex items-center">
+                        <span class="badge badge-secondary badge-sm mr-2 font-mono text-white">01</span> 商品選擇與加入購物車
+                    </h2>
+                    <p>在商品詳情頁面中，請依需求選取您心儀的藝術品規格或款式<b>（Variation）</b>，調整購買數量後，點擊「加入購物車」。</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base flex items-center">
+                        <span class="badge badge-secondary badge-sm mr-2 font-mono text-white">02</span> 購物車結算（Cart Page）
+                    </h2>
+                    <p class="mb-2">進入購物車頁面後，系統將依據以下核心規則進行初期試算：</p>
+                    <ul class="list-disc pl-5 space-y-2 text-sm bg-base-200/40 p-4 rounded-box">
+                        <li><b>運費試算：</b> 若包含實體商品，<b>必須先選取您的收件目的地</b>（中國大陸境外請選取「國家/地區」；中國大陸境內請選取「省份」）以啟動運費自動計算。</li>
+                        <li><b>優惠碼（Promo Codes）：</b> 您可輸入於首頁公告或會員中心「臻選禮遇」內獲得的活動折扣碼。</li>
+                        <li><b>電子現金券（E-Vouchers）：</b> 已登入之會員，可在此頁面勾選套用您擁有的現金券。<i>（註：現金券僅能折抵非虛擬券類商品）</i>。</li>
+                        <li><b>結算幣種選取：</b> 系統提供多幣種切換選單。此處選取的幣種將作為您最終在 PayPal 第三方彈窗中的結算基準金額。</li>
+                    </ul>
+                    <p class="mt-2 text-xs text-base-content/60">※ 當以上必要條件（特別是實體商品的運費）完成試算後，系統的「前往結帳 (CHECKOUT)」按鈕才會正式激活。</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base flex items-center">
+                        <span class="badge badge-secondary badge-sm mr-2 font-mono text-white">03</span> 填寫配送資訊與激活支付
+                    </h2>
+                    <p>進入正式結帳頁面，請準確填寫您的收件地址、電子信箱及聯絡電話。當系統檢測到所有必填（Mandatory）欄位皆正確無誤後，底部的「立即支付 (PAY NOW)」按鈕即會解除鎖定，允許您進入最後一單（PLACE_ORDER）。</p>
+                </div>
+
+                <!-- Step 4 -->
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base flex items-center">
+                        <span class="badge badge-secondary badge-sm mr-2 font-mono text-white">04</span> 結算協議與幣種分流 (PLACE_ORDER)
+                    </h2>
+                    <p class="mb-3">根據您選擇的<b>結算幣種（Settlement Currency）</b>，我們的支付模組將自動分流至兩條完全獨立的執行協議：</p>
+                    
+                    <!-- 幣種分流雙欄卡片結構 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-4 font-sans text-xs">
+                        <!-- 路徑 A：境外外幣 -->
+                        <div class="p-4 bg-base-100 rounded-lg border border-base-300">
+                            <h3 class="font-bold text-primary mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-globe"></i> 方案 A：境外外幣結匯 (USD/EUR)
+                            </h3>
+                            <p class="leading-relaxed opacity-80">通過 Stripe / PayPal 进行即時國際卡片扣款。一旦網關回傳交易成功的 Webhook 令牌，系統會將 <code>is_ordered</code> 標記為 True，並將 <code>order_status</code> 變更為 <b>"Processing ｜ 處理中"</b>。</p>
+                        </div>
+                        
+                        <!-- 路徑 B：境內人民幣 -->
+                        <div class="p-4 bg-base-100 rounded-lg border border-base-300">
+                            <h3 class="font-bold text-neutral mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-building-columns"></i> 方案 B：境內人民幣線下匯款 (CNY)
+                            </h3>
+                            <p class="leading-relaxed opacity-80">訂單初始狀態預設掛起為 <b>"Hold_Pending ｜ 待付款"</b>。系統會自動鎖定為期 72 小時的 <code>inventory_hold_expiry</code> 庫存保留期，等待財務進行人工對賬核銷。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5 -->
+                <div class="mt-4">
+                    <h2 class="font-medium text-base-content mb-2 text-base flex items-center">
+                        <span class="badge badge-secondary badge-sm mr-2 font-mono text-white">05</span> 自動化流轉與多通道事務通知
+                    </h2>
+                    <p class="mb-3">當賬目核銷成功或支付結算網關清算完畢後，履約引擎會立即觸發多通道的事務性通知：</p>
+                    
+                    <ul class="list-disc pl-5 space-y-2 text-xs leading-relaxed opacity-80">
+                        <li><b>銀行匯款指引：</b>針對人民幣線下轉賬，系統會先向買家郵箱發送一封包含詳細匯款指引的郵件，並將 <code>email_sent</code> 設為 True。</li>
+                        <li><b>付款確認收據：</b>針對通過即時清算驗證的訂單，系統會單獨發送一封正式的发票收據，並將 <code>payment_email_sent</code> 更新為 True。</li>
+                        <li><b>HTMX Out-of-Band 即時同步：</b>與此同時，異步腳本會將 OOB 更新數據直接推回客戶端前端，在不刷新頁面的情況下瞬間更新頁面的購物車數量角標以及頂部導航欄的購物車下拉商品列表。</li>
+                    </ul>
+                </div>
+
+                <!-- Step 6 -->
+                <div class="mt-4">
+                    <h2 class="font-medium text-base-content mb-2 text-base flex items-center">
+                        <span class="badge badge-secondary badge-sm mr-2 font-mono text-white">05</span> 自動化流轉與多通道事務通知
+                    </h2>
+                    <p class="mb-3">當賬目核銷成功或支付結算網關清算完畢後，履約引擎會立即觸發多通道的事務性通知：</p>
+                    
+                    <ul class="list-disc pl-5 space-y-2 text-xs leading-relaxed opacity-80">
+                        <li><b>銀行匯款指引：</b>針對人民幣線下轉賬，系統會先向買家郵箱發送一封包含詳細匯款指引的郵件，並將 <code>email_sent</code> 設為 True。</li>
+                        <li><b>付款確認收據：</b>針對通過即時清算驗證的訂單，系統會單獨發送一封正式的发票收據，並將 <code>payment_email_sent</code> 更新為 True。</li>
+                        <li><b>HTMX Out-of-Band 即時同步：</b>與此同時，異步腳本會將 OOB 更新數據直接推回客戶端前端，在不刷新頁面的情況下瞬間更新頁面的購物車數量角標以及頂部導航欄的購物車下拉商品列表。</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</main>
+{% endblock %}

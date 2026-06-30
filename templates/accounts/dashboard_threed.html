@@ -2,49 +2,73 @@
 
 <div id="dashboard_threed" class="subpage">
     <!-- hero -->
-    <div class="relative w-full h-[14rem]">
-        <img src="/media/hero/red_leaves.jpeg" alt="" class="reel -z-1 absolute left-0 top-0 h-full w-full object-cover">
-        <div class="absolute top-[47%] left-[20%]">
-            <h2 class="text-5xl text-primary-content">霜降</h2>
+    <div class="dashboard_hero relative w-full min-h-[19rem] overflow-hidden shadow-xl border rounded-2xl border-gray-400 mb-6 p-6 flex flex-col md:grid md:grid-cols-12 items-center justify-between gap-6">
+        <!-- COLUMN 1: SEASONAL SOLAR TIMELINE LOGIC GATE (Grid Span: 4) -->
+        <div class="z-10 w-full md:col-span-4 flex flex-col items-center justify-center space-y-3 p-2 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+            {% if solar_term %}
+                <div class="solar-timeline flex items-center justify-center gap-4 select-none">
+                    <!-- Active Solar Term State -->
+                    <div class="flex flex-col text-center">
+                        <span id="solar_term" class="text-2xl font-black tracking-wide">{{ solar_term }}</span>
+                        <span id="solar_term_en" class="text-[11px] uppercase tracking-wider font-mono opacity-80 mt-0.5">{{ solar_term_en }}</span>
+                    </div>
+                    
+                    {% if next_solar_term %}
+                    <!-- Restored Your Previous Custom Arrow Layout Wrapper -->
+                    <div class="solar-arrow-container">
+                        <div class="solar-arrow"></div>
+                    </div>
+
+                    <!-- Approaching Solar Term State -->
+                    <div class="flex flex-col text-center">
+                        <span id="next_solar_term" class="text-2xl font-black tracking-wide opacity-90">{{ next_solar_term }}</span>
+                        <span id="next_solar_term_en" class="text-[11px] uppercase tracking-wider font-mono opacity-70 mt-0.5">{{ next_solar_term_en }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+            
+            <!-- Real-time Text Date Output -->
+            <div id="dynamic-date" hx-preserve="true" class="text-[11px] font-mono font-bold tracking-widest bg-black/20 px-3 py-1 rounded-full border border-white/10 uppercase"></div>
         </div>
-        <div class="absolute right-8 bottom-12 text-right text-primary-content">
-            <div id="dynamic-date"></div>
-            <div id="dynamic-clock"></div>
+        
+        <!-- COLUMN 2: DYNAMIC BILINGUAL TITLES (Grid Span: 4) -->
+        <!-- 🌟 THE CENTERING FIX: Swapped md:text-left for md:text-center to balance headers perfectly -->
+        <div class="z-10 w-full text-center md:text-center md:col-span-4 space-y-1.5 self-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+            <h2 class="text-xl font-bold text-white uppercase tracking-wider font-sans opacity-90">3D Experiences</h2>
+            <h3 class="text-3xl font-black text-white tracking-normal font-sans">3D體驗場景</h3>
+            <span class="text-[0.65rem] uppercase tracking-[0.2em] text-teal-300 font-mono font-bold block text-center">Empty Yourself｜放空自我</span>
         </div>
+
+        <!-- COLUMN 3: PROTECTED ANALOG CLOCK MOUNT (Grid Span: 4) -->
+        <!-- 🌟 THE CENTERING FIX: Swapped md:justify-end for md:justify-center to center the clock dial axis -->
+        <div class="z-10 w-full md:col-span-4 flex items-center justify-center md:justify-center pr-0 select-none">
+            <div class="w-[200px] h-[200px] relative flex items-center justify-center flex-shrink-0">
+                {% include 'accounts/partials/clock_analog.html' %}
+            </div>
+        </div>
+
+        <!-- BACKGROUND VISUAL IMAGE ASSET COVER (z-0 sits safely beneath input/output contents) -->
+        <img src="/media/hero/red_leaves.jpeg" alt="Background" class="absolute left-0 top-0 w-full h-full object-cover z-0 rounded-2xl">
+        <div class="absolute inset-0 bg-black/15 z-0 pointer-events-none"></div> <!-- Soft overlay maximizes textual readability profiles -->
     </div>
     
-    <!-- orders -->
+    <!-- scene collections -->
     <div class="grid grid-cols-2 gap-4 my-5">
         <!-- 煙花 -->
         <div class="card bg-base-100 w-full shadow-sm">
             <figure class="px-10 pt-10">
                 <img
-                src="/media/three/firework/hanabi_demo.gif"
-                alt="Shoes"
+                src="/static/three/firework/hanabi_demo.gif"
+                alt="Firework Thumbnail Gif"
                 class="rounded-xl" />
             </figure>
             <div class="card-body items-center text-center">
-                <h2 class="card-title">煙花綻放</h2>
-                <p>不回飽同更天家我勿語，木示愛竹兒音、兌下一助貓几又羊，尼松有京她從</p>
+                <h2 class="card-title">Symphony of Embers｜瞬華流景</h2>
+                <p>An immersive 3D canvas capturing the fleeting, brilliant dance of light.</p>
+                <p>沉浸式 3D 光影畫布，捕捉夜空中轉瞬即逝的璀璨絕色。</p>
                 <div class="card-actions">
-                <a href="{% url 'firework' %}" class="btn btn-primary">點燃煙花</a>
-                </div>
-            </div>
-        </div>
-    
-        <!-- 花草 -->
-        <div class="card bg-base-100 w-full shadow-sm">
-            <figure class="px-10 pt-10">
-                <img
-                src="/media/hero/tulip.svg"
-                alt="Shoes"
-                class="rounded-xl" />
-            </figure>
-            <div class="card-body items-center text-center">
-                <h2 class="card-title">煙花綻放</h2>
-                <p>不回飽同更天家我勿語，木示愛竹兒音、兌下一助貓几又羊，尼松有京她從</p>
-                <div class="card-actions">
-                <button class="btn btn-primary">點燃煙花</button>
+                <a href="{% url 'firework' %}" class="btn btn-primary">Ignite the Night｜點燃煙花</a>
                 </div>
             </div>
         </div>

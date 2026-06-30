@@ -5,6 +5,7 @@ import random
 from django.contrib.sites.shortcuts import get_current_site
 from .utils import get_soul_number
 from django.db.models import Q
+from django.http import JsonResponse
 
 
 def test(request):
@@ -80,12 +81,15 @@ def contact(request):
     return render(request, 'pages/contact.html', context)
 
 
-def error_404(request):
-    return render(request, '404.html', {"page_title": "404"}, status=404, )
+def error_404(request, exception=None):
+    """Custom 404 Not Found error page router view."""
+    return render(request, '404.html', {"page_title": "404 ｜ 頁面不存在"}, status=404)
 
 
+# Keep your 500 error handler exactly as it is (it only takes request)
 def error_500(request):
-    return render(request, '500.html', {"page_title": "500"}, status=500)
+    """Custom 500 Internal Server Error page router view."""
+    return render(request, '500.html', {"page_title": "500 ｜ 系統錯誤"}, status=500)
 
 
 def search(request):
@@ -175,8 +179,6 @@ def archive(request):
     return render(request, 'pages/archive_results.html', context)
 
 
-from django.http import JsonResponse
-
 def find_destined_work(request):
     # Retrieve inputs from the query string
     name = request.GET.get("name")
@@ -226,3 +228,30 @@ def find_destined_work(request):
     
     return JsonResponse({'destined_data': destined_data})
 
+
+def shipping_policy(request):
+    return render(request, 'pages/shipping_policy.html', {})
+
+
+def after_sales_service(request):
+    return render(request, 'pages/after_sales_service.html', {})
+
+
+def how_to_order(request):
+    return render(request, 'pages/how_to_order.html', {})
+
+
+def ip_policy(request):
+    return render(request, 'pages/ip_policy.html', {})
+
+
+def privacy_policy(request):
+    return render(request, 'pages/privacy_policy.html', {})
+
+
+def faqs(request):
+    return render(request, 'pages/faqs.html', {})
+
+
+def member_policy(request):
+    return render(request, 'pages/member_policy.html', {})

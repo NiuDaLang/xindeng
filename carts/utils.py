@@ -22,6 +22,9 @@ from datetime import timedelta
 from accounts.data import DESTINATIONS_GLOBAL, DESTINATIONS_GREATER_CHINA, DESTINATIONS_MAINLAND_CHINA, CURRENCY_SYMBOL
 from accounts.evaluators import PerkEvaluator
 from django.db import transaction
+import socket
+from django.core.exceptions import ValidationError
+
 
 
 def clean_decimal(val):
@@ -1196,6 +1199,30 @@ def get_cart_totals(request, cart):
     return cart_grand_total, cart_total_foreign, physical_products_total, physical_products_total_foreign, \
         e_products_total, e_products_total_foreign, voucher_products_total, voucher_products_total_foreign, \
         foreign_currency_symbol, cart_items_quantity
+
+
+def validate_email_mx_domain(email_string):
+    """
+    Verifies that the target email's domain actually has active 
+    routing records to catch dead domains or typos before payment processes.
+    """
+    if not email_string or "@" not in email_string:
+        return
+        
+    try:
+        # Extract the domain string parameter cleanly
+        _, domain = email_string.split('@', 1)
+        domain = domain.strip()
+        
+        # Perform a fast native low-level DNS lookup check for the domain's server records
+        # This will fail quickly if the domain is completely fictional (e.g., "gamil.con")
+        socket.gethostbyname(domain)
+        
+    except (socket.gaierror, ValueError):
+        # Raise an explicit validation error caught cleanly by your Django form loop layout
+        raise ValidationError(
+            "The email domain appears to be invalid or unavailable. Please check your spelling. ｜ 電子郵件網域無效，請檢查拼字。"
+        )
 
 
 # def checkout_apply_voucher(request, user_input): # save for later use

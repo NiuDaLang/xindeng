@@ -106,9 +106,35 @@
                 </div>
             </div>
         {% empty %}
-            <h2 class="h2shadow col-span-2 mx-auto text-center mb-2">您的購物清單是空的 | Your wishlist is empty.</h2>
+            <!-- This ensures the UI cleans up when the last item is moved -->
+            <div class="flex flex-col items-center justify-center p-8 bg-base-200/50 rounded-box border border-dashed border-base-300 text-center my-6 select-none">
+                <div class="mb-3 text-primary opacity-60">
+                    <i class="fa-regular fa-heart fa-2xl"></i>
+                </div>
+                <h3 class="text-sm font-semibold text-base-content/80 mb-1">
+                    Store your wishes here while you explore...<br>
+                    <span class="text-xs font-normal opacity-60">在探索我們的商品時，把您的心願收藏於此吧。</span>
+                </h3>
+                <p class="text-[11px] opacity-50 max-w-sm mt-1">
+                    Save items you love here to keep track of your wishes. Take your time to discover something special.<br>
+                    <span class="block mt-1">在這裡收藏您心儀的寶貝，記錄您的美好心願。慢慢選購，遇見專屬於您的驚喜。</span>
+                </p>
+            </div>
         {% endfor %}
     {% else %}
-        <h2 class="h2shadow col-span-2 mx-auto text-center mb-2">您的購物清單是空的 | Your wishlist is empty.</h2>
+        <!-- This ensures the UI cleans up when the last item is moved -->
+        <div class="flex flex-col items-center justify-center p-8 bg-base-200/50 rounded-box border border-dashed border-base-300 text-center my-6 select-none">
+            <div class="mb-3 text-primary opacity-60">
+                <i class="fa-regular fa-heart fa-2xl"></i>
+            </div>
+            <h3 class="text-sm font-semibold text-base-content/80 mb-1">
+                Store your wishes here while you explore...<br>
+                <span class="text-xs font-normal opacity-60">在探索我們的商品時，把您的心願收藏於此吧。</span>
+            </h3>
+            <p class="text-[11px] opacity-50 max-w-sm mt-1">
+                Save items you love here to keep track of your wishes. Take your time to discover something special.<br>
+                <span class="block mt-1">在這裡收藏您心儀的寶貝，記錄您的美好心願。慢慢選購，遇見專屬於您的驚喜。</span>
+            </p>
+        </div>
     {% endif %}
 </div>

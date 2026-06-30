@@ -9,9 +9,9 @@
                     <!-- links -->
                     <nav class="w-full h-[80px] flex flex-col text-right">
                         <span class="font-semibold text-[#A1FFAB]">Shopping Guide｜購物指南</span>
-                        <a class="text-[0.7rem] font-light text-[#A1FFAB] leading-4" href="#">Shipping Policy ｜配送須知</a>
-                        <a class="text-[0.7rem] font-light text-[#A1FFAB] leading-4" href="#">After-Sales Service｜售後服務</a>
-                        <a class="text-[0.7rem] font-light text-[#A1FFAB] leading-4" href="#">How to Order｜購買流程</a>
+                        <a class="text-[0.7rem] font-light text-[#A1FFAB] leading-4" href="{% url 'how_to_order' %}">How to Order｜購買流程</a>
+                        <a class="text-[0.7rem] font-light text-[#A1FFAB] leading-4" href="{% url 'shipping_policy' %}">Shipping Policy ｜配送須知</a>
+                        <a class="text-[0.7rem] font-light text-[#A1FFAB] leading-4" href="{% url 'after_sales_service' %}">After-Sales Service｜售後服務</a>
                     </nav>
                     <!-- windmill wing -->
                     <div class="absolute right-0 w-[160px] aspect-[2/1] flex bg-[#38533B]" style="clip-path: polygon(50% 0, 100% 0, 100% 100%, 0% 100%);"></div>
@@ -22,10 +22,10 @@
                     <div class="w-[80px] aspect-[1/2] bg-[#5E2C2C]" style="clip-path: polygon(0 0, 100% 50%, 100% 100%, 0% 100%);"></div>
                     <!-- links -->
                     <nav class="flex flex-col w-[calc(100%-80px)] justify-end">
-                        <a class="text-[0.7rem] font-light text-[#FF7E7E] leading-4" href="#">IP Policy｜版權政策</a>
-                        <a class="text-[0.7rem] font-light text-[#FF7E7E] leading-4" href="#">Privacy Policy｜隱私政策</a>
-                        <a class="text-[0.7rem] font-light text-[#FF7E7E] leading-4" href="#">FAQs｜常見疑問</a>
-                        <a class="text-[0.7rem] font-light text-[#FF7E7E] leading-4" href="{% url 'about' %}">About Us｜關於我們</a>
+                        <a class="text-[0.7rem] font-light text-[#FF7E7E] leading-4" href="{% url 'member_policy' %}">Member Policy｜會員準則</a>
+                        <a class="text-[0.7rem] font-light text-[#FF7E7E] leading-4" href="{% url 'ip_policy' %}">IP Policy｜版權政策</a>
+                        <a class="text-[0.7rem] font-light text-[#FF7E7E] leading-4" href="{% url 'privacy_policy' %}">Privacy Policy｜隱私政策</a>
+                        <a class="text-[0.7rem] font-light text-[#FF7E7E] leading-4" href="{% url 'faqs' %}">FAQs｜常見疑問</a>
                         <span class="font-semibold text-[#FF7E7E]">General Info｜常用資訊</span>
                     </nav>
                 </div>
@@ -36,9 +36,9 @@
                 <div class="w-1/2 h-[160px] flex justify-end">
                     <!-- links -->
                     <nav class="flex flex-col w-[calc(100%-80px)] text-right">
-                        <a href=""><span class="font-semibold text-[var(--xindeng-light-color)]">Contact Us｜聯繫我們</span></a>
-                        <a class="text-[0.7rem] font-light text-[var(--xindeng-light-color)] leading-4" href="#">E-mail Us｜電郵我們</a>
-                        <a class="text-[0.7rem] font-light text-[var(--xindeng-light-color)] leading-4" href="#">Member Hotline｜會員熱線</a>
+                        <a href="{% url 'contact' %}"><span class="font-semibold text-[var(--xindeng-light-color)]">Contact Us｜聯繫我們</span></a>
+                        <a class="text-[0.7rem] font-light text-[var(--xindeng-light-color)] leading-4" href="mailto:support@://yourdomain.com">E-mail Us｜電郵我們</a>
+                        <a class="text-[0.7rem] font-light text-[var(--xindeng-light-color)] leading-4" href="{% url 'dashboard' 'help' %}">Member Hotline｜會員熱線</a>
                     </nav>
                     <!-- windmill wing -->
                     <div class="w-[80px] aspect-[1/2] bg-[#7E7B50]" style="clip-path: polygon(0 0, 100% 0, 100% 100%, 0 50%);"></div>

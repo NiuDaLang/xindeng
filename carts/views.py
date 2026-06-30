@@ -9,12 +9,19 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from accounts.data import DESTINATIONS_GLOBAL, DESTINATIONS_GREATER_CHINA, DESTINATIONS_MAINLAND_CHINA, CURRENCIES, CURRENCY_SYMBOL
 import json
+import re
 from sqids import Sqids
+from store.models import Product
+from reviews.models import Comment
+from django.contrib.contenttypes.models import ContentType
+from reviews.views import check_user_has_purchased_product
+from django.views.decorators.cache import never_cache
+from django.contrib.auth import get_user_model
 
 from .utils import get_available_services, calculate_shipping_cost, \
 htmx_invalid_offer_response, handle_perk_status, htmx_invalid_voucher_response, calculate_foreign_amount, \
 get_grand_total_before_voucher, update_applied_voucher, update_total_payable, get_currency_format, broadcast_cart_change, \
-get_or_lock_checkout_rate, get_cash_voucher_balance, update_costs_oobs, get_cart_totals
+get_or_lock_checkout_rate, get_cash_voucher_balance, update_costs_oobs, get_cart_totals, update_header_cart_summary
 
 from accounts.models import Perk, CustomerVoucher, UserPerk, UserProfile
 from .forms import ProformaInvoiceForm
@@ -34,7 +41,9 @@ from django.db.models import F, Sum
 def _cart_id(request):
     cart_id = request.session.session_key
     if not cart_id:
-        cart_id = request.session.create()
+        # 🌟 CRITICAL SECURITY STEP: Force Django to cycle, create, and save an active session key record right away
+        request.session.create()
+        cart_id = request.session.session_key
     return cart_id
 
 
@@ -225,6 +234,225 @@ def add_to_cart(request):
     return JsonResponse(context)
 
 
+# htmx
+@require_POST
+def select_variation_htmx(request):
+    """
+    Surgically compiles and swaps left image containers and right choice panel modules
+    simultaneously in a single backend response execution cycle.
+    """
+    product_id = request.POST.get("product_id")
+    selected_var_id = request.POST.get("selected_variation")
+    
+    single_product = get_object_or_404(Product, id=int(product_id))
+    variations = single_product.variations.filter(is_available=True)
+
+    resolved_variation = None
+    if selected_var_id and selected_var_id.isdigit():
+        resolved_variation = variations.filter(id=int(selected_var_id)).first()
+
+    exclusion_blacklist = [None, "", "NONE", "N/A", "N/A｜不適用", "N/A ｜ 不適用"]
+    has_valid_colors, has_valid_sizes, has_valid_types = False, False, False
+
+    if resolved_variation:
+        color_val = str(resolved_variation.color.color_name).strip() if resolved_variation.color else ""
+        size_val = str(resolved_variation.size.size_name).strip() if resolved_variation.size else ""
+        type_val = str(resolved_variation.type.type_name).strip() if resolved_variation.type else ""
+        if color_val and color_val not in exclusion_blacklist: has_valid_colors = True
+        if size_val and size_val not in exclusion_blacklist: has_valid_sizes = True
+        if type_val and type_val not in exclusion_blacklist: has_valid_types = True
+    else:
+        # Fall back to checking loop properties across all available sibling options
+        for var in variations:
+            color_val = str(var.color.color_name).strip() if var.color else ""
+            size_val = str(var.size.size_name).strip() if var.size else ""
+            type_val = str(var.type.type_name).strip() if var.type else ""
+            if color_val and color_val not in exclusion_blacklist: has_valid_colors = True
+            if size_val and size_val not in exclusion_blacklist: has_valid_sizes = True
+            if type_val and type_val not in exclusion_blacklist: has_valid_types = True
+
+    has_any_valid_specifications = has_valid_colors or has_valid_sizes or has_valid_types
+        
+    gallery_list = []
+    if resolved_variation:
+        product_gallery = resolved_variation.productvariationgallery_set.all()
+        gallery_list = [{"href": item.image.url, "title": item.title} for item in product_gallery]
+        gallery_list.insert(0, {"href": resolved_variation.images.url, "title": resolved_variation.get_sku()})
+        forced_image_url = resolved_variation.images.url
+    else:
+        product_gallery = single_product.productgallery_set.all()
+        gallery_list = [{"href": item.image.url, "title": item.title} for item in product_gallery]
+        gallery_list.insert(0, {"href": single_product.images.url, "title": single_product.product_name})
+        forced_image_url = single_product.images.url
+
+    is_resolved_sku = resolved_variation is not None
+    displayed_price = resolved_variation.price if is_resolved_sku else (min([v.price for v in variations]) if variations.exists() else 0)
+    resolved_stock = resolved_variation.stock if is_resolved_sku else 0
+
+    session_cart_key = _cart_id(request)
+    cart = Cart.objects.filter(user=request.user).first() if request.user.is_authenticated else Cart.objects.filter(cart_id=session_cart_key, user__isnull=True).first()
+
+    # Re-evaluate live stock metrics across options
+    for var in variations:
+        v_stock = var.stock
+        if cart:
+            in_cart_item = CartItem.objects.filter(cart=cart, product_variation=var, is_active=True).first()
+            if in_cart_item:
+                v_stock = max(0, v_stock - in_cart_item.quantity)
+        var.available_production_stock = v_stock
+
+    if is_resolved_sku and cart:
+        in_cart_item = CartItem.objects.filter(cart=cart, product_variation=resolved_variation, is_active=True).first()
+        if in_cart_item:
+            resolved_stock = max(0, resolved_stock - in_cart_item.quantity)
+
+    active_filters = {
+        "size": resolved_variation.size.size_name if resolved_variation and resolved_variation.size else "標準",
+        "color": resolved_variation.color.color_name if resolved_variation and resolved_variation.color else "標準",
+        "type": resolved_variation.type.type_name if resolved_variation and resolved_variation.type else "標準"
+    } if is_resolved_sku else {"size": "點選上方圖像", "color": "點選上方圖像", "type": "點選上方圖像"}
+
+    product_content_type = ContentType.objects.get_for_model(single_product)
+    reviews_list = Comment.objects.filter(content_type=product_content_type, object_id=single_product.id, is_approved=True)
+
+    context = {
+        "single_product": single_product,
+        "variations": variations,
+        "displayed_price": displayed_price,
+        "selected_var_id": resolved_variation.id if resolved_variation else None,
+        "is_resolved_sku": is_resolved_sku,
+        "resolved_stock": resolved_stock,
+        "stock_loop_range": range(1, resolved_stock + 1),
+        "resolved_image_url": forced_image_url,
+        "active_filters": active_filters,
+        "current_main_image": forced_image_url,
+        "product_gallery": gallery_list,
+
+        "has_any_valid_specifications": has_any_valid_specifications, # 🌟 FIXED DUPLICATE: Normalized context order properties
+        "has_valid_sizes": has_valid_sizes,
+        "has_valid_colors": has_valid_colors,
+        "has_valid_types": has_valid_types,
+
+        "has_purchased_product_flag": check_user_has_purchased_product(request.user, single_product.id),
+        "reviews_list": reviews_list,
+    }
+
+    # Render out-of-band and inner template blocks cleanly
+    left_gallery_html = render_to_string('store/partials/gallery_partial.html', context, request=request)
+    right_panel_html = render_to_string('store/partials/product_form.html', context, request=request)
+
+    return HttpResponse(right_panel_html + left_gallery_html)
+
+
+@require_POST
+def add_to_cart_htmx(request):
+    """
+    Surgically processes cart additions, evaluates remaining inventory stocks,
+    and drops duplicate items from the member's active Wishlist tables.
+    """
+    product_id = request.POST.get("product_id")
+    var_id = request.POST.get("selected_variation")
+    quantity_added = int(request.POST.get("quantity", 1))
+
+    single_product = get_object_or_404(Product, id=int(product_id))
+    product_var = get_object_or_404(ProductVariation, id=int(var_id))
+    user = request.user if request.user.is_authenticated else None
+
+    # Retrieve or initialize the active basket container mapping
+    if user:
+        cart, _ = Cart.objects.get_or_create(user=user, defaults={'cart_id': _cart_id(request)})
+        
+        # 🌟 FIXED LOGIC: Automatically remove item from member's Wishlist if it's added to the cart
+        UserProductList.objects.filter(
+            user=user, 
+            product_variation=product_var, 
+            list_type='WISHLIST'
+        ).delete()
+    else:
+        cart, _ = Cart.objects.get_or_create(cart_id=_cart_id(request), user__isnull=True)
+
+    cart_item, created = CartItem.objects.get_or_create(
+        product_variation=product_var, cart=cart, defaults={'quantity': 0, 'user': user}
+    )
+    cart_item.quantity += quantity_added
+    cart_item.save()
+
+    # Re-calculate live stock matrix counts across selections
+    variations = single_product.variations.filter(is_available=True)
+    for var in variations:
+        v_stock = var.stock
+        in_cart_item = CartItem.objects.filter(cart=cart, product_variation=var, is_active=True).first()
+        if in_cart_item:
+            v_stock = max(0, v_stock - in_cart_item.quantity)
+        var.available_production_stock = v_stock
+
+    resolved_stock = max(0, product_var.stock - cart_item.quantity)
+    
+    active_filters = {
+        "size": product_var.size.size_name if product_var.size else "標準",
+        "color": product_var.color.color_name if product_var.color else "標準",
+        "type": product_var.type.type_name if product_var.type else "標準"
+    }
+
+    exclusion_blacklist = [None, "", "NONE", "N/A", "N/A｜不適用", "N/A ｜ 不適用"]
+    has_valid_colors, has_valid_sizes, has_valid_types = False, False, False
+
+    for var in variations:
+        color_val = str(var.color.color_name).strip() if var.color else ""
+        size_val = str(var.size.size_name).strip() if var.size else ""
+        type_val = str(var.type.type_name).strip() if var.type else ""
+        if color_val and color_val not in exclusion_blacklist: has_valid_colors = True
+        if size_val and size_val not in exclusion_blacklist: has_valid_sizes = True
+        if type_val and type_val not in exclusion_blacklist: has_valid_types = True
+
+    has_any_valid_specifications = has_valid_colors or has_valid_sizes or has_valid_types
+
+    # Set gallery list view matching active selected state
+    var_gallery = product_var.productvariationgallery_set.all()
+    gallery_list = [{"href": item.image.url, "title": item.title} for item in var_gallery]
+    gallery_list.insert(0, {"href": product_var.images.url, "title": product_var.get_sku()})
+
+    context = {
+        "single_product": single_product,
+        "variations": variations,
+        "displayed_price": product_var.price,
+        "selected_var_id": product_var.id,
+        "is_resolved_sku": True,
+        "resolved_stock": resolved_stock,
+        "stock_loop_range": range(1, resolved_stock + 1),
+        "has_valid_colors": has_valid_colors,
+        "has_valid_sizes": has_valid_sizes,
+        "has_valid_types": has_valid_types,
+        "has_any_valid_specifications": has_any_valid_specifications,
+        "active_filters": active_filters,
+        "current_main_image": product_var.images.url,
+        "product_gallery": gallery_list,
+    }
+
+    right_panel_html = render_to_string('store/partials/product_form.html', context, request=request)
+    left_gallery_html = render_to_string('store/partials/gallery_partial.html', context, request=request)
+    
+    cart_items = CartItem.objects.filter(cart=cart, is_active=True)
+    header_context = {
+        "current_cart_items": cart_items,
+        "item_count": cart.get_items_count(),
+        "header_cart_total": cart.get_cart_total(),
+        "is_htmx_update": True
+    }
+    
+    header_list_html = render_to_string('store/partials/header_cart_list.html', header_context, request=request)
+    
+    # oob_count_span = f'<span id="cart_count_icon" hx-swap-oob="true" class="badge badge-sm indicator-item">{ header_context["item_count"] }</span>'
+    # oob_total_b = f'<b id="cart_sub_total" hx-swap-oob="true" class="font-bold">CNY ¥ { header_context["header_cart_total"] }</b>'
+    # oob_summary_count = f'<b id="cart_count" hx-swap-oob="true" class="font-bold">{ header_context["item_count"] } items</b>'
+
+    updated_header_summary = update_header_cart_summary(cart)
+        
+    payload_response_stream = right_panel_html + left_gallery_html + header_list_html + updated_header_summary
+    # + oob_count_span + oob_total_b + oob_summary_count
+    return HttpResponse(payload_response_stream)
+
+
 def get_cart_item_info(request):
     sku_id = request.GET.get("sku_id")
     user = request.user if request.user.is_authenticated else None
@@ -255,6 +483,26 @@ def cart(request):
     is_integer, foreign_currency_code = get_currency_format(request)
     foreign_currency_symbol = CURRENCY_SYMBOL[foreign_currency_code]
     locked_rate = get_or_lock_checkout_rate(request, foreign_currency_code)
+
+    is_history_navigation = request.headers.get("HX-History-Restore-Request") == "true"
+
+    # Only wipe out shipping and voucher settings if this is a deliberate fresh landing 
+    # (Do NOT clear them if the user simply hit the back button from the checkout screen!)
+    if not is_history_navigation:
+        print("🧹 Fresh cart landing detected. Initializing pristine baseline parameters.")
+        request.session["shipping_data"] = {
+            "method": "DEFAULT",
+            "region": "digital",
+            "destination_id": "",
+            "shipping_cost": "0.00",
+            "shipping_cost_foreign": "0" if is_integer else "0.00"
+        }
+        request.session["offer_applied"] = {"offer_code": "", "discount_amount": "0.00", "discount_amount_foreign": "0" if is_integer else "0.00"}
+        request.session["applied_voucher"] = {"applied_voucher_amount": "0.00", "applied_voucher_amount_foreign": "0" if is_integer else "0.00"}
+        request.session["has_physical_items"] = False 
+        request.session.modified = True
+    else:
+        print("♻️ Back-navigation detected. Retaining existing active shipping & voucher parameters safely.")
 
     # 1. 🔥 THE INITIALIZATION FIX: Setup clean, blank baseline maps 
     # instead of completely deleting the dictionary reference frames!
@@ -372,12 +620,22 @@ def cart(request):
         "bread_crumb_3_url": "/carts/cart",
     }
 
+    # Extract the custom notification context parameters
+    stale_alert = request.session.pop("show_stale_checkout_alert", None)
+    context["stale_checkout_alert"] = stale_alert
+
     return render(request, 'store/cart.html', context)
 
 
 @require_POST
 def calculate_shipping(request):
-    cart = Cart.objects.filter(user=request.user).first()
+    user = request.user
+    
+    if user.is_authenticated:
+        cart = Cart.objects.filter(user=user).first()
+    else:
+        cart = Cart.objects.filter(cart_id=_cart_id(request)).first()
+
     method = request.POST.get('shipping_accordion')
     region = request.POST.get("zone")
     destination_id = request.POST.get("destination") or request.POST.get("address_id")
@@ -457,8 +715,9 @@ def calculate_shipping(request):
     oob_updates.append(active_button_html)
 
     # check if voucher is applied, if so, check if voucher > total payable
-    updated_voucher_oob_string = update_applied_voucher(request, cart)
-    oob_updates.append(updated_voucher_oob_string)
+    if user.is_authenticated:
+        updated_voucher_oob_string = update_applied_voucher(request, cart)
+        oob_updates.append(updated_voucher_oob_string)
 
     # update total payable
     updated_summary_total_oob_string, amount, amount_foreign = update_total_payable(request, cart)
@@ -493,18 +752,23 @@ def clear_shipping_session(request):
 
 
 def reset_shipping_fragment(request):
-    cart = Cart.objects.filter(user=request.user).first()
+    user = request.user
 
-    if "shipping_data" in request.session:
+    if user.is_authenticated:
+        cart = Cart.objects.filter(user=user).first()
+    else:
+        cart = Cart.objects.filter(cart_id=_cart_id(request)).first()
+
+    is_history_navigation = request.headers.get("HX-History-Restore-Request") == "true"
+
+    if not is_history_navigation and "shipping_data" in request.session:
         del request.session["shipping_data"]
     request.session.modified = True
 
     tba_display_html = '<div id="shipping-cost-display" class="my-4 alert alert-soft alert-success shadow-sm text-base-content/50 justify-center"> Shipping Cost｜配送費 - TBA｜待定</div>'
-
     foreign_currency_code = request.COOKIES.get('user_currency', 'HKD')
     foreign_currency_symbol = CURRENCY_SYMBOL[foreign_currency_code]
 
-    # CRITICAL VERIFICATION: Make absolutely sure hx-swap-oob="true" is written perfectly
     shipping_oob = (
         f'<div id="shipping-result-container" hx-swap-oob="outerHTML" class="mt-4 border-t border-dashed border-base-300">{tba_display_html}</div>'
         f'<span id="summary-shipping" hx-swap-oob="true">¥ 0.00</span>'
@@ -512,6 +776,9 @@ def reset_shipping_fragment(request):
     )    
     total_payable_html, amount, amount_foreign = update_total_payable(request, cart)
 
+    if is_history_navigation:
+        return HttpResponse("", content_type="text/html", status=200)
+    
     combined_response = (shipping_oob + total_payable_html).strip().replace("\n", "").replace("    ", "")
 
     return HttpResponse(combined_response)
@@ -739,6 +1006,10 @@ def update_cart_item_qty(request, item_id):
     cart = cart_item.cart
     cart_items_quantity = cart.get_items_count()
 
+    # Force session baseline synchronization before executing utility functions
+    request.session["has_physical_items"] = cart.cartitem_set.filter(is_active=True, product_variation__product__is_physical=True).exists()
+    request.session.modified = True
+
     # forex
     is_integer, foreign_currency_code = get_currency_format(request)
     foreign_currency_symbol = CURRENCY_SYMBOL.get(foreign_currency_code, '$')
@@ -870,10 +1141,11 @@ def add_wish_to_cart(request, wish_id):
     header_list_html = render_to_string("store/partials/header_cart_list.html", header_context, request=request)
     final_oob_fragments.append(header_list_html)
     
-    # # 2. UNIVERSAL NAVIGATION MINI METADATA COUNTERS (OOB)
-    final_oob_fragments.append(f'<b id="cart_count" hx-swap-oob="true" class="font-bold">{cart_items_quantity} item{"s" if cart_items_quantity > 1 else ""}</b>')
-    final_oob_fragments.append(f'<b id="cart_sub_total" hx-swap-oob="true" class="font-bold">CNY ¥ {cart_total}</b>')
-    final_oob_fragments.append(f'<span id="cart_count_icon" hx-swap-oob="true" class="badge badge-sm indicator-item">{cart_items_quantity}</span>')
+    # 2. UNIVERSAL NAVIGATION MINI METADATA COUNTERS (OOB)
+    updated_header_summary = update_header_cart_summary(cart)
+    if updated_header_summary and str(updated_header_summary).strip():
+        final_oob_fragments.append(updated_header_summary)
+
 
     # 3. WISHLIST WRAPPER PANEL (OOB)
     updated_wishlist = UserProductList.objects.filter(user=user, list_type='WISHLIST').order_by('-added_date') if user else []
@@ -992,7 +1264,13 @@ def delete_cart_item(request, item_id):
     to update totals, weight brackets, coupons, and vouchers in perfect sync.
     """
     user = request.user if request.user.is_authenticated else None
-    cart, _ = Cart.objects.get_or_create(user=user, defaults={'cart_id': _cart_id(request)})
+    cart_id = _cart_id(request)
+
+    if user:
+        cart, _ = Cart.objects.get_or_create(user=user, defaults={'cart_id': cart_id})
+    else:
+        cart, _ = Cart.objects.get_or_create(cart_id=cart_id, user=None)
+
     cart_item = CartItem.objects.filter(pk=item_id, cart=cart).first()
 
     variation_id = request.POST.get('variation_id')
@@ -1041,8 +1319,9 @@ def delete_cart_item(request, item_id):
     htmx_htmls.append(f'<div id="cart_item_list_container" hx-swap-oob="true">{main_cart_html}</div>')
 
     # Update background session flags
-    request.session["has_physical_items"] = bool(updated_cart_items.filter(product_variation__product__is_physical=True).exists())
-    request.session.modified = True
+    has_physical = bool(updated_cart_items.filter(product_variation__product__is_physical=True).exists())
+    request.session["has_physical_items"] = has_physical
+    request.session.modified = True    
 
     # NAV HEADER DROPDOWN SLIDER CONTAINER (OOB)
     header_context = {
@@ -1064,6 +1343,10 @@ def delete_cart_item(request, item_id):
             htmx_htmls.extend(oob_updates)
             
     else:
+        updated_header_summary = update_header_cart_summary(cart)
+        if updated_header_summary and str(updated_header_summary).strip():
+            htmx_htmls.append(updated_header_summary)
+
         # 📉 5. EMPTY CART FALLBACK: Reset everything back to pristine baseline layout parameters
         cart_grand_total, cart_total_foreign, physical_products_total, physical_products_total_foreign, \
         e_products_total, e_products_total_foreign, voucher_products_total, voucher_products_total_foreign, \
@@ -1212,6 +1495,10 @@ def add_to_wishlist(request, item_id):
             final_oob_fragments.extend(oob_updates)
 
     else:
+        updated_header_summary = update_header_cart_summary(cart)
+        if updated_header_summary and str(updated_header_summary).strip():
+            final_oob_fragments.append(updated_header_summary)
+
         cart_grand_total, cart_total_foreign, physical_products_total, physical_products_total_foreign, \
         e_products_total, e_products_total_foreign, voucher_products_total, voucher_products_total_foreign, \
         foreign_currency_symbol, cart_items_quantity = get_cart_totals(request, cart)
@@ -1388,18 +1675,64 @@ def add_to_favorite(request, variation_id):
             return response
 
 
+@never_cache
 def checkout(request):
-    user = request.user if request.user.is_authenticated else None
-    cart = Cart.objects.filter(user=user).first() if user else Cart.objects.filter(cart_id=_cart_id(request)).first()
-    
-    # -------------------------------------------------------------
-    # 1. SHARED PRE-FLIGHT BOUNDARY CONTEXT (Executes for both GET & POST)
-    # -------------------------------------------------------------
-    if not cart or not cart.cartitem_set.filter(is_active=True).exists():
-        return redirect("cart")
-    
-    cart_items = cart.cartitem_set.filter(is_active=True)
+    user = request.user
+
+    # Fetch the cart based on authentication status
+    if user.is_authenticated:
+        cart = Cart.objects.filter(user=user).first()
+    else:
+        cart = Cart.objects.filter(cart_id=_cart_id(request)).first()
+
+    # -----------------------------------------------------------------
+    # 🌟 CRITICAL GATEKEEPER: Stop Stale Checkouts on Forward Navigation
+    # -----------------------------------------------------------------
+    if cart:
+        cart_items = cart.cartitem_set.filter(is_active=True)
+    else:
+        cart_items = CartItem.objects.none()
+
     has_physical_items = cart_items.filter(product_variation__product__is_physical=True).exists()
+    has_e_items = cart_items.filter(product_variation__product__is_physical=False, product_variation__product__is_voucher=False).exists()
+    has_voucher_items = cart_items.filter(product_variation__product__is_voucher=True).exists()
+
+    # -----------------------------------------------------------------
+    # 🔒 LOGOUT INTERCEPT LAYER: Bounce logged-out users back to the cart
+    # -----------------------------------------------------------------
+    # If the user logged out, their cart_items count drops to 0 or their session changes.
+    # Bypassing the white screen / crash track completely.
+    if not cart or cart_items.count() == 0:
+        if request.headers.get("HX-Request"):
+            response = HttpResponse("", status=200)
+            response["HX-Redirect"] = "/carts/cart/"
+            return response
+        messages.warning(request, "Your session has changed or your cart is empty.｜您的工作階段已變更或購物車已空，請重新檢視。")
+        return redirect('cart')
+
+    # if has_physical_items:
+    #     if not shipping_data or not shipping_data.get("is_calculated") or shipping_data.get("shipping_cost") == "0.00":
+            
+    #         print("🚨 Stale history forward action caught. Routing clean native redirection.")
+            
+    #         # Save the messaging data payload inside Django's secure database session engine
+    #         request.session["show_stale_checkout_alert"] = {
+    #             "title": "購物車頁已變更 ｜ Cart State Updated",
+    #             "text": "檢測到您的購物車內容或配送地址有所變更，請重新計算運費。<br><br>Your cart items or destination details were modified. Please recalculate shipping fees first."
+    #         }
+    #         request.session.modified = True
+            
+    #         # 🌟 CLEAN FIX: Standard 302 redirection completely supported by the browser load cycle
+    #         return redirect('cart')
+            
+    # # -------------------------------------------------------------
+    # # 1. SHARED PRE-FLIGHT BOUNDARY CONTEXT (Executes for both GET & POST)
+    # # -------------------------------------------------------------
+    # if not cart or not cart.cartitem_set.filter(is_active=True).exists():
+    #     return redirect("cart")
+    
+    # cart_items = cart.cartitem_set.filter(is_active=True)
+    # has_physical_items = cart_items.filter(product_variation__product__is_physical=True).exists()
     
     shipping_data = request.session.get("shipping_data", {})
     offer_data = request.session.get("offer_applied", {})
@@ -1410,9 +1743,8 @@ def checkout(request):
 
     if not shipping_data or shipping_data == {}:
         if has_physical_items:
-            messages.warning(request, "請先計算運費以繼續結帳。 | Please calculate shipping first.")
+            messages.warning(request, "Please calculate shipping first.｜請先計算運費以繼續結帳。")
             return redirect('cart')
-
         else:
             shipping_data = {
                 "method": "DEFAULT",
@@ -1424,7 +1756,6 @@ def checkout(request):
             request.session["shipping_data"] = shipping_data
             request.session.modified = True
 
-    # 🌟 THE TRANSLATION LAYER: Map lowercase session strings cleanly to database choices
     raw_method = shipping_data.get("method", "dropdown")
     method_to_source_map = {
         "saved_address": "ADDRESS_BOOK",
@@ -1434,31 +1765,22 @@ def checkout(request):
     }
     db_destination_source = method_to_source_map.get(raw_method, "DEFAULT")
 
-    # 🔒 EXECUTE THE MASTER LEDGER ANCHOR RECALCULATION
     _, total_due_str, total_due_foreign_str = update_total_payable(request, cart)
     locked_rate = get_or_lock_checkout_rate(request, current_currency_code)
 
     def clean_for_db(val):
-        """
-        Surgically sanitises financial values into floating-point numbers.
-        Wipes away commas, currency signs (€, £, ¥, $, etc.), or alphabetical symbols (AUD, HKD) via regex.
-        """
         if val is None:
             return 0.00
         if isinstance(val, str):
-            import re
-            # 🌟 REGEX MATCH: Keep only numbers (\d), dots (.), and minus signs (-)
             sanitized = re.sub(r'[^\d.-]', '', val).strip()
             return float(sanitized) if sanitized else 0.00
         return float(val)
 
-    # 💡 FIXED ASSIGNMENTS: Pull pre-calculated balanced targets out of session points maps
     fx_shipping_clean = clean_for_db(shipping_data.get("shipping_cost_foreign"))
     fx_offer_clean = clean_for_db(offer_data.get("discount_amount_foreign"))
     fx_voucher_clean = clean_for_db(voucher_data.get("applied_voucher_amount_foreign"))
     fx_payable_clean = clean_for_db(total_due_foreign_str)
 
-    # Backward-derive the physical entry for CheckoutInfo matching your screen lines exactly
     fx_physical_clean = (
         fx_payable_clean 
         + fx_offer_clean 
@@ -1471,7 +1793,6 @@ def checkout(request):
     has_e_items = cart_items.filter(product_variation__product__is_physical=False, product_variation__product__is_voucher=False).exists()
     has_voucher_items = cart_items.filter(product_variation__product__is_voucher=True).exists()
 
-    # Establish display constraints based on composition metrics
     if has_physical_items and has_voucher_items:
         display_mode = "PHYSICAL_AND_VOUCHER"
     elif has_physical_items:
@@ -1484,11 +1805,10 @@ def checkout(request):
     checkout_info, _ = CheckoutInfo.objects.update_or_create(
         cart=cart,
         defaults={
-            "user": user,
+            # 🌟 FIX 2: Convert AnonymousUser instance safely to None for nullable ForeignKey field mappings
+            "user": user if user.is_authenticated else None,
             "display_mode": display_mode,
             "cart_total": clean_for_db(cart.get_cart_total()),
-            
-            # Synchronised balanced metrics
             "cart_total_foreign": float(fx_physical_clean) + clean_for_db(cart.get_e_products_subtotal_foreign(current_currency_code, locked_rate)) + clean_for_db(cart.get_voucher_products_subtotal_foreign(current_currency_code, locked_rate)),
             "destination_source": db_destination_source,
             "default_zone": shipping_data.get("region") if db_destination_source == "DEFAULT" else "",
@@ -1510,14 +1830,13 @@ def checkout(request):
         }
     )
 
-    # Establish baseline geography contexts
     address = None
     state = None
     country = ""
 
     if display_mode in ["EPRODUCT_ONLY", "VOUCHER_ONLY"]:
         state = "Digital"
-        country = "XX"  # Safe generic ISO token or "Digital" depending on your database constraint schema
+        country = "XX"  
     else:
         session_method = shipping_data.get("method", "").strip()
         session_dest_id = shipping_data.get("destination_id", "").strip()
@@ -1536,6 +1855,7 @@ def checkout(request):
                 state = None
                 country = session_dest_id 
 
+        # 🌟 FIX 3: Guard profile address book fallback; non-members don't have profiles
         if not country and user.is_authenticated:
             fallback_address = Address.objects.filter(profile__user=user, is_default=True).first()
             if fallback_address:
@@ -1555,7 +1875,6 @@ def checkout(request):
 
         proforma_invoice_form = ProformaInvoiceForm(post_data, display_mode=display_mode)
 
-        # Enforce destination locks for physical transactions
         if display_mode not in ["EPRODUCT_ONLY", "VOUCHER_ONLY"] and country:
             proforma_invoice_form.data = proforma_invoice_form.data.copy()
             proforma_invoice_form.data['country'] = country
@@ -1563,6 +1882,33 @@ def checkout(request):
                 proforma_invoice_form.data['state_province_region'] = state
 
         if proforma_invoice_form.is_valid():
+            # 🌟 INTERCEPT ENGINE: Check if guest email matches an existing account
+            if not user.is_authenticated:
+                inputted_email = proforma_invoice_form.cleaned_data.get("email")
+                User = get_user_model()
+                
+                if inputted_email and User.objects.filter(email__iexact=inputted_email).exists():
+                    # Preserve their guest session key before the login transition happens
+                    request.session["prior_session_key"] = _cart_id(request)
+                    request.session["next_url"] = request.path # Resolves to "/carts/checkout/"
+                    request.session.modified = True
+                    
+                    # HTMX response returning a clear login alert prompt instead of processing payment
+                    if request.headers.get("HX-Request"):
+                        response = HttpResponse(status=200)
+                        payload = {
+                            "title": "Account Already Exists｜帳號已存在", 
+                            "text": "This email is registered. Please log in first to merge your cart.<br>檢測到此電子郵件已註冊會員。請先登入以合併您的購物車並享有會員權益！", 
+                            "icon": "info",
+                            "redirect_url": "/accounts/login/" 
+                        }
+                        # If you use SweetAlert via triggers:
+                        response["HX-Trigger"] = json.dumps({"triggerLoginPrompt": payload})
+                        return response
+                    
+                    messages.info(request, "Email registered. Please log in.｜該電子郵件已註冊。請先登入以繼續結帳。")
+                    return redirect("login") # Replace with your exact login route name
+                           
             try:
                 proforma_invoice = ProformaInvoice.objects.filter(cart=cart).order_by('-updated_at').first()
                 
@@ -1592,18 +1938,14 @@ def checkout(request):
                     "state_province_region": cleaned_state,
                     "country": cleaned_country,
                     "postal_code": proforma_invoice_form.cleaned_data.get("postal_code"),
-
                     "recipient_email": proforma_invoice_form.cleaned_data.get("recipient_email"),
                     "gift_message": proforma_invoice_form.cleaned_data.get("gift_message"),
-
                     "delivery_note": proforma_invoice_form.cleaned_data.get("delivery_note"),
                     "do_not_send_invoice": proforma_invoice_form.cleaned_data.get("do_not_send_invoice"),
-                    
                     "google_place_id": proforma_invoice_form.cleaned_data.get("google_place_id"),
                     "latitude": proforma_invoice_form.cleaned_data.get("latitude"),
                     "longitude": proforma_invoice_form.cleaned_data.get("longitude"),
                     "is_verified_by_google": proforma_invoice_form.cleaned_data.get("is_verified_by_google", False),
-                    
                     "cart_total": checkout_info.cart_total,
                     "shipping_cost": checkout_info.shipping_cost,
                     "discount": checkout_info.discount_amount,
@@ -1619,6 +1961,7 @@ def checkout(request):
                     "locked_exchange_rate": checkout_info.locked_exchange_rate,
                     "currency_code": request.session.get('foreign_currency_code', 'HKD'),
                 }
+
                 if proforma_invoice:
                     for key, value in field_mapping_defaults.items():
                         setattr(proforma_invoice, key, value)
@@ -1630,10 +1973,7 @@ def checkout(request):
                 if not proforma_invoice.proforma_order_number:
                     sqids = Sqids(min_length=6, alphabet="ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
                     country_prefix = proforma_invoice.country if proforma_invoice.country else "XX"
-                    
-                    # 🌟 FIXED: Remove '.int' and pass the integer ID directly into the list bracket
-                    invoice_num = f"{country_prefix}-{sqids.encode([proforma_invoice.id])}"
-                    
+                    invoice_num = f"{country_prefix}-{sqids.encode([proforma_invoice.id])}"                
                     proforma_invoice.proforma_order_number = invoice_num
                     proforma_invoice.save()
                 else:
@@ -1713,7 +2053,7 @@ def checkout(request):
         
             except Exception as e:
                 print(f"Checkout system processing failure: {str(e)}")
-                messages.error(request, "系統錯誤，請稍後再試 | Execution Exception.")
+                messages.error(request, "Execution Exception.｜系統錯誤，請稍後再試")
 
         else:
             # 🎯 DETAILED DEBUG LAYER: Print out the exact failures directly to your terminal screen
@@ -1726,8 +2066,20 @@ def checkout(request):
             for field, error_list in proforma_invoice_form.errors.items():
                 print(f"   👉 Field [{field}]: {error_list}")
             print("==================================================\n")
+
+            # 🌟 FIX: Loop through individual field failures and promote specific messages to the user
+            error_promoted = False
+            for field, error_list in proforma_invoice_form.errors.items():
+                for error in error_list:
+                    # Capture custom string exceptions (like our MX domain error)
+                    messages.error(request, f"{error}")
+                    error_promoted = True
+                    break # Grab the primary blocker error message per field
+                if error_promoted:
+                    break # Avoid flooding the view viewport with too many alert panels at once
             
-            messages.error(request, "請確認填寫內容 | Please check input details.")
+            if not error_promoted:
+                messages.error(request, "Please check input details.｜請確認填寫內容")
 
     # -------------------------------------------------------------
     # 3. GET INITIAL VIEW SETUP LIFECYCLE
@@ -1748,7 +2100,7 @@ def checkout(request):
             "google_place_id": address.google_place_id if address else checkout_info.address_id,
             "latitude": address.latitude if address else None,
             "longitude": address.longitude if address else None,
-            "is_verified_by_google": True if address else False,
+            "is_verified_by_google": True if address else False,            
         }
         proforma_invoice_form = ProformaInvoiceForm(initial=initial_data, display_mode=display_mode)
 

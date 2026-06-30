@@ -41,13 +41,7 @@ urlpatterns = [
     path("get_unread_count/", views.get_unread_count, name="get_unread_count"),
     path("get_unread_count/<int:sender_id>", views.get_unread_count, name="get_unread_count"),
 
-
-
-
-    path("edit_order/", views.edit_order, name="edit_order"),
-    path("help/", views.help, name="help"),
-
-    # path("dashboard/threed/firework", views.firework, name="firework"),
+    path("dashboard/threed/firework", views.firework, name="firework"),
 
     path("vouchers/claim/<str:voucher_id>/", views.claim_voucher_routing_view, name="claim_voucher_url"),
 ] 

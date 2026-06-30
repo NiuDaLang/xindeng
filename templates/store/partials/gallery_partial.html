@@ -1,0 +1,23 @@
+<!-- 🌟 FIXED DATA OVERRIDE: Bound using a single-element item tracking loop to ensure clean indexing -->
+<div id="product_images" hx-swap-oob="true" class="space-y-4">
+    <!-- Main Zoom Viewport Frame Anchor -->
+    <a id="open-product-gallery" href="#" class="block">
+        <figure class="w-full aspect-4/3 rounded-xl overflow-hidden shadow-sm relative bg-base-200">
+            <img id="main_thumbnail" src="{{ current_main_image }}" class="w-full h-full object-cover" alt="Master Canvas Preview"/>
+        </figure>
+    </a>
+
+    <!-- Unified Small Thumbnail Strip List Layout -->
+    <div class="flex flex-wrap gap-3 mt-3 justify-start" id="product_gallery_images">
+        {% for cell in product_gallery %}
+            <div class="thumbnail-item w-16 h-16 rounded-md overflow-hidden cursor-pointer border {% if forloop.first %}border-2 border-primary shadow-sm scale-105 z-10{% else %}border border-base-300 opacity-70 hover:opacity-100{% endif %} transition-all duration-200" 
+                 data-index="{{ forloop.counter0 }}"
+                 data-src="{{ cell.href }}">
+                <img id="product_gallery_image_{{ forloop.counter0 }}" 
+                     src="{{ cell.href }}" 
+                     class="w-full h-full object-cover" 
+                     alt="{{ cell.title|default:'Gallery Thumbnail Image Piece' }}"/>
+            </div>
+        {% endfor %}
+    </div>
+</div>

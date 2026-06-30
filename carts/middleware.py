@@ -1,8 +1,7 @@
-"""
-save session key in the request object for retrieving upon login and merge cart data
-"""
-
 class CaptureAnonymousSessionMiddleware:
+    """
+    save session key in the request object for retrieving upon login and merge cart data
+    """
     def __init__(self, get_response):
         self.get_response = get_response
     
@@ -11,10 +10,10 @@ class CaptureAnonymousSessionMiddleware:
         return self.get_response(request)
     
 
-"""
-ensure user's preferred currency is available globally in every template without manual passing
-"""
 class CurrencyMiddleware:
+    """
+    ensure user's preferred currency is available globally in every template without manual passing
+    """
     def __init__(self, get_response):
         self.get_response = get_response
 

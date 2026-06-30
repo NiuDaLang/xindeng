@@ -1,0 +1,66 @@
+<!-- Inside store/partials/review_card.html -->
+<div id="review_card_container_{{ review.id }}" class="flex items-start p-4 bg-white rounded-lg border border-base-200 shadow-sm gap-3 animate-fade-in relative group">
+    <!-- User Avatar Frame -->
+    <div class="avatar">
+        <div class="mask mask-squircle w-10 h-10 bg-base-300">
+            <!-- 🌟 FIXED SOURCE PATH: Safely loads user profile picture with default placeholder fallback -->
+            <img src="{{ review.user.profile.profile_picture.url }}" alt="Collector Profile"/>
+        </div>
+    </div>
+    
+    <div class="flex-1">
+        <div class="flex items-center justify-between flex-wrap gap-1">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-base-content/80">{{ review.user.username|default:"筆記藏家" }}</span>
+                <span class="text-[10px] opacity-40 font-mono">{{ review.created_at|date:"Y-m-d H:i" }}</span>
+            </div>
+            
+            <!-- 🌟 COMPONENT RENDERING PROTECTION MATRIX: Only evaluates stars if a rating exists -->
+            {% if review.rating %}
+            <div class="flex text-warning text-xs">
+                {% if review.rating >= 1 %}<i class="fa-solid fa-star"></i>{% endif %}
+                {% if review.rating >= 2 %}<i class="fa-solid fa-star"></i>{% endif %}
+                {% if review.rating >= 3 %}<i class="fa-solid fa-star"></i>{% endif %}
+                {% if review.rating >= 4 %}<i class="fa-solid fa-star"></i>{% endif %}
+                {% if review.rating >= 5 %}<i class="fa-solid fa-star"></i>{% endif %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <p class="text-xs text-base-content/70 leading-relaxed mt-1.5 whitespace-pre-line">{{ review.text }}</p>
+
+        <!-- Dynamic Inline Image Strips (Decoupled cap at 5) -->
+        {% if review.images.all %}
+        <div class="flex flex-wrap gap-2 mt-3">
+            {% for img_obj in review.images.all %}
+            <a href="{{ img_obj.image.url }}" target="_blank" class="block w-14 h-14 rounded overflow-hidden border border-base-200 group/img hover:border-primary transition-colors">
+                <img src="{{ img_obj.image.url }}" class="w-full h-full object-cover transition-transform group-hover/img:scale-105" alt="Comment Media Asset"/>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Operation Action Anchors -->
+        {% if request.user == review.user %}
+        <div class="flex gap-3 mt-3 justify-end opacity-40 group-hover:opacity-100 transition-opacity">
+            <button hx-get="{% url 'edit_review_htmx' review.id %}"
+                    hx-target="#modal-form-payload-injection-slot"
+                    onclick="document.getElementById('global-review-modal').setAttribute('open', 'true')"
+                    class="text-[11px] font-medium text-primary hover:underline cursor-pointer">
+                編輯 | Edit <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+
+            <button onclick="window.confirmSweetAlertDelete('{{ review.id }}')"
+                    class="text-[11px] font-medium text-error hover:underline cursor-pointer">
+                刪除 | Delete <i class="fa-solid fa-trash-can"></i>
+            </button>
+            
+            <span id="hidden_delete_trigger_anchor_{{ review.id }}"
+                  hx-delete="{% url 'delete_review_htmx' review.id %}"
+                  hx-target="#review_card_container_{{ review.id }}"
+                  hx-swap="outerHTML"
+                  class="hidden"></span>
+        </div>
+        {% endif %}
+    </div>
+</div>

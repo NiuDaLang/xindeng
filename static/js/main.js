@@ -204,207 +204,144 @@ function isAtBottomZone() {
 //     },
 // });
 
-// ***** glightbox (product - gallery) *****
-let dynamicLightbox; // gallery
-let base_data = []
-let slides_data = [];
-let product_gallery_images = {};
-let variations_gallery_data = []
+// ***** Glightbox (Product - Gallery) Engine Block *****
+let dynamicLightbox = null; 
+let base_data = []; 
+let slides_data = []; 
 
-// Init Glightbox
-function init_glightbox (slides_data) {
-    const main_contents = [...document.querySelectorAll(".glight_main")]
-    dynamicLightbox = GLightbox({
-        elements: slides_data,
-        onclose: () => { dynamicLightbox.destroy(); }
+function init_glightbox(target_slides) {
+    const formatted_slides = target_slides.map(slide => {
+        return {
+            href: slide.href,
+            title: slide.title || "",
+            type: "image"
+        };
     });
-    // Solve the "hidden-aria" issue
+
+    if (dynamicLightbox) {
+        try { dynamicLightbox.destroy(); } catch(e) {}
+    }
+
+    const main_contents = check_elements_exist(document, ".glight_main");
+    dynamicLightbox = GLightbox({
+        elements: formatted_slides,
+        autoplayVideos: false,
+        zoomable: true
+    });
+
     dynamicLightbox.on('open', () => {
         if (main_contents) {
-            main_contents.map(main_content => {
-                main_content.setAttribute("inert", "")
-                main_content.setAttribute("aria-hidden", "false")
-            })
+            main_contents.forEach(el => {
+                el.setAttribute("inert", "");
+                el.setAttribute("aria-hidden", "false");
+            });
         }
     });
     dynamicLightbox.on('close', () => {
         if (main_contents) {
-            main_contents.map(main_content => {
-                main_content.removeAttribute('inert');
-            })
+            main_contents.forEach(el => el.removeAttribute('inert'));
         }
     });    
 }
 
-// function to move picture data within the list
 function moveItem(array, fromIndex, toIndex) {
-    const [item] = array.splice(fromIndex, 1);
-    array.splice(toIndex, 0, item);
-    return array;
+    const working = [...array];
+    const [item] = working.splice(fromIndex, 1);
+    working.splice(toIndex, 0, item);
+    return working;
 }
 
-// function to reorder the gallery
-function reorder_image_to_gallery_head (index) {
-    if (base_data.length > 1) {
-        slides_data = moveItem([...base_data], index, 0);
-        init_glightbox(slides_data)
-    } else {
-        console.log("Cannot reorder gallery (requires initialization or >1 image).");
-    }
-}
+function updateThumbnailBorderHighlight(clickedIndex) {
+    console.log("Highlighting Triggered for Index Marker:", clickedIndex);
+    const containers = check_elements_exist(document, '#product_gallery_images .thumbnail-item');
+    if (!containers) return;
 
-// Change thumbnail image upon clicking small gallery image
-function change_thumbnail_image(e, gallery_images_object, target_el){
-    const image_key = e.target.id
-    if(gallery_images_object[image_key]){
-        target_el.src = gallery_images_object[image_key]
-    } else {
-        console.error("Image key not found:", image_key);
-    }
-}
-
-// Initial method for 1st gallery DOM
-function init_gallery_top_dom (product_gallery_images, target_el, e){
-    slides_data = [...base_data]
-    init_glightbox(slides_data)
-    change_thumbnail_image(e, product_gallery_images, target_el)
-    dynamicLightbox.reload();
-}
-
-// Initial method for other gallery DOMs
-function init_gallery_other_doms (product_gallery_images, target_el, pic_index, e) {
-    change_thumbnail_image(e, product_gallery_images, target_el)
-    reorder_image_to_gallery_head(pic_index)
-    dynamicLightbox.reload();
-}
-
-document.addEventListener("DOMContentLoaded", function(event){
-    // parse backend product-gallery data
-    const product_gallery_script_tag = document.getElementById('product_gallery_json_data');
-    const variations_gallery_script_tag = document.getElementById('variations_gallery_json_data');
-
-    if (product_gallery_script_tag && product_gallery_script_tag.textContent) {
-        try {
-            // Extract the raw text and parse it
-            base_data = JSON.parse(product_gallery_script_tag.textContent);
-            slides_data = [...base_data]
-        } catch (e) {
-            console.error("Error parsing JSON data:", e);
+    containers.forEach(container => {
+        const itemIndex = container.getAttribute('data-index');
+        if (String(itemIndex) === String(clickedIndex)) {
+            container.className = "thumbnail-item w-16 h-16 rounded-md overflow-hidden cursor-pointer border-2 border-primary transition-all shadow-sm";
+        } else {
+            container.className = "thumbnail-item w-16 h-16 rounded-md overflow-hidden cursor-pointer border border-base-300 opacity-70 hover:opacity-100 transition-all";
         }
+    });
+}
+
+function handleThumbnailClickInteraction(clickedIndex, targetMainThumbnail, targetImgSrc, e) {
+    if (e) e.preventDefault();
+    if (targetMainThumbnail) targetMainThumbnail.src = targetImgSrc;
+    updateThumbnailBorderHighlight(clickedIndex);
+
+    if (base_data && base_data.length > 0) {
+        slides_data = moveItem([...base_data], Number(clickedIndex), 0);
+        init_glightbox(slides_data);
     }
+}
 
-    if (variations_gallery_script_tag && variations_gallery_script_tag.textContent){
-        try {
-            variations_gallery_data = JSON.parse(variations_gallery_script_tag.textContent);
-        } catch (e) {
-            console.error("Error parsing variation JSON data:", e);
-        }
-    }
+function setupProductGalleryBindings() {
+    console.log("Synchronizing interactive behaviors over fresh server template layers...");
+    const galleryLink = document.getElementById('open-product-gallery');
+    const target_main_thumb = document.querySelector("#main_thumbnail");
+    const thumbnail_containers = check_elements_exist(document, "#product_gallery_images .thumbnail-item");
 
-    function allocate_variation_gallery(main_thumbnail, variation_id, variation){
-        variations_gallery_data.map(variation_gallery => {
-            if(variation_gallery[0].id === variation_id){
-                base_data = [{href: variation[0][1].image, title: variation[0][1].sku}, ...variation_gallery[1]]
-                // (0) init gallery
-                init_glightbox(base_data)
-                // (1) change Thumbnail image to ProductVariation model's image
-                main_thumbnail.src = variation[0][1].image
-                // (2) change gallery's 1st image to ProductVariation model's image
-                const main_product_image_el = check_element_exist(document, "#product_gallery_image_0")
-                main_product_image_el.src = variation[0][1].image
-                // (3) mark the first gallery image selected
-                const main_product_image_input_el = check_element_exist(document, "#main_product_image_input")
-                main_product_image_input_el.checked = true
-                // (4) delete all other gallery images 
-                const other_product_gallery_images = check_elements_exist(document, '.product_gallery_image_wrapper')
-                if(other_product_gallery_images){
-                    [...other_product_gallery_images].map(el => {el.remove()})
-                }
-                // (5) create new gallery images and display them
-                const gallery_wrapper_el = document.querySelector("#product_gallery_images")
-                if(variation_gallery[1].length > 0){
-                    variation_gallery[1].map((image, index) => {
-                        const gallery_img_html = `
-                            <label class="switch product_gallery_image_wrapper" name="pattern">
-                                <input type="radio" name="pattern">
-                                <img id="product_gallery_image_${index+1}" src="${image.href}" alt="${image.title}" class="switch-img rounded-sm product_gallery_image"></img>
-                            </label>
-                        `                        
-                        gallery_wrapper_el.insertAdjacentHTML("beforeend", gallery_img_html)
-                    })
-                }
-                // (6) cancel the current addEventListener method registered on the first gallery image from initialization
-                main_product_image_el.removeEventListener("click", window.gallery_top_dom_handler)
-                // (7) register new addEventListener method
-                product_gallery_images = {}
-                // (7-a) top image of the gallery
-                product_gallery_images[main_product_image_el.id] = main_product_image_el.src
-                const gallery_top_dom_handler = init_gallery_top_dom.bind(null, product_gallery_images, main_thumbnail)
-                main_product_image_el.addEventListener("click", gallery_top_dom_handler)
-                window.gallery_top_dom_handler = gallery_top_dom_handler
-                // (7-b) other gallery images
-                const product_gallery_image_els = check_elements_exist(document, ".product_gallery_image")
-                if(product_gallery_image_els) {
-                    product_gallery_image_els.map(el => {
-                        const pic_index = Number(el.id.replace("product_gallery_image_", ""))
-                        product_gallery_images[el.id] = el.src
+    if (!target_main_thumb || !thumbnail_containers) return;
 
-                        // When any of the gallery image is clicked
-                        const gallery_other_doms_handler = init_gallery_other_doms.bind(null, product_gallery_images, main_thumbnail, pic_index)
-                        el.addEventListener("click", gallery_other_doms_handler)
-                    })
-                }
-            }
-        })
-    }
-    
-    window.allocate_variation_gallery = allocate_variation_gallery
-    
-    // connect it with the DOM element and create GLightbox instance 
-    const galleryLink = document.getElementById('open-product-gallery'); // <a> thumbnail DOM
-    if (galleryLink && slides_data.length > 0) {
-        init_glightbox(slides_data)
-
-        // when thumbnail (large) image is clicked, create the GLightbox
-        galleryLink.addEventListener('click', function(e) {
+    if (galleryLink) {
+        galleryLink.removeEventListener('click', window.mainGalleryOpenHandler);
+        window.mainGalleryOpenHandler = function(e) {
             e.preventDefault(); 
-            dynamicLightbox.open();
+            if (dynamicLightbox) dynamicLightbox.open();
+        };
+        galleryLink.addEventListener('click', window.mainGalleryOpenHandler);
+    }
+
+    // Read image paths cleanly directly from the active DOM structures
+    base_data = [];
+    thumbnail_containers.forEach(container => {
+        const index_marker = container.getAttribute("data-index");
+        const img_el = container.querySelector("img");
+        if (!img_el) return;
+
+        base_data.push({ href: img_el.src, title: img_el.alt || "" });
+
+        // Wipe away stale listeners to prevent stacked background triggers
+        container.replaceWith(container.cloneNode(true));
+        const fresh_container = document.querySelector(`#product_gallery_images .thumbnail-item[data-index="${index_marker}"]`);
+        const fresh_img = fresh_container.querySelector("img");
+
+        fresh_container.addEventListener("click", (e) => {
+            handleThumbnailClickInteraction(index_marker, target_main_thumb, fresh_img.src, e);
         });
+    });
 
-        // Product Gallery - if gallery image is clicked, show it to the MAIN/LARGE image box
-        const target_el = document.querySelector("#main_thumbnail")
+    if (base_data.length > 0) {
+        init_glightbox(base_data);
+    }
+}
 
-        // (a) 1st gallery image
-        const main_product_gallery_image_el = check_element_exist(document, "#product_gallery_image_0")
-        product_gallery_images[main_product_gallery_image_el.id] = main_product_gallery_image_el.src
-        const gallery_top_dom_handler = init_gallery_top_dom.bind(null, product_gallery_images, target_el)
-        main_product_gallery_image_el.addEventListener("click", gallery_top_dom_handler)
-        window.gallery_top_dom_handler = gallery_top_dom_handler
+// Initialize on baseline load entry
+setupProductGalleryBindings();
+document.addEventListener("DOMContentLoaded", setupProductGalleryBindings);
 
-        // (b) other gallery images
-        const product_gallery_image_els = check_elements_exist(document, ".product_gallery_image")
-        if(product_gallery_image_els) {
-            product_gallery_image_els.map(el => {
-                const pic_index = Number(el.id.replace("product_gallery_image_", ""))
-                product_gallery_images[el.id] = el.src
+// Intercept out-of-band HTMX swaps to automatically re-bind listeners
+document.addEventListener("htmx:afterSwap", function(evt) {
+    const product_purchase_panel_exists = check_element_exist(document, "#product-purchase-panel")
+    const product_images_exist = check_element_exist(document, "#product_images")
 
-                // When any of the gallery image is clicked
-                const gallery_other_doms_handler = init_gallery_other_doms.bind(null, product_gallery_images, target_el, pic_index)
-                el.addEventListener("click", gallery_other_doms_handler)
-            })
+    if (product_purchase_panel_exists || product_images_exist) {
+        if (evt.detail.target.id === "product-purchase-panel" || evt.detail.target.id === "product_images") {
+            console.log('product images!!!!!')
+            setupProductGalleryBindings();
         }
     }
-})
-
+});
 
 // ***** Sharer.js *****
 document.addEventListener('DOMContentLoaded', () => {
     if (window.Sharer) {
-            window.Sharer.init();
-        } else {
-            console.error("window.Sharer is not defined. Check installation.");
-        }    
+        window.Sharer.init();
+    }
 });
+
 
 // ***** cally *****
 const daysBetween = (date1String, date2String) => {
@@ -457,38 +394,71 @@ const searchArchive = () => {
 }
 
 // check if element(s) exist
-function check_element_exist(parent, selector) {
-    const element = parent.querySelector(selector);
-    if (element) {
-        return element
-    } else {
-        // This runs if the element was not found
-        return false
-    }
+function check_element_exist(doc, selector) {
+    return doc.querySelector(selector);
 }
 
-function check_elements_exist(parent, selector) {
-    const elements = parent.querySelectorAll(selector);
-    if (elements) {
-        return [...elements]
-    } else {
-        // This runs if the element was not found
-        return false
-    }
+function check_elements_exist(doc, selector) {
+    const nodes = doc.querySelectorAll(selector);
+    return nodes.length > 0 ? [...nodes] : null;
 }
 
-// 3D Fireworks
 window.onload = function() { 
-    const threeEl = document.querySelector(".webgl")
-    const fireworkEl = document.querySelector(".firework_gl")
-    fireworkEl ? (firework(),         
-        Swal.fire({
-            title: "點擊場景點燃🎆",
-            text: "🖱️左鍵拖拽可觀看3D景色",
-            icon: "info"
-        })
-) : null
-}
+    const fireworkEl = document.querySelector(".firework_gl");
+    
+    if (fireworkEl) {
+        try {
+            firework();         
+            Swal.fire({
+                title: "Click to fire｜點擊場景點燃🎆",
+                text: "🖱️Left Click to Drag Scene｜左鍵拖拽可觀看3D景色",
+                icon: "info"
+            });
+
+        } catch (error) {
+            console.error("Caught Three.js initialization failure:", error);
+            
+            Swal.fire({
+                title: "WebGL Initialization Failed / WebGL 啟動失敗",
+                icon: "warning",
+                width: '600px',
+                html: `
+                <div style="text-align: left; font-size: 0.95rem; line-height: 1.5; font-family: sans-serif;">
+                    <!-- English Instructions -->
+                    <div style="margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 15px;">
+                        <strong style="color: #d33;">Desktop:</strong>
+                        <ul style="margin: 5px 0 10px 20px; padding: 0;">
+                            <li>Go to browser "Settings", search for <b>"Hardware Acceleration"</b>, toggle it <b>ON</b>, and restart your browser.</li>
+                            <li>If using Incognito/Private mode, certain extensions might be blocking WebGL.</li>
+                        </ul>
+                        <strong style="color: #e67e22;">Mobile Devices:</strong>
+                        <ul style="margin: 5px 0 0 20px; padding: 0;">
+                            <li>Turn off <b>"Low Power Mode / Battery Saver"</b>, and close extra background applications or tabs to free up RAM.</li>
+                            <li>If you are inside an in-app browser (Line, WeChat, FB), tap the menu icon and select <b>"Open in Browser"</b> (Safari or Chrome).</li>
+                        </ul>
+                    </div>
+                            
+                    <!-- Chinese Instructions -->
+                    <div>
+                        <strong style="color: #d33;">電腦版 (Desktop):</strong>
+                        <ul style="margin: 5px 0 10px 20px; padding: 0;">
+                            <li>請進入瀏覽器「設定」，搜尋<b>「硬體加速」</b>(Use graphics acceleration) 並將其<b>開啟</b>，隨後重啟瀏覽器。</li>
+                            <li>若使用隱私模式或無痕視窗，部分擴充功能可能會阻擋 WebGL 運作。</li>
+                        </ul>
+                        <strong style="color: #e67e22;">手機版 (Mobile):</strong>
+                        <ul style="margin: 5px 0 0 20px; padding: 0;">
+                            <li>請關閉手機的<b>「省電模式」</b>，並關閉其他背景應用程式與網頁分頁以釋放記憶體。</li>
+                            <li>若是在 Line / WeChat / FB 內建瀏覽器中開啟，請點擊右上角選擇<b>「在瀏覽器中開啟」</b>(如 Safari 或 Chrome)。</li>
+                        </ul>
+                    </div>
+                </div>
+                `,
+                confirmButtonText: "Got it / 我知道了"
+            });
+
+        }
+    }
+};
 
 // Number formatter
 const formatter = new Intl.NumberFormat('en-US', {
@@ -618,49 +588,6 @@ function get_csrf_token(){
     return csrf_element.value;
 }
 
-// async function createOrder() {
-//     const proforma_invoice_number = JSON.parse(document.getElementById('proforma_invoice_number').textContent);
-//     const foreign_currency_code = JSON.parse(document.getElementById('foreign_currency_code').textContent);
-//     const locked_rate = JSON.parse(document.getElementById('locked_rate').textContent);
-
-//     try {
-//         const url = `/orders/api/paypal/create_paypal_order/?invoice=${proforma_invoice_number}&foreign_currency_code=${foreign_currency_code}&locked_rate=${locked_rate}`;
-//         const response = await fetch(url, {
-//             method: "POST",
-//             headers: {
-//                 "X-CSRFToken": get_csrf_token(),
-//                 "Content-Type": "application/json",
-//                 "mode": 'same-origin',
-//             }
-//         });
-//         if (!response.ok) {
-//             const error_data = await response.json();
-//             if (error_data.error_code === "OUT_OF_STOCK") {
-//                 // Dispatch native custom event to your working errorMssg listener instantly
-//                 const evt = new CustomEvent("errorMssg", {
-//                     detail: {
-//                         title: error_data.title,
-//                         text: error_data.text,
-//                         redirect_url: error_data.redirect_url
-//                     }
-//                 });
-//                 document.dispatchEvent(evt);
-                
-//                 // Return an empty promise rejection to stop the PayPal SDK loop cleanly
-//                 return Promise.reject(new Error("Stock allocation threshold reached."));
-//             }
-//             throw new Error("Failed to create order due to gateway issues.");
-//         }
-
-//         const response_data = await response.json();
-//         console.log("Returning PayPal Order ID: ", response_data.id);
-//         return { orderId: response_data.id };
-//     } catch(error) {
-//         console.error("Failed to create order:", error);
-//         throw error;
-//     }
-// }
-
 async function createOrder() {
     const proforma_invoice_number = JSON.parse(document.getElementById('proforma_invoice_number').textContent);
     const foreign_currency_code = JSON.parse(document.getElementById('foreign_currency_code').textContent);
@@ -717,7 +644,6 @@ async function createOrder() {
     }
 }
 
-
 async function captureOrder(data) {
     const proforma_invoice_number = JSON.parse(document.getElementById('proforma_invoice_number').textContent);
     try {
@@ -754,7 +680,6 @@ async function getBrowserSafeClientToken() {
     });
     return await response.json();
 }
-
 
 async function renderPayPalComponents(clientToken) {
     const paypalButton = document.getElementById("paypal_action_trigger");
@@ -922,7 +847,6 @@ async function renderPayPalComponents(clientToken) {
     }
 }
 
-
 async function initializePayPalSDK() {
     // 💡 FIX: Check the browser URL parameters early.
     // If the active window is already on the order_complete page, exit immediately 
@@ -1009,7 +933,6 @@ document.addEventListener("DOMContentLoaded", () => {
         window.initializePayPalSDK();
     }
 });
-
 
 /**
  * SWAL alerts 
@@ -1104,6 +1027,30 @@ document.body.addEventListener('showDapDisclaimer', (evt) => {
 //     }
 // });
 
+// redirect
+document.body.addEventListener('triggerLoginPrompt', function(evt) {
+    const alertData = evt.detail;
+    
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: alertData.title,
+            html: alertData.text,
+            icon: alertData.icon || 'info',
+            confirmButtonText: 'Log In｜前往登入',
+            confirmButtonColor: '#10b981',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed && alertData.redirect_url) {
+                // Smoothly route the browser window to your user login platform
+                window.location.href = alertData.redirect_url;
+            }
+        });
+    } else {
+        alert("Account Already Exists｜帳號已存在\n\n" + alertData.text.replace(/<br>/g, '\n'));
+        if (alertData.redirect_url) window.location.href = alertData.redirect_url;
+    }
+});
 
 // SWAL general
 function confirmAction(button, title, html, icon, show_cancel, confirm_btn_color, cancel_btn_color, confirm_btn_text, cancel_btn_text) {
@@ -1123,7 +1070,6 @@ function confirmAction(button, title, html, icon, show_cancel, confirm_btn_color
         }
     })
 }
-
 
 /*************************  GOOGLE AUTO COMPLETE  **************************/ 
 // call before init AutoComplete:
@@ -1424,7 +1370,78 @@ function toggleProvinceFields(form) {
 }
 
 htmx.config.ignoreOobSwapErrors = true;
-console.log("ignoreOobSwapErrors: ",  htmx.config.ignoreOobSwapErrors)
+
+// ***** Reviews *****
+// 🌟 SWEETALERT CONTROL INTERCEPT MANAGER FOR SECURE REVIEWS DELETIONS
+function confirmSweetAlertDelete(reviewId) {
+    if (typeof Swal === 'undefined') {
+        // Fallback target action if SweetAlert bundles fail to initialize
+        if (confirm("Are you sure you want to delete this review?\n確定要刪除此評價嗎？")) {
+            const anchor = document.getElementById(`hidden_delete_trigger_anchor_${reviewId}`);
+            if (anchor) htmx.trigger(anchor, "click");
+        }
+        return;
+    }
+
+    // 1. Dual-Language Modal Confirmation Prompt Layout
+    Swal.fire({
+        // 🌟 FIXED: Implemented Eg/Ch Title with block-isolated layouts
+        title: "Are you sure you want to delete this review?<br><span class='text-xs font-sans tracking-normal opacity-50 block mt-1'>確定要刪除此評價嗎？</span>",
+        // 🌟 FIXED: Swapped 'text' parameter for 'html' to style detailed sub-text elegantly
+        html: `
+            <div class="text-left space-y-1.5 opacity-70 border-t border-b border-base-200 py-3 my-2 font-sans leading-relaxed">
+                <p class="text-[10px] opacity-60"><b>Warning:</b> Once deleted, this artwork feedback record and its attached images will be permanently removed from our database. This action cannot be undone.</p>
+                <p><b>警告：</b>刪除後，此項藝術品反饋記錄與相關相片將從數據庫中永久消失，無法撤銷。</p>
+            </div>
+        `,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "var(--color-primary, #111)",
+        cancelButtonColor: "#d33",
+        // 🌟 FIXED: Dual-Language Operation Buttons Shape
+        confirmButtonText: "Yes, Delete｜確定刪除",
+        cancelButtonText: "Cancel｜取消變更",
+        background: "#ffffff",
+        customClass: {
+            popup: "font-sans text-xs rounded-xl border border-base-200 shadow-xl max-w-sm",
+            title: "text-sm font-semibold font-serif tracking-widest text-neutral text-center leading-snug pt-2",
+            confirmButton: "btn btn-xs btn-neutral rounded px-4 font-normal tracking-wide",
+            cancelButton: "btn btn-xs btn-ghost rounded px-4 font-normal"
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const hiddenAnchor = document.getElementById(`hidden_delete_trigger_anchor_${reviewId}`);
+            if (hiddenAnchor) {
+                // Execute dynamic async deletion sweep parameters cleanly via HTMX
+                htmx.trigger(hiddenAnchor, "click");
+                
+                // 2. Dual-Language Successful Action Dialogue Box
+                Swal.fire({
+                    // 🌟 FIXED: Eg/Ch Confirmation Complete Notification Layout
+                    title: "Deleted Successfully｜已成功刪除",
+                    html: `
+                        <div class="text-center font-sans text-xs opacity-70 py-2">
+                            <p class="text-[10px] opacity-60 mt-1">Your review record has been securely removed from our store database.</p>
+                            <p>您的反饋記錄已從小店系統數據庫安全移除。</p>
+                        </div>
+                    `,
+                    icon: "success",
+                    confirmButtonColor: "var(--color-primary, #111)",
+                    confirmButtonText: "Close｜關閉",
+                    customClass: {
+                        popup: "font-sans text-xs rounded-xl max-w-xs p-4",
+                        title: "text-sm font-bold font-serif tracking-wide text-neutral pt-2",
+                        confirmButton: "btn btn-xs btn-neutral rounded px-4 font-normal tracking-wide"
+                    }
+                });
+            }
+        }
+    });
+}
+window.confirmSweetAlertDelete = confirmSweetAlertDelete;
+
+
+
 
 window.daysBetween = daysBetween;
 window.datePicker = datePicker;
@@ -1440,7 +1457,7 @@ window.confirmAction = confirmAction
 window.share_link = share_link
 window.delete_wish = delete_wish
 window.GLightbox = GLightbox
-window.change_thumbnail_image = change_thumbnail_image
+// window.change_thumbnail_image = change_thumbnail_image
 window.post_and_fetch_data = post_and_fetch_data
 window.htmx = htmx;
 

@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- BANNER -->
+<div class="relative mt-[86px] w-full">
+    <div class="relative w-full bg-base-300 py-16 text-center border-b border-base-200 select-none">
+        <div class="max-w-xl mx-auto px-4">
+            <h1 class="text-2xl md:text-3xl font-serif tracking-widest text-base-content mb-3">
+                Member Policy <span class="font-sans font-light text-xl opacity-60 ml-2">/ 會員準則</span>
+            </h1>
+            <p class="text-xs md:text-sm tracking-wide text-base-content/70 leading-relaxed font-serif">
+                A shared pact of refinement, walking alongside those who appreciate true beauty.<br>
+                <span class="block mt-1 font-sans font-light text-[11px] md:text-xs opacity-60 italic">
+                    拾光成契，與雅同行。
+                </span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN CONTAINER -->
+<main class="flex flex-row justify-center lg:px-[max(2rem,8vw)] xl:px-[max(3rem,8vw)] pt-[1.5rem] sm:pt-[3rem] md:pt-15 lg:pt-25 pb-[30vh] min-h-[calc(100dvh-200px)]" style="background-color: #f7f5f5;">
+    <!-- Reading Content Wrapper (888px Column Constraint) -->
+    <div class="md:max-w-[888px] md:w-4/5 w-9/10 font-sans text-base-content/80 leading-relaxed text-sm md:text-base">
+        
+        <!-- ========================================== -->
+        <!-- ENGLISH SEGMENT (英文)                      -->
+        <!-- ========================================== -->
+        <section class="border-b border-base-300/60 pb-12 mb-12">
+            <h1 class="text-xl md:text-2xl font-semibold tracking-wide text-base-content mb-2">Membership Framework & Terms</h1>
+            <p class="text-xs text-base-content/50 mb-8 font-mono">Last Updated: June 2026</p>
+
+            <div class="space-y-6">
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base">1. Curated Member Perks & Privileges</h2>
+                    <p class="mb-2">By authenticating a collector profile with XinDeng Art Shop, you unlock our tailored rewards framework designed to enrich your space:</p>
+                    <ul class="list-disc pl-5 space-y-2 text-sm bg-base-200/40 p-4 rounded-box">
+                        <li><b>Welcome Tier Perk:</b> Upon verified email activation, an automated promotional code or electronic cash voucher is allocated directly within your Personal Registry to offset your inaugural physical asset order.</li>
+                        <li><b>Birthday Allocation:</b> During your registered birth month, an exclusive private token (such as international shipping subsidies or specialized craft discounts) will populate your dashboard. <i>(Note: Birth parameters are locked upon registration and issued once per solar year)</i>.</li>
+                        <li><b>Priority Gallery Access:</b> Receive premium pre-sale notifications for original canvas collections, rare craftsmanship objects, and early-access catalogs for virtual asset drops.</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base">2. Profile Security & Account Responsibilities</h2>
+                    <p class="mb-2">To preserve a safe and authentic showroom environment, members acknowledge and adhere to the following maintenance criteria:</p>
+                    <ul class="list-disc pl-5 space-y-1 text-sm">
+                        <li><b>Information Validity:</b> You must supply accurate address, identity, and contact metrics. Alternative logistical costs resulting from corrupted, outdated, or false data parameters remain your exclusive overhead.</li>
+                        <li><b>Credentials Management:</b> Although access pins are protected via internal cryptographic hashing, you remain responsible for your login security. Licensing, transferring, or aggregating accounts to exploit voucher metrics is strictly prohibited.</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base">3. Cross-Border Logistical Risks & Liabilities</h2>
+                    <p class="mb-1">Because our inventory comprises unique and fragile physical art masterpieces crossing international custom nodes, collectors accept standard operational risk criteria:</p>
+                    <p class="text-sm">XinDeng Art Shop actively collaborates with global couriers to resolve transit disruptions. However, we maintain no financial liability for delivery lags triggered by force majeure (including localized custom impounds, unpredictable weather conditions, or unexpected international flight route adjustments). If sudden legislative updates bar entry to your region entirely, standard transaction rollbacks and refunds will apply.</p>
+                </div>
+
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base">4. Compliance & Termination Framework</h2>
+                    <p>We reserve the right to limit, freeze, or terminate profile privileges without prior written warning if a user repeatedly abuses platform bugs to aggregate duplicate voucher balances, patterns malicious package rejections, or repeatedly uses the CNY offline flow to lock inventory for 72 hours without payment completion more than three times.</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- ========================================== -->
+        <!-- CHINESE SEGMENT (繁體中文)                  -->
+        <!-- ========================================== -->
+        <section>
+            <h1 class="text-xl md:text-2xl font-semibold tracking-wide text-base-content mb-2">會員權益與服務條款</h1>
+            <p class="text-xs text-base-content/50 mb-8 font-mono">最後更新日期：2026年6月</p>
+
+            <div class="space-y-6">
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base">一、 專屬會員尊榮禮遇 (Perks & Privileges)</h2>
+                    <p class="mb-2">成為新燈藝術商店的註冊會員，您將解鎖專屬的收藏禮遇，讓美學自然融入生活：</p>
+                    <ul class="list-disc pl-5 space-y-2 text-sm bg-base-200/40 p-4 rounded-box">
+                        <li><b>迎新禮遇 (Welcome Perk)：</b> 完成首次註冊並驗證電子信箱後，系統將自動向您的個人後台「臻選禮遇」發放專屬迎新折扣碼或電子現金券，可用於首筆實體或文創商品訂單。</li>
+                        <li><b>生日專屬禮遇 (Birthday Allocation)：</b> 會員於註冊填寫之生日月份，將獲得專屬的限定禮遇（如限時免運券或專屬藝術衍生品折扣）。<i>（註：生日資訊一經提交即鎖定，每年限領取一次）</i>。</li>
+                        <li><b>特展與預售優先權：</b> 獲邀優先參與原創畫作、限量工藝品、精緻家居擺飾的線上搶先預售，以及數位桌布特展的優先下載通道。</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base">二、 帳戶安全與會員職責 (Responsibilities)</h2>
+                    <p class="mb-2">為了維護良好的交易環境，會員需承諾並履行以下帳戶維護責任：</p>
+                    <ul class="list-disc pl-5 space-y-1 text-sm">
+                        <li><b>資料真實性：</b> 請確保填寫的聯絡電話、電子信箱及配送地址真實有效。因填寫錯誤導致的包裹跨境投遞失敗或數位商品發送遺失，相關重寄物流費需由會員自行負責。</li>
+                        <li><b>帳戶保管義務：</b> 您的登入密碼已由系統進行高強度雜湊加密，但請妥善保管您的帳戶權限。嚴禁將會員帳戶租借、轉讓或與他人共用以惡意刷取或套現專屬現金券。</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base">三、 跨境交易風險聲明 (Risks & Liabilities)</h2>
+                    <p class="mb-1">因本站商品包含跨境跨區域運輸之脆弱藝術實體，購買時請知悉並理解以下行業標準風險條款：</p>
+                    <p class="text-sm">凡涉及不可抗力因素（如目的地海關突擊查驗延誤、國際極端氣候阻斷物流、特定地區航線調整等）導致的到貨延遲，本站將全力協助協調物流清關，但不承擔由此產生的衍生性經濟賠償責任。若商品遭遇突發性清關法規變更導致無法入境，我們將依法辦理退款退貨處置。</p>
+                </div>
+
+                <div>
+                    <h2 class="font-medium text-base-content mb-2 text-base">四、 會員資格終止與限制</h2>
+                    <p>若系統檢測到帳戶存在惡意利用程式漏洞刷取大量現金券、蓄意拒收包裹洗單、或在線下 CNY 轉帳中反覆惡意下單鎖定庫存達 72 小時而不付款高達 3 次以上者，本商店有權在不經預先通知的情況下暫停、限制或永久終止該會員之帳戶權限。</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</main>
+{% endblock %}

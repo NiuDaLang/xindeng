@@ -7,20 +7,16 @@
     </div>
 
     <!-- Cash Voucher -->
-    {% if user.is_authenticated %}
-    <div class="p-4 bg-base-200 rounded-xl">
+    <div class="p-4 bg-base-200 rounded-xl {% if not request.user.is_authenticated %}hidden{% endif %}">
         <div class="flex justify-between items-center mb-2">
             <span class="text-sm font-medium text-primary">Cash Voucher Balance<br>優惠·現金券餘額</span>
-            <span 
-                id="voucher-balance" 
-                class="badge badge-outline font-semibold"
-                >
+            <span id="voucher-balance" class="badge badge-outline font-semibold">
                 CNY {{ cash_voucher_balance|floatformat:2|intcomma }}
             </span>
         </div>
+        <!-- This container now safely exists in the DOM for HTMX to find -->
         <div id="voucher-form-wrapper">
             {% include 'store/partials/voucher_input.html' %}
         </div>
-    </div>
-    {% endif %}
+    </div>    
 </div>

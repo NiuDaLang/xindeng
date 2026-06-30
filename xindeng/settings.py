@@ -28,6 +28,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").strip() == "True"
+print("DEBUG: ", DEBUG)
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '52.62.142.183']
 
@@ -313,7 +314,7 @@ from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
     'update-exchange-rates-hourly': {
         'task': 'orders.tasks.update_exchange_rates', # Use the full path to your task
-        'schedule': crontab(minute=0), # Runs at the start of every hour (e.g., 1:00, 2:00)
+        'schedule': crontab(minute=0, hour=0), # Runs at the start of every hour (e.g., 1:00, 2:00)
     },
     'check-solar-term-daily': {
         'task': 'accounts.tasks.update_solar_term_broadcast',

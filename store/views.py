@@ -1,9 +1,9 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Exists, OuterRef, Q, Min
-from .models import Product, ProductVariation
+from .models import Product, ProductVariation, ProductGallery
 from category.models import Category
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.http import Http404, JsonResponse, FileResponse
+from django.http import Http404, JsonResponse, FileResponse, HttpResponse
 from carts.models import Cart, CartItem
 from carts.views import _cart_id
 from django.contrib.sites.shortcuts import get_current_site
@@ -14,9 +14,11 @@ import os
 import mimetypes
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from reviews.views import check_user_has_purchased_product
+from reviews.models import Comment
+from django.contrib.contenttypes.models import ContentType
+from accounts.models import UserProfile
 
-
- 
 
 # Create your views here.
 def products(request, category_slug=None):
@@ -73,88 +75,96 @@ def products(request, category_slug=None):
     return render(request,'store/products.html', context)
 
 
+# htmx
 def product(request, category_slug, product_slug):
-    try:
-        single_product = Product.objects.get(slug=product_slug)
-        single_product.tags_string = ",".join(single_product.tags.names())
-        variations = single_product.variations.all()
-        sizes = single_product.variations.values_list('size__size_name', flat=True).distinct().exclude(size=None)
-        colors = single_product.variations.values_list('color__color_name', flat=True).distinct().exclude(color=None)
-        types = single_product.variations.values_list('type__type_name', flat=True).distinct().exclude(type=None)
-        min_price = min([variation.price for variation in variations])
+    single_product = get_object_or_404(Product, slug=product_slug, is_active=True)
+    single_product.tags_string = ",".join(single_product.tags.names())
+    variations = single_product.variations.filter(is_available=True)
+    min_price = min([v.price for v in variations]) if variations.exists() else 0.00
 
-        # Check current cart
-        current_session_key = _cart_id(request)
+    # Build default master product gallery list maps
+    product_gallery = single_product.productgallery_set.all()
+    default_gallery_list = [{"href": item.image.url, "title": item.title} for item in product_gallery]
+    default_gallery_list.insert(0, {"href": single_product.images.url, "title": single_product.product_name})
 
-        if request.user.is_authenticated:
-            cart = Cart.objects.filter(user=request.user).first()
-        else:
-            cart = Cart.objects.filter(cart_id=current_session_key, user__isnull=True).first()
+    # Prepare variations stock counts for initial entry
+    session_cart_key = _cart_id(request)
+    cart = Cart.objects.filter(user=request.user).first() if request.user.is_authenticated else Cart.objects.filter(cart_id=session_cart_key, user__isnull=True).first()
 
-        if not cart:
-            cart = None
-            
-        variations_json = {}
-        for variation in variations:
-            variations_json[variation.pk] = {
-                "color": variation.color.color_name if variation.color else None,
-                "size": variation.size.size_name if variation.size else None,
-                "type": variation.type.type_name if variation.type else None,
-                "sku": variation.get_sku(),
-                "price": variation.price,
-                "stock": variation.stock,
-                "image": variation.images.url,
-                "in_cart": True if CartItem.objects.filter(cart=cart, product_variation=variation, is_active=True).exists() else False,
-                "quantity_in_cart": CartItem.objects.get(cart=cart, product_variation=variation, is_active=True).quantity if CartItem.objects.filter(cart=cart, product_variation=variation, is_active=True).exists() else 0
-            }
+    for var in variations:
+        v_stock = var.stock
+        if cart:
+            in_cart_item = CartItem.objects.filter(cart=cart, product_variation=var, is_active=True).first()
+            if in_cart_item:
+                v_stock = max(0, v_stock - in_cart_item.quantity)
+        var.available_production_stock = v_stock
 
-        domain = get_current_site(request).domain
-        absolute_url = f"https://{domain}{single_product.get_url()}"
+    exclusion_blacklist = [None, "", "NONE", "N/A", "N/A｜不適用", "N/A ｜ 不適用"]
+    has_valid_colors, has_valid_sizes, has_valid_types = False, False, False
 
-        product_gallery = single_product.productgallery_set.all()
-        product_gallery_data = [
-            {"href": item.image.url, "title": item.title} 
-            for item in product_gallery
-        ]
-        product_gallery_data.insert(0, {"href": single_product.images.url, "title": single_product.product_name})
+    for var in variations:
+        color_val = str(var.color.color_name).strip() if var.color else ""
+        size_val = str(var.size.size_name).strip() if var.size else ""
+        type_val = str(var.type.type_name).strip() if var.type else ""
+        if color_val and color_val not in exclusion_blacklist: has_valid_colors = True
+        if size_val and size_val not in exclusion_blacklist: has_valid_sizes = True
+        if type_val and type_val not in exclusion_blacklist: has_valid_types = True
 
-        variations_gallery_data = []
-        for variation in variations:
-            variation_gallery = variation.productvariationgallery_set.all()
-            variation.variation_gallery_data = [
-                {"id": variation.id},
-                [
-                    {"href": item.image.url, "title": item.title}
-                    for item in variation_gallery
-                ]
-            ]
-            # variation.variation_gallery_data[1].insert(0, {"href": variation.images.url, "title": variation.get_sku()})
-            variations_gallery_data.append(variation.variation_gallery_data)
+    has_any_valid_specifications = has_valid_colors or has_valid_sizes or has_valid_types
+
+    # Fetch and filter historical review entries generic to this product
+    product_content_type = ContentType.objects.get_for_model(single_product)
+    reviews_list = Comment.objects.filter(content_type=product_content_type, object_id=single_product.id, is_approved=True)
+
+    has_purchased_product_flag = False
+    has_already_reviewed_flag = False
+
+    if request.user.is_authenticated:
+        # 1. Ensure UserProfile exists
+        UserProfile.objects.get_or_create(user=request.user)
         
-    except Exception as e:
-        raise e
+        # 2. Check if user already reviewed
+        has_already_reviewed_flag = Comment.objects.filter(
+            user=request.user, 
+            content_type=product_content_type, 
+            object_id=single_product.id
+        ).exists()
+        
+        # 3. Assume you have a helper function to check purchase
+        has_purchased_product_flag = check_user_has_purchased_product(request.user, single_product.id)
+
+    # Flag for template: Can only review if purchased AND not already reviewed
+    user_can_review_flag = has_purchased_product_flag and not has_already_reviewed_flag
 
     context = {
         "single_product": single_product,
         "variations": variations,
-        "variations_json": variations_json,
-        "min_price": min_price,
-        "sizes": sizes,
-        "colors": colors,
-        "types": types,
-        "page_title": f"{single_product.product_name}｜Product",
-        "absolute_url": absolute_url,
-        "product_gallery": product_gallery,
-        "product_gallery_json_data": product_gallery_data,
-        "variations_gallery_json_data": variations_gallery_data,
-        "main_title": "Item Details｜寶 貝 詳 情",
-        "sub_title_1": "Plum lacks the snow's three parts of white, yet snow yields to the plum's delight.<br/>梅須遜雪三分白 雪卻輸梅一段香",
-        "bread_crumb_1": "首頁 | Home",
-        "bread_crumb_2": "寶貝們 | Products",
+        "displayed_price": min_price,
+        "selected_var_id": None,
+        "is_resolved_sku": False,
+        "current_main_image": single_product.images.url,
+        "product_gallery": default_gallery_list,
+        "has_valid_colors": has_valid_colors,
+        "has_valid_sizes": has_valid_sizes,
+        "has_valid_types": has_valid_types,
+        "has_any_valid_specifications": has_any_valid_specifications,
+        
+        # 🌟 RESTORED: Verified purchase flag calculation injected for base view
+        "has_purchased_product_flag": check_user_has_purchased_product(request.user, single_product.id),
+        "reviews_list": reviews_list,
+        "has_already_reviewed_flag": has_already_reviewed_flag,
+        "user_can_review_flag": user_can_review_flag,
+
+        "active_filters": {"size": "點選上方圖像", "color": "點選上方圖像", "type": "點選上方圖像"},
+        "page_title": f"{single_product.product_name} ｜ XinDeng Art Shop",
+        "absolute_url": request.build_absolute_uri(single_product.get_url()),
+        "main_title": "Item Details ｜ 寶貝詳情",
+        "sub_title_2": "梅須遜雪三分白 雪卻輸梅一段香",
+        "bread_crumb_1": "Home ｜ 首頁",
+        "bread_crumb_2": "Products ｜ 寶貝們",
         "bread_crumb_4": single_product.product_name,
         "bread_crumb_1_url": "/",
         "bread_crumb_2_url": "/store/products/all",
-        "bread_crumb_4_url": f"/store/product/{category_slug}/{product_slug}",
     }
     return render(request, 'store/product.html', context)
 

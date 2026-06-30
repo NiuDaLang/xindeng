@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- BANNER -->
+<div class="relative mt-[86px] w-full">
+    <div class="relative w-full bg-base-300 py-16 text-center border-b border-base-200 select-none">
+        <div class="max-w-xl mx-auto px-4">
+            <h1 class="text-2xl md:text-3xl font-serif tracking-widest text-base-content mb-3">
+                FAQs <span class="font-sans font-light text-xl opacity-60 ml-2">/ 常見問題</span>
+            </h1>
+            <p class="text-xs md:text-sm tracking-wide text-base-content/70 leading-relaxed font-serif">
+                Answering your inquiries, providing absolute clarity for your collection journey.<br>
+                <span class="block mt-1 font-sans font-light text-[11px] md:text-xs opacity-60 italic">
+                    解惑釋疑，明晰有道。
+                </span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN CONTAINER -->
+<main class="flex flex-row justify-center lg:px-[max(2rem,8vw)] xl:px-[max(3rem,8vw)] pt-[1.5rem] sm:pt-[3rem] md:pt-15 lg:pt-25 pb-[30vh] min-h-[calc(100dvh-200px)]" style="background-color: #f7f5f5;">
+    <!-- Reading Content Wrapper (888px Column Constraint) -->
+    <div class="md:max-w-[888px] md:w-4/5 w-9/10 font-sans text-base-content/80 leading-relaxed text-sm md:text-base space-y-6">
+
+        <!-- ========================================== -->
+        <!-- FAQ CARD 1: FRAMING OPTIONS                 -->
+        <!-- ========================================== -->
+        <div class="bg-white rounded-box border border-base-300/70 p-5 md:p-6 shadow-sm hover:border-primary/40 transition-all duration-300">
+            <!-- English Section -->
+            <div class="mb-4">
+                <h3 class="text-base font-semibold text-base-content flex items-start">
+                    <span class="text-primary font-mono mr-2">Q:</span> Will there be a framing option for the painting?
+                </h3>
+                <p class="mt-1 pl-6 text-sm text-base-content/70">
+                    <span class="font-medium text-success">A:</span> We normally do not frame our paintings. Picture frames face varying import regulations across destination territories and are highly fragile to transport internationally. If you have unique bespoke requirements, please communicate with us directly to assess potential arrangements.
+                </p>
+            </div>
+            <!-- Chinese Section -->
+            <div class="border-t border-dashed border-base-200 pt-3 opacity-90">
+                <h3 class="text-sm font-medium text-base-content flex items-start">
+                    <span class="text-secondary font-mono mr-2">問：</span> 請問原創畫作有包含或提供配框服務嗎？
+                </h3>
+                <p class="mt-1 pl-6 text-xs md:text-sm text-base-content/60">
+                    <span class="font-medium text-success">答：</span> 本站畫作通常以不含外框的形式寄出。由於各國海關對木質、塑料外框有不同且嚴格的進口檢疫規範，且外框在長途跨境快遞中極易破碎，因此我們預設不進行裝框。若您有非常特殊的布展裝框需求，請隨時與客服團隊聯絡。
+                </p>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- FAQ CARD 2: PAYMENT METHODS                 -->
+        <!-- ========================================== -->
+        <div class="bg-white rounded-box border border-base-300/70 p-5 md:p-6 shadow-sm hover:border-primary/40 transition-all duration-300">
+            <!-- English Section -->
+            <div class="mb-4">
+                <h3 class="text-base font-semibold text-base-content flex items-start">
+                    <span class="text-primary font-mono mr-2">Q:</span> What payment settlement options are available?
+                </h3>
+                <p class="mt-1 pl-6 text-sm text-base-content/70">
+                    <span class="font-medium text-success">A:</span> Payment processing pathways diverge based on your selected currency:
+                    <br>• <b>Non-CNY Currencies (USD, HKD, TWD, EUR, etc.):</b> You can pay instantly using our secure PayPal gateway, or opt for an offline international bank wire.
+                    <br>• <b>Chinese Yuan (CNY):</b> Due to payment processor constraints, instant digital checking is unavailable for CNY. We accept offline bank wires only. Your chosen artwork will be securely held in our vault for up to 72 hours while waiting for your transfer confirmation.
+                </p>
+            </div>
+            <!-- Chinese Section -->
+            <div class="border-t border-dashed border-base-200 pt-3 opacity-90">
+                <h3 class="text-sm font-medium text-base-content flex items-start">
+                    <span class="text-secondary font-mono mr-2">問：</span> 商店目前支援哪些結算與支付管道？
+                </h3>
+                <p class="mt-1 pl-6 text-xs md:text-sm text-base-content/60">
+                    <span class="font-medium text-success">答：</span> 系統將依據您在購物車內所選取的結算幣種進行分流：
+                    <br>• <b>非人民幣貨幣（美金、港幣、台幣、歐元等）：</b> 支援 PayPal 線上刷卡即時付費，或選取線下國際銀行匯款。
+                    <br>• <b>人民幣 (CNY)：</b> 由於第三方機構跨國清算限制，本站目前暫不提供人民幣線上即時刷卡，僅接受線下銀行轉帳。選取後系統將為您鎖定保留藝術品庫存 72 小時，靜候您的匯款匯入。
+                </p>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- FAQ CARD 3: SHIPPING TIMES & REGIONS         -->
+        <!-- ========================================== -->
+        <div class="bg-white rounded-box border border-base-300/70 p-5 md:p-6 shadow-sm hover:border-primary/40 transition-all duration-300">
+            <!-- English Section -->
+            <div class="mb-4">
+                <h3 class="text-base font-semibold text-base-content flex items-start">
+                    <span class="text-primary font-mono mr-2">Q:</span> Where do you ship to, and how long does fulfillment take?
+                </h3>
+                <p class="mt-1 pl-6 text-sm text-base-content/70">
+                    <span class="font-medium text-success">A:</span> All physical art items are securely dispatched directly from our studio in mainland China. We provide premium logistics to Hong Kong, Macao, Taiwan, South Korea, Japan, Singapore, Malaysia, Australia, and New Zealand. Standard items ship within 3–5 business days, and real-time tracking IDs will be delivered to your inbox instantly upon courier handover.
+                </p>
+            </div>
+            <!-- Chinese Section -->
+            <div class="border-t border-dashed border-base-200 pt-3 opacity-90">
+                <h3 class="text-sm font-medium text-base-content flex items-start">
+                    <span class="text-secondary font-mono mr-2">問：</span> 配送範圍包括哪些區域？出貨大概需要多久？
+                </h3>
+                <p class="mt-1 pl-6 text-xs md:text-sm text-base-content/60">
+                    <span class="font-medium text-success">答：</span> 所有實體藝術作品均自中國大陸工作室發貨，出貨時間通常為 3 至 5 個工作天。當前常態配送目的地涵蓋：香港、澳門、台灣、韓國、日本、新加坡、馬來西亞、澳洲與紐西蘭。出貨後系統會第一時間將物流追蹤碼寄送至您的電子信箱。
+                </p>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- FAQ CARD 4: BROKEN / LOST VIRTUAL GOODS      -->
+        <!-- ========================================== -->
+        <div class="bg-white rounded-box border border-base-300/70 p-5 md:p-6 shadow-sm hover:border-primary/40 transition-all duration-300">
+            <!-- English Section -->
+            <div class="mb-4">
+                <h3 class="text-base font-semibold text-base-content flex items-start">
+                    <span class="text-primary font-mono mr-2">Q:</span> What should I do if my digital download or voucher code fails?
+                </h3>
+                <p class="mt-1 pl-6 text-sm text-base-content/70">
+                    <span class="font-medium text-success">A:</span> Please do not worry. Network filters or local firewalls may sometimes interfere with digital asset delivery. If your downloadable file or cash voucher code fails to arrive or open, contact our support desk immediately. Our administration will manually review your transaction invoice history and securely transfer your file links or credit balances directly.
+                </p>
+            </div>
+            <!-- Chinese Section -->
+            <div class="border-t border-dashed border-base-200 pt-3 opacity-90">
+                <h3 class="text-sm font-medium text-base-content flex items-start">
+                    <span class="text-secondary font-mono mr-2">問：</span> 如果購買的數位電子商品或現金券發生下載失敗、打不開怎麼辦？
+                </h3>
+                <p class="mt-1 pl-6 text-xs md:text-sm text-base-content/60">
+                    <span class="font-medium text-success">答：</span> 請您完全不用擔心。跨境網路波動或本地防火牆有時可能干擾數位資料的發送。如果您購買的電子壁紙、數位授權或虛擬現金券出現沒收到或損壞等狀況，請立即向客服反應，我們在核對您的後台訂單收據後，將以人工方式直接為您補發或重新開通額度。
+                </p>
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock %}

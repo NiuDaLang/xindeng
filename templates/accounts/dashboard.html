@@ -73,20 +73,6 @@ function renderLocalAnalogClockMetrics() {
     if (hourHand) hourHand.style.transform = `rotate(${hourDegrees}deg)`;
 }
 
-// function initializeAnalogClockLayout() {
-//     const clockSection = document.getElementById("persistent-analog-clock");
-//     if (!clockSection) return;
-
-//     // 🌟 AESTHETIC FIX: Rotates the 60 geometric tick marks perfectly but strips out ALL text numbers!
-//     const indicators = clockSection.querySelectorAll(".clock__indicator");
-//     indicators.forEach((indicator, index) => {
-//         const rotationDegree = (index + 1) * 6; // 6 degrees step per tick line
-//         indicator.style.transform = `rotate(${rotationDegree}deg)`;
-//         indicator.innerText = ""; // Keeps ticks clean, minimalist, and un-labeled
-//     });
-
-//     renderLocalAnalogClockMetrics();
-// }
 function initializeAnalogClockLayout() {
     const clockSection = document.getElementById("persistent-analog-clock");
     if (!clockSection) return;
@@ -137,25 +123,6 @@ function disableDefaultOptions(container = document) {
 }
 
 // Digital clock and date display
-// function updateClock() {
-//     const userLanguage = navigator.language; // e.g., "en-US"
-//     const now = new Date();
-//     const formattedDate = now.toLocaleString(userLanguage, {
-//         weekday: 'long',
-//         year: 'numeric',
-//         month: 'long',
-//         day: 'numeric',
-//     });
-//     const formattedTime = now.toLocaleString(userLanguage, {
-//         hour: '2-digit',
-//         minute: '2-digit',
-//         second: '2-digit',
-//     });
-    
-//     document.getElementById('dynamic-date') ? document.getElementById('dynamic-date').textContent = formattedDate : null
-//     document.getElementById('dynamic-clock') ? document.getElementById('dynamic-clock').textContent = formattedTime : null
-// }
-
 function updateClock() {
     const clockEl = document.getElementById('dynamic-clock');
     const dateEl = document.getElementById('dynamic-date');
@@ -180,24 +147,6 @@ function updateClock() {
 }
 
 
-
-// update sidebar subpage link
-// function updateActiveLink(element) {
-//     // 1. Find all dashboard items
-//     const items = document.querySelectorAll('.dashboard-item');
-    
-//     // 2. Remove the active border from all of them
-//     items.forEach(li => {
-//         li.classList.remove("is-active");
-//     });
-
-//     // 3. Add the active border to the parent <li> of the clicked link
-//     const parentLi = element.closest("li");
-//     if (parentLi) {
-//         parentLi.classList.add("is-active");
-//     }
-// }    
-
 // Update sidebar active visual borders
 function updateActiveLink(element) {
     if (!element) return;
@@ -210,40 +159,11 @@ function updateActiveLink(element) {
     }
 }
 
+
 /** 
  * Block 2: Zodiac Profile Extraction
  */
-
 // User zodiac engine lookup
-// function getZodiacSign(month, day) {
-//     const months = {Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,}
-//     const month_num = months[month]
-//     const zodiacSigns = [
-//         {sign: "摩羯座 | Capricorn", startMonth: 11, startDay: 22, endMonth: 0, endDay: 19 },
-//         {sign: "水瓶座 | Aquarius", startMonth: 0, startDay: 20, endMonth: 1, endDay: 18 },
-//         {sign: "雙魚座 | Pisces", startMonth: 1, startDay: 19, endMonth: 2, endDay: 20 },
-//         {sign: "牡羊座 | Aries", startMonth: 2, startDay: 21, endMonth: 3, endDay: 19 },
-//         {sign: "金牛座 | Taurus", startMonth: 3, startDay: 20, endMonth: 4, endDay: 20 },
-//         {sign: "雙子座 | Gemini", startMonth: 4, startDay: 21, endMonth: 5, endDay: 20 },
-//         {sign: "巨蟹座 | Cancer", startMonth: 5, startDay: 21, endMonth: 6, endDay: 22 },
-//         {sign: "獅子座 | Leo", startMonth: 6, startDay: 23, endMonth: 7, endDay: 22 },
-//         {sign: "處女座 | Virgo", startMonth: 7, startDay: 23, endMonth: 8, endDay: 22 },
-//         {sign: "天秤座 | Libra", startMonth: 8, startDay: 23, endMonth: 9, endDay: 22 },
-//         {sign: "天蠍座 | Scorpio", startMonth: 9, startDay: 23, endMonth: 10, endDay: 21 },
-//         {sign: "射手座 | Sagittarius", startMonth: 10, startDay: 22, endMonth: 11, endDay: 21 },
-//     ];
-
-//     for (const zodiac of zodiacSigns) {
-//         if (
-//             (month_num === zodiac.startMonth && day >= zodiac.startDay) ||
-//             (month_num === zodiac.endMonth && day <= zodiac.endDay)
-//         ) {
-//             return zodiac.sign
-//         }
-//     }
-//     return "Unknown"; // Should not happen with valid dates
-// }
-
 function getZodiacSign(month, day) {
     const months = {Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11};
     const month_num = months[month];
@@ -292,19 +212,6 @@ function processZodiacExtraction() {
  */
 // *** Offers ***
 // Count Down to Offer Expiry Flip Card
-// function stopCountdown() {
-//     if (countdownTimer){
-//         clearInterval(countdownTimer);
-//         countdownTimer = null
-//     }
-// }
-
-// function startCountdown() {
-//     stopCountdown()
-//     updateFlashSaleCountdowns()
-//     countdownTimer = setInterval(updateFlashSaleCountdowns, 1000)
-// }
-
 function stopCountdown() {
     if (window.dashboardCountdownTimer) {
         clearInterval(window.dashboardCountdownTimer);
@@ -320,38 +227,6 @@ function startCountdown() {
         window.dashboardCountdownTimer = setInterval(updateFlashSaleCountdowns, 1000);
     }
 }
-
-// function flip(flipCard, newNumber, startNumber) {
-//     const topHalf = flipCard.querySelector(`.top`)
-//     // console.log('newNumber, startNumber: ', newNumber, startNumber)
-//     if (newNumber === startNumber) {
-//         // console.log('same number')
-//         return
-//     }
-    
-//     const bottomHalf = flipCard.querySelector(".bottom");
-//     const topFlip = document.createElement("div");
-//     topFlip.classList.add("top-flip");
-//     const bottomFlip = document.createElement("div")
-//     bottomFlip.classList.add("bottom-flip");
-    
-//     topHalf.textContent = startNumber;
-//     bottomHalf.textContent = startNumber;
-//     topFlip.textContent = startNumber;
-//     bottomFlip.textContent = newNumber;
-    
-//     topFlip.addEventListener("animationstart", e => {
-//         topHalf.textContent = newNumber
-//     })
-//     topFlip.addEventListener("animationend", e => {
-//         topFlip.remove()
-//     })
-//     bottomFlip.addEventListener("animationend", e => {
-//         bottomHalf.textContent = newNumber
-//         bottomFlip.remove()
-//     })
-//     flipCard.append(topFlip, bottomFlip);
-// }
 
 function flip(flipCard, newNumber, startNumber) {
     if (!flipCard) return;
@@ -377,64 +252,6 @@ function flip(flipCard, newNumber, startNumber) {
     });
     flipCard.append(topFlip, bottomFlip);
 }
-
-// function updateFlashSaleCountdowns() {
-//     const containers = document.querySelectorAll('[id^="countdown-"]');
-//     if (containers.length === 0) {
-//         stopCountdown()
-//         return
-//     }
-
-//     const now = new Date().getTime();
-
-//     const updateCard = (el, newVal) => {
-//         if (!el) return;
-//         const currentVal = el.dataset.prev || "";
-//         if (currentVal !== String(newVal)){
-//             flip(el, newVal, currentVal)
-//             el.dataset.prev = newVal
-//         }
-//     }
-    
-//     containers.forEach(container => {
-//         const expiryDate = new Date(container.dataset.expiry).getTime();
-//         const distance = expiryDate - now;
-//         if (distance < 0) {
-//             container.innerHTML = "<span class='text-error font-bold'>OFFER EXPIRED｜優惠已過期</span>";
-//             stopCountdown()
-//             return;
-//         }
-        
-//         const els = {
-//             s1 : container.querySelector('#flip_sec_ones'),
-//             s10: container.querySelector('#flip_sec_tens'),
-//             m1: container.querySelector('#flip_min_ones'),
-//             m10: container.querySelector('#flip_min_tens'),
-//             h1: container.querySelector('#flip_hour_ones'),
-//             h10: container.querySelector('#flip_hour_tens'),
-//             d1: container.querySelector('#flip_day_ones'),
-//             d10: container.querySelector('#flip_day_tens'),
-//         }
-
-//         const s = Math.floor((distance % (1000 * 60)) / 1000);
-//         const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-//         const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-//         const d = Math.floor(distance / (1000 * 60 * 60 * 24));
-
-//         updateCard(els.s1, s % 10);
-//         updateCard(els.s10, Math.floor(s / 10));
-//         updateCard(els.m1, m % 10);
-//         updateCard(els.m10, Math.floor(m / 10));
-//         updateCard(els.h1, h % 10);
-//         updateCard(els.h10, Math.floor(h / 10));
-//         updateCard(els.d1, d % 10);
-//         updateCard(els.d10, Math.floor(d / 10));
-//     })
-// }
-
-
-
-// Copy Promo Code
 
 function updateFlashSaleCountdowns() {
     const containers = document.querySelectorAll('[id^="countdown-"]');
@@ -489,32 +306,6 @@ function updateFlashSaleCountdowns() {
     });
 }
 
-// function copyPerkCode(up_pk) {
-//     const perk_code = document.getElementById(`perk_code_${up_pk}`).innerText
-//     console.log('perk_code: ', perk_code)
-//     // const codeElement = document.getElementById(`code-${perkId}`);
-//     const button = event.currentTarget; // The button that was clicked
-    
-//     // Copy to clipboard
-//     // navigator.clipboard.writeText(codeElement.value).then(() => {
-//     navigator.clipboard.writeText(perk_code).then(() => {
-//         // Visual feedback
-//         const originalText = button.innerText;
-//         button.innerText = "Copied!｜已複製";
-//         button.classList.replace('btn-primary', 'btn-success');
-        
-//         // Reset after 2 seconds
-//         setTimeout(() => {
-//             button.innerText = originalText;
-//             button.classList.replace('btn-success', 'btn-primary');
-//         }, 2000);
-//     }).catch(err => {
-//         console.error('Failed to copy: ', err);
-//     });
-// }
-
-// 🌟 FIXED: Passed 'btnElement' parameter explicitly to avoid legacy scope crashes
-
 function copyPerkCode(up_pk, btnElement) {
     if (!btnElement) return;
     const code_target = document.getElementById(`perk_code_${up_pk}`);
@@ -540,24 +331,6 @@ function copyPerkCode(up_pk, btnElement) {
 
 // *** Profile Form Handlers ***
 // delete address
-// function confirmDelete(button) {
-//     Swal.fire({
-//         title: 'Are you sure?｜您確定嗎？',
-//         text: "You won't be able to revert this!｜刪除後將無法還原此項目！",
-//         icon: 'warning',
-//         showCancelButton: true,
-//         confirmButtonColor: '#d33', // Red for delete
-//         cancelButtonColor: '#3085d6',
-//         confirmButtonText: 'Yes, delete it!｜確定刪除！',
-//         cancelButtonText: 'Cancel｜取消'
-//     }).then((result) => {
-//         if (result.isConfirmed) {
-//             // Manually trigger the HTMX request
-//             htmx.trigger(button, 'confirmed');
-//         }
-//     })
-// }
-
 function confirmDelete(button) {
     Swal.fire({
         title: 'Are you sure?｜您確定嗎？',
@@ -577,56 +350,6 @@ function confirmDelete(button) {
 }
 
 // Clear and reset Address Book forms safely inside modals or subpages
-// function clearAddressBookForm(form_id) {
-//     const form = document.getElementById(form_id);
-//     if (!form) return;
-    
-//     form.reset();
-        
-//     const manualFields = [
-//         'id_recipient_first_name', 'id_recipient_last_name', 
-//         'id_mobile_number', 
-//         'id_address_line_1', 'hidden_address_line_1', 'id_address_line_2', 
-//         'id_city', 'id_state_province_region', 
-//         'id_postal_code', 
-//         'id_google_place_id', 'id_latitude', 'id_longitude'
-//     ];
-
-//     manualFields.forEach(idSuffix => {
-//         // Search inside form ONLY
-//         const el = form.querySelector(`[id$="${idSuffix}"]`);
-//         if (el) {
-//             el.value = '';
-//             el.closest('label')?.classList.remove('input-error', 'border-error', 'border-error!', 'ring-error!');
-//         }
-//     });
-
-//     // Fix the Selects (Crucial Change here)
-//     // We search for the select within the form, not the whole document
-//     const selects = ['id_label', 'id_mobile_area', 'id_china_province', 'id_country'];
-    
-//     selects.forEach(idSuffix => {
-//         const selectEl = form.querySelector(`[id$="${idSuffix}"]`);
-//         if (selectEl) {
-//             selectEl.selectedIndex = 0; // Forces it back to the "Label/Placeholder" option
-//             // If you use DaisyUI/Select, you might need to trigger a change event
-//             selectEl.dispatchEvent(new Event('change'));
-//         }
-//     });
-
-//     // Clear Google Checkbox
-//     const verifiedCheckbox = form.querySelector('input[type="checkbox"]');
-//     if (verifiedCheckbox) verifiedCheckbox.checked = false;
-
-//     // Clear custom error labels that Django rendered
-//     form.querySelectorAll('.label').forEach(err => err.remove());
-    
-//     // Clear any red borders
-//     form.querySelectorAll('.input-border').forEach(el => el.classList.remove('border-error'));
-
-//     // Re-run the toggle to ensure it reverts to default country view
-//     toggleProvinceFields(form);
-// }
 
 function clearAddressBookForm(form_id) {
     const form = document.getElementById(form_id);
@@ -687,12 +410,6 @@ function clearAddressBookForm(form_id) {
 
 
 // Open Create New Address Form
-// function openEmptyAddressForm(form_id) {
-//     clearAddressBookForm(form_id)
-//     preAutoComplete()
-//     initAutoComplete(form_id)
-// }
-
 function openEmptyAddressForm(form_id) {
     if (typeof clearAddressBookForm === "function") clearAddressBookForm(form_id);
     if (typeof preAutoComplete === "function") preAutoComplete();
@@ -700,73 +417,11 @@ function openEmptyAddressForm(form_id) {
 }
 
 // Close manual layout form
-// function closeAddressForm(form_id) {
-//     clearAddressBookForm(form_id)
-// }
-
 function closeAddressForm(form_id) {
     if (typeof clearAddressBookForm === "function") clearAddressBookForm(form_id);
 }
 
 // clear address (in dashboard/profile)
-// function clearAddressForm() {
-//     const form = document.getElementById('profile_form');
-
-//     const fieldsToClear = [
-//         'id_address_line_1', 
-//         'hidden_address_line_1',
-//         'id_address_line_2', 
-//         'id_city', 
-//         'id_state_province_region', 
-//         'id_postal_code',
-//         'id_google_place_id',
-//         'id_latitude',
-//         'id_longitude'
-//     ];
-
-//     fieldsToClear.forEach(id => {
-//         const el = form.querySelector(`[id$="${id}"]`);
-//         if (el) {
-//             // Clear text/hidden inputs
-//             el.value = '';
-//             // Remove error styling if present
-//             const wrapper = el.closest('label.input');
-//             if (wrapper) wrapper.classList.remove('border-error', 'ring-error!', 'input-error');
-//         }
-//     });
-
-//     // Reset the Country dropdown to default/empty
-//     ['id_country', 'id_china_province'].forEach(idSuffix => {
-//         const selectEl = form.querySelector(`[id$="${idSuffix}"]`);
-//         if (selectEl) {
-//             selectEl.selectedIndex = 0;
-//             // Remove red borders
-//             selectEl.closest('label')?.classList.remove('border-error', 'ring-error!');
-//         }
-//     });
-
-//     // Remove all error message text below inputs
-//     form.querySelectorAll('.text-error').forEach(errDiv => {
-//         if(errDiv.id !== "clear_add_btn") {
-//             // We only want to clear errors within the address section
-//             if (errDiv.closest('.card') || errDiv.closest('.grid')) { 
-//                  errDiv.innerHTML = '';
-//             }
-//         }
-//     });
-
-//     // Sync visibility
-//     toggleProvinceFields(form);
-    
-//     // Uncheck the verification toggle
-//     const verifiedCheckbox = document.getElementById('id_is_verified_by_google');
-//     if (verifiedCheckbox) verifiedCheckbox.checked = false;
-
-//     // Focus back on the first input
-//     document.getElementById('id_address_line_1').focus();
-
-// }
-
 function clearAddressForm() {
     const form = document.getElementById('profile_form');
     if (!form) return;
@@ -811,36 +466,6 @@ function clearAddressForm() {
 }
 
 // initAutoComplete for address form upon arrival on the subpage content
-// function initAddressAutoCompleteByPage(subpage){
-//     const addressInput = document.getElementById('id_address_line_1')
-    
-//     if (!addressInput) return;
-    
-//     if(subpage == 'dashboard_profile') {
-//         // Use optional chaining or check existence before calling .trim()
-//         const value = addressInput.value || "";
-//         if (value.trim() === "") {
-//             const form = document.getElementById('profile_form');
-//             if (form) {
-//                 preAutoComplete()
-//                 initAutoComplete(form.id);
-//                 initRegionLogic(form.id);
-//                 toggleProvinceFields(form);
-//             }
-//         }        
-        
-//     } else if(subpage == 'dashboard_addresses') {
-//         if (addressInput.form) {
-//             if(addressInput.form.id != 'update_address_form'){
-//                 preAutoComplete()
-//                 initAutoComplete(addressInput.form.id)
-//                 initRegionLogic('create_address_form')
-//                 toggleProvinceFields(addressInput.form);
-//             }
-//         }
-//     }
-// }
-
 function initAddressAutoCompleteByPage(subpage) {
     const addressInput = document.getElementById('id_address_line_1');
     if (!addressInput) return;
@@ -871,102 +496,6 @@ function initAddressAutoCompleteByPage(subpage) {
  * Block 5: Help & Member Chat Search Engine
  */
 // Function to refresh the "X / Y" display
-// function updateCounterDisplay() {
-//     const counter = document.getElementById("search-counter");
-//     const hits = document.querySelectorAll('.search-hit');
-//     const total = hits.length;
-    
-//     if (total === 0) {
-//         counter.innerText = "0 / 0";
-//         currentMatchIndex = -1;
-//     } else {
-//         // Display current position (1-based) / Total
-//         counter.innerText = `${currentMatchIndex + 1} / ${total}`;
-//     }
-// }
-
-// function toggleSearch(show) {
-//     const searchInput = document.querySelector('input[name="q"]');
-    
-//     const trigger = document.getElementById("search-trigger");
-//     const container = document.getElementById("search-input-container");
-
-//     if (!show) {
-//         searchInput.value = '';
-//         searchInput.blur(); // Remove focus so the lock logic sees it's inactive
-        
-//         // Hide UI containers as before...
-//         document.getElementById("search-input-container").classList.add('d-none');
-        
-//         // Force immediate unlock
-//         updateChatInputState(); 
-        
-//         // Reset the chat to show all messages again
-//         htmx.trigger(searchInput, 'keyup');
-//     } else {
-//         container.classList.remove('d-none');
-//         if (trigger) trigger.classList.add('d-none');
-//         searchInput.focus();
-//     }
-// }
-
-// function updateChatInputState() {
-//     const searchInput = document.querySelector('input[name="q"]');
-//     const chatInputForm = document.getElementById("chat_msg_input_form");
-    
-//     if (!searchInput || !chatInputForm) return;
-
-//     const isFocused = document.activeElement === searchInput;
-//     const hasContent = searchInput.value.trim().length > 0;
-
-//     // If search is active OR has text, lock the chat
-//     if (isFocused || hasContent) {
-//         chatInputForm.classList.add('opacity-30', 'pointer-events-none');
-//         chatInputForm.querySelector('textarea').placeholder = "Search active... | 搜索中...";
-//     } else {
-//         chatInputForm.classList.remove('opacity-30', 'pointer-events-none');
-//         chatInputForm.querySelector('textarea').placeholder = "Max 1,000 characters | 限 1,000 個字元";
-//     }
-// }
-
-// function navigateSearch(direction) {
-//     const hits = document.querySelectorAll('.search-hit');
-//     if (hits.length === 0) return;
-
-//     // Reset previous hit styling
-//     if (currentMatchIndex !== -1 && hits[currentMatchIndex]) {
-//         hits[currentMatchIndex].classList.remove('active-hit'); // Use the CSS class from earlier
-//     }
-
-//     // Move index
-//     currentMatchIndex = (currentMatchIndex + direction + hits.length) % hits.length;
-
-//     // Highlight and Scroll
-//     const target = hits[currentMatchIndex];
-//     target.classList.add('active-hit');
-//     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-//     updateCounterDisplay();
-// }
-
-// function setActiveMember(memberId, clickedElement) {
-//     // 1. Update the hidden input for the form
-//     const receiverInput = document.getElementById('receiver_id_input');
-//     if (receiverInput) {
-//         receiverInput.value = memberId;
-//     }
-
-//     // 2. Remove active classes from all member buttons
-//     document.querySelectorAll('.member-filter-btn').forEach(btn => {
-//         btn.classList.remove('btn-primary', 'text-white');
-//         btn.classList.add('bg-white', 'text-black');
-//     });
-
-//     // 3. Add active classes to the clicked button
-//     clickedElement.classList.remove('bg-white', 'text-black');
-//     clickedElement.classList.add('btn-primary', 'text-white');
-// }
-
 function updateCounterDisplay() {
     const counter = document.getElementById("search-counter");
     if (!counter) return;
@@ -1101,14 +630,6 @@ function initializeSolarWebSocket() {
  * Block 7: High-Security HTMX Lifecycle Orchestration
  */
 // 🔀 CORE HTMX BOUNDARY LIFECYCLE CONTROLLERS
-// document.body.addEventListener('htmx:beforeLeave', () => {
-//     stopCountdown();
-//     if (window.dashboardClockInterval) {
-//         clearInterval(window.dashboardClockInterval);
-//         window.dashboardClockInterval = null;
-//     }
-// });
-
 document.body.addEventListener('htmx:beforeLeave', () => {
     stopCountdown();
     terminateActiveWebSocket();
@@ -1120,33 +641,6 @@ document.body.addEventListener('htmx:beforeLeave', () => {
 
 // document.addEventListener("htmx:beforeSwap", stopCountdown)
 document.body.addEventListener("htmx:beforeSwap", stopCountdown);
-
-
-// document.body.addEventListener('htmx:afterSwap', (evt) => {
-//     if (evt.detail.target.id === 'dashboard-content') {
-//         console.log("✨ Dashboard Partial Subpage Swapped: Running initialization passes...");
-//         // Setup Clock & Solar Terms UI anchors if elements are present on target subpage
-//         if (document.getElementById('dynamic-clock') || document.getElementById('dynamic-date')) {
-//             updateClock();
-//             if (!window.dashboardClockInterval) {
-//                 window.dashboardClockInterval = setInterval(updateClock, 1000);
-//             }
-//         }
-//         // Evaluate and lock/unlock dropdown selection nodes
-//         disableDefaultOptions(evt.detail.target);
-
-//         // Scan for active countdown components and boot timer if found
-//         const activeCountdowns = evt.detail.target.querySelectorAll('[id^="countdown-"]');
-//         if (activeCountdowns.length > 0) {
-//             startCountdown();
-//         }
-
-//         // Determine current active subpage via structural url parser
-//         const pathSegments = window.location.pathname.split('/');
-//         const currentSubPageToken = pathSegments[pathSegments.length - 2] || 'main';
-//         initAddressAutoCompleteByPage(currentSubPageToken);
-//     }
-// });
 
 document.body.addEventListener('htmx:afterSwap', (evt) => {
     if (!evt.detail || !evt.detail.target) return;
@@ -1226,117 +720,6 @@ document.body.addEventListener('htmx:oobBeforeSwap', (evt) => {
 
 
 // *** Alert & Event Bridges ***
-// document.body.addEventListener('addressCreated', function() {
-//     // Close modals
-//     if (typeof my_modal_1 !== 'undefined') my_modal_1.close();
-
-//     // Trigger SWAT / Toast
-//     Swal.fire({
-//         title: 'Created!｜添加成功',
-//         text: 'Address book has been added.',
-//         icon: 'success',
-//         toast: true,
-//         position: 'top-end',
-//         timer: 3000,
-//         showConfirmButton: false
-//     });
-// });
-// document.body.addEventListener('addressSaved', function() {
-//     // Move focus to the dashboard header or container
-//     const mainContent = document.getElementById('dashboard-content');
-//     if (mainContent) {
-//         mainContent.setAttribute('tabindex', '-1'); // Make it focusable via JS
-//         mainContent.focus();
-//     }
-// });
-// document.body.addEventListener('serviceUnavailable', function() {
-//     // Trigger SWAT / Toast
-//     Swal.fire({
-//         title: 'Updated!｜更新成功',
-//         text: 'Address book has been updated.',
-//         icon: 'success',
-//         toast: true,
-//         position: 'top-end',
-//         timer: 3000,
-//         showConfirmButton: false
-//     });
-// });
-// document.body.addEventListener('htmx:beforeRequest', (event) => {
-//     // Check if the request is coming from inside a modal
-//     if (event.detail.elt.closest('dialog')) {
-//         if (document.activeElement) {
-//             document.activeElement.blur();
-//         }
-//     }
-// });
-// document.body.addEventListener('htmx:afterOnLoad', (event) => {
-//     // If the element being loaded is inside a modal or is a modal
-//     if (event.detail.target.closest('dialog')) {
-//         // Blur the button that triggered the request
-//         if (document.activeElement) {
-//             document.activeElement.blur();
-//         }
-//     }
-// });
-// document.body.addEventListener("updateBanner", function(evt) {
-//     const bannerLink = document.querySelector("#banner-breadcrumb-link");
-//     if (bannerLink) {
-//         bannerLink.innerText = evt.detail.title;
-//         bannerLink.href = evt.detail.url;
-//     }
-// });
-// document.body.addEventListener('change', function(e) {
-//     if (e.target.name === 'country') {
-//         const form = e.target.closest('form');
-//         toggleProvinceFields(form);
-//     }
-// });
-// document.body.addEventListener('input', function(e) {
-//     // Error removal upon filling in
-//     const field = e.target;
-//     // 1. Remove red border from the input's wrapper
-//     const wrapper = field.closest('.input-border') || field.closest('.join');
-//     if (wrapper) {
-//         wrapper.classList.remove('border-error', 'ring-error!', 'input-error', 'select-error');
-        
-//         // 2. Remove the specific Django error message <span> below it
-//         const errorLabel = wrapper.nextElementSibling;
-//         if (errorLabel && errorLabel.classList.contains('label')) {
-//             errorLabel.remove();
-//         }
-//     }
-
-//     // Profile Form
-//     if (field.closest('#profile_form')) {
-//         // 1. Toggle China vs Region
-//         if (field.name === 'country') {
-//             toggleProvinceFields(field.closest('form'));
-//         }
-    
-//         // 2. Clear Red Errors on Input
-//         const wrapper = field.closest('label.input');
-//         if (wrapper) {
-//             wrapper.classList.remove('border-error', 'ring-error!', 'input-error');
-//             // Find the error div (usually the next sibling) and hide it
-//             const errorDiv = wrapper.nextElementSibling;
-//             if (errorDiv && errorDiv.classList.contains('text-error')) {
-//                 errorDiv.classList.add('hidden');
-//             }
-//         }
-//     };   
-// });
-// document.body.addEventListener('closeModal', function(evt) {
-//     const modalId = evt.detail.value;
-//     const modal = document.getElementById(modalId);
-//     if (modal) {
-//         // Find form inside this modal and clear it
-//         const form = modal.querySelector('form');
-//         if (form) clearAddressBookForm(form.id);
-//         modal.close();
-//     }
-// });
-
-
 document.body.addEventListener('addressCreated', function() {
     if (typeof my_modal_1 !== 'undefined' && typeof my_modal_1.close === "function") my_modal_1.close();
     if (window.Swal) {
@@ -1425,21 +808,9 @@ document.body.addEventListener('closeModal', function(evt) {
 });
 
 // Hard Page Mount Entry Point
-// document.addEventListener("DOMContentLoaded", () => {
-//     if (document.getElementById('dynamic-clock') || document.getElementById('dynamic-date')) {
-//         updateClock();window.dashboardClockInterval = setInterval(updateClock, 1000);
-//     }
-//     disableDefaultOptions();
-    
-//     const activeCountdowns = document.querySelectorAll('[id^="countdown-"]');
-//     if (activeCountdowns.length > 0) {
-//         startCountdown();
-//     }
-// });
-
 document.addEventListener("DOMContentLoaded", () => {
     disableDefaultOptions();
-    
+    processZodiacExtraction()
     const subpage_wrapper = document.getElementById('dashboard-content');
     if (subpage_wrapper) {
         const subpageEl = subpage_wrapper.querySelector('.subpage');
@@ -1498,61 +869,6 @@ window.openEmptyAddressForm = openEmptyAddressForm;
 window.closeAddressForm = closeAddressForm;
 window.toggleSearch = toggleSearch;
 window.navigateSearch = navigateSearch;
-
-
-// GOOGLE
-// clear address forms (in dashboard/addresses)
-// Help
-// let currentMatchIndex = -1;
-
-
-/** 
- * Actions
-*/
-// birthday - zodiac
-// window.addEventListener('load', function() {
-//     let birthday = document.querySelector("#birthday")
-//     birthday ? birthday = birthday.textContent : null
-//     if(birthday) {
-//         const month = birthday.split(" ")[0].replace(".", "")
-//         const day = birthday.split(" ")[1].replace(",", "")
-//         const zodiac_sign = getZodiacSign(month, Number(day))
-//         document.querySelector("#zodiac").textContent = zodiac_sign
-//     }
-// });
-
-// 24-Solar Term
-// let currentTerm = "{{ solar_term }}";
-// let currentTermEn = "{{ solar_term_en }}";
-// const termDisplay = document.getElementById('solar_term');
-// const termDisplayEn = document.getElementById('solar_term_en');
-
-// // const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
-// // const socket = new WebSocket(sProtocol + window.location.host + '/ws/solar/');
-// const solarUrl = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + '/ws/solar/';
-// const socket = new WebSocket(solarUrl);
-
-// socket.onmessage = function(e) {
-//     const data = JSON.parse(e.data);
-//     if (data.term !== currentTerm) {
-//         currentTerm = data.term;
-//         currentTermEn = data.term_en
-//         termDisplay.innerText = currentTerm;
-//         termDisplayEn.innerText = currentTermEn
-//     }
-// };
-
-// digital & date
-// setInterval(updateClock, 1000);
-// updateClock();
-
-
-// Service Unavailable
-// Listen for when any DaisyUI/HTML dialog opens (get rid of 'blocked area-hidden')
-// ******** Offers *********
-// if (!window.hasOwnProperty('countdownTimer')) {
-//     window.countdownTimer = null;
-// }
 
 
 </script>

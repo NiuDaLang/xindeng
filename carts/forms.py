@@ -3,7 +3,7 @@ from .models import ProformaInvoice
 from accounts.models import Account
 from accounts.data import AREA_CODE
 from django.core.validators import EmailValidator
-
+from .utils import validate_email_mx_domain
 
 from django import forms
 from .models import ProformaInvoice
@@ -216,3 +216,11 @@ class ProformaInvoiceForm(forms.ModelForm):
     # This prevents the model-level 'blank=False' rule from tripping up over an absent value
     def clean(self):
         return super().clean()
+    
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        
+        # 🌟 Run the live domain check inside the clean cycle
+        validate_email_mx_domain(email)
+        
+        return email

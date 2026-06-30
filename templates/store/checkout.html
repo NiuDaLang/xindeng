@@ -2,216 +2,273 @@
 {% load humanize %}
 
 {% block content %}
-<!-- BANNER -->
-<div class="relative mt-[86px] w-full">
-    {% include 'includes/banner.html' %}
-</div>
+<div id="checkout-view-container" hx-history="false">
+    <!-- BANNER -->
+    <div class="relative mt-[86px] w-full">
+        {% include 'includes/banner.html' %}
+    </div>
 
-<!-- MAIN -->
-<main class="px-[max(1rem,5vw)] py-10 min-h-[calc(100dvh-200px)]">
-    <!-- progress -->
-    <ul class="timeline w-full justify-center">
-        <li>
-            <div class="timeline-start timeline-box text-center">Cart<br/>購物車</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-success"></i>
-            </div>
-            <hr class="bg-success-content"/>
-        </li>
-        <li>
-            <hr class="bg-success-content"/>
-            <div class="timeline-start timeline-box text-center">Shipping Info<br/>配送訊息</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-success"></i>
-            </div>
-            <hr class="bg-success-content" />
-        </li>
-        <li>
-            <hr class="bg-success-content" />
-            <div class="timeline-start timeline-box text-center">Confirm Order<br/>訂單確認</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-base-300"></i>
-            </div>
-            <hr  />
-        </li>
-        <li>
-            <hr />
-            <div class="timeline-start timeline-box text-center">Payment Complete<br/>支付完成</div>
-            <div class="timeline-middle">
-                <i class="fa-solid fa-circle-check text-base-300"></i>
-            </div>
-            <!-- <hr /> -->
-        </li>
-    </ul>
-    <!-- contents -->
-    <div class="w-full border border-base-300 rounded-2xl p-5">
-        <div class="flex w-full flex-col lg:flex-row">
-            <!-- LEFT - address -->
-            <div class="w-[40%] card bg-base-300 rounded-box p-3">
-                <!-- GLOBAL FORM LEGEND BANNER CONTAINER -->
-                <div class="mt-2 p-2.5 rounded-lg border border-base-content/10 text-[0.65rem] text-base-content/70 space-y-0.5 leading-normal select-none bg-info/5">
-                    <p class="font-bold text-base-content/90"><i class="fa-solid fa-circle-info text-primary mr-0.5"></i> Form Guide ｜ 填寫指南</p>
-                    <p>Fields decorated with a red asterisk (<span class="text-error font-bold">*</span>) are strictly mandatory before your transaction gateways can unlock.</p>
-                    <p class="opacity-80">標註紅星 (<span class="text-error font-bold">*</span>) 的欄位為必填項。填寫完畢即可自動激活下方的支付網關。</p>
+    <!-- MAIN -->
+    <main class="px-[max(1rem,5vw)] py-10 min-h-[calc(100dvh-200px)]">
+        <!-- progress -->
+        <ul class="timeline w-full justify-center">
+            <li>
+                <div class="timeline-start timeline-box text-center">Cart<br/>購物車</div>
+                <div class="timeline-middle">
+                    <i class="fa-solid fa-circle-check text-success"></i>
                 </div>
-                <form id="proforma_invoice_form" 
-                        method="POST" 
-                        data-is-china="{{ is_china_order|yesno:'true,false' }}" 
-                        data-display-mode="{{ display_mode }}">
-                    {% csrf_token %}
-                    <h3 class="my-3 text-center font-bold">
-                        {% if display_mode == "PHYSICAL" or display_mode == "PHYSICAL_AND_VOUCHER" %}
-                        <i class="fa-solid fa-truck"></i>&nbsp;Delivery & Details｜配送&訊息
-                        {% endif %}
-                    </h3>                    
-                    <div class="flex flex-col gap-3 py-5 w-full">
-                    <!-- ======================================================= -->
-                    <!-- CATEGORY 1: PHYSICAL OR PHYSICAL + VOUCHER MIXED CARTS  -->
-                    <!-- ======================================================= -->                        
-                        {% if display_mode == "PHYSICAL" or display_mode == "PHYSICAL_AND_VOUCHER" %}
-                            <!-- contact details -->
-                            <div>
-                                <h5 class="text-xs font-semibold">Contact Information ｜ 聯絡資訊 <span class="text-error font-bold">*</span></h5>
-                                <label class="input input-border w-full flex max-w-none items-center gap-2">
-                                    <i class="fa-solid fa-envelope"></i>
-                                    {{ proforma_invoice_form.email }}
-                                </label>
-                                <div class="text-[0.5rem]">* For order updates and receipts ｜ 用於發送訂單更新與通知</div>
-                            </div>
-                            <!-- recipient's name -->
-                            <div>
-                                <h5 class="text-xs font-semibold">Recipient Information｜收件人資訊</h5>
-                                <div class="flex flex-col gap-2">
-                                    <div class="flex gap-1 w-full">
-                                        <label class="input input-border flex w-full items-center gap-2">
-                                            <i class="fa-solid fa-person"></i>
-                                            {{ proforma_invoice_form.recipient_first_name }} <span class="text-error font-bold">*</span>
-                                        </label>
-                                        <label class="input input-border flex w-full items-center gap-2">
-                                            <i class="fa-solid fa-people-roof"></i>
-                                            {{ proforma_invoice_form.recipient_last_name }} <span class="text-error font-bold">*</span>
-                                        </label>
-                                    </div>
-                                    <!-- Mobile Contacts Phone Number Input Join Group -->
-                                    <div class="w-full space-y-1">
-                                        <span class="text-[0.65rem] font-bold text-base-content/60 pl-1 relative block pr-4 w-fit">
-                                            Mobile Phone ｜ 手機號碼
-                                            <span class="text-error font-bold absolute right-0 top-0">*</span>
-                                        </span>
-                                        <div class="join w-full">
-                                            {{ proforma_invoice_form.recipient_mobile_area }} 
-                                            <div class="flex-grow">
-                                                <label class="input validator join-item w-full">
-                                                    <i class="fa-solid fa-mobile-screen-button"></i>
-                                                    {{ proforma_invoice_form.recipient_mobile_number }}
-                                                </label>
-                                                <div class="validator-hint hidden">請輸入手機號碼 | Enter valid phone number.</div>
+                <hr class="bg-success-content"/>
+            </li>
+            <li>
+                <hr class="bg-success-content"/>
+                <div class="timeline-start timeline-box text-center">Shipping Info<br/>配送訊息</div>
+                <div class="timeline-middle">
+                    <i class="fa-solid fa-circle-check text-success"></i>
+                </div>
+                <hr class="bg-success-content" />
+            </li>
+            <li>
+                <hr class="bg-success-content" />
+                <div class="timeline-start timeline-box text-center">Confirm Order<br/>訂單確認</div>
+                <div class="timeline-middle">
+                    <i class="fa-solid fa-circle-check text-base-300"></i>
+                </div>
+                <hr  />
+            </li>
+            <li>
+                <hr />
+                <div class="timeline-start timeline-box text-center">Payment Complete<br/>支付完成</div>
+                <div class="timeline-middle">
+                    <i class="fa-solid fa-circle-check text-base-300"></i>
+                </div>
+                <!-- <hr /> -->
+            </li>
+        </ul>
+        <!-- contents -->
+        <div class="w-full border border-base-300 rounded-2xl p-5">
+            <div class="flex w-full flex-col lg:flex-row">
+                <!-- LEFT - address -->
+                <div class="w-[40%] card bg-base-300 rounded-box p-3">
+                    <!-- GLOBAL FORM LEGEND BANNER CONTAINER -->
+                    <div class="mt-2 p-2.5 rounded-lg border border-base-content/10 text-[0.65rem] text-base-content/70 space-y-0.5 leading-normal select-none bg-info/5">
+                        <p class="font-bold text-base-content/90"><i class="fa-solid fa-circle-info text-primary mr-0.5"></i> Form Guide ｜ 填寫指南</p>
+                        <p>Fields decorated with a red asterisk (<span class="text-error font-bold">*</span>) are strictly mandatory before your transaction gateways can unlock.</p>
+                        <p class="opacity-80">標註紅星 (<span class="text-error font-bold">*</span>) 的欄位為必填項。填寫完畢即可自動激活下方的支付網關。</p>
+                    </div>
+                    <form id="proforma_invoice_form" 
+                            method="POST" 
+                            data-is-china="{{ is_china_order|yesno:'true,false' }}" 
+                            data-display-mode="{{ display_mode }}">
+                        {% csrf_token %}
+                        <h3 class="my-3 text-center font-bold">
+                            {% if display_mode == "PHYSICAL" or display_mode == "PHYSICAL_AND_VOUCHER" %}
+                            <i class="fa-solid fa-truck"></i>&nbsp;Delivery & Details｜配送&訊息
+                            {% endif %}
+                        </h3>                    
+                        <div class="flex flex-col gap-3 py-5 w-full">
+                        <!-- ======================================================= -->
+                        <!-- CATEGORY 1: PHYSICAL OR PHYSICAL + VOUCHER MIXED CARTS  -->
+                        <!-- ======================================================= -->                        
+                            {% if display_mode == "PHYSICAL" or display_mode == "PHYSICAL_AND_VOUCHER" %}
+                                <!-- contact details -->
+                                <div>
+                                    <h5 class="text-xs font-semibold">Contact Information ｜ 聯絡資訊 <span class="text-error font-bold">*</span></h5>
+                                    <label class="input input-border w-full flex max-w-none items-center gap-2">
+                                        <i class="fa-solid fa-envelope"></i>
+                                        {{ proforma_invoice_form.email }}
+                                    </label>
+                                    <div class="text-[0.5rem]">* For order updates and receipts ｜ 用於發送訂單更新與通知</div>
+                                </div>
+                                <!-- recipient's name -->
+                                <div>
+                                    <h5 class="text-xs font-semibold">Recipient Information｜收件人資訊</h5>
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex gap-1 w-full">
+                                            <label class="input input-border flex w-full items-center gap-2">
+                                                <i class="fa-solid fa-person"></i>
+                                                {{ proforma_invoice_form.recipient_first_name }} <span class="text-error font-bold">*</span>
+                                            </label>
+                                            <label class="input input-border flex w-full items-center gap-2">
+                                                <i class="fa-solid fa-people-roof"></i>
+                                                {{ proforma_invoice_form.recipient_last_name }} <span class="text-error font-bold">*</span>
+                                            </label>
+                                        </div>
+                                        <!-- Mobile Contacts Phone Number Input Join Group -->
+                                        <div class="w-full space-y-1">
+                                            <span class="text-[0.65rem] font-bold text-base-content/60 pl-1 relative block pr-4 w-fit">
+                                                Mobile Phone ｜ 手機號碼
+                                                <span class="text-error font-bold absolute right-0 top-0">*</span>
+                                            </span>
+                                            <div class="join w-full">
+                                                {{ proforma_invoice_form.recipient_mobile_area }} 
+                                                <div class="flex-grow">
+                                                    <label class="input validator join-item w-full">
+                                                        <i class="fa-solid fa-mobile-screen-button"></i>
+                                                        {{ proforma_invoice_form.recipient_mobile_number }}
+                                                    </label>
+                                                    <div class="validator-hint hidden">請輸入手機號碼 | Enter valid phone number.</div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <!-- delivery address -->
-                            <div>
-                                <h5 class="text-xs font-semibold">Delivery Address ｜ 配送地址</h5>
-                                <div class="flex flex-col gap-2">
-                                    <div class="w-full text-xs">
-                                        <label class="w-full input input-border flex max-w-none items-center gap-2">
-                                            <i class="fa-solid fa-map-location-dot"></i>
-                                            {{ proforma_invoice_form.address_line_1 }} <span class="text-error font-bold">*</span>
-                                        </label>
-                                    </div>
-                                    <div class="w-full text-xs">
-                                        <label class="w-full input input-border flex max-w-none items-center gap-2">
-                                            <i class="fa-solid fa-map-location"></i>
-                                            {{ proforma_invoice_form.address_line_2 }}
-                                        </label>
-                                    </div> 
-                                    <div class="flex gap-1 w-full">
+                                <!-- delivery address -->
+                                <div>
+                                    <h5 class="text-xs font-semibold">Delivery Address ｜ 配送地址</h5>
+                                    <div class="flex flex-col gap-2">
                                         <div class="w-full text-xs">
-                                            <label class="input input-border flex max-w-none items-center gap-2">
-                                                <i class="fa-solid fa-tree-city"></i>
-                                                {{ proforma_invoice_form.city }} <span class="text-error font-bold">*</span>
+                                            <label class="relative w-full input input-border flex max-w-none items-center gap-2">
+                                                <i class="fa-solid fa-map-location-dot"></i>
+                                                {{ proforma_invoice_form.address_line_1 }} <span class="absolute right-2 text-error font-bold">*</span>
+                                            </label>
+                                        </div>
+                                        <div class="w-full text-xs">
+                                            <label class="w-full input input-border flex max-w-none items-center gap-2">
+                                                <i class="fa-solid fa-map-location"></i>
+                                                {{ proforma_invoice_form.address_line_2 }}
                                             </label>
                                         </div> 
-                                        <div class="w-full text-xs">
-                                            <label class="input input-border flex max-w-none items-center gap-2">
-                                                <i class="fa-solid fa-map"></i>
-                                                {{ proforma_invoice_form.state_province_region }} <span class="text-error font-bold">*</span>
-                                            </label>
-                                        </div> 
-                                    </div>
-                                    <div class="flex gap-1 w-full">
-                                        <div class="w-full text-xs">
-                                            <label class="input input-border flex max-w-none items-center gap-2">
-                                                <i class="fa-solid fa-globe"></i>
-                                                {{ proforma_invoice_form.country }} <span class="text-error font-bold">*</span>
-                                                {% if proforma_invoice_form.country.field.disabled %}
-                                                    <input type="hidden" name="country" value="{{ proforma_invoice_form.country.value }}">
-                                                {% endif %}
-                                            </label>
-                                        </div> 
-                                        <div class="w-full text-xs">
-                                            <label class="input input-border flex max-w-none items-center gap-2">
-                                                <i class="fa-solid fa-envelopes-bulk"></i>
-                                                {{ proforma_invoice_form.postal_code }}
-                                            </label>
-                                        </div> 
-                                    </div>
-                                    {{ proforma_invoice_form.delivery_note }}
-                                </div>
-                            </div>
-                            <!-- 💡 NEW: SAVE TO ADDRESS BOOK OPTION FOR AUTHENTICATED USERS -->
-                            {% if request.user.is_authenticated %}
-                            <div class="h-[1.75rem] flex gap-2 items-center mt-2">
-                                <label class="flex items-center label text-base-content pl-3">
-                                    <i class="fa-solid fa-address-book text-accent"></i>
-                                    {{ proforma_invoice_form.save_to_address_book }}
-                                </label>
-                                <div class="flex h-full justify-center flex-col gap-0 -mt-2">
-                                    <div class="text-[0.55rem] font-medium">
-                                        {% if destination_source == "ADDRESS_BOOK" %}
-                                            Update Saved Address Info
-                                        {% else %}
-                                            Save to Address Book
-                                        {% endif %}
-                                    </div>
-                                    <div class="text-[0.55rem] text-base-content/70">
-                                        {% if destination_source == "ADDRESS_BOOK" %}
-                                            更新此收件地址資訊
-                                        {% else %}
-                                            儲存新地址至我的地址簿
-                                        {% endif %}
+                                        <div class="flex gap-1 w-full">
+                                            <div class="w-full text-xs">
+                                                <label class="input input-border flex max-w-none items-center gap-2">
+                                                    <i class="fa-solid fa-tree-city"></i>
+                                                    {{ proforma_invoice_form.city }} <span class="text-error font-bold">*</span>
+                                                </label>
+                                            </div> 
+                                            <div class="w-full text-xs">
+                                                <label class="input input-border flex max-w-none items-center gap-2">
+                                                    <i class="fa-solid fa-map"></i>
+                                                    {{ proforma_invoice_form.state_province_region }} <span class="text-error font-bold">*</span>
+                                                </label>
+                                            </div> 
+                                        </div>
+                                        <div class="flex gap-1 w-full">
+                                            <div class="w-full text-xs">
+                                                <label class="input input-border flex max-w-none items-center gap-2">
+                                                    <i class="fa-solid fa-globe"></i>
+                                                    {{ proforma_invoice_form.country }} <span class="text-error font-bold">*</span>
+                                                    {% if proforma_invoice_form.country.field.disabled %}
+                                                        <input type="hidden" name="country" value="{{ proforma_invoice_form.country.value }}">
+                                                    {% endif %}
+                                                </label>
+                                            </div> 
+                                            <div class="w-full text-xs">
+                                                <label class="input input-border flex max-w-none items-center gap-2">
+                                                    <i class="fa-solid fa-envelopes-bulk"></i>
+                                                    {{ proforma_invoice_form.postal_code }}
+                                                </label>
+                                            </div> 
+                                        </div>
+                                        {{ proforma_invoice_form.delivery_note }}
                                     </div>
                                 </div>
-                            </div>
-                            {% endif %}
-
-                            <!-- include invoice toggle (Conditional based on China shipping destination) -->
-                            {% if is_china_order %}
-                                    <div class="h-[1.75rem] flex gap-2 items-center mt-2">
-                                        <label class="flex items-center label text-base-content pl-3">
-                                            <i class="fa-solid fa-gift"></i>
-                                            {{ proforma_invoice_form.do_not_send_invoice }}
-                                        </label>
-                                        <div class="flex h-full justify-center flex-col gap-0 -mt-2">
-                                            <div class="text-[0.55rem]">Do NOT enclose invoice.</div>
-                                            <div class="text-[0.55rem]">不要附寄帳單</div>
+                                <!-- 💡 NEW: SAVE TO ADDRESS BOOK OPTION FOR AUTHENTICATED USERS -->
+                                {% if request.user.is_authenticated %}
+                                <div class="h-[1.75rem] flex gap-2 items-center mt-2">
+                                    <label class="flex items-center label text-base-content pl-3">
+                                        <i class="fa-solid fa-address-book text-accent"></i>
+                                        {{ proforma_invoice_form.save_to_address_book }}
+                                    </label>
+                                    <div class="flex h-full justify-center flex-col gap-0 -mt-2">
+                                        <div class="text-[0.55rem] font-medium">
+                                            {% if destination_source == "ADDRESS_BOOK" %}
+                                                Update Saved Address Info
+                                            {% else %}
+                                                Save to Address Book
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-[0.55rem] text-base-content/70">
+                                            {% if destination_source == "ADDRESS_BOOK" %}
+                                                更新此收件地址資訊
+                                            {% else %}
+                                                儲存新地址至我的地址簿
+                                            {% endif %}
                                         </div>
                                     </div>
-                            {% endif %}                          
+                                </div>
+                                {% endif %}
 
-                            <!-- 💡 NEW INJECTED SUBSECTION: APPEARS ONLY FOR MIXED CARTS -->
-                            {% if display_mode == "PHYSICAL_AND_VOUCHER" %}
-                            <div class="border-t border-dashed border-base-content/20 pt-3 mt-2 flex flex-col gap-3">
-                                <h4 class="text-xs font-bold text-primary"><i class="fa-solid fa-ticket"></i>&nbsp;Voucher Recipient Details｜禮券收件資訊</h4>
+                                <!-- include invoice toggle (Conditional based on China shipping destination) -->
+                                {% if is_china_order %}
+                                        <div class="h-[1.75rem] flex gap-2 items-center mt-2">
+                                            <label class="flex items-center label text-base-content pl-3">
+                                                <i class="fa-solid fa-gift"></i>
+                                                {{ proforma_invoice_form.do_not_send_invoice }}
+                                            </label>
+                                            <div class="flex h-full justify-center flex-col gap-0 -mt-2">
+                                                <div class="text-[0.55rem]">Do NOT enclose invoice.</div>
+                                                <div class="text-[0.55rem]">不要附寄帳單</div>
+                                            </div>
+                                        </div>
+                                {% endif %}                          
+
+                                <!-- 💡 NEW INJECTED SUBSECTION: APPEARS ONLY FOR MIXED CARTS -->
+                                {% if display_mode == "PHYSICAL_AND_VOUCHER" %}
+                                <div class="border-t border-dashed border-base-content/20 pt-3 mt-2 flex flex-col gap-3">
+                                    <h4 class="text-xs font-bold text-primary"><i class="fa-solid fa-ticket"></i>&nbsp;Voucher Recipient Details｜禮券收件資訊</h4>
+                                    <div>
+                                        <h5 class="text-xs font-semibold">Recipient's Email ｜ 收件人電子郵件 <span class="text-error font-bold">*</span></h5>
+                                        <label class="input input-border w-full flex max-w-none items-center gap-2">
+                                            <i class="fa-solid fa-paper-plane"></i>
+                                            {{ proforma_invoice_form.recipient_email }}
+                                        </label>
+                                        <div class="text-[0.5rem]">* The voucher link will be dispatched directly here ｜ 禮券連結將直接發送至此</div>
+                                        
+                                        <!-- THE FRONTEND CAUTION NOTE -->
+                                        <div class="mt-1.5 p-2 bg-info/5 border border-info/20 rounded-lg text-[0.65rem] text-base-content/70 leading-normal">
+                                            <p class="font-bold text-info-content"><i class="fa-solid fa-circle-info mr-1"></i> Self-Purchase Notice ｜ 自用購買提示</p>
+                                            <p class="mt-0.5">If you enter your own login email address, this voucher will be <strong>automatically credited</strong> straight to your personal account wallet upon successful payment. No separate gift claim email link will be generated.</p>
+                                            <p class="mt-1 text-accent font-medium">若輸入您登入的電子郵件，該禮品券面值將於付款成功後<strong>直接匯入您的個人帳戶錢包</strong>，系統將不會發送獨立的轉贈領取連結。</p>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h5 class="text-xs font-semibold">Message to Recipient ｜ 給收件人的祝福語</h5>
+                                        {{ proforma_invoice_form.gift_message }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                        <!-- ======================================================= -->
+                        <!-- CATEGORY 2: E-PRODUCTS ONLY (Excluding Cash Vouchers)   -->
+                        <!-- ======================================================= -->
+                            {% elif display_mode == "EPRODUCT_ONLY" %}
+                                <!-- contact email field -->
                                 <div>
+                                    <h5 class="text-xs font-semibold">Contact Email ｜ 聯絡電子郵件 <span class="text-error font-bold">*</span></h5>
+                                    <label class="input input-border w-full flex max-w-none items-center gap-2">
+                                        <i class="fa-solid fa-envelope"></i>
+                                        {{ proforma_invoice_form.email }}
+                                    </label>
+                                    <div class="text-[0.5rem]">* For digital item links and transactional notices ｜ 用于接收电子商品与通知</div>
+                                </div>
+                                <div class="mt-2">
+                                    <h5 class="text-xs font-semibold">Order Notes ｜ 訂單備註</h5>
+                                    {{ proforma_invoice_form.delivery_note }}
+                                </div>
+
+                        <!-- ======================================================= -->
+                        <!-- CATEGORY 3: GIFT VOUCHERS PURCHASES                     -->
+                        <!-- ======================================================= -->
+                            {% elif display_mode == "VOUCHER_ONLY" %}
+                                <!-- purchaser contact tracking field -->
+                                <div>
+                                    <h5 class="text-xs font-semibold">Purchaser Email ｜ 購買人電子郵件 <span class="text-error font-bold">*</span></h5>
+                                    <label class="input input-border w-full flex max-w-none items-center gap-2">
+                                        <i class="fa-solid fa-envelope"></i>
+                                        {{ proforma_invoice_form.email }}
+                                    </label>
+                                    <div class="text-[0.5rem]">* For order confirmations and receipts ｜ 用于发送购买确认与收据</div>
+                                </div>
+                                
+                                <!-- recipient email target field -->
+                                <div class="mt-2">
                                     <h5 class="text-xs font-semibold">Recipient's Email ｜ 收件人電子郵件 <span class="text-error font-bold">*</span></h5>
                                     <label class="input input-border w-full flex max-w-none items-center gap-2">
                                         <i class="fa-solid fa-paper-plane"></i>
                                         {{ proforma_invoice_form.recipient_email }}
                                     </label>
-                                    <div class="text-[0.5rem]">* The voucher link will be dispatched directly here ｜ 禮券連結將直接發送至此</div>
+                                    <div class="text-[0.5rem]">* The voucher link will be dispatched directly here ｜ 礼券链接将直接发送至此</div>
                                     
                                     <!-- THE FRONTEND CAUTION NOTE -->
                                     <div class="mt-1.5 p-2 bg-info/5 border border-info/20 rounded-lg text-[0.65rem] text-base-content/70 leading-normal">
@@ -221,298 +278,244 @@
                                     </div>
                                 </div>
 
-                                <div>
+                                <!-- personal voucher gift text area space -->
+                                <div class="mt-2">
                                     <h5 class="text-xs font-semibold">Message to Recipient ｜ 給收件人的祝福語</h5>
                                     {{ proforma_invoice_form.gift_message }}
                                 </div>
-                            </div>
-                            {% endif %}
-                            
-                    <!-- ======================================================= -->
-                    <!-- CATEGORY 2: E-PRODUCTS ONLY (Excluding Cash Vouchers)   -->
-                    <!-- ======================================================= -->
-                        {% elif display_mode == "EPRODUCT_ONLY" %}
-                            <!-- contact email field -->
-                            <div>
-                                <h5 class="text-xs font-semibold">Contact Email ｜ 聯絡電子郵件 <span class="text-error font-bold">*</span></h5>
-                                <label class="input input-border w-full flex max-w-none items-center gap-2">
-                                    <i class="fa-solid fa-envelope"></i>
-                                    {{ proforma_invoice_form.email }}
-                                </label>
-                                <div class="text-[0.5rem]">* For digital item links and transactional notices ｜ 用于接收电子商品与通知</div>
-                            </div>
-                            <div class="mt-2">
-                                <h5 class="text-xs font-semibold">Order Notes ｜ 訂單備註</h5>
-                                {{ proforma_invoice_form.delivery_note }}
-                            </div>
 
-                    <!-- ======================================================= -->
-                    <!-- CATEGORY 3: GIFT VOUCHERS PURCHASES                     -->
-                    <!-- ======================================================= -->
-                        {% elif display_mode == "VOUCHER_ONLY" %}
-                            <!-- purchaser contact tracking field -->
-                            <div>
-                                <h5 class="text-xs font-semibold">Purchaser Email ｜ 購買人電子郵件 <span class="text-error font-bold">*</span></h5>
-                                <label class="input input-border w-full flex max-w-none items-center gap-2">
-                                    <i class="fa-solid fa-envelope"></i>
-                                    {{ proforma_invoice_form.email }}
-                                </label>
-                                <div class="text-[0.5rem]">* For order confirmations and receipts ｜ 用于发送购买确认与收据</div>
-                            </div>
-                            
-                            <!-- recipient email target field -->
-                            <div class="mt-2">
-                                <h5 class="text-xs font-semibold">Recipient's Email ｜ 收件人電子郵件 <span class="text-error font-bold">*</span></h5>
-                                <label class="input input-border w-full flex max-w-none items-center gap-2">
-                                    <i class="fa-solid fa-paper-plane"></i>
-                                    {{ proforma_invoice_form.recipient_email }}
-                                </label>
-                                <div class="text-[0.5rem]">* The voucher link will be dispatched directly here ｜ 礼券链接将直接发送至此</div>
-                                
-                                <!-- THE FRONTEND CAUTION NOTE -->
-                                <div class="mt-1.5 p-2 bg-info/5 border border-info/20 rounded-lg text-[0.65rem] text-base-content/70 leading-normal">
-                                    <p class="font-bold text-info-content"><i class="fa-solid fa-circle-info mr-1"></i> Self-Purchase Notice ｜ 自用購買提示</p>
-                                    <p class="mt-0.5">If you enter your own login email address, this voucher will be <strong>automatically credited</strong> straight to your personal account wallet upon successful payment. No separate gift claim email link will be generated.</p>
-                                    <p class="mt-1 text-accent font-medium">若輸入您登入的電子郵件，該禮品券面值將於付款成功後<strong>直接匯入您的個人帳戶錢包</strong>，系統將不會發送獨立的轉贈領取連結。</p>
+                                <!-- notes or custom requests to shop directly -->
+                                <div class="mt-2">
+                                    <h5 class="text-xs font-semibold">Notes to Shop ｜ 給店家的備註</h5>
+                                    {{ proforma_invoice_form.delivery_note }}
                                 </div>
-                            </div>
+                            {% endif %}
+                        </div>
 
-                            <!-- personal voucher gift text area space -->
-                            <div class="mt-2">
-                                <h5 class="text-xs font-semibold">Message to Recipient ｜ 給收件人的祝福語</h5>
-                                {{ proforma_invoice_form.gift_message }}
-                            </div>
+                        {% for hidden in proforma_invoice_form.hidden_fields %}
+                            {{ hidden }}
+                        {% endfor %}
 
-                            <!-- notes or custom requests to shop directly -->
-                            <div class="mt-2">
-                                <h5 class="text-xs font-semibold">Notes to Shop ｜ 給店家的備註</h5>
-                                {{ proforma_invoice_form.delivery_note }}
-                            </div>
-                        {% endif %}
-                    </div>
+                    </form>
+                </div>
+                <!-- MIDDLE -->
+                <div class="divider lg:divider-horizontal w-[2%]"></div>
 
-                    {% for hidden in proforma_invoice_form.hidden_fields %}
-                        {{ hidden }}
-                    {% endfor %}
-
-                </form>
-            </div>
-            <!-- MIDDLE -->
-            <div class="divider lg:divider-horizontal w-[2%]"></div>
-
-            <!-- RIGHT - items list -->
-            <div class="w-[58%] card bg-base-300 rounded-box p-3 ">
-                <!-- item display -->
-                <div class="overflow-x-auto">
-                    <table class="table table-xs bg-transparent">
-                        <!-- head -->
-                        <thead class="text-[0.8rem] text-base-content">
-                            <tr >
-                                <th></th>
-                                <th>Item｜商品</th>
-                                <th>Price｜價格</th>
-                                <th>Qty｜數量</th>
-                                <th>Sub-Total｜小計</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for cart_item in cart_items %}
+                <!-- RIGHT - items list -->
+                <div class="w-[58%] card bg-base-300 rounded-box p-3 ">
+                    <!-- item display -->
+                    <div class="overflow-x-auto">
+                        <table class="table table-xs bg-transparent">
+                            <!-- head -->
+                            <thead class="text-[0.8rem] text-base-content">
                                 <tr >
-                                    <th>{{ forloop.counter }}</th>
-                                    <td>
-                                        <div class="flex w-full py-3">
-                                            <div class="w-1/2 h-[5rem]">
-                                                <img src="{{ cart_item.product_variation.images.url }}" alt="" class="rounded-md w-full h-full aspect-video object-cover">
-                                            </div>
-                                            <div class="ml-[0.5rem] w-1/2">
-                                                <span class="font-bold">{{ cart_item.product_variation.product.product_name }}</span>
-                                                <br/>
-                                                <span class="text-[10px]">{{ cart_item.product_variation.get_sku }}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="text-right">CNY {{ cart_item.product_variation.price|floatformat:2|intcomma }}</td>
-                                    <td class="text-center">{{ cart_item.quantity }}</td>
-                                    <td class="font-semibold text-right">CNY {{ cart_item.subtotal|floatformat:2|intcomma }}</td>
+                                    <th></th>
+                                    <th>Item｜商品</th>
+                                    <th>Price｜價格</th>
+                                    <th>Qty｜數量</th>
+                                    <th>Sub-Total｜小計</th>
                                 </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="divider mt-0 my-5"></div>
-
-               <!-- sub-total & other costs/discounts -->
-                <div class="w-full text-right text-[0.75rem] px-3 py-3 rounded-2xl bg-base-200">
-                    <table class="w-full bg-transparent border-collapse table-fixed">
-                        <thead>
-                            <tr>
-                                <!-- 50% Width -->
-                                <th class="w-[32%] py-1 text-left"></th>
-                                <!-- 25% Width -->
-                                <th class="w-[32%] py-1 text-right">CNY</th>
-                                <!-- 25% Width -->
-                                <th class="w-[36%] py-1 text-right text-info-content">{{foreign_currency_code}}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- products subtotal -->
-                            <tr class="font-normal">
-                                <td class="py-1 text-left text-xs/4">Products<br>商品小計</td>
-                                <td class="py-1 mr-2 text-right">
-                                    <span id="products_subtotal_amount" data-value="{{ cart_total }}" data-currency="CNY">
-                                        ¥ {{ cart_total|floatformat:2|intcomma|default:"0.00" }}
-                                    </span>
-                                </td>
-                                <td class="py-1 text-right text-info-content">
-                                    <span id="products_subtotal_amount_foreign" 
-                                        data-value="{{ cart_total_foreign }}" data-currency="{{ foreign_currency_code }}">
-                                        {% if is_integer %}
-                                            {{foreign_currency_symbol}} {{ cart_total_foreign|floatformat:0|intcomma|default:"0" }}
-                                        {% else %}
-                                            {{foreign_currency_symbol}} {{ cart_total_foreign|floatformat:2|intcomma|default:"0.00" }}
-                                        {% endif %}
-                                    </span>
-                                </td>
-                            </tr>
-                            <!-- shipping cost -->
-                            <tr class="font-normal">
-                                <td class="py-1 text-left text-xs/4">Shipping<br>運費</td>
-                                <td class="py-1 mr-2 text-right">
-                                    <span id="shipping_cost_amount" data-value="{{shipping_cost}}"  data-currency="CNY">
-                                        ¥ {{ shipping_cost|floatformat:2|intcomma|default:"0.00" }}
-                                    </span>
-                                </td>
-                                <td class="py-1 text-right text-info-content">
-                                    <span id="shipping_cost_amount_foreign" data-value="{{shipping_cost_amount_foreign}}" data-currency="{{ foreign_currency_code }}">
-                                        {% if is_integer %}
-                                            {{foreign_currency_symbol}} {{ shipping_cost_amount_foreign|floatformat:0|intcomma|default:"0" }}
-                                        {% else %}
-                                            {{foreign_currency_symbol}} {{ shipping_cost_amount_foreign|floatformat:2|intcomma|default:"0.00" }}
-                                        {% endif %}
-                                    </span>
-                                </td>
-                            </tr>
-                            <!-- discount -->
-                            <tr class="font-normal">
-                                <td class="py-1 text-left text-xs/4">Discount<br>優惠</td>
-                                <td class="py-1 mr-2 text-right">
-                                    <span id="discount_amount" data-value="{{discount_amount}}" data-currency="CNY">
-                                        {% if discount_amount != 0 %}
-                                            ¥ ({{ discount_amount|floatformat:2|intcomma|default:"0.00" }})
-                                            {% else %}
-                                            ¥ ({{ discount_amount|default:"0.00" }})
-                                        {% endif %}
-                                    </span>
-                                </td>
-                                <td class="py-1 text-right text-info-content">
-                                    <span id="discount_amount_foreign" data-value="{{discount_amount_foreign}}" data-currency="{{ foreign_currency_code }}">
-                                        {% if discount_amount_foreign != 0 %}
-                                            {% if is_integer %}
-                                                {{foreign_currency_symbol}} ({{ discount_amount_foreign|floatformat:0|intcomma|default:"0.00" }})
-                                            {% else %}
-                                                {{foreign_currency_symbol}} ({{ discount_amount_foreign|floatformat:2|intcomma|default:"0.00" }})
-                                            {% endif %}
-                                        {% else %}
-                                            {% if is_integer %}
-                                                {{foreign_currency_symbol}} (0)
-                                            {% else %}
-                                                {{foreign_currency_symbol}} (0.00)
-                                            {% endif %}
-                                        {% endif %}
-                                    </span>
-                                </td>
-                            </tr>
-                            <!-- cash voucher application -->
-                            <tr class="font-normal">
-                                <td class="py-1 text-left text-xs/4">Voucher Applied<br>現金券折抵</td>
-                                <td class="py-1 mr-2 text-right">
-                                    <span id="cash_voucher_amount" data-value="{{voucher_applied}}" data-currency="CNY">
-                                        {% if voucher_applied != 0 %}
-                                            ¥ ({{ voucher_applied|floatformat:2|intcomma|default:"0.00" }})
-                                        {% else %}
-                                            ¥ ({{ voucher_applied|default:"0.00" }})
-                                        {% endif %}
-                                    </span>
-                                </td>
-                                <td class="py-1 text-right text-info-content">
-                                    <span id="cash_voucher_amount_foreign" data-value="{{applied_voucher_amount_foreign}}" data-currency="{{ foreign_currency_code }}">
-                                        {% if applied_voucher_amount_foreign != 0 %}
-                                            {% if is_integer %}
-                                                {{foreign_currency_symbol}} ({{ applied_voucher_amount_foreign|floatformat:0|intcomma|default:"0.00" }})
-                                            {% else %}
-                                                {{foreign_currency_symbol}} ({{ applied_voucher_amount_foreign|floatformat:2|intcomma|default:"0.00" }})
-                                            {% endif %}
-                                        {% else %}
-                                            {% if is_integer %}
-                                                {{foreign_currency_symbol}} (0)
-                                            {% else %}
-                                                {{foreign_currency_symbol}} (0.00)
-                                            {% endif %}
-                                        {% endif %}
-                                    </span>
-                                </td>
-                            </tr>
-                            <!-- total amount -->
-                            <tr class="font-semibold text-[0.8rem]">
-                                <td class="py-1 text-left text-xs/4">Total Due<br>總支付金額</td>
-                                <td class="py-1 mr-2 text-right">
-                                    <span id="total_payable_amount" data-value="{% if cart_items|length != 0 %}{{total_due}}{% else %}0.00{% endif %}" data-currency="CNY">
-                                        ¥ {{ total_due|floatformat:2|intcomma|default:"0.00" }}
-                                    </span>
-                                </td>
-                                <td class="py-1 text-right text-info-content">
-                                    <span id="total_amount_foreign"
-                                        data-value="{{ total_due_foreign }}" data-currency="{{ foreign_currency_code }}">
-                                        {% if is_integer %}
-                                            {{foreign_currency_symbol}} {{ total_due_foreign|floatformat:0|intcomma|default:"0" }}
-                                        {% else %}
-                                            {{foreign_currency_symbol}} {{ total_due_foreign|floatformat:2|intcomma|default:"0.00" }}
-                                        {% endif %}
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <!-- exchange rate expiry warning -->
-                    <div class="w-full text-left">
-                        <p id="locked_exchange_rate" data-value="{{ locked_exchange_rate|floatformat:4|intcomma }}">
-                            *Exchange Rate｜兌換率：{{ locked_exchange_rate|floatformat:4|intcomma }}
-                        </p>
+                            </thead>
+                            <tbody>
+                                {% for cart_item in cart_items %}
+                                    <tr >
+                                        <th>{{ forloop.counter }}</th>
+                                        <td>
+                                            <div class="flex w-full py-3">
+                                                <div class="w-1/2 h-[5rem]">
+                                                    <img src="{{ cart_item.product_variation.images.url }}" alt="" class="rounded-md w-full h-full aspect-video object-cover">
+                                                </div>
+                                                <div class="ml-[0.5rem] w-1/2">
+                                                    <span class="font-bold">{{ cart_item.product_variation.product.product_name }}</span>
+                                                    <br/>
+                                                    <span class="text-[10px]">{{ cart_item.product_variation.get_sku }}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-right">CNY {{ cart_item.product_variation.price|floatformat:2|intcomma }}</td>
+                                        <td class="text-center">{{ cart_item.quantity }}</td>
+                                        <td class="font-semibold text-right">CNY {{ cart_item.subtotal|floatformat:2|intcomma }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                    <div id="price-warning" data-value="{{ locked_exchange_rate|floatformat:4|intcomma }}" class="w-full text-left hidden bg-warning p-2">
-                        Exchange rate <strong>{{ locked_exchange_rate|floatformat:4|intcomma }}</strong> has expired. <a href="{% url 'cart' %}" class="underline font-semibold">Back to cart page</a> to recalculate.
-                        <br>
-                        兌換率 <strong>{{ locked_exchange_rate|floatformat:4|intcomma }}</strong> 已失效。煩請<a href="{% url 'cart' %}" class="underline font-semibold">返回購物車</a>重新計算。
+
+                    <div class="divider mt-0 my-5"></div>
+
+                <!-- sub-total & other costs/discounts -->
+                    <div class="w-full text-right text-[0.75rem] px-3 py-3 rounded-2xl bg-base-200">
+                        <table class="w-full bg-transparent border-collapse table-fixed">
+                            <thead>
+                                <tr>
+                                    <!-- 50% Width -->
+                                    <th class="w-[32%] py-1 text-left"></th>
+                                    <!-- 25% Width -->
+                                    <th class="w-[32%] py-1 text-right">CNY</th>
+                                    <!-- 25% Width -->
+                                    <th class="w-[36%] py-1 text-right text-info-content">{{foreign_currency_code}}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- products subtotal -->
+                                <tr class="font-normal">
+                                    <td class="py-1 text-left text-xs/4">Products<br>商品小計</td>
+                                    <td class="py-1 mr-2 text-right">
+                                        <span id="products_subtotal_amount" data-value="{{ cart_total }}" data-currency="CNY">
+                                            ¥ {{ cart_total|floatformat:2|intcomma|default:"0.00" }}
+                                        </span>
+                                    </td>
+                                    <td class="py-1 text-right text-info-content">
+                                        <span id="products_subtotal_amount_foreign" 
+                                            data-value="{{ cart_total_foreign }}" data-currency="{{ foreign_currency_code }}">
+                                            {% if is_integer %}
+                                                {{foreign_currency_symbol}} {{ cart_total_foreign|floatformat:0|intcomma|default:"0" }}
+                                            {% else %}
+                                                {{foreign_currency_symbol}} {{ cart_total_foreign|floatformat:2|intcomma|default:"0.00" }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <!-- shipping cost -->
+                                <tr class="font-normal">
+                                    <td class="py-1 text-left text-xs/4">Shipping<br>運費</td>
+                                    <td class="py-1 mr-2 text-right">
+                                        <span id="shipping_cost_amount" data-value="{{shipping_cost}}"  data-currency="CNY">
+                                            ¥ {{ shipping_cost|floatformat:2|intcomma|default:"0.00" }}
+                                        </span>
+                                    </td>
+                                    <td class="py-1 text-right text-info-content">
+                                        <span id="shipping_cost_amount_foreign" data-value="{{shipping_cost_amount_foreign}}" data-currency="{{ foreign_currency_code }}">
+                                            {% if is_integer %}
+                                                {{foreign_currency_symbol}} {{ shipping_cost_amount_foreign|floatformat:0|intcomma|default:"0" }}
+                                            {% else %}
+                                                {{foreign_currency_symbol}} {{ shipping_cost_amount_foreign|floatformat:2|intcomma|default:"0.00" }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <!-- discount -->
+                                <tr class="font-normal">
+                                    <td class="py-1 text-left text-xs/4">Discount<br>優惠</td>
+                                    <td class="py-1 mr-2 text-right">
+                                        <span id="discount_amount" data-value="{{discount_amount}}" data-currency="CNY">
+                                            {% if discount_amount != 0 %}
+                                                ¥ ({{ discount_amount|floatformat:2|intcomma|default:"0.00" }})
+                                                {% else %}
+                                                ¥ ({{ discount_amount|default:"0.00" }})
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="py-1 text-right text-info-content">
+                                        <span id="discount_amount_foreign" data-value="{{discount_amount_foreign}}" data-currency="{{ foreign_currency_code }}">
+                                            {% if discount_amount_foreign != 0 %}
+                                                {% if is_integer %}
+                                                    {{foreign_currency_symbol}} ({{ discount_amount_foreign|floatformat:0|intcomma|default:"0.00" }})
+                                                {% else %}
+                                                    {{foreign_currency_symbol}} ({{ discount_amount_foreign|floatformat:2|intcomma|default:"0.00" }})
+                                                {% endif %}
+                                            {% else %}
+                                                {% if is_integer %}
+                                                    {{foreign_currency_symbol}} (0)
+                                                {% else %}
+                                                    {{foreign_currency_symbol}} (0.00)
+                                                {% endif %}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <!-- cash voucher application -->
+                                {% if request.user.is_authenticated %}
+                                <tr class="font-normal">
+                                    <td class="py-1 text-left text-xs/4">Voucher Applied<br>現金券折抵</td>
+                                    <td class="py-1 mr-2 text-right">
+                                        <span id="cash_voucher_amount" data-value="{{voucher_applied}}" data-currency="CNY">
+                                            {% if voucher_applied != 0 %}
+                                                ¥ ({{ voucher_applied|floatformat:2|intcomma|default:"0.00" }})
+                                            {% else %}
+                                                ¥ ({{ voucher_applied|default:"0.00" }})
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="py-1 text-right text-info-content">
+                                        <span id="cash_voucher_amount_foreign" data-value="{{applied_voucher_amount_foreign}}" data-currency="{{ foreign_currency_code }}">
+                                            {% if applied_voucher_amount_foreign != 0 %}
+                                                {% if is_integer %}
+                                                    {{foreign_currency_symbol}} ({{ applied_voucher_amount_foreign|floatformat:0|intcomma|default:"0.00" }})
+                                                {% else %}
+                                                    {{foreign_currency_symbol}} ({{ applied_voucher_amount_foreign|floatformat:2|intcomma|default:"0.00" }})
+                                                {% endif %}
+                                            {% else %}
+                                                {% if is_integer %}
+                                                    {{foreign_currency_symbol}} (0)
+                                                {% else %}
+                                                    {{foreign_currency_symbol}} (0.00)
+                                                {% endif %}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                <!-- total amount -->
+                                <tr class="font-semibold text-[0.8rem]">
+                                    <td class="py-1 text-left text-xs/4">Total Due<br>總支付金額</td>
+                                    <td class="py-1 mr-2 text-right">
+                                        <span id="total_payable_amount" data-value="{% if cart_items|length != 0 %}{{total_due}}{% else %}0.00{% endif %}" data-currency="CNY">
+                                            ¥ {{ total_due|floatformat:2|intcomma|default:"0.00" }}
+                                        </span>
+                                    </td>
+                                    <td class="py-1 text-right text-info-content">
+                                        <span id="total_amount_foreign"
+                                            data-value="{{ total_due_foreign }}" data-currency="{{ foreign_currency_code }}">
+                                            {% if is_integer %}
+                                                {{foreign_currency_symbol}} {{ total_due_foreign|floatformat:0|intcomma|default:"0" }}
+                                            {% else %}
+                                                {{foreign_currency_symbol}} {{ total_due_foreign|floatformat:2|intcomma|default:"0.00" }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- exchange rate expiry warning -->
+                        <div class="w-full text-left">
+                            <p id="locked_exchange_rate" data-value="{{ locked_exchange_rate|floatformat:4|intcomma }}">
+                                *Exchange Rate｜兌換率：{{ locked_exchange_rate|floatformat:4|intcomma }}
+                            </p>
+                        </div>
+                        <div id="price-warning" data-value="{{ locked_exchange_rate|floatformat:4|intcomma }}" class="w-full text-left hidden bg-warning p-2">
+                            Exchange rate <strong>{{ locked_exchange_rate|floatformat:4|intcomma }}</strong> has expired. <a href="{% url 'cart' %}" class="underline font-semibold">Back to cart page</a> to recalculate.
+                            <br>
+                            兌換率 <strong>{{ locked_exchange_rate|floatformat:4|intcomma }}</strong> 已失效。煩請<a href="{% url 'cart' %}" class="underline font-semibold">返回購物車</a>重新計算。
+                        </div>
                     </div>
+
+                    <!-- 前往支付 -->
+                    <button id="pay_btn" type="submit" form="proforma_invoice_form" class="text-neutral btn border-2 my-3 py-5 skeleton bg-neutral-content text-[0.85rem]">
+                        <i class="fa-solid fa-credit-card"></i> Pay Now｜前往支付
+                    </button>
+
+                    <!-- 繼續購物 -->
+                    <button onclick="console.log()" class="btn btn-secondary rounded-2xl btn-outline mb-3 py-5 text-[0.85rem]">
+                        <i class="fa-solid fa-store"></i>Cotinue Shopping｜繼續購物
+                    </button>
                 </div>
-
-                <!-- 前往支付 -->
-                <button id="pay_btn" type="submit" form="proforma_invoice_form" class="text-neutral btn border-2 my-3 py-5 skeleton bg-neutral-content text-[0.85rem]">
-                    <i class="fa-solid fa-credit-card"></i> Pay Now｜前往支付
-                </button>
-
-                <!-- 繼續購物 -->
-                <button onclick="console.log()" class="btn btn-secondary rounded-2xl btn-outline mb-3 py-5 text-[0.85rem]">
-                    <i class="fa-solid fa-store"></i>Cotinue Shopping｜繼續購物
-                </button>
             </div>
         </div>
+    </main>
+
+    <!-- 💡 FIX 2: Hidden landing targets shield HTMX from crashing when calculations update on digital-only carts -->
+    <div class="hidden" aria-hidden="true" style="display: none !important;">
+        <span id="physical_products_total_foreign"></span>
+        <span id="e_products_total_foreign"></span>
+        <span id="voucher_purchase_total_foreign"></span>
+        <span id="shipping_cost_amount_foreign"></span>
+        <span id="discount_amount_foreign"></span>
+        <span id="summary_voucher_applied_foreign"></span>
     </div>
-</main>
-
-<!-- 💡 FIX 2: Hidden landing targets shield HTMX from crashing when calculations update on digital-only carts -->
-<div class="hidden" aria-hidden="true" style="display: none !important;">
-    <span id="physical_products_total_foreign"></span>
-    <span id="e_products_total_foreign"></span>
-    <span id="voucher_purchase_total_foreign"></span>
-    <span id="shipping_cost_amount_foreign"></span>
-    <span id="discount_amount_foreign"></span>
-    <span id="summary_voucher_applied_foreign"></span>
 </div>
-
-<script>
+<!-- <script>
 if (!window.htmxHistoryScrubberAttached) {
     document.body.addEventListener('htmx:beforeHistorySave', function(evt) {
         document.querySelectorAll('[hx-swap-oob]').forEach(el => el.removeAttribute('hx-swap-oob'));
@@ -687,12 +690,232 @@ document.body.addEventListener('htmx:beforeLeave', function cleanupCheckoutPage(
         }
     }
 
-    // Run natively on standard server re-renders
     document.addEventListener("DOMContentLoaded", runCompleteFormSync);
     
-    // 🚀 THE CRITICAL LAYER: Fires when users navigate backwards and restores frozen DOM cache states
     window.addEventListener("pageshow", function(event) {
-        // Wait 50ms to ensure the browser's native autocomplete engines have fully filled out the form fields
+        // 🌟 FIX: Detect if the page was thwacked out of the back-forward cache memory (bfcache)
+        // or if performance navigation history confirms a forward/back action (type 2)
+        const historyTraversal = event.persisted || 
+                                 (window.performance && window.performance.getEntriesByType("navigation")[0]?.type === "back_forward");
+        console.log("pageshow")
+        if (historyTraversal) {
+            console.warn("🚨 Stale cache detected via forward/back navigation! Forcing hard server refresh to reload pricing ledger...");
+            
+            // Clear current cache tracking flags and completely restart the view natively from Django
+            window.location.reload();
+            return; 
+        }
+        // Standard load pathway: Wait 50ms to let native browser autocomplete finish up
+        setTimeout(runCompleteFormSync, 50);
+    });
+    
+})();
+</script> -->
+
+<script>
+if (!window.htmxHistoryScrubberAttached) {
+    document.body.addEventListener('htmx:beforeHistorySave', function(evt) {
+        document.querySelectorAll('[hx-swap-oob]').forEach(el => el.removeAttribute('hx-swap-oob'));
+    });
+    window.htmxHistoryScrubberAttached = true;
+}
+window.checkoutTimer = window.checkoutTimer || { expiryTime: 0, currencyExpired: false, intervalId: null };
+
+function initAddressAutoComplete(){
+    console.log("🛠️ Checkout Validation Engine Activated.");
+    const form = document.getElementById("proforma_invoice_form");
+    const payButton = document.getElementById('pay_btn');
+    if (!form || !payButton) return;
+
+    const displayMode = form.getAttribute("data-display-mode") || "PHYSICAL";
+    const addressInput = document.getElementById('id_address_line_1');
+
+    if (addressInput) {
+        if (form.dataset.isChina === "true") {
+            addressInput.placeholder = "請輸入詳細收貨地址（如街道、門牌號碼）｜Please enter detailed address";
+        } else {
+            addressInput.placeholder = "Address 1 (Type to autocomplete)｜地址1 (輸入可啟動自動填寫)";
+            if ((addressInput.value || "").trim() === "") {
+                setTimeout(function() {
+                    if (typeof window.preAutoComplete === "function" && typeof window.initAutoComplete === "function") {
+                        window.preAutoComplete();
+                        window.initAutoComplete(form.id);
+                        if (typeof window.initRegionLogic === "function") window.initRegionLogic(form.id);
+                        if (typeof window.toggleProvinceFields === "function") window.toggleProvinceFields(form);
+                        console.log("✨ Google Maps initialized completely.");
+                    }
+                }, 100);
+            }
+        }
+    }
+
+    function validateFormState() {
+        const hasValue = (id) => {
+            const el = document.getElementById(id);
+            return el && el.value.trim() !== "";
+        };
+        const isValidEmail = (id) => {
+            const el = document.getElementById(id);
+            if (!el) return false;
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value.trim());
+        };
+
+        let isFormValid = false;
+        const contactEmailOk = isValidEmail("id_email");
+        const voucherEmailOk = isValidEmail("id_recipient_email");
+        
+        // 🌟 Include hidden form values to prevent background submission validation errors
+        const physicalInfoOk = hasValue("id_recipient_first_name") && 
+                               hasValue("id_recipient_last_name") && 
+                               hasValue("id_recipient_mobile_area") && 
+                               hasValue("id_recipient_mobile_number") && 
+                               hasValue("id_address_line_1") &&
+                               hasValue("id_city") &&
+                               hasValue("id_state_province_region") &&
+                               hasValue("id_country");
+
+        switch (displayMode) {
+            case "PHYSICAL":
+                isFormValid = contactEmailOk && physicalInfoOk;
+                break;
+            case "PHYSICAL_AND_VOUCHER":
+                isFormValid = contactEmailOk && physicalInfoOk && voucherEmailOk;
+                break;
+            case "VOUCHER_ONLY":
+                isFormValid = contactEmailOk && voucherEmailOk;
+                break;
+            case "EPRODUCT_ONLY":
+                isFormValid = contactEmailOk;
+                break;
+        }
+
+        if (isFormValid && !window.checkoutTimer.currencyExpired) {
+            payButton.disabled = false;
+            payButton.removeAttribute("disabled");
+            payButton.classList.remove("opacity-50", "cursor-not-allowed", "pointer-events-none", "skeleton");
+        } else {
+            payButton.disabled = true;
+            payButton.setAttribute("disabled", "true");
+            payButton.classList.add("opacity-50", "cursor-not-allowed", "pointer-events-none");
+            payButton.classList.remove("skeleton");
+        }
+    }
+
+    // 🌟 Enforce listening loop rules across all visible and hidden required elements
+    const targetInputFields = [
+        "id_email", "id_recipient_first_name", "id_recipient_last_name", 
+        "id_recipient_mobile_area", "id_recipient_mobile_number", 
+        "id_address_line_1", "id_city", "id_state_province_region", 
+        "id_country", "id_recipient_email"
+    ];
+
+    targetInputFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.removeEventListener("input", validateFormState);
+            el.removeEventListener("change", validateFormState);
+            el.addEventListener("input", validateFormState);
+            el.addEventListener("change", validateFormState);
+        }
+    });
+
+    window.updatePayButtonState = validateFormState;
+    validateFormState();
+}
+
+function checkForeignCurrencyExpiry() {
+    if (Date.now() > window.checkoutTimer.expiryTime) {
+        const warningElement = document.getElementById("price-warning");
+        if (warningElement) warningElement.classList.remove("hidden");
+        window.checkoutTimer.currencyExpired = true;
+        if (typeof window.updatePayButtonState === "function") {
+            window.updatePayButtonState();
+        } else {
+            const payButton = document.getElementById("pay_btn");
+            if (payButton) {
+                payButton.disabled = true;
+                payButton.classList.add("opacity-50", "cursor-not-allowed", "pointer-events-none");
+            }
+        }
+    }
+}
+
+function setupCheckoutLifecycle() {
+    window.checkoutTimer = window.checkoutTimer || { expiryTime: 0, currencyExpired: false, intervalId: null };
+    const sessionExpiry = parseInt("{{ rate_expiry_timestamp|default:0 }}", 10);
+    if (sessionExpiry && sessionExpiry > 0) {
+        window.checkoutTimer.expiryTime = sessionExpiry;
+        window.checkoutTimer.currencyExpired = Date.now() > window.checkoutTimer.expiryTime;
+        if (window.checkoutTimer.intervalId) clearInterval(window.checkoutTimer.intervalId);
+        window.checkoutTimer.intervalId = setInterval(checkForeignCurrencyExpiry, 5000);
+        checkForeignCurrencyExpiry();
+    }
+    initAddressAutoComplete();
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupCheckoutLifecycle);
+} else {
+    setupCheckoutLifecycle();
+}
+
+document.body.removeEventListener("htmx:afterProcessNode", window.checkoutHtmxHandler);
+window.checkoutHtmxHandler = function(evt) {
+    if (document.getElementById('id_address_line_1') || document.getElementById('id_recipient_email') || document.getElementById('id_email')) {
+        initAddressAutoComplete();
+    }
+};
+document.body.addEventListener("htmx:afterProcessNode", window.checkoutHtmxHandler);
+
+document.body.addEventListener('htmx:beforeLeave', function cleanupCheckoutPage() {
+    if (window.checkoutTimer && window.checkoutTimer.intervalId) clearInterval(window.checkoutTimer.intervalId);
+    document.body.removeEventListener('htmx:beforeLeave', cleanupCheckoutPage);
+});
+
+// 🎯 HIGH-SECURITY BACK-BUTTON CACHE RECOVERY PIPELINE
+(function() {
+    function runCompleteFormSync() {
+        console.log("🔄 Browser navigation event intercepted. Syncing cached form fields...");
+        if (typeof initAddressAutoComplete === "function") {
+            initAddressAutoComplete();
+        }
+
+        const form = document.getElementById("proforma_invoice_form");
+        if (form) {
+            form.querySelectorAll("input, textarea, select").forEach(el => {
+                if (el.value && el.value.trim() !== "") {
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        }
+
+        if (typeof window.updatePayButtonState === "function") {
+            window.updatePayButtonState();
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", runCompleteFormSync);
+    
+    window.addEventListener("pageshow", function(event) {
+        console.log("pageshow execution pass log initialized.");
+        
+        // 🌟 FIX: Safe verification block preventing empty performance array access crashes
+        let isBackForward = false;
+        if (window.performance && typeof window.performance.getEntriesByType === "function") {
+            const navEntries = window.performance.getEntriesByType("navigation");
+            if (navEntries && navEntries.length > 0) {
+                isBackForward = navEntries[0].type === "back_forward";
+            }
+        }
+        
+        const historyTraversal = event.persisted || isBackForward;
+        if (historyTraversal) {
+            console.warn("🚨 Stale navigation state detected. Refreshing page.");
+            window.location.reload();
+            return;
+        }
+        
         setTimeout(runCompleteFormSync, 50);
     });
 })();

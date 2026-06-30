@@ -34,16 +34,19 @@ def update_exchange_rates():
     headers = {"accept": "application/json"}
 
     try:
-        response = requests.get(url, headers=headers, timeout=60)
+        response = requests.get(url, headers=headers, timeout=30) # 30s is standard for fast APIs
         response.raise_for_status()
         data = response.json()
         
-        # Extract rates (e.g., HKD)
         rates = data.get('rates')
-        print("rates: ", rates)
-        # Store in Redis cache for 3660 seconds (1 hour + buffer)
-        cache.set('exchange_rates', rates, timeout=3660)
+        if not rates:
+            raise ValueError("API response data was missing the 'rates' payload container mapping.")
+        
+        # 🌟 FIX: Persist data for 3 full days (259200 seconds) instead of 24 hours.
+        # This gives your site a 3-day survival buffer if the external API faces downtime.
+        cache.set('exchange_rates', rates, timeout=3600 * 24 * 3)
         return "Rates updated successfully"
+    
     except Exception as e:
         return f"Failed to update rates: {str(e)}"
     

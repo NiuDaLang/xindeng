@@ -11,7 +11,7 @@ const firework = () => {
      * Base
      */
     // Debug
-    const gui = new GUI({ width: 300, title: "背景調整" })
+    const gui = new GUI({ width: 300, title: "Background Tweak｜背景調整" })
     gui.name
     gui.close();
 
@@ -29,10 +29,11 @@ const firework = () => {
      */
     const header = document.querySelector('.navbar')
     const footer = document.querySelector('footer')
-
+    console.log(header.offsetHeight)
     const sizes = {
         width: window.innerWidth,
-        height: window.innerHeight - (header.offsetHeight + footer.offsetHeight),
+        // height: window.innerHeight - (header.offsetHeight + footer.offsetHeight),
+        height: window.innerHeight - header.offsetHeight,
         pixelRatio: Math.min(window.devicePixelRatio, 2)
     }
     sizes.resolution = new THREE.Vector2(sizes.width * sizes.pixelRatio, sizes.height * sizes.pixelRatio)
@@ -41,7 +42,8 @@ const firework = () => {
     {
         // Update sizes
         sizes.width = window.innerWidth
-        sizes.height = window.innerHeight - (header.offsetHeight + footer.offsetHeight)
+        // sizes.height = window.innerHeight - (header.offsetHeight + footer.offsetHeight)
+        sizes.height = window.innerHeight - header.offsetHeight
         sizes.pixelRatio = Math.min(window.devicePixelRatio, 2)
         sizes.resolution.set(sizes.width * sizes.pixelRatio, sizes.height * sizes.pixelRatio)
         console.log(sizes.resolution)

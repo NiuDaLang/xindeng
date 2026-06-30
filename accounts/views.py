@@ -11,7 +11,7 @@ from django.views.decorators.debug import sensitive_post_parameters
 from.models import CustomerVoucher, ChatMessage
 from store.models import ProductVariation
 from carts.models import Cart, CartItem
-from orders.models import Order
+from orders.models import Order, OrderProduct
 from carts.views import _cart_id
 from django.db import transaction
 from django.db.models import Q, Count
@@ -222,30 +222,87 @@ def login(request, user=None):
         email = request.POST.get("email")
         password = request.POST.get("password")
 
-        user = auth.authenticate(request, email=email, password=password)
+        # 🌟 CRITICAL FIX: Capture the immutable guest session key string BEFORE auth.login flushes the container
+        # We check both your custom middleware attribute fallback and the raw session token parameter
+        anonymous_guest_key = getattr(request, 'prior_session_key', None) or request.session.session_key
+        saved_next_url = request.session.get("next_url")
+        print("anonymous_guest_key: ", anonymous_guest_key)
+        print("saved_next_url: ", saved_next_url)
+        user = auth.authenticate(request, username=email, password=password)
 
         if user is not None:
+            # Django securely cycles the session token keys right here
             auth.login(request, user)
-            # 🎯 VOUCHER AUTO-CLAIM ENGINE HOOK FOR RETURNING GUESTS
+
+            if saved_next_url:
+                request.session["next_url"] = saved_next_url
+                request.session.modified = True
+            
+            # 🌟 SURGICAL DATA MERGE ENGINE: Migrate anonymous records using the captured key
+            if anonymous_guest_key:
+                print(f"Migrating guest cart data from session key: {anonymous_guest_key} to user: {user.email}")
+                
+                guest_cart = Cart.objects.filter(cart_id=anonymous_guest_key, user__isnull=True).first()
+                if guest_cart:
+                    # Retrieve or initialize the permanent logged-in user cart record mapping
+                    member_cart, _ = Cart.objects.get_or_create(user=user, defaults={'cart_id': anonymous_guest_key})
+                    guest_items = CartItem.objects.filter(cart=guest_cart, is_active=True)
+                    
+                    for item in guest_items:
+                        # Cross-reference if this product variation already exists inside the member's cart
+                        existing_member_item = CartItem.objects.filter(cart=member_cart, product_variation=item.product_variation).first()
+                        
+                        if existing_member_item:
+                            existing_member_item.quantity += item.quantity
+                            existing_member_item.save()
+                            item.delete() # Drop duplicate guest entries safely
+                        else:
+                            item.cart = member_cart
+                            if hasattr(item, 'user'):
+                                item.user = user
+                            item.save()
+                            
+                        # 🌟 WISHLIST CLEANUP ENGAGEMENT: Drop item from user's wishlist if it's now in their cart
+                        UserProductList.objects.filter(
+                            user=user, 
+                            product_variation=item.product_variation, 
+                            list_type='WISHLIST'
+                        ).delete()
+                    
+                    # Clean up the old, empty guest cart container from the database
+                    guest_cart.delete()
+
+            # Voucher validation hooks
             pending_voucher_id = request.session.pop('pending_claim_voucher_id', None)
             if pending_voucher_id:
                 try:
-                    from store.models import CustomerVoucher
                     voucher = CustomerVoucher.objects.get(id=pending_voucher_id, is_claimed=False)
                     voucher.owner = user
                     voucher.claim(user.email)
-                    messages.success(request, f"歡迎回來！面值 CNY {voucher.value} 的禮品券已自動匯入您的錢包。")
+                    messages.success(request, f"Welcome back! A CNY {voucher.value} gift voucher has been automatically added to your wallet.｜歡迎回來！面值 CNY {voucher.value} 的禮品券已自動匯入您的錢包。")
                 except CustomerVoucher.DoesNotExist:
                     pass
             else:
                 messages.success(request, "Login successful｜登入成功")
-    
+
+            next_url = request.session.pop("next_url", None)
+            if next_url:
+                print(f"🔄 REDIRECTING INTERCEPTED USER: Routing straight back to payment flow target: {next_url}")
+
+             # Check if this login form submission was generated via an HTMX AJAX call
+                if request.headers.get("HX-Request"):
+                    response = HttpResponse("", status=200)
+                    response["HX-Redirect"] = next_url
+                    return response
+                    
+                return redirect(next_url)               
+        
             return redirect("dashboard", subpage="main")
         else:
             messages.error(request, "Login failed｜登入失敗")
             return redirect("login")
     
-    return render(request, "pages/login.html", {"page_title": "Login｜登入",})
+    return render(request, "pages/login.html", {"page_title": "Login｜登入"})
 
 
 @login_required(login_url="login")
@@ -275,7 +332,6 @@ def forgot_password(request):
         else:
             messages.error(request, "This account does not exist｜此帳號不存在")
             return redirect("forgot_password")
-
 
     return render(request, "pages/forgot_password.html")
 
@@ -401,6 +457,9 @@ def check_username(request):
 
 @login_required(login_url='login')
 def dashboard(request, subpage):
+    if not request.user.is_authenticated:
+        print("not logged in!")
+        return redirect('login')
     # main
     templates = {
         'main': 'accounts/dashboard_main.html',
@@ -416,14 +475,14 @@ def dashboard(request, subpage):
     }
     page_title = {
         'main': 'Main｜管理主頁',
-        'profile': 'My Profile｜個人檔案',
+        'profile': 'Edit Profile｜會員檔案',
         'addresses': 'Addresses｜地址簿',
         'orders': 'Orders｜購物紀錄',
         'offers': 'Offers｜福利活動',
         'vouchers': 'Vouchers｜禮品券',
         'wishlist': 'Wishlist｜購物清單',
         'favorites': 'Favorites｜收藏',
-        'help': 'Help｜會員熱線',
+        'help': 'Help｜客服熱線',
         'threed': '3D Scenes｜三維場景',
     }
     template_name = templates.get(subpage, 'accounts/dashboard_main.html')
@@ -431,6 +490,31 @@ def dashboard(request, subpage):
     chat_messages = ChatMessage.objects.none()
     search_query = request.GET.get('q', '').strip()
     active_member_id = request.session.get('chat_member_id')
+
+    # main
+    # 1. Calculate historical purchased quantities cleanly inside database indexes
+    total_items_purchased = OrderProduct.objects.filter(
+        order__user=request.user,
+        product__is_voucher=False,
+        order__order_status='Delivered'
+    ).aggregate(t_qty=Sum('quantity'))['t_qty'] or 0
+
+    # 2. Wallet balance
+    wallet_balance = CustomerVoucher.objects.filter(
+        owner=request.user, 
+        is_used=False, 
+        balance__gt=0
+    ).aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
+
+    # 2. Pull dynamic unread communications counts
+    unread_count = 0 # Re-link to your customer messaging channels loops later
+
+    # 🌟 4. ACTIVE TRACKER PIPELINE QUERY: Fetch in-flight split fulfillments safely!
+    in_progress_orders = Order.objects.filter(
+        user=request.user,
+        is_ordered=True,
+        order_status__in=['Processing', 'Partly_Dispatched', 'All_Dispatched']
+    ).order_by('-ordered_at')
 
     # edit profile
     user_profile = None
@@ -544,18 +628,11 @@ def dashboard(request, subpage):
                 eligible_perks.append(user_perk)
 
     vouchers = None
-    wallet_balance = Decimal("0.00")
+    # wallet_balance = Decimal("0.00")
     ledger_history = []
 
     if subpage == "vouchers":        
-        # 1. Compute total aggregate unspent wallet balance cleanly
-        wallet_balance = CustomerVoucher.objects.filter(
-            owner=request.user, 
-            is_used=False, 
-            balance__gt=0
-        ).aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
-
-        # 2. Extract Credits: Vouchers claimed by this user
+        # Extract Credits: Vouchers claimed by this user
         claimed_vouchers = CustomerVoucher.objects.filter(owner=request.user, is_claimed=True)
         for v in claimed_vouchers:
             ledger_history.append({
@@ -665,7 +742,6 @@ def dashboard(request, subpage):
                 )
             ).distinct()    
        
-
     ### general ###
     # 節氣
     today = datetime.date.today()
@@ -693,6 +769,10 @@ def dashboard(request, subpage):
         "solar_term_en": term_en,
         "next_solar_term": trad_next_term,
         "next_solar_term_en": next_term_en,
+        "total_items_purchased": total_items_purchased,
+        "wallet_balance": wallet_balance,
+        "unread_count": unread_count,
+        "in_progress_orders": in_progress_orders,
 
         # profile
         "user_profile": user_profile,
@@ -739,7 +819,7 @@ def dashboard(request, subpage):
         "other_user": other_user,
 
         # banner
-        "page_title": f"Member｜會員 - {subpage_title}",
+        "page_title": f"Member Hub｜我的中心控台 - {subpage_title}",
         "main_title": f"Hi｜您好, {request.user.username}!",
         "sub_title_1": "Your Exclusive Space｜您的专属空间",
         "bread_crumb_1": "Home｜首頁",
@@ -1256,41 +1336,6 @@ def load_earlier_messages(request):
     return render(request, "accounts/partials/earlier_messages_wrapper.html", context)
 
 
-def edit_order(request):
-    user = request.user
-    order_num = 'xxxxxxx'
-    context = {
-        "main_title": f"您好,{user}!",
-        "sub_title_1": "XXXXX XXXXX",
-        "bread_crumb_1": "首頁",
-        "bread_crumb_2": "會員",
-        "bread_crumb_3": "訂單紀錄",
-        "bread_crumb_4": f"訂單No.{order_num}",
-        "bread_crumb_1_url": "/",
-        "bread_crumb_2_url": "/accounts/dashboard",
-        "bread_crumb_3_url": "/accounts/dashboard/orders",
-        "bread_crumb_4_url": "/accounts/dashboard/orders/order",
-    }
-    return render(request, "accounts/dashboard_order.html", context)
-
-
-def help(request):
-    user = request.user
-
-    context = {
-        "main_title": f"您好,{user}!",
-        "sub_title_1": "XXXXX XXXXX",
-        "bread_crumb_1": "首頁",
-        "bread_crumb_2": "會員",
-        "bread_crumb_3": "幫助",
-        "bread_crumb_1_url": "/",
-        "bread_crumb_2_url": "/accounts/dashboard",
-        "bread_crumb_3_url": "/accounts/dashboard/help",
-    }
-
-    return render(request, "accounts/dashboard_help.html", context)
-
-
 def wishlist(request):
     user = request.user
     wishlist = UserProductList.objects.filter(user=user, list_type="WISHLIST").order_by("-added_date")
@@ -1325,55 +1370,8 @@ def wishlist(request):
     return render(request, "accounts/dashboard_wishlist.html", context)
 
 
-def threed(request):
-    user = request.user
-
-    context = {
-        "main_title": f"您好,{user}!",
-        "sub_title_1": "XXXXX XXXXX",
-        "bread_crumb_1": "首頁",
-        "bread_crumb_2": "會員",
-        "bread_crumb_3": "3D場景",
-        "bread_crumb_1_url": "/",
-        "bread_crumb_2_url": "/accounts/dashboard",
-        "bread_crumb_3_url": "/accounts/dashboard/threed",
-    }
-
-    return render(request, "accounts/dashboard_threed.html", context)
-
-
 def firework(request):
     return render(request, "accounts/three/firework.html")
-
-
-# def claim_voucher_routing_view(request, voucher_id):
-#     """
-#     Validates a voucher claim token. Routes unauthenticated visitors to registration
-#     while capturing the target token inside the session context.
-#     """
-#     voucher = get_object_or_404(CustomerVoucher, id=voucher_id)
-    
-#     if voucher.is_claimed:
-#         messages.error(request, "此兌換券已被領取 | This gift voucher has already been claimed.")
-#         return redirect('home')
-
-#     # 🔒 IF USER IS A GUEST: Intercept the request and cache the token in their session
-#     if not request.user.is_authenticated:
-#         request.session['pending_claim_voucher_id'] = str(voucher.id)
-#         request.session.modified = True
-#         messages.info(request, "請先註冊或登入帳戶以領取您的禮券 | Please register or log in to claim your voucher.")
-#         return redirect('login') # Point to your standard account login/register template endpoint
-
-#     # 🌟 IF USER IS LOGGED IN: Execute the atomic claim handshake instantly
-#     success = voucher.claim(request.user.email)
-#     if success:
-#         voucher.owner = request.user
-#         voucher.save()
-#         messages.success(request, f"成功領取面值 CNY {voucher.value} 的禮券！已存入您的錢包。 | Voucher worth CNY {voucher.value} successfully claimed!")
-#     else:
-#         messages.error(request, "領取失敗，該禮券可能無效。 | Claim failed. The voucher may be invalid.")
-        
-#     return redirect('dashboard', subpage='main') # Route the user to their member account dashboard panel view
 
 
 def claim_voucher_routing_view(request, voucher_id):
@@ -1488,5 +1486,3 @@ def claim_voucher_routing_view(request, voucher_id):
         "page_title": "Claim Your Voucher ｜ 領取您的電子禮卡"
     }
     return render(request, "pages/claim_voucher.html", context)
-
-

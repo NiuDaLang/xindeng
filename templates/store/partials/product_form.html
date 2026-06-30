@@ -1,0 +1,114 @@
+{% load humanize %}
+<div id="product-purchase-panel" 
+     class="w-full"
+     data-is-resolved-sku="{{ is_resolved_sku|yesno:'true,false' }}"
+     data-selected-var-id="{{ selected_var_id|default:'' }}">
+     
+    <form id="add-to-cart-form" class="w-full space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="product_id" value="{{ single_product.id }}">
+        
+        <!-- Pricing Metadata Header -->
+        <div class="flex flex-col">
+            <h2 class="card-title font-bold text-lg text-base-content">{{ single_product.product_name }}</h2>
+            <div class="w-full mt-1 font-extrabold text-left text-xl text-primary font-mono">
+                CNY&nbsp;<span>{{ displayed_price|floatformat:2|intcomma }}</span>
+            </div>   
+        </div>
+
+        <!-- Pattern Image Variant Selectors (🌟 FIXED: Explicit padding grid eliminates overlap bugs) -->
+        <div class="my-6 flex flex-row flex-wrap justify-start items-center gap-x-6 gap-y-5 mx-auto">
+            {% for var in variations %}
+            <div id="var_option_{{ var.pk }}" 
+                 class="flex flex-col items-center justify-center w-16 text-center tooltip tooltip-bottom tooltip-neutral font-sans text-[11px] {% if var.available_production_stock == 0 %}opacity-30{% endif %}" 
+                 data-tip="{% if var.available_production_stock == 0 %}[ 暫時缺貨 ｜ OUT OF STOCK ]{% else %}{{ var.get_sku }}{% endif %}">
+                
+                <label class="cursor-pointer select-none relative block group"
+                       hx-post="{% url 'select_variation_htmx' %}"
+                       hx-vals='{"selected_variation": "{{ var.id }}", "product_id": "{{ single_product.id }}"}'
+                       hx-target="#product-purchase-panel"
+                       hx-swap="outerHTML">
+                    <input type="radio" 
+                           name="selected_variation" 
+                           value="{{ var.id }}"
+                           {% if selected_var_id == var.id %}checked{% endif %}
+                           {% if var.available_production_stock == 0 %}disabled{% endif %}
+                           class="hidden">
+                    <img src="{{ var.images.url }}" 
+                         id="var_img_{{ var.pk }}"
+                         class="w-16 h-16 object-cover rounded-md transition-all duration-200 bg-white block {% if selected_var_id == var.id %}border-2 border-primary shadow-md scale-105{% else %}border border-base-300 opacity-70 group-hover:opacity-100{% endif %}">
+                </label>
+                <span class="text-[9px] text-base-content/40 truncate w-full tracking-tighter font-mono block leading-none mt-2">
+                    {{ var.get_sku }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Specifications Panel -->
+        {% if has_any_valid_specifications %}
+        <div id="var_specs" class="flex flex-col space-y-3 bg-base-200/50 p-4 rounded-xl border border-base-300/60 font-sans my-4">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-base-content/60 border-b border-base-300 pb-1.5 mb-1">
+                Specifications | 作品規格明細
+            </h3>
+            {% if has_valid_sizes %}
+            <div class="flex justify-between items-center text-xs">
+                <span class="opacity-60">Size | 尺寸 :</span>
+                <span class="font-medium text-base-content {% if is_resolved_sku %}text-primary font-semibold{% endif %}">
+                    {{ active_filters.size }}
+                </span>
+            </div>
+            {% endif %}
+            {% if has_valid_colors %}
+            <div class="flex justify-between items-center text-xs">
+                <span class="opacity-60">Color | 顏色 :</span>
+                <span class="font-medium text-base-content {% if is_resolved_sku %}text-primary font-semibold{% endif %}">
+                    {{ active_filters.color }}
+                </span>
+            </div>
+            {% endif %}
+            {% if has_valid_types %}
+            <div class="flex justify-between items-center text-xs">
+                <span class="opacity-60">Type | 款式 :</span>
+                <span class="font-medium text-base-content {% if is_resolved_sku %}text-primary font-semibold{% endif %}">
+                    {{ active_filters.type }}
+                </span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <div class="divider my-2"></div>
+
+        <!-- Quantity Input Operations Pipeline -->
+        <div id="add-to-cart-form-wrapper" class="w-full">
+            {% if is_resolved_sku %}
+                {% if resolved_stock > 0 %}
+                    <label class="label py-1 text-[11px] opacity-60">Quantity | 數量</label>
+                    <select name="quantity" id="checkout-quantity-selector" class="select select-neutral w-full mb-3 font-sans text-xs bg-base-content text-base-100">
+                        {% for idx in stock_loop_range %}
+                            <option value="{{ idx }}">{{ idx }}</option>
+                        {% endfor %}
+                    </select>
+                    <button hx-post="{% url 'add_to_cart_htmx' %}" 
+                            hx-include="#product-purchase-panel [name]" 
+                            hx-target="#product-purchase-panel" 
+                            hx-swap="outerHTML" 
+                            type="button" 
+                            class="w-full my-1.5 btn btn-sm btn-primary font-normal text-xs tracking-wider">
+                        Add to Cart｜加入購物車&nbsp;<i class="fa-solid fa-cart-arrow-down"></i>
+                    </button>
+                {% else %}
+                    <div class="w-full p-3 my-3 text-center rounded bg-error/10 text-error border border-error/20 text-xs font-medium">
+                        Out Of Stock | 已達數量上限或暫時缺貨 <i class="fa-solid fa-circle-exclamation"></i>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="w-full p-3 my-3 text-center rounded bg-base-200 text-base-content/60 text-xs font-light font-sans tracking-wide leading-relaxed">
+                    點選上方款式，觀看大美細節。<br>
+                    <span class="text-[10px] opacity-70 block mt-0.5 font-sans">Tap above to select and witness the fine details.</span>
+                </div>
+            {% endif %}
+        </div>
+    </form>
+</div>

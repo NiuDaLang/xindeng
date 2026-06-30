@@ -2,116 +2,43 @@
 
 {% block content %}
 
-    <!-- BANNER -->
-    <div class="relative mt-16 w-full">
-        {% include 'includes/banner.html' %}
-    </div> 
-
-    <!-- MAIN -->
-    <div id="cube_display">
-        <div id="controls-area">
-            <div class="button-grid">
-                <button class="btn" onclick="step('y', -5)"><i class="fa-solid fa-angle-left"></i></button>
-                <button class="btn" onclick="step('x', 5)"><i class="fa-solid fa-angle-up"></i></button>
-                <button class="btn" onclick="step('x', -5)"><i class="fa-solid fa-angle-down"></i></button>
-                <button class="btn" onclick="step('y', 5)"><i class="fa-solid fa-angle-right"></i></button>
-                <button class="btn auto text-neutral" data-axis="y" data-val="-0.5"><i class="fa-solid fa-angles-left"></i></button>
-                <button class="btn auto text-neutral" data-axis="x" data-val="0.5"><i class="fa-solid fa-angles-up"></i></button>
-                <button class="btn auto text-neutral" data-axis="x" data-val="-0.5"><i class="fa-solid fa-angles-down"></i></button>
-                <button class="btn auto text-neutral" data-axis="y" data-val="0.5"><i class="fa-solid fa-angles-right"></i></button>
-                
-                <button class="btn" onclick="pause()" style="color: #ff9800;">||</button>
-                <button id="reset_btn" class="btn text-2xl font-light" onclick="reset()">↺</button>
-            </div>
-        </div>
-        <div id="cube-viewport" class="flex-shrink-0 min-h-[300px] w-full">
-            <div id="info-overlay">
-                <div id="initial_msg" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-                    <!-- Icon -->
-                    <div class="w-1/5 flex items-center justify-center text-base-content">
-                        <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                            <i class="fa-solid fa-info"></i>
-                        </span>
-                    </div>
-                    <!-- English -->
-                    <div class="w-2/5 flex flex-col justify-start gap-3 items-center text-center">
-                        <p class="text-xl font-bold">We can be<br>your trusted patner<br>as...</p>
-                        <p class="text-[0.75rem] text-left">* Rotate the cube with above control buttons</p>
-                    </div>
-                    <!-- Divider -->
-                    <div class="w-[1px] bg-warning"></div>
-                    <!-- Chinese -->
-                    <div class="w-2/5 flex flex-col justify-start gap-3 items-center text-center">
-                        <p class="w-full text-xl font-bold">我們可以是<br>您的合作夥伴<br>做為...</p>
-                        <p class="w-full text-[0.75rem]">* 點擊控制面板上的按鈕來轉動方塊</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="scene">
-                <div class="rubiksCube" id="cube">
-                    <div class="f1 text-9xl"><i class="fa-regular fa-lightbulb opacity-60"></i></div>
-                    <div class="f2 text-9xl"><i class="fa-solid fa-laptop-code opacity-60"></i></div>
-                    <div class="f3 text-9xl"><i class="fa-solid fa-store opacity-60"></i></div>
-                    <div class="f4 text-9xl"><i class="fa-solid fa-palette opacity-60"></i></div>
-                    <div class="f5 text-9xl"><i class="fa-regular fa-handshake opacity-60"></i></div>
-                    <div class="f6 text-9xl"><i class="fa-solid fa-earth-asia opacity-60"></i></div>
-                </div>
-            </div>
+<!-- BANNER -->
+<div class="relative mt-[86px] w-full">
+    <!-- COLLABORATION BANNER -->
+    <div class="relative w-full bg-base-300 py-16 text-center border-b border-base-200 select-none">
+        <div class="max-w-xl mx-auto px-4">
+            <h1 class="text-2xl md:text-3xl font-serif tracking-widest text-base-content mb-3">
+                Collab with Us <span class="font-sans font-light text-xl opacity-60 ml-2">/ 與我們合作</span>
+            </h1>
+            <p class="text-xs md:text-sm tracking-wide text-base-content/70 leading-relaxed font-serif">
+                Converging visions like rivers of light, creating new monuments of shared aesthetic value.<br>
+                <span class="block mt-1 font-sans font-light text-[11px] md:text-xs opacity-60 italic">
+                    高山流水，共築華章。
+                </span>
+            </p>
         </div>
     </div>
+</div> 
 
-    <!-- MODAL -->  
-    <dialog id="detailModal" class="modal">
-        <div id="modalContent" class="absolute max-w-[800px] w-9/10 md:w-4/5 aspect-5/9 min-[350px]:aspect-[4/5] sm:aspect-[5/4] md:aspect-[5/3] left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
-            <div class="relative bg-black/64 w-full h-full overflow-auto [scrollbar-color:theme(colors.amber.500)_transparent]">
-                <!-- content -->
-                <div class="m-x-auto absolute left-0 bottom-0 w-full h-auto text-white pl-[1rem] pb-[1rem] sm:pl-[1.5rem] sm:pb-[1.5rem] md:pl-[2rem] md:pb-[2rem] pr-[20%] z-2">
-                    <!-- heading -->
-                    <h3 class="font-semibold text-[0.9rem] md:text-[1.15rem] mb-[0.5rem]" id="collab_heading"></h3>
-                    <!-- description -->
-                    <p class="font-semibold text-[0.65rem] md:text-[0.75rem] mb-[1rem] md:mb-[2rem]" id="collab_description"></p>
-                    <!-- b-to-b -->
-                    <div class="mb-[0.8rem] md:mb-[1.5rem]">
-                        <div class="text-[0.8rem] md:text-[0.9rem] font-medium" id="collab_b_b_head"></div>
-                        <div class="text-[0.65rem] md:text-[0.75rem] font-extra pl-[2rem]" id="collab_b_b_desc"></div>
-                    </div>
-                    <!-- b-to-c -->
-                    <div class="">
-                        <div class="text-[0.8rem] md:text-[0.9rem] font-medium" id="collab_b_c_head"></div>
-                        <div class="text-[0.65rem] md:text-[0.75rem] font-extra pl-[2rem]" id="collab_b_c_desc"></div>
-                    </div>
-                </div> 
-                <!-- svg -->
-                <div class="absolute top-0 right-0">
-                    <img id="collab_svg" src="" alt="">
-                </div>
-            </div>
+<!-- MAIN -->
+<div id="cube_display">
+    <div id="controls-area">
+        <div class="button-grid">
+            <button class="btn" onclick="step('y', -5)"><i class="fa-solid fa-angle-left"></i></button>
+            <button class="btn" onclick="step('x', 5)"><i class="fa-solid fa-angle-up"></i></button>
+            <button class="btn" onclick="step('x', -5)"><i class="fa-solid fa-angle-down"></i></button>
+            <button class="btn" onclick="step('y', 5)"><i class="fa-solid fa-angle-right"></i></button>
+            <button class="btn auto text-neutral" data-axis="y" data-val="-0.5"><i class="fa-solid fa-angles-left"></i></button>
+            <button class="btn auto text-neutral" data-axis="x" data-val="0.5"><i class="fa-solid fa-angles-up"></i></button>
+            <button class="btn auto text-neutral" data-axis="x" data-val="-0.5"><i class="fa-solid fa-angles-down"></i></button>
+            <button class="btn auto text-neutral" data-axis="y" data-val="0.5"><i class="fa-solid fa-angles-right"></i></button>
+            
+            <button class="btn" onclick="pause()" style="color: #ff9800;">||</button>
+            <button id="reset_btn" class="btn text-2xl font-light" onclick="reset()">↺</button>
         </div>
-
-        <!-- close button -->
-        <button id="filter_modal_close" class="absolute top-[5vw] right-[5vw] text-white font-bold cursor-pointer modal_close flex items-center" onclick="document.getElementById('detailModal').close()">
-            <span>Close｜關閉</span>
-            <i class="fa-regular fa-circle-xmark text-base sm:text-xl lg:text-3xl"></i>
-        </button>
-    </dialog>
-
-    
-
-    <script>
-        let rotX = -25, rotY = 45;
-        let autoX = 0, autoY = 0;
-        let initial_state = true;
-        let currentFaceId = null; 
-        const collab_heading = document.getElementById("collab_heading")
-        const collab_description = document.getElementById("collab_description")
-        const collab_b_b_head = document.getElementById("collab_b_b_head")
-        const collab_b_b_desc = document.getElementById("collab_b_b_desc")
-        const collab_b_c_head = document.getElementById("collab_b_c_head")
-        const collab_b_c_desc = document.getElementById("collab_b_c_desc")
-        const collab_svg = document.getElementById("collab_svg")
-
-        const initial_msg_html = `
+    </div>
+    <div id="cube-viewport" class="flex-shrink-0 min-h-[300px] w-full">
+        <div id="info-overlay">
             <div id="initial_msg" class="flex w-full h-auto gap-4 items-stretch text-base-content">
                 <!-- Icon -->
                 <div class="w-1/5 flex items-center justify-center text-base-content">
@@ -132,579 +59,664 @@
                     <p class="w-full text-[0.75rem]">* 點擊控制面板上的按鈕來轉動方塊</p>
                 </div>
             </div>
-        `
-        const face_one_html = `
-            <div id="face_one" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-                <!-- Icon -->
-                <div class="w-1/5 flex items-center justify-center text-base-content">
-                    <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                        <i class="fa-regular fa-lightbulb"></i>
-                    </span>
-                </div>
-                <!-- English -->
-                <div class="w-2/5 flex items-start">
-                    <p class="text-md text-left">
-                        <span class="font-semibold inline-block w-full text-center">
-                            <span>Your Partner in Aesthetic Realization</span>
-                            <button class="btn btn-square btn-xs" data-lg="en" data-index="0" onclick="modal_open(this)">
-                                <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                    <g id="SVGRepo_iconCarrier"> 
-                                        <g fill="none" fill-rule="evenodd"> 
-                                            <path d="m0 0h32v32h-32z"></path> 
-                                            <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
-                                        </g> 
-                                    </g>
-                                </svg>
-                            </button>
-                        </span>
-                        <span class="text-sm inline-block w-full text-justify">A Creative Guide from Spark to Touch.</span>
-                    </p>
-                </div>
-                <!-- Divider -->
-                <div class="w-[1px] bg-warning"></div>
-                <!-- Chinese -->
-                <div class="w-2/5 flex items-start">
-                    <p class="text-md text-left">
-                        <span class="font-semibold inline-block w-full text-center">
-                            <span>您的美學實踐夥伴</span>
-                            <button class="btn btn-square btn-xs" data-lg="cn" data-index="0" onclick="modal_open(this)">
-                                <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                    <g id="SVGRepo_iconCarrier">
-                                        <g fill="none" fill-rule="evenodd"> 
-                                            <path d="m0 0h32v32h-32z"></path> 
-                                            <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
-                                        </g> 
-                                    </g>
-                                </svg>
-                            </button>
-                        </span>
-                        <span class="text-sm inline-block w-full text-center">從靈感微光到指尖溫度的創意引路人。</span>
-                    </p>
-                </div>
-            </div>
-        `
-        const face_two_html = `
-            <div id="face_two" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-                <!-- Icon -->
-                <div class="w-1/5 flex items-center justify-center text-base-content">
-                    <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                        <i class="fa-solid fa-laptop-code"></i>
-                    </span>
-                </div>
-                <!-- English -->
-                <div class="w-2/5 flex items-start">
-                    <p class="text-md text-left">
-                        <span class="font-semibold inline-block w-full text-center">
-                            <span>All-in-One Digital Architect</span>
-                            <button class="btn btn-square btn-xs" data-lg="en" data-index="1" onclick="modal_open(this)">
-                                <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                    <g id="SVGRepo_iconCarrier"> 
-                                        <g fill="none" fill-rule="evenodd"> 
-                                            <path d="m0 0h32v32h-32z"></path> 
-                                            <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
-                                        </g> 
-                                    </g>
-                                </svg>
-                            </button>
-                        </span>
-                        <span class="text-sm inline-block w-full text-justify">The complete website creator for your unique business, building seamless digital experiences from the ground up</span>
-                    </p>
-                </div>
-                <!-- Divider -->
-                <div class="w-[1px] bg-warning"></div>
-                <!-- Chinese -->
-                <div class="w-2/5 flex items-start">
-                    <p class="text-md text-left">
-                        <span class="font-semibold inline-block w-full text-center">
-                            <span>全方位數位建築師</span>
-                            <button class="btn btn-square btn-xs" data-lg="cn" data-index="1" onclick="modal_open(this)">
-                                <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                    <g id="SVGRepo_iconCarrier"> 
-                                        <g fill="none" fill-rule="evenodd"> 
-                                            <path d="m0 0h32v32h-32z"></path> 
-                                            <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
-                                        </g> 
-                                    </g>
-                                </svg>
-                            </button>
-                        </span>
-                        <span class="text-sm inline-block w-full text-justify">為您的獨特業務量身打造的一站式網站構建專家，從零打造流暢的數位體驗</span>
-                    </p>
-                </div>
-            </div>
-        `
-        const face_three_html = `
-            <div id="face_three" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-                <!-- Icon -->
-                <div class="w-1/5 flex items-center justify-center text-base-content">
-                    <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                        <i class="fa-regular fa-handshake"></i>
-                    </span>
-                </div>
-                <!-- English -->
-                <div class="w-2/5 flex items-start">
-                    <p class="text-md text-left">
-                        <span class="font-semibold inline-block w-full text-center">
-                            <span>Strategic Affiliate Partner</span>
-                            <button class="btn btn-square btn-xs" data-lg="en" data-index="2" onclick="modal_open(this)">
-                                <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                    <g id="SVGRepo_iconCarrier"> 
-                                        <g fill="none" fill-rule="evenodd"> 
-                                            <path d="m0 0h32v32h-32z"></path> 
-                                            <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
-                                        </g> 
-                                    </g>
-                                </svg>
-                            </button>
-                        </span>
-                        <span class="text-sm inline-block w-full text-justify">A flexible ally in your affiliate ecosystem, serving as both a high-reach advertiser and a premium publisher</span>
-                    </p>
-                </div>
-                <!-- Divider -->
-                <div class="w-[1px] bg-warning"></div>
-                <!-- Chinese -->
-                <div class="w-2/5 flex items-start">
-                    <p class="text-md text-left">
-                        <span class="font-semibold inline-block w-full text-center">
-                            <span>聯盟行銷夥伴</span>
-                            <button class="btn btn-square btn-xs" data-lg="cn" data-index="2" onclick="modal_open(this)">
-                                <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                    <g id="SVGRepo_iconCarrier"> 
-                                        <g fill="none" fill-rule="evenodd"> 
-                                            <path d="m0 0h32v32h-32z"></path> 
-                                            <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
-                                        </g> 
-                                    </g>
-                                </svg>
-                            </button>
-                        </span>
-                        <span class="text-sm inline-block w-full text-justify">聯盟營銷生態中的靈活盟友，可兼任高觸及率的廣告商或優質發布商</span>
-                    </p>
-                </div>
-            </div>
-        `
-        const face_four_html = `
-            <div id="face_four" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-                <!-- Icon -->
-                <div class="w-1/5 flex items-center justify-center text-base-content">
-                    <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                        <i class="fa-solid fa-earth-asia"></i>
-                    </span>
-                </div>
-                <!-- English -->
-                <div class="w-2/5 flex items-start">
-                    <p class="text-md text-left">
-                        <span class="font-semibold inline-block w-full text-center flex">
-                            <span>Bridge to China</span>
-                            <button class="btn btn-square btn-xs" data-lg="en" data-index="3" onclick="modal_open(this)">
-                                <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                    <g id="SVGRepo_iconCarrier"> 
-                                        <g fill="none" fill-rule="evenodd"> 
-                                            <path d="m0 0h32v32h-32z"></path> 
-                                            <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
-                                        </g> 
-                                    </g>
-                                </svg>
-                            </button>
-                        </span>
-                        <span class="text-sm inline-block w-full text-justify">A specialized curator and consultant, guiding your entry and growth within the vibrant young Chinese market</span>
-                    </p>
-                </div>
-                <!-- Divider -->
-                <div class="w-[1px] bg-warning"></div>
-                <!-- Chinese -->
-                <div class="w-2/5 flex items-start">
-                    <p class="text-md text-left">
-                        <span class="font-semibold inline-block w-full text-center">
-                            <span>中國市場橋樑</span>
-                            <button class="btn btn-square btn-xs" data-lg="cn" data-index="3" onclick="modal_open(this)">
-                                <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                    <g id="SVGRepo_iconCarrier"> 
-                                        <g fill="none" fill-rule="evenodd"> 
-                                            <path d="m0 0h32v32h-32z"></path> 
-                                            <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
-                                        </g> 
-                                    </g>
-                                </svg>
-                            </button>
-                        </span>
-                        <span class="text-sm inline-block w-full text-justify">專業的策展人與顧問，引導您進軍並深耕活力十足的中國年輕消費市場</span>
-                    </p>
-                </div>
-            </div>
-        `
-        const face_five_html = `
-            <div id="face_five" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-                <!-- Icon -->
-                <div class="w-1/5 flex items-center justify-center text-base-content">
-                    <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                        <i class="fa-solid fa-store"></i>
-                    </span>
-                </div>
-                <!-- English -->
-                <div class="w-2/5 flex items-start">
-                    <p class="text-md text-left">
-                        <span class="font-semibold inline-block w-full text-center">
-                            <span>Global Marketplace</span>
-                            <button class="btn btn-square btn-xs" data-lg="en" data-index="4" onclick="modal_open(this)">
-                                <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                    <g id="SVGRepo_iconCarrier"> 
-                                        <g fill="none" fill-rule="evenodd"> 
-                                            <path d="m0 0h32v32h-32z"></path> 
-                                            <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
-                                        </g> 
-                                    </g>
-                                </svg>
-                            </button>
-                        </span>
-                        <span class="text-sm inline-block w-full text-justify">A premier online platform to showcase and market your original artworks and creations to a worldwide audience</span>
-                    </p>
-                </div>
-                <!-- Divider -->
-                <div class="w-[1px] bg-warning"></div>
-                <!-- Chinese -->
-                <div class="w-2/5 flex items-start">
-                    <p class="text-md text-left">
-                        <span class="font-semibold inline-block w-full text-center">
-                            <span>全球市場</span>
-                            <button class="btn btn-square btn-xs" data-lg="cn" data-index="4" onclick="modal_open(this)">
-                                <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                    <g id="SVGRepo_iconCarrier"> 
-                                        <g fill="none" fill-rule="evenodd"> 
-                                            <path d="m0 0h32v32h-32z"></path> 
-                                            <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
-                                        </g> 
-                                    </g>
-                                </svg>
-                            </button>
-                        </span>
-                        <span class="text-sm inline-block w-full text-justify">一個讓您的原創藝術與創作邁向國際、向全球受眾展示與銷售的頂尖線上平台</span>
-                    </p>
-                </div>
-            </div>
-        `
-        const face_six_html = `
-            <div id="face_six" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-                <!-- Icon -->
-                <div class="w-1/5 flex items-center justify-center text-base-content">
-                    <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                        <i class="fa-solid fa-palette"></i>
-                    </span>
-                </div>
-                <!-- English -->
-                <div class="w-2/5 flex items-start">
-                    <p class="text-md text-left">
-                        <span class="font-semibold inline-block w-full text-center">
-                            <span>On-Demand Artist</span>
-                            <button class="btn btn-square btn-xs" data-lg="en" data-index="5" onclick="modal_open(this)">
-                                <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                    <g id="SVGRepo_iconCarrier"> 
-                                        <g fill="none" fill-rule="evenodd"> 
-                                            <path d="m0 0h32v32h-32z"></path> 
-                                            <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
-                                        </g> 
-                                    </g>
-                                </svg>
-                            </button>
-                        </span>
-                        <span class="text-sm inline-block w-full text-justify">A dedicated creator of custom artwork, transforming your specific concepts into unique visual realities</span>
-                    </p>
-                </div>
-                <!-- Divider -->
-                <div class="w-[1px] bg-warning"></div>
-                <!-- Chinese -->
-                <div class="w-2/5 flex items-start">
-                    <p class="text-md text-left">
-                        <span class="font-semibold inline-block w-full text-center">
-                            <span>您的定制藝術家</span>
-                            <button class="btn btn-square btn-xs" data-lg="cn" data-index="5" onclick="modal_open(this)">
-                                <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                    <g id="SVGRepo_iconCarrier"> 
-                                        <g fill="none" fill-rule="evenodd"> 
-                                            <path d="m0 0h32v32h-32z"></path> 
-                                            <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
-                                        </g> 
-                                    </g>
-                                </svg>
-                            </button>
-                        </span>
-                        <span class="text-sm inline-block w-full text-justify">專業的按需藝術創作夥伴，將您的具體構思轉化為獨一無二的視覺作品</span>
-                    </p>
-                </div>
-            </div>
-        `
+        </div>
 
-        const collab_heading_one_cn = "賦予物件靈魂，讓生活成為一場視覺饗宴"
-        const collab_description_one_cn = "在忙碌的現代節奏中，一件好的文創產品是心靈的棲息地。它不只是物件，更是故事的載體與品味的體現。我們深信設計應能觸動人心，讓平凡的每一天都顯得怦然心動。"
-        const collab_b_b_head_one_cn = "B2B 品牌合作｜從心出發的圖騰敘事"
-        const collab_b_b_desc_one_cn = "為您的品牌注入生命力，編織出撩撥感官的視覺圖樣，讓企業以最溫雅的姿態與大眾對話。"
-        const collab_b_c_head_one_cn = "B2C 創意實踐｜從夢想雛形到指尖溫度"
-        const collab_b_c_desc_one_cn = "陪伴您將腦海中的微光轉化為實體，經歷從無到有的淬鍊，創作出令人愛不釋手、值得細細珍藏的生活美學。"
-        
-        const collab_heading_two_cn = "築起靈魂的數位家園，讓您的獨特被世界看見"
-        const collab_description_two_cn = "每個夢想都值得一個溫暖的棲息地。我們深知從無到有的艱辛，因此以自身的實踐經驗，為同樣懷抱熱忱的創作者與中小企業，打造一場從創意萌芽到雲端綻放的一條龍旅程。不只是架設網站，更是細心雕琢一個能傳遞故事、延續感動的流暢空間，讓您的心血結晶跨越邊界，與世界產生共鳴。"
-        const collab_b_b_head_two_cn = "B2B 品牌合作｜量身打造的企業數位門戶"
-        const collab_b_b_desc_two_cn = "為在地中小企業整合品牌底蘊與數位機能，從邏輯梳理到視覺呈現，建構出專業與感性並存的一站式商務體驗。"
-        const collab_b_c_head_two_cn = "B2C 創意實踐｜創作者與藝術家的夢想展間"
-        const collab_b_c_desc_two_cn = "陪伴作家、藝術家將抽象的靈感轉化為實體網店或展示空間，讓每一份作品都能在指尖流轉間，尋得最懂它的靈魂。"
-        
-        const collab_heading_three_cn = "與光同行，讓好故事在彼此的領地綻放"
-        const collab_description_three_cn = "在數位浩瀚的星叢裡，好的品牌不應孤行。我們深信「共好」的力量，致力於成為您最靈動的盟友，透過真誠的引薦與資源的交融，將每一份匠心獨運的作品，傳遞至更遠的彼岸。這是一場關於信任的接力，讓我們在互惠的步調中，共同編織出雙贏的豐收風景，讓才華與價值被世界溫柔擁護。"
-        const collab_b_b_head_three_cn = "B2B 品牌合作｜讓您的聲響，在我們的世界迴盪"
-        const collab_b_b_desc_three_cn = "我們化身為您的靈魂推手，將您的品牌溫度嵌入我們的敘事之中，透過精準的高觸及推廣，讓優質的創意走入更多人的生活。"
-        const collab_b_c_head_three_cn = "B2C 創意實踐｜邀請您，成為我們夢想的引路人"
-        const collab_b_c_desc_three_cn = "誠摯邀請創作者與夥伴分享我們的美好，當每一份認同轉化為成交的果實，我們將以誠摯的報酬回饋您的舉薦，共享成長的喜悅。"
-        
-        const collab_heading_four_cn = "跨越山海的引路人，開啟與東方年輕靈魂的對話"
-        const collab_description_four_cn = "我們生於那片充滿活力的土地，深諳這座數位森林的脈動與呼吸。作為專業的市場策展人，我們不只為您架起通往中國市場的橋樑，更致力於轉譯文化的溫度。憑藉對在地年輕消費群體的深刻洞察，我們將引導海外的創意與品牌，精準觸達那些追求品質與共鳴的靈魂，讓您的作品在廣闊的東方市場中，尋得最燦爛的綻放。"
-        const collab_b_b_head_four_cn = "B2B 品牌合作｜深耕在地市場的戰略策展"
-        const collab_b_b_desc_four_cn = "為尋求突破的海外企業提供市場切入點與戰略諮詢，從文化轉譯到社群經營，協助品牌在中國充滿活力的商業環境中紮根成長。"
-        const collab_b_c_head_four_cn = "B2C 創意實踐｜連結全球創意與東方審美"
-        const collab_b_c_desc_four_cn = "擔任個人藝術家與創作者的轉譯者，發掘跨境合作的新可能，將世界各地的卓越作品，引進至渴望新鮮體驗的年輕消費市場。"
-        
-        const collab_heading_five_cn = "打破邊界的藝境平台，讓您的才華在全球光影中綻放"
-        const collab_description_five_cn = "創意不應有國界，每一件傾注心血的原創，都值得在世界的舞台上閃耀。我們建構了一個跨越語系與疆域的數位殿堂，誠摯邀請世界各地的創作者與品牌入駐。在這裡，您的作品不只是商品，更是跨越文化的語言。透過我們的一站式寄售服務，讓您的靈感從指尖出發，優雅地走進全球讀者與藏家的生活，在數位浪潮中尋得共鳴。"
-        const collab_b_b_head_five_cn = "B2B 品牌合作｜跨境通路的一站式推手"
-        const collab_b_b_desc_five_cn = "為在地原創品牌開啟通往國際市場的門扉，我們負責物流與展示的繁瑣細節，讓您的品牌精神在海外市場深耕茁壯。"
-        const collab_b_c_head_five_cn = "B2C 創意實踐｜個人藝術家的全球櫥窗"
-        const collab_b_c_desc_five_cn = "為獨立作家與藝術家提供專屬的寄售空間，讓您的原創設計與文學創作跳脫地域限制，直接觸達全球熱愛美學的靈魂。"
-        
-        const collab_heading_six_cn = "揮灑想像的專屬畫筆，將您的心中風景化作唯一"
-        const collab_description_six_cn = "有些情感，現成的物件難以承載。我們匯聚了極具靈性的創作者，致力於成為您腦海微光的實踐者。這不只是單向的委託，而是一場關於理解與創造的深度對話。無論是一個模糊的輪廓，或是一段深刻的記憶，透過我們的按需定制服務，專業藝術家將傾聽您的訴求，親手裁切時光、調和色彩，為您淬鍊出這世上絕無僅有的視覺印記。"
-        const collab_b_b_head_six_cn = "B2B 品牌合作｜企業靈魂的視覺定格"
-        const collab_b_b_desc_six_cn = "為品牌量身打造具備辨識度與故事感的專屬藝術創作，從節慶禮贈到空間裝置，讓企業精神以最具藝術張力的形式呈現。"
-        const collab_b_c_head_six_cn = "B2C 創意實踐｜個人回憶的溫度封存"
-        const collab_b_c_desc_six_cn = "誠邀您與藝術家攜手，將個人的生命故事、夢想場景或獨特構思，轉化為實體的藝術作品，讓這份專屬的感動，永遠在生活中流淌。"
-        
-        const collab_heading_one_en = "Breathing Soul into Objects: Making Life a Visual Feast."
-        const collab_description_one_en = "In the hurried rhythm of modern life, a well-crafted piece of work is a sanctuary for the soul. It is more than an object; it is a vessel for stories and a reflection of taste. We believe design should touch the heart, making every ordinary day feel like a moment of wonder. "
-        const collab_b_b_head_one_en = "B2B Brand Collaboration: "
-        const collab_b_b_desc_one_en = "Totemic Narratives from the Heart."
-        const collab_b_c_head_one_en = "B2C Creative Practice: "
-        const collab_b_c_desc_one_en = "From the Glimmer of Inspiration to the Warmth of Creation. "
-        
-        const collab_heading_two_en = "Building a Digital Home for the Soul: Let Your Uniqueness be Seen by the World."
-        const collab_description_two_en = 'Every dream deserves a warm place to call home. We understand the journey of creating something from nothing; thus, we use our own experience to craft a seamless "concept-to-launch" journey for passionate creators and SMEs. More than just building websites, we meticulously carve a fluid digital space that carries your story and moves your audience.'
-        const collab_b_b_head_two_en = "B2B Brand Collaboration: "
-        const collab_b_b_desc_two_en = "Bespoke Digital Gateways for Enterprises."
-        const collab_b_c_head_two_en = "B2C Creative Practice: "
-        const collab_b_c_desc_two_en = "Dream Showcases for Authors and Artists."
-        
-        const collab_heading_three_en = "Walking with Light: Letting Great Stories Bloom Across Our Shared Realms."
-        const collab_description_three_en = 'In the vast galaxy of the digital world, great brands should never walk alone. We believe in the power of "mutual growth." As your agile ally, we blend sincere recommendations with shared resources to carry your craftsmanship to distant shores. This is a relay of trust, weaving a landscape of shared harvests. '
-        const collab_b_b_head_three_en = "B2B Brand Collaboration: "
-        const collab_b_b_desc_three_en = "Let Your Voice Echo in Our World."
-        const collab_b_c_head_three_en = "B2C Creative Practice: "
-        const collab_b_c_desc_three_en = "Inviting You to be the Guide for Our Dreams."
-        
-        const collab_heading_four_en = "A Guide Across Mountains and Seas: Opening a Dialogue with the Young Souls of the East."
-        const collab_description_four_en = "Born from that vibrant land, we breathe the pulse of its digital forest. As professional curators, we don’t just build bridges; we translate the warmth of culture. With deep insights into the local youth market, we guide global creativity to resonate with souls seeking quality and connection. "
-        const collab_b_b_head_four_en = "B2B Brand Collaboration:"
-        const collab_b_b_desc_four_en = "Strategic Curation for Local Market Growth."
-        const collab_b_c_head_four_en = "B2C Creative Practice:"
-        const collab_b_c_desc_four_en = "Connecting Global Creativity with Eastern Aesthetics."
-        
-        const collab_heading_five_en = "A Borderless Sanctuary of Art: Letting Your Talent Shine in Global Light and Shadow."
-        const collab_description_five_en = "Creativity knows no borders. Every original work poured with heart deserves to shine on a global stage. We have built a digital sanctuary that transcends languages and frontiers. Through our one-stop consignment service, let your inspiration travel from your fingertips into the lives of global collectors."
-        const collab_b_b_head_five_en = "B2B Brand Collaboration: "
-        const collab_b_b_desc_five_en = "A One-Stop Catalyst for Cross-Border Channels."
-        const collab_b_c_head_five_en = "B2C Creative Practice:"
-        const collab_b_c_desc_five_en = "A Global Window for Independent Artists."
-        
-        const collab_heading_six_en = "Your Bespoke Brush of Imagination: Transforming the Scenery of Your Heart into the Only One."
-        const collab_description_six_en = "Some emotions are too deep for ready-made objects to carry. We bring together soulful creators to be the practitioners of the light in your mind. This is not just a commission; it is a dialogue of understanding. We listen to your story and hand-carve time and color into a visual imprint that is uniquely yours."
-        const collab_b_b_head_six_en = "B2B Brand Collaboration: "
-        const collab_b_b_desc_six_en = "Visual Portraits of the Corporate Soul."
-        const collab_b_c_head_six_en = "B2C Creative Practice: "
-        const collab_b_c_desc_six_en = "Preserving the Warmth of Personal Memories."
-        
-        const modal = document.getElementById("detailModal")
+        <div class="scene">
+            <div class="rubiksCube" id="cube">
+                <div class="f1 text-9xl"><i class="fa-regular fa-lightbulb opacity-60"></i></div>
+                <div class="f2 text-9xl"><i class="fa-solid fa-laptop-code opacity-60"></i></div>
+                <div class="f3 text-9xl"><i class="fa-solid fa-store opacity-60"></i></div>
+                <div class="f4 text-9xl"><i class="fa-solid fa-palette opacity-60"></i></div>
+                <div class="f5 text-9xl"><i class="fa-regular fa-handshake opacity-60"></i></div>
+                <div class="f6 text-9xl"><i class="fa-solid fa-earth-asia opacity-60"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        const infoMap = [
-            face_one_html, 
-            face_two_html,
-            face_three_html, 
-            face_four_html,
-            face_five_html, 
-            face_six_html
+<!-- MODAL -->  
+<dialog id="detailModal" class="modal">
+    <div id="modalContent" class="absolute max-w-[800px] w-9/10 md:w-4/5 aspect-5/9 min-[350px]:aspect-[4/5] sm:aspect-[5/4] md:aspect-[5/3] left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
+        <div class="relative bg-black/64 w-full h-full overflow-auto [scrollbar-color:theme(colors.amber.500)_transparent]">
+            <!-- content -->
+            <div class="m-x-auto absolute left-0 bottom-0 w-full h-auto text-white pl-[1rem] pb-[1rem] sm:pl-[1.5rem] sm:pb-[1.5rem] md:pl-[2rem] md:pb-[2rem] pr-[20%] z-2">
+                <!-- heading -->
+                <h3 class="font-semibold text-[0.9rem] md:text-[1.15rem] mb-[0.5rem]" id="collab_heading"></h3>
+                <!-- description -->
+                <p class="font-semibold text-[0.65rem] md:text-[0.75rem] mb-[1rem] md:mb-[2rem]" id="collab_description"></p>
+                <!-- b-to-b -->
+                <div class="mb-[0.8rem] md:mb-[1.5rem]">
+                    <div class="text-[0.8rem] md:text-[0.9rem] font-medium" id="collab_b_b_head"></div>
+                    <div class="text-[0.65rem] md:text-[0.75rem] font-extra pl-[2rem]" id="collab_b_b_desc"></div>
+                </div>
+                <!-- b-to-c -->
+                <div class="">
+                    <div class="text-[0.8rem] md:text-[0.9rem] font-medium" id="collab_b_c_head"></div>
+                    <div class="text-[0.65rem] md:text-[0.75rem] font-extra pl-[2rem]" id="collab_b_c_desc"></div>
+                </div>
+            </div> 
+            <!-- svg -->
+            <div class="absolute top-0 right-0">
+                <img id="collab_svg" src="" alt="">
+            </div>
+        </div>
+    </div>
+
+    <!-- close button -->
+    <button id="filter_modal_close" class="absolute top-[5vw] right-[5vw] text-white font-bold cursor-pointer modal_close flex items-center" onclick="document.getElementById('detailModal').close()">
+        <span>Close｜關閉</span>
+        <i class="fa-regular fa-circle-xmark text-base sm:text-xl lg:text-3xl"></i>
+    </button>
+</dialog>  
+
+<script>
+    let rotX = -25, rotY = 45;
+    let autoX = 0, autoY = 0;
+    let initial_state = true;
+    let currentFaceId = null; 
+    const collab_heading = document.getElementById("collab_heading")
+    const collab_description = document.getElementById("collab_description")
+    const collab_b_b_head = document.getElementById("collab_b_b_head")
+    const collab_b_b_desc = document.getElementById("collab_b_b_desc")
+    const collab_b_c_head = document.getElementById("collab_b_c_head")
+    const collab_b_c_desc = document.getElementById("collab_b_c_desc")
+    const collab_svg = document.getElementById("collab_svg")
+
+    const initial_msg_html = `
+        <div id="initial_msg" class="flex w-full h-auto gap-4 items-stretch text-base-content">
+            <!-- Icon -->
+            <div class="w-1/5 flex items-center justify-center text-base-content">
+                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
+                    <i class="fa-solid fa-info"></i>
+                </span>
+            </div>
+            <!-- English -->
+            <div class="w-2/5 flex flex-col justify-start gap-3 items-center text-center">
+                <p class="text-xl font-bold">We can be<br>your trusted patner<br>as...</p>
+                <p class="text-[0.75rem] text-left">* Rotate the cube with above control buttons</p>
+            </div>
+            <!-- Divider -->
+            <div class="w-[1px] bg-warning"></div>
+            <!-- Chinese -->
+            <div class="w-2/5 flex flex-col justify-start gap-3 items-center text-center">
+                <p class="w-full text-xl font-bold">我們可以是<br>您的合作夥伴<br>做為...</p>
+                <p class="w-full text-[0.75rem]">* 點擊控制面板上的按鈕來轉動方塊</p>
+            </div>
+        </div>
+    `
+    const face_one_html = `
+        <div id="face_one" class="flex w-full h-auto gap-4 items-stretch text-base-content">
+            <!-- Icon -->
+            <div class="w-1/5 flex items-center justify-center text-base-content">
+                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
+                    <i class="fa-regular fa-lightbulb"></i>
+                </span>
+            </div>
+            <!-- English -->
+            <div class="w-2/5 flex items-start">
+                <p class="text-md text-left">
+                    <span class="font-semibold inline-block w-full text-center">
+                        <span>Your Partner in Aesthetic Realization</span>
+                        <button class="btn btn-square btn-xs" data-lg="en" data-index="0" onclick="modal_open(this)">
+                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier"> 
+                                    <g fill="none" fill-rule="evenodd"> 
+                                        <path d="m0 0h32v32h-32z"></path> 
+                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
+                                    </g> 
+                                </g>
+                            </svg>
+                        </button>
+                    </span>
+                    <span class="text-sm inline-block w-full text-justify">A Creative Guide from Spark to Touch.</span>
+                </p>
+            </div>
+            <!-- Divider -->
+            <div class="w-[1px] bg-warning"></div>
+            <!-- Chinese -->
+            <div class="w-2/5 flex items-start">
+                <p class="text-md text-left">
+                    <span class="font-semibold inline-block w-full text-center">
+                        <span>您的美學實踐夥伴</span>
+                        <button class="btn btn-square btn-xs" data-lg="cn" data-index="0" onclick="modal_open(this)">
+                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier">
+                                    <g fill="none" fill-rule="evenodd"> 
+                                        <path d="m0 0h32v32h-32z"></path> 
+                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
+                                    </g> 
+                                </g>
+                            </svg>
+                        </button>
+                    </span>
+                    <span class="text-sm inline-block w-full text-center">從靈感微光到指尖溫度的創意引路人。</span>
+                </p>
+            </div>
+        </div>
+    `
+    const face_two_html = `
+        <div id="face_two" class="flex w-full h-auto gap-4 items-stretch text-base-content">
+            <!-- Icon -->
+            <div class="w-1/5 flex items-center justify-center text-base-content">
+                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
+                    <i class="fa-solid fa-laptop-code"></i>
+                </span>
+            </div>
+            <!-- English -->
+            <div class="w-2/5 flex items-start">
+                <p class="text-md text-left">
+                    <span class="font-semibold inline-block w-full text-center">
+                        <span>All-in-One Digital Architect</span>
+                        <button class="btn btn-square btn-xs" data-lg="en" data-index="1" onclick="modal_open(this)">
+                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier"> 
+                                    <g fill="none" fill-rule="evenodd"> 
+                                        <path d="m0 0h32v32h-32z"></path> 
+                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
+                                    </g> 
+                                </g>
+                            </svg>
+                        </button>
+                    </span>
+                    <span class="text-sm inline-block w-full text-justify">The complete website creator for your unique business, building seamless digital experiences from the ground up</span>
+                </p>
+            </div>
+            <!-- Divider -->
+            <div class="w-[1px] bg-warning"></div>
+            <!-- Chinese -->
+            <div class="w-2/5 flex items-start">
+                <p class="text-md text-left">
+                    <span class="font-semibold inline-block w-full text-center">
+                        <span>全方位數位建築師</span>
+                        <button class="btn btn-square btn-xs" data-lg="cn" data-index="1" onclick="modal_open(this)">
+                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier"> 
+                                    <g fill="none" fill-rule="evenodd"> 
+                                        <path d="m0 0h32v32h-32z"></path> 
+                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
+                                    </g> 
+                                </g>
+                            </svg>
+                        </button>
+                    </span>
+                    <span class="text-sm inline-block w-full text-justify">為您的獨特業務量身打造的一站式網站構建專家，從零打造流暢的數位體驗</span>
+                </p>
+            </div>
+        </div>
+    `
+    const face_three_html = `
+        <div id="face_three" class="flex w-full h-auto gap-4 items-stretch text-base-content">
+            <!-- Icon -->
+            <div class="w-1/5 flex items-center justify-center text-base-content">
+                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
+                    <i class="fa-regular fa-handshake"></i>
+                </span>
+            </div>
+            <!-- English -->
+            <div class="w-2/5 flex items-start">
+                <p class="text-md text-left">
+                    <span class="font-semibold inline-block w-full text-center">
+                        <span>Strategic Affiliate Partner</span>
+                        <button class="btn btn-square btn-xs" data-lg="en" data-index="2" onclick="modal_open(this)">
+                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier"> 
+                                    <g fill="none" fill-rule="evenodd"> 
+                                        <path d="m0 0h32v32h-32z"></path> 
+                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
+                                    </g> 
+                                </g>
+                            </svg>
+                        </button>
+                    </span>
+                    <span class="text-sm inline-block w-full text-justify">A flexible ally in your affiliate ecosystem, serving as both a high-reach advertiser and a premium publisher</span>
+                </p>
+            </div>
+            <!-- Divider -->
+            <div class="w-[1px] bg-warning"></div>
+            <!-- Chinese -->
+            <div class="w-2/5 flex items-start">
+                <p class="text-md text-left">
+                    <span class="font-semibold inline-block w-full text-center">
+                        <span>聯盟行銷夥伴</span>
+                        <button class="btn btn-square btn-xs" data-lg="cn" data-index="2" onclick="modal_open(this)">
+                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier"> 
+                                    <g fill="none" fill-rule="evenodd"> 
+                                        <path d="m0 0h32v32h-32z"></path> 
+                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
+                                    </g> 
+                                </g>
+                            </svg>
+                        </button>
+                    </span>
+                    <span class="text-sm inline-block w-full text-justify">聯盟營銷生態中的靈活盟友，可兼任高觸及率的廣告商或優質發布商</span>
+                </p>
+            </div>
+        </div>
+    `
+    const face_four_html = `
+        <div id="face_four" class="flex w-full h-auto gap-4 items-stretch text-base-content">
+            <!-- Icon -->
+            <div class="w-1/5 flex items-center justify-center text-base-content">
+                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
+                    <i class="fa-solid fa-earth-asia"></i>
+                </span>
+            </div>
+            <!-- English -->
+            <div class="w-2/5 flex items-start">
+                <p class="text-md text-left">
+                    <span class="font-semibold inline-block w-full text-center flex">
+                        <span>Bridge to China</span>
+                        <button class="btn btn-square btn-xs" data-lg="en" data-index="3" onclick="modal_open(this)">
+                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier"> 
+                                    <g fill="none" fill-rule="evenodd"> 
+                                        <path d="m0 0h32v32h-32z"></path> 
+                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
+                                    </g> 
+                                </g>
+                            </svg>
+                        </button>
+                    </span>
+                    <span class="text-sm inline-block w-full text-justify">A specialized curator and consultant, guiding your entry and growth within the vibrant young Chinese market</span>
+                </p>
+            </div>
+            <!-- Divider -->
+            <div class="w-[1px] bg-warning"></div>
+            <!-- Chinese -->
+            <div class="w-2/5 flex items-start">
+                <p class="text-md text-left">
+                    <span class="font-semibold inline-block w-full text-center">
+                        <span>中國市場橋樑</span>
+                        <button class="btn btn-square btn-xs" data-lg="cn" data-index="3" onclick="modal_open(this)">
+                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier"> 
+                                    <g fill="none" fill-rule="evenodd"> 
+                                        <path d="m0 0h32v32h-32z"></path> 
+                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
+                                    </g> 
+                                </g>
+                            </svg>
+                        </button>
+                    </span>
+                    <span class="text-sm inline-block w-full text-justify">專業的策展人與顧問，引導您進軍並深耕活力十足的中國年輕消費市場</span>
+                </p>
+            </div>
+        </div>
+    `
+    const face_five_html = `
+        <div id="face_five" class="flex w-full h-auto gap-4 items-stretch text-base-content">
+            <!-- Icon -->
+            <div class="w-1/5 flex items-center justify-center text-base-content">
+                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
+                    <i class="fa-solid fa-store"></i>
+                </span>
+            </div>
+            <!-- English -->
+            <div class="w-2/5 flex items-start">
+                <p class="text-md text-left">
+                    <span class="font-semibold inline-block w-full text-center">
+                        <span>Global Marketplace</span>
+                        <button class="btn btn-square btn-xs" data-lg="en" data-index="4" onclick="modal_open(this)">
+                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier"> 
+                                    <g fill="none" fill-rule="evenodd"> 
+                                        <path d="m0 0h32v32h-32z"></path> 
+                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
+                                    </g> 
+                                </g>
+                            </svg>
+                        </button>
+                    </span>
+                    <span class="text-sm inline-block w-full text-justify">A premier online platform to showcase and market your original artworks and creations to a worldwide audience</span>
+                </p>
+            </div>
+            <!-- Divider -->
+            <div class="w-[1px] bg-warning"></div>
+            <!-- Chinese -->
+            <div class="w-2/5 flex items-start">
+                <p class="text-md text-left">
+                    <span class="font-semibold inline-block w-full text-center">
+                        <span>全球市場</span>
+                        <button class="btn btn-square btn-xs" data-lg="cn" data-index="4" onclick="modal_open(this)">
+                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier"> 
+                                    <g fill="none" fill-rule="evenodd"> 
+                                        <path d="m0 0h32v32h-32z"></path> 
+                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
+                                    </g> 
+                                </g>
+                            </svg>
+                        </button>
+                    </span>
+                    <span class="text-sm inline-block w-full text-justify">一個讓您的原創藝術與創作邁向國際、向全球受眾展示與銷售的頂尖線上平台</span>
+                </p>
+            </div>
+        </div>
+    `
+    const face_six_html = `
+        <div id="face_six" class="flex w-full h-auto gap-4 items-stretch text-base-content">
+            <!-- Icon -->
+            <div class="w-1/5 flex items-center justify-center text-base-content">
+                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
+                    <i class="fa-solid fa-palette"></i>
+                </span>
+            </div>
+            <!-- English -->
+            <div class="w-2/5 flex items-start">
+                <p class="text-md text-left">
+                    <span class="font-semibold inline-block w-full text-center">
+                        <span>On-Demand Artist</span>
+                        <button class="btn btn-square btn-xs" data-lg="en" data-index="5" onclick="modal_open(this)">
+                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier"> 
+                                    <g fill="none" fill-rule="evenodd"> 
+                                        <path d="m0 0h32v32h-32z"></path> 
+                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
+                                    </g> 
+                                </g>
+                            </svg>
+                        </button>
+                    </span>
+                    <span class="text-sm inline-block w-full text-justify">A dedicated creator of custom artwork, transforming your specific concepts into unique visual realities</span>
+                </p>
+            </div>
+            <!-- Divider -->
+            <div class="w-[1px] bg-warning"></div>
+            <!-- Chinese -->
+            <div class="w-2/5 flex items-start">
+                <p class="text-md text-left">
+                    <span class="font-semibold inline-block w-full text-center">
+                        <span>您的定制藝術家</span>
+                        <button class="btn btn-square btn-xs" data-lg="cn" data-index="5" onclick="modal_open(this)">
+                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                <g id="SVGRepo_iconCarrier"> 
+                                    <g fill="none" fill-rule="evenodd"> 
+                                        <path d="m0 0h32v32h-32z"></path> 
+                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
+                                    </g> 
+                                </g>
+                            </svg>
+                        </button>
+                    </span>
+                    <span class="text-sm inline-block w-full text-justify">專業的按需藝術創作夥伴，將您的具體構思轉化為獨一無二的視覺作品</span>
+                </p>
+            </div>
+        </div>
+    `
+
+    const collab_heading_one_cn = "賦予物件靈魂，讓生活成為一場視覺饗宴"
+    const collab_description_one_cn = "在忙碌的現代節奏中，一件好的文創產品是心靈的棲息地。它不只是物件，更是故事的載體與品味的體現。我們深信設計應能觸動人心，讓平凡的每一天都顯得怦然心動。"
+    const collab_b_b_head_one_cn = "B2B 品牌合作｜從心出發的圖騰敘事"
+    const collab_b_b_desc_one_cn = "為您的品牌注入生命力，編織出撩撥感官的視覺圖樣，讓企業以最溫雅的姿態與大眾對話。"
+    const collab_b_c_head_one_cn = "B2C 創意實踐｜從夢想雛形到指尖溫度"
+    const collab_b_c_desc_one_cn = "陪伴您將腦海中的微光轉化為實體，經歷從無到有的淬鍊，創作出令人愛不釋手、值得細細珍藏的生活美學。"
+    
+    const collab_heading_two_cn = "築起靈魂的數位家園，讓您的獨特被世界看見"
+    const collab_description_two_cn = "每個夢想都值得一個溫暖的棲息地。我們深知從無到有的艱辛，因此以自身的實踐經驗，為同樣懷抱熱忱的創作者與中小企業，打造一場從創意萌芽到雲端綻放的一條龍旅程。不只是架設網站，更是細心雕琢一個能傳遞故事、延續感動的流暢空間，讓您的心血結晶跨越邊界，與世界產生共鳴。"
+    const collab_b_b_head_two_cn = "B2B 品牌合作｜量身打造的企業數位門戶"
+    const collab_b_b_desc_two_cn = "為在地中小企業整合品牌底蘊與數位機能，從邏輯梳理到視覺呈現，建構出專業與感性並存的一站式商務體驗。"
+    const collab_b_c_head_two_cn = "B2C 創意實踐｜創作者與藝術家的夢想展間"
+    const collab_b_c_desc_two_cn = "陪伴作家、藝術家將抽象的靈感轉化為實體網店或展示空間，讓每一份作品都能在指尖流轉間，尋得最懂它的靈魂。"
+    
+    const collab_heading_three_cn = "與光同行，讓好故事在彼此的領地綻放"
+    const collab_description_three_cn = "在數位浩瀚的星叢裡，好的品牌不應孤行。我們深信「共好」的力量，致力於成為您最靈動的盟友，透過真誠的引薦與資源的交融，將每一份匠心獨運的作品，傳遞至更遠的彼岸。這是一場關於信任的接力，讓我們在互惠的步調中，共同編織出雙贏的豐收風景，讓才華與價值被世界溫柔擁護。"
+    const collab_b_b_head_three_cn = "B2B 品牌合作｜讓您的聲響，在我們的世界迴盪"
+    const collab_b_b_desc_three_cn = "我們化身為您的靈魂推手，將您的品牌溫度嵌入我們的敘事之中，透過精準的高觸及推廣，讓優質的創意走入更多人的生活。"
+    const collab_b_c_head_three_cn = "B2C 創意實踐｜邀請您，成為我們夢想的引路人"
+    const collab_b_c_desc_three_cn = "誠摯邀請創作者與夥伴分享我們的美好，當每一份認同轉化為成交的果實，我們將以誠摯的報酬回饋您的舉薦，共享成長的喜悅。"
+    
+    const collab_heading_four_cn = "跨越山海的引路人，開啟與東方年輕靈魂的對話"
+    const collab_description_four_cn = "我們生於那片充滿活力的土地，深諳這座數位森林的脈動與呼吸。作為專業的市場策展人，我們不只為您架起通往中國市場的橋樑，更致力於轉譯文化的溫度。憑藉對在地年輕消費群體的深刻洞察，我們將引導海外的創意與品牌，精準觸達那些追求品質與共鳴的靈魂，讓您的作品在廣闊的東方市場中，尋得最燦爛的綻放。"
+    const collab_b_b_head_four_cn = "B2B 品牌合作｜深耕在地市場的戰略策展"
+    const collab_b_b_desc_four_cn = "為尋求突破的海外企業提供市場切入點與戰略諮詢，從文化轉譯到社群經營，協助品牌在中國充滿活力的商業環境中紮根成長。"
+    const collab_b_c_head_four_cn = "B2C 創意實踐｜連結全球創意與東方審美"
+    const collab_b_c_desc_four_cn = "擔任個人藝術家與創作者的轉譯者，發掘跨境合作的新可能，將世界各地的卓越作品，引進至渴望新鮮體驗的年輕消費市場。"
+    
+    const collab_heading_five_cn = "打破邊界的藝境平台，讓您的才華在全球光影中綻放"
+    const collab_description_five_cn = "創意不應有國界，每一件傾注心血的原創，都值得在世界的舞台上閃耀。我們建構了一個跨越語系與疆域的數位殿堂，誠摯邀請世界各地的創作者與品牌入駐。在這裡，您的作品不只是商品，更是跨越文化的語言。透過我們的一站式寄售服務，讓您的靈感從指尖出發，優雅地走進全球讀者與藏家的生活，在數位浪潮中尋得共鳴。"
+    const collab_b_b_head_five_cn = "B2B 品牌合作｜跨境通路的一站式推手"
+    const collab_b_b_desc_five_cn = "為在地原創品牌開啟通往國際市場的門扉，我們負責物流與展示的繁瑣細節，讓您的品牌精神在海外市場深耕茁壯。"
+    const collab_b_c_head_five_cn = "B2C 創意實踐｜個人藝術家的全球櫥窗"
+    const collab_b_c_desc_five_cn = "為獨立作家與藝術家提供專屬的寄售空間，讓您的原創設計與文學創作跳脫地域限制，直接觸達全球熱愛美學的靈魂。"
+    
+    const collab_heading_six_cn = "揮灑想像的專屬畫筆，將您的心中風景化作唯一"
+    const collab_description_six_cn = "有些情感，現成的物件難以承載。我們匯聚了極具靈性的創作者，致力於成為您腦海微光的實踐者。這不只是單向的委託，而是一場關於理解與創造的深度對話。無論是一個模糊的輪廓，或是一段深刻的記憶，透過我們的按需定制服務，專業藝術家將傾聽您的訴求，親手裁切時光、調和色彩，為您淬鍊出這世上絕無僅有的視覺印記。"
+    const collab_b_b_head_six_cn = "B2B 品牌合作｜企業靈魂的視覺定格"
+    const collab_b_b_desc_six_cn = "為品牌量身打造具備辨識度與故事感的專屬藝術創作，從節慶禮贈到空間裝置，讓企業精神以最具藝術張力的形式呈現。"
+    const collab_b_c_head_six_cn = "B2C 創意實踐｜個人回憶的溫度封存"
+    const collab_b_c_desc_six_cn = "誠邀您與藝術家攜手，將個人的生命故事、夢想場景或獨特構思，轉化為實體的藝術作品，讓這份專屬的感動，永遠在生活中流淌。"
+    
+    const collab_heading_one_en = "Breathing Soul into Objects: Making Life a Visual Feast."
+    const collab_description_one_en = "In the hurried rhythm of modern life, a well-crafted piece of work is a sanctuary for the soul. It is more than an object; it is a vessel for stories and a reflection of taste. We believe design should touch the heart, making every ordinary day feel like a moment of wonder. "
+    const collab_b_b_head_one_en = "B2B Brand Collaboration: "
+    const collab_b_b_desc_one_en = "Totemic Narratives from the Heart."
+    const collab_b_c_head_one_en = "B2C Creative Practice: "
+    const collab_b_c_desc_one_en = "From the Glimmer of Inspiration to the Warmth of Creation. "
+    
+    const collab_heading_two_en = "Building a Digital Home for the Soul: Let Your Uniqueness be Seen by the World."
+    const collab_description_two_en = 'Every dream deserves a warm place to call home. We understand the journey of creating something from nothing; thus, we use our own experience to craft a seamless "concept-to-launch" journey for passionate creators and SMEs. More than just building websites, we meticulously carve a fluid digital space that carries your story and moves your audience.'
+    const collab_b_b_head_two_en = "B2B Brand Collaboration: "
+    const collab_b_b_desc_two_en = "Bespoke Digital Gateways for Enterprises."
+    const collab_b_c_head_two_en = "B2C Creative Practice: "
+    const collab_b_c_desc_two_en = "Dream Showcases for Authors and Artists."
+    
+    const collab_heading_three_en = "Walking with Light: Letting Great Stories Bloom Across Our Shared Realms."
+    const collab_description_three_en = 'In the vast galaxy of the digital world, great brands should never walk alone. We believe in the power of "mutual growth." As your agile ally, we blend sincere recommendations with shared resources to carry your craftsmanship to distant shores. This is a relay of trust, weaving a landscape of shared harvests. '
+    const collab_b_b_head_three_en = "B2B Brand Collaboration: "
+    const collab_b_b_desc_three_en = "Let Your Voice Echo in Our World."
+    const collab_b_c_head_three_en = "B2C Creative Practice: "
+    const collab_b_c_desc_three_en = "Inviting You to be the Guide for Our Dreams."
+    
+    const collab_heading_four_en = "A Guide Across Mountains and Seas: Opening a Dialogue with the Young Souls of the East."
+    const collab_description_four_en = "Born from that vibrant land, we breathe the pulse of its digital forest. As professional curators, we don’t just build bridges; we translate the warmth of culture. With deep insights into the local youth market, we guide global creativity to resonate with souls seeking quality and connection. "
+    const collab_b_b_head_four_en = "B2B Brand Collaboration:"
+    const collab_b_b_desc_four_en = "Strategic Curation for Local Market Growth."
+    const collab_b_c_head_four_en = "B2C Creative Practice:"
+    const collab_b_c_desc_four_en = "Connecting Global Creativity with Eastern Aesthetics."
+    
+    const collab_heading_five_en = "A Borderless Sanctuary of Art: Letting Your Talent Shine in Global Light and Shadow."
+    const collab_description_five_en = "Creativity knows no borders. Every original work poured with heart deserves to shine on a global stage. We have built a digital sanctuary that transcends languages and frontiers. Through our one-stop consignment service, let your inspiration travel from your fingertips into the lives of global collectors."
+    const collab_b_b_head_five_en = "B2B Brand Collaboration: "
+    const collab_b_b_desc_five_en = "A One-Stop Catalyst for Cross-Border Channels."
+    const collab_b_c_head_five_en = "B2C Creative Practice:"
+    const collab_b_c_desc_five_en = "A Global Window for Independent Artists."
+    
+    const collab_heading_six_en = "Your Bespoke Brush of Imagination: Transforming the Scenery of Your Heart into the Only One."
+    const collab_description_six_en = "Some emotions are too deep for ready-made objects to carry. We bring together soulful creators to be the practitioners of the light in your mind. This is not just a commission; it is a dialogue of understanding. We listen to your story and hand-carve time and color into a visual imprint that is uniquely yours."
+    const collab_b_b_head_six_en = "B2B Brand Collaboration: "
+    const collab_b_b_desc_six_en = "Visual Portraits of the Corporate Soul."
+    const collab_b_c_head_six_en = "B2C Creative Practice: "
+    const collab_b_c_desc_six_en = "Preserving the Warmth of Personal Memories."
+    
+    const modal = document.getElementById("detailModal")
+
+    const infoMap = [
+        face_one_html, 
+        face_two_html,
+        face_three_html, 
+        face_four_html,
+        face_five_html, 
+        face_six_html
+    ];
+
+    const collab_heading_cn_map = [collab_heading_one_cn, collab_heading_two_cn, collab_heading_three_cn, collab_heading_four_cn, collab_heading_five_cn, collab_heading_six_cn]
+    const collab_description_cn_map = [collab_description_one_cn, collab_description_two_cn, collab_description_three_cn, collab_description_four_cn, collab_description_five_cn, collab_description_six_cn]
+    const collab_b_b_head_cn_map = [collab_b_b_head_one_cn, collab_b_b_head_two_cn, collab_b_b_head_three_cn, collab_b_b_head_four_cn, collab_b_b_head_five_cn, collab_b_b_head_six_cn]
+    const collab_b_b_desc_cn_map = [collab_b_b_desc_one_cn, collab_b_b_desc_two_cn, collab_b_b_desc_three_cn, collab_b_b_desc_four_cn, collab_b_b_desc_five_cn, collab_b_b_desc_six_cn]
+    const collab_b_c_head_cn_map = [collab_b_c_head_one_cn, collab_b_c_head_two_cn, collab_b_c_head_three_cn, collab_b_c_head_four_cn, collab_b_c_head_five_cn, collab_b_c_head_six_cn]
+    const collab_b_c_desc_cn_map = [collab_b_c_desc_one_cn, collab_b_c_desc_two_cn, collab_b_c_desc_three_cn, collab_b_c_desc_four_cn, collab_b_c_desc_five_cn, collab_b_c_desc_six_cn]
+
+    const collab_heading_en_map = [collab_heading_one_en, collab_heading_two_en, collab_heading_three_en, collab_heading_four_en, collab_heading_five_en, collab_heading_six_en]
+    const collab_description_en_map = [collab_description_one_en, collab_description_two_en, collab_description_three_en, collab_description_four_en, collab_description_five_en, collab_description_six_en]
+    const collab_b_b_head_en_map = [collab_b_b_head_one_en, collab_b_b_head_two_en, collab_b_b_head_three_en, collab_b_b_head_four_en, collab_b_b_head_five_en, collab_b_b_head_six_en]
+    const collab_b_b_desc_en_map = [collab_b_b_desc_one_en, collab_b_b_desc_two_en, collab_b_b_desc_three_en, collab_b_b_desc_four_en, collab_b_b_desc_five_en, collab_b_b_desc_six_en]
+    const collab_b_c_head_en_map = [collab_b_c_head_one_en, collab_b_c_head_two_en, collab_b_c_head_three_en, collab_b_c_head_four_en, collab_b_c_head_five_en, collab_b_c_head_six_en]
+    const collab_b_c_desc_en_map = [collab_b_c_desc_one_en, collab_b_c_desc_two_en, collab_b_c_desc_three_en, collab_b_c_desc_four_en, collab_b_c_desc_five_en, collab_b_c_desc_six_en]
+
+    const collab_img_map = ["/static/images/collab/elephant.svg", "/static/images/collab/tree.svg", "/static/images/collab/gaslight.svg", "/static/images/collab/lantern.svg", "/static/images/collab/milkyway.svg", "/static/images/collab/stars.svg"]
+
+
+    function updateLayout() {
+        // A small timeout ensures the browser has calculated the parent's true size
+        setTimeout(() => {
+            const v = document.getElementById('cube-viewport');
+            if (!v) return;
+            
+            // Use offsetWidth for the most accurate layout measurement
+            const size = Math.min(v.offsetWidth, v.offsetHeight) * 0.38; 
+            document.documentElement.style.setProperty('--cube-size', size + 'px');
+        }, 50);
+    }
+
+    function step(axis, val) {
+        document.getElementById("#initial_msg")?.remove()
+        pause();
+        if(axis === 'x') rotX += val;
+        else rotY += val;
+        applyRotation();
+    }
+
+    function pause() {
+        autoX = 0; autoY = 0;
+        document.querySelectorAll('.auto').forEach(b => b.classList.remove('active'));
+    }
+
+    function reset() {
+        if (!document.getElementById("initial_msg")) {
+            const parent_div = document.querySelector("#info-overlay")
+            parent_div.innerHTML = ""
+            const new_div = document.createElement("div");
+            new_div.id = "#initial_msg";
+            new_div.innerHTML = initial_msg_html;
+            
+            parent_div.appendChild(new_div);
+        }
+        pause(); rotX = -25; rotY = 45; applyRotation();
+    }
+
+    function applyRotation() {
+        const cube = document.getElementById('cube');
+        cube.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+        determineVisibleFace();
+    }
+
+    // Part B Logic: Calculate which face is closest to camera
+    function determineVisibleFace() {
+        const info = document.getElementById('info-overlay');
+        
+        // At initial 45/45/-25, faces are equal. 
+        // We calculate dot product of face normals vs camera vector (0,0,1)
+        const radX = rotX * Math.PI / 180;
+        const radY = rotY * Math.PI / 180;
+
+        // Simplified visibility vectors based on rotation
+        const faces = [
+            { id: 0, v: Math.cos(radX) * Math.cos(radY) },           // Front
+            { id: 1, v: -Math.cos(radX) * Math.cos(radY) },          // Back
+            { id: 2, v: Math.cos(radX) * Math.sin(radY) },           // Right
+            { id: 4, v: -Math.cos(radX) * Math.sin(radY) },          // Left
+            { id: 5, v: Math.sin(radX) },                            // Top
+            { id: 3, v: -Math.sin(radX) }                            // Bottom
         ];
 
-        const collab_heading_cn_map = [collab_heading_one_cn, collab_heading_two_cn, collab_heading_three_cn, collab_heading_four_cn, collab_heading_five_cn, collab_heading_six_cn]
-        const collab_description_cn_map = [collab_description_one_cn, collab_description_two_cn, collab_description_three_cn, collab_description_four_cn, collab_description_five_cn, collab_description_six_cn]
-        const collab_b_b_head_cn_map = [collab_b_b_head_one_cn, collab_b_b_head_two_cn, collab_b_b_head_three_cn, collab_b_b_head_four_cn, collab_b_b_head_five_cn, collab_b_b_head_six_cn]
-        const collab_b_b_desc_cn_map = [collab_b_b_desc_one_cn, collab_b_b_desc_two_cn, collab_b_b_desc_three_cn, collab_b_b_desc_four_cn, collab_b_b_desc_five_cn, collab_b_b_desc_six_cn]
-        const collab_b_c_head_cn_map = [collab_b_c_head_one_cn, collab_b_c_head_two_cn, collab_b_c_head_three_cn, collab_b_c_head_four_cn, collab_b_c_head_five_cn, collab_b_c_head_six_cn]
-        const collab_b_c_desc_cn_map = [collab_b_c_desc_one_cn, collab_b_c_desc_two_cn, collab_b_c_desc_three_cn, collab_b_c_desc_four_cn, collab_b_c_desc_five_cn, collab_b_c_desc_six_cn]
+        faces.sort((a, b) => b.v - a.v); //(a, b) => a - b : ascending order, vice versa; NaN : equal
 
-        const collab_heading_en_map = [collab_heading_one_en, collab_heading_two_en, collab_heading_three_en, collab_heading_four_en, collab_heading_five_en, collab_heading_six_en]
-        const collab_description_en_map = [collab_description_one_en, collab_description_two_en, collab_description_three_en, collab_description_four_en, collab_description_five_en, collab_description_six_en]
-        const collab_b_b_head_en_map = [collab_b_b_head_one_en, collab_b_b_head_two_en, collab_b_b_head_three_en, collab_b_b_head_four_en, collab_b_b_head_five_en, collab_b_b_head_six_en]
-        const collab_b_b_desc_en_map = [collab_b_b_desc_one_en, collab_b_b_desc_two_en, collab_b_b_desc_three_en, collab_b_b_desc_four_en, collab_b_b_desc_five_en, collab_b_b_desc_six_en]
-        const collab_b_c_head_en_map = [collab_b_c_head_one_en, collab_b_c_head_two_en, collab_b_c_head_three_en, collab_b_c_head_four_en, collab_b_c_head_five_en, collab_b_c_head_six_en]
-        const collab_b_c_desc_en_map = [collab_b_c_desc_one_en, collab_b_c_desc_two_en, collab_b_c_desc_three_en, collab_b_c_desc_four_en, collab_b_c_desc_five_en, collab_b_c_desc_six_en]
+        const newFaceId = faces[0].id;
 
-        const collab_img_map = ["/static/images/collab/elephant.svg", "/static/images/collab/tree.svg", "/static/images/collab/gaslight.svg", "/static/images/collab/lantern.svg", "/static/images/collab/milkyway.svg", "/static/images/collab/stars.svg"]
-
-
-        function updateLayout() {
-            // A small timeout ensures the browser has calculated the parent's true size
-            setTimeout(() => {
-                const v = document.getElementById('cube-viewport');
-                if (!v) return;
-                
-                // Use offsetWidth for the most accurate layout measurement
-                const size = Math.min(v.offsetWidth, v.offsetHeight) * 0.38; 
-                document.documentElement.style.setProperty('--cube-size', size + 'px');
-            }, 50);
+        // If the top two faces are very close in visibility, show nothing (Initial state)
+        if (Math.abs(faces[0].v - faces[1].v) < 0.1) {
+            if(!initial_state) info.style.opacity = "0";
+            currentFaceId = null; // Reset when in "between" state
+        } else {
+            // ONLY update the DOM if the face has actually changed
+            if (currentFaceId !== newFaceId) {
+                info.style.opacity = "1";
+                info.innerHTML = infoMap[newFaceId];
+                currentFaceId = newFaceId;
+            }
         }
+    }
 
-        function step(axis, val) {
-            document.getElementById("#initial_msg")?.remove()
-            pause();
-            if(axis === 'x') rotX += val;
-            else rotY += val;
+    // Continuous Animation Loop
+    function animate() {
+        if (autoX !== 0 || autoY !== 0) {
+            rotX += autoX;
+            rotY += autoY;
             applyRotation();
         }
+        requestAnimationFrame(animate);
+    }
 
-        function pause() {
-            autoX = 0; autoY = 0;
-            document.querySelectorAll('.auto').forEach(b => b.classList.remove('active'));
-        }
-
-        function reset() {
-            if (!document.getElementById("initial_msg")) {
-                const parent_div = document.querySelector("#info-overlay")
-                parent_div.innerHTML = ""
-                const new_div = document.createElement("div");
-                new_div.id = "#initial_msg";
-                new_div.innerHTML = initial_msg_html;
-                
-                parent_div.appendChild(new_div);
+    // Modal
+    function modal_open(el){
+            pause()
+            const idx = el.dataset.index
+            switch (el.dataset.lg) {
+                case "en":
+                    collab_heading.innerText = collab_heading_en_map[idx]
+                    collab_description.innerText = collab_description_en_map[idx]
+                    collab_b_b_head.innerText = collab_b_b_head_en_map[idx]
+                    collab_b_b_desc.innerText = collab_b_b_desc_en_map[idx]
+                    collab_b_c_head.innerText = collab_b_c_head_en_map[idx]
+                    collab_b_c_desc.innerText = collab_b_c_desc_en_map[idx]
+                    collab_svg.src = collab_img_map[idx]
+                    break;
+                case "cn":
+                    collab_heading.innerText = collab_heading_cn_map[idx]
+                    collab_description.innerText = collab_description_cn_map[idx]
+                    collab_b_b_head.innerText = collab_b_b_head_cn_map[idx]
+                    collab_b_b_desc.innerText = collab_b_b_desc_cn_map[idx]
+                    collab_b_c_head.innerText = collab_b_c_head_cn_map[idx]
+                    collab_b_c_desc.innerText = collab_b_c_desc_cn_map[idx]
+                    collab_svg.src = collab_img_map[idx]
+                    break
             }
-            pause(); rotX = -25; rotY = 45; applyRotation();
-        }
-
-        function applyRotation() {
-            const cube = document.getElementById('cube');
-            cube.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-            determineVisibleFace();
-        }
-
-        // Part B Logic: Calculate which face is closest to camera
-        function determineVisibleFace() {
-            const info = document.getElementById('info-overlay');
-            
-            // At initial 45/45/-25, faces are equal. 
-            // We calculate dot product of face normals vs camera vector (0,0,1)
-            const radX = rotX * Math.PI / 180;
-            const radY = rotY * Math.PI / 180;
-
-            // Simplified visibility vectors based on rotation
-            const faces = [
-                { id: 0, v: Math.cos(radX) * Math.cos(radY) },           // Front
-                { id: 1, v: -Math.cos(radX) * Math.cos(radY) },          // Back
-                { id: 2, v: Math.cos(radX) * Math.sin(radY) },           // Right
-                { id: 4, v: -Math.cos(radX) * Math.sin(radY) },          // Left
-                { id: 5, v: Math.sin(radX) },                            // Top
-                { id: 3, v: -Math.sin(radX) }                            // Bottom
-            ];
-
-            faces.sort((a, b) => b.v - a.v); //(a, b) => a - b : ascending order, vice versa; NaN : equal
-
-            const newFaceId = faces[0].id;
-
-            // If the top two faces are very close in visibility, show nothing (Initial state)
-            if (Math.abs(faces[0].v - faces[1].v) < 0.1) {
-                if(!initial_state) info.style.opacity = "0";
-                currentFaceId = null; // Reset when in "between" state
-            } else {
-                // ONLY update the DOM if the face has actually changed
-                if (currentFaceId !== newFaceId) {
-                    info.style.opacity = "1";
-                    info.innerHTML = infoMap[newFaceId];
-                    currentFaceId = newFaceId;
-                }
-            }
-        }
-
-        // Continuous Animation Loop
-        function animate() {
-            if (autoX !== 0 || autoY !== 0) {
-                rotX += autoX;
-                rotY += autoY;
-                applyRotation();
-            }
-            requestAnimationFrame(animate);
-        }
-
-        // Modal
-        function modal_open(el){
-                pause()
-                const idx = el.dataset.index
-                switch (el.dataset.lg) {
-                    case "en":
-                        collab_heading.innerText = collab_heading_en_map[idx]
-                        collab_description.innerText = collab_description_en_map[idx]
-                        collab_b_b_head.innerText = collab_b_b_head_en_map[idx]
-                        collab_b_b_desc.innerText = collab_b_b_desc_en_map[idx]
-                        collab_b_c_head.innerText = collab_b_c_head_en_map[idx]
-                        collab_b_c_desc.innerText = collab_b_c_desc_en_map[idx]
-                        collab_svg.src = collab_img_map[idx]
-                        break;
-                    case "cn":
-                        collab_heading.innerText = collab_heading_cn_map[idx]
-                        collab_description.innerText = collab_description_cn_map[idx]
-                        collab_b_b_head.innerText = collab_b_b_head_cn_map[idx]
-                        collab_b_b_desc.innerText = collab_b_b_desc_cn_map[idx]
-                        collab_b_c_head.innerText = collab_b_c_head_cn_map[idx]
-                        collab_b_c_desc.innerText = collab_b_c_desc_cn_map[idx]
-                        collab_svg.src = collab_img_map[idx]
-                        break
-                }
-                modal.showModal()
-        }
+            modal.showModal()
+    }
 
 
-        document.querySelectorAll('.auto').forEach(btn => {
-            btn.onclick = () => {
-                document.getElementById("initial_msg")?.remove()
-                const axis = btn.dataset.axis;
-                const val = parseFloat(btn.dataset.val);
-                pause();
-                if(axis === 'x') autoX = val; else autoY = val;
-                btn.classList.add('active');
-            };
-        });
-        
-        window.addEventListener('load', () => {
-            updateLayout();
-            determineVisibleFace();
-        });
-        window.addEventListener('resize', updateLayout);
-        animate();
-    </script>   
+    document.querySelectorAll('.auto').forEach(btn => {
+        btn.onclick = () => {
+            document.getElementById("initial_msg")?.remove()
+            const axis = btn.dataset.axis;
+            const val = parseFloat(btn.dataset.val);
+            pause();
+            if(axis === 'x') autoX = val; else autoY = val;
+            btn.classList.add('active');
+        };
+    });
+    
+    window.addEventListener('load', () => {
+        updateLayout();
+        determineVisibleFace();
+    });
+    window.addEventListener('resize', updateLayout);
+    animate();
+</script>   
 {% endblock %}
+

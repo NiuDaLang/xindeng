@@ -64,7 +64,11 @@
     </tr>
     
     <!-- cash voucher application row -->
-    <tr id="voucher_apply_row" class="font-normal {% if not has_physical_items and not has_e_items %}hidden{% endif %}">
+    <tr id="voucher_apply_row" class="font-normal 
+        {% if not has_physical_items and not has_e_items or not request.user.is_authenticated %}
+            hidden
+        {% endif %}"
+    >
         <td class="py-1 text-left text-xs/4">Voucher Applied<br>禮品券適用金額</td>
         <td class="py-1 mr-2 text-right text-sm">
             <span id="summary_voucher_applied">
@@ -78,7 +82,7 @@
             </span>
         </td>
     </tr>
-    
+
     <!-- cash voucher purchase -->
     <tr id="voucher_items_row" class="font-normal {% if not has_cash_voucher_items %}hidden{% endif %}">
         <td class="py-1 text-left text-xs/4">Voucher Purchase<br>禮品券購買金額</td>

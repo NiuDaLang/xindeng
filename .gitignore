@@ -55,6 +55,8 @@ celerybeat.pid
 .idea/
 .DS_Store
 accounts_errors.html
+cart_copy.html
+product_copy.html
 test.html
 project_structure.txt
 build/

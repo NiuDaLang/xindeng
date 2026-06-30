@@ -102,7 +102,30 @@
         {% endfor %}
     </div>
 {% else %}
-    <h2 class="h2shadow col-span-2 mx-auto my-[5rem] text-center"><a href="{% url 'products' 'all' %}" class="text-secondary-content">寶貝們</a>在靜候著您的寵幸｜Don't lose contact with our <a href="{% url 'products' 'all' %}" class="text-secondary-content">GEMs</a>.</h2>
+<!-- Elegant Empty State Placeholder for Favorites Page -->
+    <div class="flex flex-col items-center justify-center p-12 bg-base-200/30 rounded-box border border-dashed border-base-300/60 text-center my-8 select-none transition-all duration-300">
+        <!-- Sophisticated Visual Anchor -->
+        <div class="mb-4 text-primary/70 animate-pulse">
+            <i class="fa-regular fa-heart fa-2xl"></i>
+        </div>
+        
+        <!-- Sophisticated Title & Subtitle -->
+        <h3 class="text-sm font-medium tracking-wide text-base-content/90 mb-2">
+            <a href="{% url 'products' 'all' %}" class="link link-hover text-secondary transition-colors duration-200 font-semibold">傾心之作</a>正於此靜候您的回眸。<br>
+            <span class="text-xs font-normal tracking-normal text-base-content/60 block mt-1">Our fine-art creations quietly await your discerning gaze here.</span>
+        </h3>
+        
+        <!-- Poetic Explanatory Text -->
+        <p class="text-[11px] leading-relaxed text-base-content/50 max-w-md mt-2">
+            世間所有的不期而遇，皆是蓄謀已久的驚艷。願您在此定格靈感，慢慢探尋屬於您的專屬雅致。<br>
+            <span class="block mt-1 font-serif italic">Every crossroad between a collector and art is a calculated wonder. Capture your inspiration here as you curate your personal sanctuary.</span>
+        </p>
+
+        <!-- Call to Action Link -->
+        <a href="{% url 'products' 'all' %}" class="btn btn-outline btn-xs mt-5 tracking-wider font-light rounded-full px-4 border-base-300 text-base-content/70 hover:bg-secondary hover:text-secondary-content hover:border-secondary">
+            步入展廳 | Explore the Gallery
+        </a>
+    </div>
 {% endif %}
 
     

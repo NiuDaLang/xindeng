@@ -1,0 +1,38 @@
+{% load humanize %}
+<h3 class="text-sm font-semibold text-base-content mb-4 border-b border-base-200 pb-2">修改意見反饋 | Edit Your Content</h3>
+<form hx-post="{% url 'edit_review_htmx' review.id %}"
+      hx-target="#review_card_container_{{ review.id }}"
+      hx-swap="outerHTML"
+      hx-encoding="multipart/form-data"
+      class="space-y-4 font-sans text-xs">
+    {% csrf_token %}
+    
+    <!-- 🌟 MODEL CONDITION PROTECTION MATRIX: Only render rating select blocks if a rating exists -->
+    {% if review.rating %}
+    <div>
+        <label class="label opacity-60 text-[11px] py-1">變更評分 | Rating Scale :</label>
+        <select name="rating" class="select select-bordered select-xs w-full max-w-xs font-sans text-xs bg-white">
+            <option value="5.0" {% if review.rating == 5.0 %}selected{% endif %}>5 Stars</option>
+            <option value="4.0" {% if review.rating == 4.0 %}selected{% endif %}>4 Stars</option>
+            <option value="3.0" {% if review.rating == 3.0 %}selected{% endif %}>3 Stars</option>
+            <option value="2.0" {% if review.rating == 2.0 %}selected{% endif %}>2 Stars</option>
+            <option value="1.0" {% if review.rating == 1.0 %}selected{% endif %}>1 Star</option>
+        </select>
+    </div>
+    {% endif %}
+
+    <div>
+        <label class="label opacity-60 text-[11px] py-1">心得內容 | Message Text Content :</label>
+        <textarea name="comment" class="textarea textarea-bordered textarea-sm w-full h-24 font-sans text-xs bg-white" required>{{ review.text }}</textarea>
+    </div>
+
+    <div class="flex flex-col gap-1">
+        <label class="text-[11px] opacity-60">追加相片 | Append More Media (Max 5 Total) :</label>
+        <input type="file" name="review_images" multiple accept="image/*" class="file-input file-input-bordered file-input-xs w-full font-sans text-xs bg-white"/>
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2 border-t border-base-100">
+        <button type="button" onclick="document.getElementById('global-review-modal').removeAttribute('open')" class="btn btn-xs btn-ghost font-normal rounded">取消 | Cancel</button>
+        <button type="submit" class="btn btn-xs btn-primary rounded font-normal tracking-wide">儲存變更 | Save Changes</button>
+    </div>
+</form>

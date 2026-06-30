@@ -1,339 +1,514 @@
 <title>{{ page_title }}</title>
 <!-- contents -->
-<div id="dashboard_main" class="subpage flex flex-col gap-8">
-    <!-- TOP - DataPoints X 3 -->
-    <div class="flex justify-center gap-8">
-        <!-- Orders Record -->
-        <div class="w-1/3 border-18 rounded-[36px] border-accent-content aspect-[4/3] bg-accent flex items-center gap-4 text-white">
-            <div class="w-4/5 flex flex-col gap-1 items-center">
-                <div class="flex flex-col justify-end font-extralight text-xs text-center h-1/2">
+<div id="dashboard_main" class="subpage flex flex-col gap-6 animate-fade-in w-full text-neutral font-sans select-none">
+    
+    <!-- ================================================================= -->
+    <!-- 📊 TOP SECTION: THE BRAND PLATFORM METRIC TILES                   -->
+    <!-- ================================================================= -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        
+        <!-- CARD 1: COLLECTED WORKS -->
+        <div class="border-2 rounded-[24px] border-info bg-neutral-content/40 flex items-center p-4 justify-between transition-all hover:bg-neutral-content/60 shadow-sm relative group overflow-hidden">
+            <div class="flex flex-col gap-2 max-w-[75%]">
+                <div class="flex flex-col font-black text-[0.68rem] tracking-wider uppercase opacity-60">
                     <span>Works Owned by You</span>
-                    <span>您已擁有的寶貝數量</span>
+                    <span class="font-sans font-medium text-[0.62rem] opacity-70">您已擁有的商品數量</span>
                 </div>
-                <div class="flex flex-col flex-wrap justify-start gap-1 items-end h-1/2">
-                    <span class="text-xs">
-                        <strong class="text-6xl font-black">3</strong>
-                        <span> items｜件</span>
-                    </span>
+                <div class="flex items-baseline gap-1 mt-1 font-mono">
+                    <strong class="text-4xl font-black text-info-content tracking-tight">{{ total_items_purchased|default:"0" }}</strong>
+                    <span class="text-[0.68rem] opacity-50 font-sans">items｜件</span>
                 </div>
             </div>
-            <div class="tooltip w-1/5 min-w-[1.25rem] flex items-center cursor-pointer" data-tip="Orders｜訂單紀錄">
-                <a href="#"><i class="fa-solid fa-circle-info text-2xl"></i></a>
-            </div>
-        </div>
-
-        <!-- Gift Vouchers -->
-        <div class="w-1/3 border-18 rounded-[36px] border-accent-content aspect-[4/3] bg-accent flex items-center gap-4 text-white">
-            <div class="w-4/5 flex flex-col gap-1 items-center">
-                <div class="flex flex-col font-extralight min-h-[2rem] text-xs pt-4 text-center">
-                    <span>Gift Vouchers</span>
-                    <span>禮品券</span>
-                </div>
-                <div class="flex flex-col flex-wrap gap-1 pb-4 items-end">
-                    <span class="text-xs">
-                        <strong class="text-4xl font-black block">1,000</strong>
-                        <span>CNY</span>
-                    </span>
-                </div>
-            </div>
-            <div class="tooltip w-1/5 min-w-[1.25rem] flex items-center cursor-pointer" data-tip="Vouchers｜禮品券">
-                <a href="#"><i class="fa-solid fa-coins text-2xl"></i></a>
+            <div class="tooltip tooltip-left flex items-center justify-center p-2 rounded-xl bg-info-content/5 text-info-content hover:bg-info-content hover:text-white transition-all cursor-pointer" data-tip="View Orders｜訂單紀錄">
+                <a href="{% url 'dashboard' 'orders' %}" 
+                    hx-get="{% url 'dashboard' 'orders' %}" 
+                    hx-target="#dashboard-content" 
+                    hx-push-url="true"
+                    hx-on:click="updateActiveLink(this)"
+                >
+                    <i class="fa-solid fa-circle-info text-xl"></i>
+                </a>
             </div>
         </div>
 
-        <!-- Messages -->
-        <div class="w-1/3 border-18 rounded-[36px] border-accent-content aspect-[4/3] bg-accent flex items-center gap-4 text-white">
-            <div class="w-4/5 flex flex-col gap-1 items-center">
-                <div class="flex flex-col font-extralight min-h-[2rem] text-xs pt-4 text-center">
+        <!-- CARD 2: AVAILABLE GIFT VOUCHERS -->
+        <div class="border-2 rounded-[24px] border-info bg-neutral-content/40 flex items-center p-4 justify-between transition-all hover:bg-neutral-content/60 shadow-sm relative group overflow-hidden">
+            <div class="flex flex-col gap-2 max-w-[75%]">
+                <div class="flex flex-col font-black text-[0.68rem] tracking-wider uppercase opacity-60">
+                    <span>Wallet Balance</span>
+                    <span class="font-sans font-medium text-[0.62rem] opacity-70">我的代金券可用餘額</span>
+                </div>
+                <div class="flex items-baseline gap-1 mt-1 font-mono">
+                    <span class="text-xs opacity-50">¥</span>
+                    <strong class="text-4xl font-black text-info-content tracking-tight">{{ wallet_balance|default:"0.00" }}</strong>
+                    <span class="text-[0.65rem] opacity-50 font-sans uppercase">CNY</span>
+                </div>
+            </div>
+            <div class="tooltip tooltip-left flex items-center justify-center p-2 rounded-xl bg-info-content/5 text-info-content hover:bg-info-content hover:text-white transition-all cursor-pointer" data-tip="My Vouchers｜禮品券明細">
+                <a href="{% url 'dashboard' 'vouchers' %}" 
+                    hx-get="{% url 'dashboard' 'vouchers' %}" 
+                    hx-target="#dashboard-content" 
+                    hx-push-url="true"
+                    hx-on:click="updateActiveLink(this)"
+                >
+                    <i class="fa-solid fa-coins text-xl"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- CARD 3: UNREAD ACCOUNT COMMUNICATIONS -->
+        <div class="border-2 rounded-[24px] border-info bg-neutral-content/40 flex items-center p-4 justify-between transition-all hover:bg-neutral-content/60 shadow-sm relative group overflow-hidden">
+            <div class="flex flex-col gap-2 max-w-[75%]">
+                <div class="flex flex-col font-black text-[0.68rem] tracking-wider uppercase opacity-60">
                     <span>Unread Messages</span>
-                    <span>未讀訊息</span>
+                    <span class="font-sans font-medium text-[0.62rem] opacity-70">未讀通知訊息</span>
                 </div>
-                <div class="flex flex-col flex-wrap gap-1 pb-4 items-end">
-                    <span class="text-xs">
-                        <strong class="text-4xl font-black block">0</strong>
-                        <span> 0｜0</span>
-                    </span>
+                <div class="flex items-baseline gap-1 mt-1 font-mono">
+                    <strong class="text-4xl font-black {% if unread_count > 0 %}text-error animate-pulse{% else %}text-info-content/40{% endif %} tracking-tight">
+                        {{ unread_count|default:"0" }}
+                    </strong>
+                    <span class="text-[0.68rem] opacity-50 font-sans">lines｜條</span>
                 </div>
             </div>
-            <div class="tooltip w-1/5 min-w-[1.25rem] flex items-center cursor-pointer" data-tip="Help｜會員熱線">
-                <a href="#"><i class="fa-solid fa-envelope text-2xl"></i></a>
+            <div class="tooltip tooltip-left flex items-center justify-center p-2 rounded-xl bg-info-content/5 text-info-content hover:bg-info-content hover:text-white transition-all cursor-pointer" data-tip="Support Chat｜聯絡客服">
+                <a href="{% url 'dashboard' 'help' %}" 
+                    hx-get="{% url 'dashboard' 'help' %}" 
+                    hx-target="#dashboard-content" 
+                    hx-push-url="true"
+                    hx-on:click="updateActiveLink(this)"
+                >
+                    <i class="fa-solid fa-envelope text-xl"></i>
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- BOOTTOM -->
-    <div class="grid grid-cols-3 gap-8">
-        <!-- left -->
-        <div class="col-span-2 flex flex-col gap-8">
-            <!-- Order Progress -->
-            <div>
-                <!-- if no current order in process -->
-                <div class="relative bubble-wrapper rounded-4xl shadow w-full h-80">
-                    <h2 class="text-neutral-content absolute left-1/2 top-1/2 -translate-1/2 text-2xl">
-                        <i class="fa-solid fa-clipboard-list"></i>
-                        目前暫無未完訂單
-                    </h2>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                    <div><span class="dot"></span></div>
-                </div>
-                <!-- if there is/are current order(s) -->
-                <!-- { % for order in orders % } -->
-                <!-- <div class="flex gap-3"> -->
-                    <!-- order status timeline -->
-                    <!-- <ul class="timeline timeline-vertical w-1/3 text-left py-[1rem]"> -->
-                        <!-- order processed -->
-                        <!-- <li>
-                            <div class="timeline-start"><i class="fa-solid fa-list-check text-base-300"></i></div>
+    <!-- ================================================================= -->
+    <!-- 📉 BOTTOM CONTENT GRID: TASK PIPELINES, NAVIGATION & UTILITIES    -->
+    <!-- ================================================================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mt-2">
+        
+        <!-- 🛒 LEFT LANE COLUMN: PROCESS TRACKERS & GRAPHIC TILES (Span: 2) -->
+        <div class="lg:col-span-2 space-y-6 flex flex-col h-full">
+            
+            <!-- SECTION LABEL -->
+            <div class="block pl-1">
+                <span class="text-[0.65rem] font-bold uppercase tracking-widest text-neutral/40">In-Flight Trackers｜在途訂單動態監測</span>
+            </div>
+            
+            {% if in_progress_orders %}
+                {% for order in in_progress_orders %}
+                <div class="flex flex-col md:flex-row justify-between items-center gap-6 bg-neutral-content/20 border border-info p-5 rounded-[28px] shadow-sm relative overflow-hidden transition-all hover:bg-neutral-content/30">
+                    
+                    <!-- A. Dynamic Vertical Timeline Module -->
+                    <ul class="timeline timeline-vertical w-full md:w-[42%] text-left font-sans text-[0.68rem] leading-none">
+                        <!-- Step 1: Placed & Processed -->
+                        <li class="min-h-[3.8rem]">
+                            <div class="timeline-start"><i class="fa-solid fa-list-check {% if order.order_status != 'Hold_Pending' %}text-info-content{% else %}text-neutral/30{% endif %}"></i></div>
                             <div class="timeline-middle">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                    class="text-base-300 h-5 w-5"
-                                >
-                                    <path
-                                        fill-rule="evenodd"
-                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                                        clip-rule="evenodd"
-                                    />
-                                </svg>
+                                <i class="fa-solid fa-circle-check {% if order.order_status != 'Hold_Pending' %}text-info-content{% else %}text-neutral/20{% endif %} text-base"></i>
                             </div>
-                            <div class="timeline-end text-xs py-3 font-bold text-base-300">訂單已處理</div>
-                            <hr class="bg-base-300" />
-                        </li> -->
-                        <!-- shipped -->
-                        <!-- <li>
-                            <hr class="bg-base-300" />
-                            <div class="timeline-end"><i class="fa-solid fa-truck-ramp-box text-base-300"></i></div>
+                            <div class="timeline-end pl-2.5 font-bold {% if order.order_status != 'Hold_Pending' %}text-info-content{% else %}text-neutral/40{% endif %}">訂單已處理｜Processed</div>
+                            <hr class="{% if order.order_status != 'Hold_Pending' %}bg-info-content{% else %}bg-info/20{% endif %}" />
+                        </li>
+
+                        <!-- Step 2: Partly Dispatched Gateway -->
+                        <li class="min-h-[3.8rem]">
+                            <hr class="{% if order.order_status != 'Hold_Pending' %}bg-info-content{% else %}bg-info/20{% endif %}" />
+                            <div class="timeline-start"><i class="fa-solid fa-box-open {% if order.order_status == 'Partly_Dispatched' or order.order_status == 'All_Dispatched' or order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/30{% endif %}"></i></div>
                             <div class="timeline-middle">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                    class="text-base-300 h-5 w-5"
-                                >
-                                    <path
-                                    fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                                    clip-rule="evenodd"
-                                    />
-                                </svg>
+                                {% if order.order_status == 'Partly_Dispatched' %}
+                                    <i class="fa-solid fa-boxes-packing text-base text-warning animate-pulse"></i>
+                                }) {% else %}
+                                    <i class="fa-solid fa-circle-check {% if order.order_status == 'All_Dispatched' or order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/20{% endif %} text-base"></i>
+                                {% endif %}
                             </div>
-                            <div class="timeline-start text-xs py-3 font-bold text-base-300">物品已發送</div>
-                            <hr class="bg-base-300" />
-                        </li> -->
-                        <!-- en-route -->
-                        <!-- <li>
-                            <hr class="bg-base-300" />
-                            <div class="timeline-start"><i class="fa-solid fa-truck-fast text-base-300"></i></div>
-                            <div class="timeline-end text-xs py-3 font-bold text-base-300">正在運輸中</div>
+                            <div class="timeline-end pl-2.5 font-bold {% if order.order_status == 'Partly_Dispatched' or order.order_status == 'All_Dispatched' or order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/40{% endif %}">部分發貨｜Partly Dispatched</div>
+                            <hr class="{% if order.order_status == 'All_Dispatched' or order.order_status == 'Shipped' or order.order_status == 'Completed' %}bg-info-content{% else %}bg-info/20{% endif %}" />
+                        </li>
+
+                        <!-- Step 3: All Dispatched & Outbound -->
+                        <li class="min-h-[3.8rem]">
+                            <hr class="{% if order.order_status == 'All_Dispatched' or order.order_status == 'Shipped' or order.order_status == 'Completed' %}bg-info-content{% else %}bg-info/20{% endif %}" />
+                            <div class="timeline-start"><i class="fa-solid fa-truck-fast {% if order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/30{% endif %}"></i></div>
                             <div class="timeline-middle">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                    class="text-base-300 h-5 w-5" 
-                                >
-                                    <path
-                                    fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                                    clip-rule="evenodd"
-                                    />
-                                </svg>
+                                <i class="fa-solid fa-circle-check {% if order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/20{% endif %} text-base"></i>
                             </div>
-                            <hr />
-                        </li> -->
-                        <!-- delivered -->
-                        <!-- <li>
-                            <hr />
-                            <div class="timeline-end"><i class="fa-solid fa-person-chalkboard text-primary"></i></div>
-                            <div class="timeline-start text-xs py-3 font-bold text-primary">已送達</div>
+                            <div class="timeline-end pl-2.5 font-bold {% if order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/40{% endif %}">物品已發送｜Dispatched</div>
+                            <hr class="{% if order.order_status == 'Completed' %}bg-info-content{% else %}bg-info/20{% endif %}" />
+                        </li>
+
+                        <!-- Step 4: Arrived & Safely Delivered -->
+                        <li>
+                            <hr class="{% if order.order_status == 'Completed' %}bg-info-content{% else %}bg-info/20{% endif %}" />
+                            <div class="timeline-start"><i class="fa-solid fa-house-chimney-user {% if order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/30{% endif %}"></i></div>
                             <div class="timeline-middle">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                    class="text-primary h-5 w-5"
+                                <i class="fa-solid fa-truck-ramp-box {% if order.order_status == 'Completed' %}text-info-content animate-bounce{% else %}text-neutral/20{% endif %} text-base"></i>
+                            </div>
+                            <div class="timeline-end pl-2.5 font-bold {% if order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/40{% endif %}">已送達交易完結 ｜ Arrived</div>
+                        </li>
+                    </ul>
+
+                    <!-- B. Compact Receipt Accounting Information Block -->
+                    <div class="card w-full md:w-[58%] bg-base-100 border border-info rounded-2xl shadow-sm overflow-hidden text-[0.7rem]">
+                        <div class="p-4 space-y-3.5">
+                            <div class="flex justify-between items-center border-b border-info/20 pb-2">
+                                <span class="font-black text-info-content font-mono select-all">Invoice: #{{ order.order_number }}</span>
+                                <span class="badge badge-sm font-bold bg-info-content text-white font-mono text-[0.58rem] px-2 py-1 uppercase tracking-wider">{{ order.get_order_status_display }}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-x-2 gap-y-1.5 text-neutral/70 font-sans leading-tight">
+                                <div><strong class="opacity-50">Order Date｜訂單日期:</strong><br><span class="font-mono text-[0.65rem] text-base-content">{{ order.created_at|date:"Y-m-d H:i" }}</span></div>
+                                <div><strong class="opacity-50">Tracking｜快遞單號:</strong><br><span class="font-mono text-[0.65rem] select-all text-info-content font-bold">{{ order.tracking_number|default:"Fulfilling｜安排中" }}</span></div>
+                            </div>
+                            <div class="border-t border-dashed border-info/30 pt-2.5 space-y-1 font-mono bg-neutral-content/10 p-2.5 rounded-xl">
+                                <div class="flex justify-between opacity-70"><span>Items Sum｜商品小計</span><span>¥{{ order.product_total }}</span></div>
+                                <div class="flex justify-between opacity-70"><span>Courier｜物流運費</span><span>¥{{ order.shipping_cost }}</span></div>
+                                <div class="flex justify-between text-info-content font-black border-t border-info/20 pt-1.5 text-xs">
+                                    <span>Grand Total｜實付總金額</span><span>¥{{ order.total_due }}</span>
+                                </div>
+                            </div>
+                            <div class="pt-0.5">
+                                <a  href="{% url 'dashboard' 'orders' %}" 
+                                    hx-get="{% url 'dashboard' 'orders' %}"
+                                    hx-target="#dashboard-content"
+                                    hx-push-url="true"
+                                    hx-on:click="updateActiveLink(this)"
+                                    class="btn btn-xs btn-neutral text-white btn-block rounded-xl py-2 h-auto min-h-0 font-bold shadow-sm tracking-wide"
                                 >
-                                    <path
-                                    fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                                    clip-rule="evenodd"
-                                    />
-                                </svg>
-                            </div>
-                        </li> -->
-                    <!-- </ul> -->
-    
-                    <!-- order summary -->
-                    <!-- <div class="card w-96 bg-base-200 shadow-sm">
-                        <div class="card-body">
-                            <div class="text-lg flex justify-between w-full font-bold">訂單號碼# 134afdkl32kjgaopaore </div>
-                            <div class="text-xs flex justify-start w-full">
-                                訂單日期：2025年11月25日
-                                <br/>
-                                預計送達：2025年12月1日
-                                <br/>
-                                快遞單號：UPS 123443590345
-                            </div>
-                            <ul class="mt-6 flex flex-col gap-2 text-xs">
-                                <li class="flex justify-between"><span>產品/服務總金額</span><span>RMB 1,700</span></li>
-                                <li class="flex justify-between"><span>運費</span><span>RMB 100</span></li>
-                            </ul>
-                            <hr class="text-primary"/>
-                            <div class="flex justify-between w-full">
-                                <h2 class="text-[1.5rem]] font-bold">總金額:</h2>
-                                <h2 class="text-[1.5rem]] font-bold">RMB 1,800</h2>
-                            </div>
-                            <div class="mt-6">
-                            <button class="btn btn-primary btn-block">查 看 明 細</button>
+                                    View Specifications｜查 看 訂 單 明 細
+                                </a>
                             </div>
                         </div>
                     </div>
-                </div> -->
-                <!-- { % endfor % } -->
-            </div>
-            <!-- Various Subpages -->
-            <div class="grid grid-cols-2 gap-8 text-white">
-                <!-- profile -->
-                <div class="flex aspect-[6/5] rounded-r-4xl bg-accent">
-                    <div class="w-[31%] h-full bg-accent-content flex justify-center items-center">
-                        <i class="fa-solid fa-address-card text-4xl text-white"></i>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- Empty State Floating Water-Bubbles Canvas Frame -->
+                <!-- CLEAN WATER-BUBBLE EMPTY STATE GRAPHIC CONTAINER -->
+                <div class="relative bubble-wrapper rounded-[28px] border border-info bg-neutral-content/10 w-full min-h-[16.5rem] flex flex-col items-center justify-center text-center p-6 shadow-inner overflow-hidden">
+                    
+                    <!-- CENTRAL TYPOGRAPHY ACCENTS (Elevated with z-10 for layered depth layout) -->
+                    <!-- 🌟 FIX: Removed the generic <div> wrapper container tag around the icon! -->
+                    <i class="fa-solid fa-clipboard-list fa-xl text-info-content/30 p-3.5 bg-info-content/5 rounded-full w-14 h-14 flex items-center justify-center mb-2.5 z-10 select-none pointer-events-none"></i>
+                    
+                    <h2 class="text-info-content font-black text-xs tracking-wide z-10 select-none">
+                        Currently No Active Orders｜目前暫無未完結的訂單
+                    </h2>
+                    
+                    <p class="text-[0.65rem] text-neutral/40 max-w-xs mt-1 leading-normal z-10 select-none">
+                        Any newly placed manual bank wire holds or real-time payment dispatches will dynamically stream their timeline tracks inside this window frame.
+                        <br>
+                        任何新成立的線下手動轉帳或即時線上支付訂單皆會在此視窗內動態呈現其物流與履約進度時間軸。
+                    </p>
+
+                    <!-- 🫧 THE 15 LAYERED ASYNCHRONOUS BUBBLE SHIELDS (Direct children divs only) -->
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    <div><span class="dot"></span></div>
+                    
+                </div>
+            {% endif %}
+
+            <!-- SIX-GRID RECTANGULAR NAVIGATION GRID MATRIX -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-white font-black text-[0.72rem] tracking-wider uppercase">
+                
+                <!-- 1. Profile Panel -->
+                <a href="{% url 'dashboard' 'profile' %}"
+                    hx-get="{% url 'dashboard' 'profile' %}"
+                    hx-target="#dashboard-content"
+                    hx-push-url="true"
+                    hx-on:click="updateActiveLink(this)"
+                    class="flex aspect-[5/1.25] rounded-l-none rounded-r-[24px] border border-info bg-info-content overflow-hidden shadow-sm group hover:scale-[1.01] transition-transform duration-200"
+                >
+                    <div class="w-[28%] h-full bg-neutral flex justify-center items-center group-hover:bg-neutral/80 transition-colors">
+                        <i class="fa-solid fa-address-card text-xl text-white"></i>
                     </div>
-                    <div class="flex flex-1 items-center justify-center">
-                        Edit Profile
+                    <div class="flex flex-1 items-center justify-start pl-5 text-neutral-content bg-neutral-content/10 font-bold">
+                        Edit Profile<br/>會員檔案
                     </div>                    
-                </div>
-                <!-- address -->
-                <div class="flex aspect-[6/5] rounded-r-4xl bg-accent">
-                    <div class="w-[31%] h-full bg-accent-content flex justify-center items-center">
-                        <i class="fa-solid fa-address-book text-4xl text-white"></i>
+                </a>
+                
+                <!-- 2. Address Book -->
+                <a href="{% url 'dashboard' 'addresses' %}" 
+                    hx-get="{% url 'dashboard' 'addresses' %}"
+                    hx-target="#dashboard-content"
+                    hx-push-url="true"
+                    hx-on:click="updateActiveLink(this)"
+                    class="flex aspect-[5/1.25] rounded-l-none rounded-r-[24px] border border-info bg-info-content overflow-hidden shadow-sm group hover:scale-[1.01] transition-transform duration-200"
+                >
+                    <div class="w-[28%] h-full bg-neutral flex justify-center items-center group-hover:bg-neutral/80 transition-colors">
+                        <i class="fa-solid fa-address-book text-xl text-white"></i>
                     </div>
-                    <div class="flex flex-1 items-center justify-center">
-                        Address Book
+                    <div class="flex flex-1 items-center justify-start pl-5 text-neutral-content bg-neutral-content/10 font-bold">
+                        Address Book<br/>地址簿管理
                     </div>                        
-                </div>
-                <!-- offers -->
-                <div class="flex aspect-[6/5] rounded-r-4xl bg-accent">
-                    <div class="w-[31%] h-full bg-accent-content flex justify-center items-center">
-                        <i class="fa-solid fa-gifts text-4xl text-white"></i>
+                </a>
+                
+                <!-- 3. Voucher Offers -->
+                <a href="{% url 'dashboard' 'vouchers' %}"
+                    hx-get="{% url 'dashboard' 'vouchers' %}"
+                    hx-target="#dashboard-content"
+                    hx-push-url="true"
+                    hx-on:click="updateActiveLink(this)"
+                    class="flex aspect-[5/1.25] rounded-l-none rounded-r-[24px] border border-info bg-info-content overflow-hidden shadow-sm group hover:scale-[1.01] transition-transform duration-200"
+                >
+                    <div class="w-[28%] h-full bg-neutral flex justify-center items-center group-hover:bg-neutral/80 transition-colors">
+                        <i class="fa-solid fa-gifts text-xl text-white"></i>
                     </div>
-                    <div class="flex flex-1 items-center justify-center">
-                        Offers
+                    <div class="flex flex-1 items-center justify-start pl-5 text-neutral-content bg-neutral-content/10 font-bold">
+                        Offers & Perks<br/>專屬優惠領取
                     </div>                        
-                </div>
-                <!-- wishlist -->
-                <div class="flex aspect-[6/5] rounded-r-4xl bg-accent">
-                    <div class="w-[31%] h-full bg-accent-content flex justify-center items-center">
-                        <i class="fa-solid fa-clipboard-list text-4xl text-white"></i>
+                </a>
+                
+                <!-- 4. Wishlist Gallery -->
+                <a href="{% url 'dashboard' 'wishlist' %}" 
+                    hx-get="{% url 'dashboard' 'wishlist' %}"
+                    hx-target="#dashboard-content"
+                    hx-push-url="true"
+                    hx-on:click="updateActiveLink(this)"
+                    class="flex aspect-[5/1.25] rounded-l-none rounded-r-[24px] border border-info bg-info-content overflow-hidden shadow-sm group hover:scale-[1.01] transition-transform duration-200"
+                >
+                    <div class="w-[28%] h-full bg-neutral flex justify-center items-center group-hover:bg-neutral/80 transition-colors">
+                        <i class="fa-solid fa-clipboard-list text-xl text-white"></i>
                     </div>
-                    <div class="flex flex-1 items-center justify-center">
-                        Wishlist
+                    <div class="flex flex-1 items-center justify-start pl-5 text-neutral-content bg-neutral-content/10 font-bold">
+                        Wishlist<br/>我的收藏清單
                     </div>                        
-                </div>
-                <!-- favorites -->
-                <div class="flex aspect-[6/5] rounded-r-4xl bg-accent">
-                    <div class="w-[31%] h-full bg-accent-content flex justify-center items-center">
-                        <i class="fa-solid fa-bookmark text-4xl text-white"></i>
+                </a>
+                
+                <!-- 5. Favorites Bookmarks -->
+                <a href="{% url 'dashboard' 'favorites' %}"
+                    hx-get="{% url 'dashboard' 'favorites' %}"
+                    hx-target="#dashboard-content"
+                    hx-push-url="true"
+                    hx-on:click="updateActiveLink(this)"
+                    class="flex aspect-[5/1.25] rounded-l-none rounded-r-[24px] border border-info bg-info-content overflow-hidden shadow-sm group hover:scale-[1.01] transition-transform duration-200"
+                >
+                    <div class="w-[28%] h-full bg-neutral flex justify-center items-center group-hover:bg-neutral/80 transition-colors">
+                        <i class="fa-solid fa-bookmark text-xl text-white"></i>
                     </div>
-                    <div class="flex flex-1 items-center justify-center">
-                        Favorites
+                    <div class="flex flex-1 items-center justify-start pl-5 text-neutral-content bg-neutral-content/10 font-bold">
+                        Favorites<br/>喜愛項目書籤
                     </div>                        
-                </div>
-                <!-- 3D -->
-                <div class="flex aspect-[6/5] rounded-r-4xl bg-accent">
-                    <div class="w-[31%] h-full flex justify-center items-center bg-[linear-gradient(180deg,rgba(252,5,5,1)0%,rgba(255,14,142,1)12%,rgba(169,28,255,1)25%,rgba(42,136,255,1)37%,rgba(57,255,200,1)50%,rgba(124,242,156,1)63%,rgba(206,255,72,1)75%,rgba(255,105,87,1)88%,rgba(255,120,120,1)100%)]">
-                        <i class="fa-solid fa-cube text-4xl text-white"></i>
+                </a>
+                
+                <!-- 6. Interactive 3D Canvas Scene Studio -->
+                <a href="{% url 'dashboard' 'threed' %}"
+                    hx-get="{% url 'dashboard' 'threed' %}"
+                    hx-target="#dashboard-content"
+                    hx-push-url="true"
+                    hx-on:click="updateActiveLink(this)"
+                    class="flex aspect-[5/1.25] rounded-l-none rounded-r-[24px] border border-info bg-info-content overflow-hidden shadow-sm group hover:scale-[1.01] transition-transform duration-200"
+                >
+                    <div class="w-[28%] h-full flex justify-center items-center bg-[linear-gradient(180deg,rgba(252,5,5,1)0%,rgba(255,14,142,1)12%,rgba(169,28,255,1)25%,rgba(42,136,255,1)37%,rgba(57,255,200,1)50%,rgba(124,242,156,1)63%,rgba(206,255,72,1)75%,rgba(255,105,87,1)88%,rgba(255,120,120,1)100%)] group-hover:opacity-90 transition-opacity">
+                        <i class="fa-solid fa-cube text-xl text-white"></i>
                     </div>
-                    <div class="flex flex-1 items-center justify-center">
-                        3D Scene
+                    <div class="flex flex-1 items-center justify-start pl-5 text-neutral-content bg-neutral-content/10 font-bold">
+                        3D Scene Studio<br/>空間藝術展示
                     </div>                        
-                </div>
+                </a>
             </div>
         </div>
-        <!-- right -->
-        <div class="col-span-1 flex flex-col gap-8">
-            <!-- Calender -->
-            <div class="w-full min-h-80 rounded-4xl text-white relative flex flex-col justify-between">
-                <!-- season & date -->
-                <div class="flex flex-col z-10 p-7">
-                    <div class="flex flex-col z-10 p-0">
-                        {% if solar_term %}
-                            <div class="flex items-center gap-5 z-10">
-                                <div class="flex flex-col">
-                                    <span id="solar_term" class="text-[1.35rem]">{{ solar_term }}</span>
-                                    <span id="solar_term_en" class="text-[8px]">{{ solar_term_en }}</span>
-                                </div>
-                                {% if next_solar_term %}
-                                <div class="solar-arrow-container">
-                                    <div class="solar-arrow"></div>
-                                </div>
-                                <div class="flex flex-col">
-                                    <span id="next_solar_term" class="text-[1.35rem]">{{ next_solar_term }}</span>
-                                    <span id="next_solar_term_en" class="text-[9px]">{{ next_solar_term_en }}</span>
-                                </div>
-                                {% endif %}
+
+        <!-- 🗺️ RIGHT LANE COLUMN: CHRONO CALENDAR UTILITY & ACCORDION FAQS (Span: 1) -->
+        <div class="space-y-5 lg:col-span-1 flex flex-col h-full text-neutral">
+            
+            <!-- A. DYNAMIC EPHEMERIS TRADITIONAL SEASONAL CALENDAR HEADER CARD -->
+            <!-- Expanded min-h-[25rem] sets the parent container vertical height to exactly 400px! -->
+            <div class="w-full min-h-[25rem] mt-[3rem] rounded-[28px] text-white border border-info relative flex flex-col justify-between overflow-hidden shadow-md">
+                
+                <!-- Season & Date Specifications Overlay Layout (Stays clean at the top) -->
+                <div class="flex flex-col z-10 p-6 space-y-4">
+                    {% if solar_term %}
+                        <div class="flex items-center gap-4 z-10 select-none bg-neutral/40 p-2.5 rounded-xl backdrop-blur-sm border border-white/5 w-fit">
+                            <div class="flex flex-col text-left leading-none">
+                                <span id="solar_term" class="text-base font-black tracking-wide text-white">{{ solar_term }}</span>
+                                <span id="solar_term_en" class="text-[0.42rem] font-mono tracking-widest uppercase opacity-60 mt-1">{{ solar_term_en }}</span>
                             </div>
-                        {% endif %}
-                        <span id="dynamic-date" hx-preserve="true" class="text-sm text-left"></span>
+                            {% if next_solar_term %}
+                            <div class="solar-arrow-container">
+                                <div class="solar-arrow"></div>
+                            </div>
+                            <div class="flex flex-col text-left leading-none">
+                                <span id="next_solar_term" class="text-base font-black tracking-wide text-white/80">{{ next_solar_term }}</span>
+                                <span id="next_solar_term_en" class="text-[0.42rem] font-mono tracking-widest uppercase opacity-40 mt-1">{{ next_solar_term_en }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="flex flex-col space-y-1 text-left font-mono">
+                        <span id="dynamic-date" hx-preserve="true" class="text-[0.75rem] font-bold tracking-wider text-white drop-shadow-md"></span>
+                        <span id="dynamic-date-cn" class="text-[0.65rem] opacity-80 font-sans tracking-wide text-white/90 drop-shadow-md"></span>
                     </div>
-                    <span id="dynamic-date" class="text-xs w-full text-left"></span>
                 </div>
-                <!-- clock -->
-                {% include 'accounts/partials/clock_analog.html' %}
-                <!-- bg img -->
-                <img src="/media/hero/red_leaves.jpeg" alt="" class="absolute left-0 top-0 w-full h-full rounded-4xl object-cover">
+                
+                <!-- Analog Clock Attached Widget Container (Locked cleanly leaning to the bottom right) -->
+                <div class="absolute right-6 bottom-6 z-10 scale-100 origin-bottom-right w-[200px] h-[200px]">
+                    {% include 'accounts/partials/clock_analog.html' %}
+                </div>
+                
+                <!-- Background Graphic Wallpaper Layer -->
+                <img src="/media/hero/red_leaves.jpeg" alt="Seasonal Red Leaves background" class="absolute left-0 top-0 w-full h-full object-cover select-none pointer-events-none filter brightness-[0.7]">
             </div>
-            <!-- FAQs -->
-            <div class="w-full join join-vertical text-xs rounded-4xl text-white">
-                <div class="collapse collapse-arrow bg-accent join-item">
-                    <input type="checkbox" />
-                    <div class="collapse-title font-semibold after:text-accent-content">可以訂製常規產品之外的產品嗎？</div>
-                    <div class="collapse-content">
-                        可以協商的，具體內容請進入【客服熱線】頁面發送諮詢至本店。
+
+            <!-- B. SYSTEM ACCORDION COLLAPSE SELF-HELP DESK -->
+            <div class="w-full join join-vertical text-[0.68rem] rounded-2xl border border-info overflow-hidden shadow-sm bg-base-100 text-neutral">
+                
+                <!-- FAQ Item 1 -->
+                <div class="collapse collapse-arrow bg-base-100 join-item border-b border-info/20">
+                    <input type="radio" name="faq-joint" checked="checked" />
+                    <div class="collapse-title font-black text-info-content pr-10 flex flex-col justify-center gap-0.5 leading-tight">
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-question text-[0.65rem] opacity-60 text-info-content"></i> 
+                            Can I request custom items outside the standard catalog?
+                        </div>
+                        <span class="font-sans font-medium text-[0.62rem] opacity-60 pl-[1.1rem]">可以訂製常規產品之外的產品嗎？</span>
+                    </div>
+                    <div class="collapse-content text-neutral/80 bg-neutral-content/10 pt-2.5 leading-relaxed space-y-2">
+                        <p class="font-sans font-medium text-info-content">
+                            Yes, custom specifications and bespoke artistic requirements are negotiable. 
+                            <a href="{% url 'dashboard' 'help' %}"
+                                hx-get="{% url 'dashboard' 'threed' %}"
+                                hx-target="#dashboard-content"
+                                hx-push-url="true"
+                                hx-on:click="updateActiveLink(this)"
+                                class="underline text-accent"
+                            >Chat</a>
+                            with us.
+                        </p>
+                        <div class="border-t border-dashed border-info/10 my-1.5 opacity-60"></div>
+                        <p class="opacity-80">可以協商的。具體產品規格與特殊客製化美術需求，請點擊跳轉進入
+                            <a href="{% url 'dashboard' 'help' %}"
+                                hx-get="{% url 'dashboard' 'help' %}"
+                                hx-target="#dashboard-content"
+                                hx-push-url="true"
+                                hx-on:click="updateActiveLink(this)"
+                                class="underline text-accent"
+                            >客服熱線</a>
+                            頁面發送正式諮詢至本店，我們將為您安排專屬工藝師進行一對一洽商。</p>
                     </div>
                 </div>
-                <div class="collapse collapse-arrow bg-accent join-item">
-                    <input type="checkbox" />
-                    <div class="collapse-title font-semibold after:text-accent-content border-t-2 border-accent-content">如何更換會員頭像？</div>
-                    <div class="collapse-content">
-                        請點擊並進入【會員檔案】頁面進行修改更新。
+                
+                <!-- FAQ Item 2 -->
+                <div class="collapse collapse-arrow bg-base-100 join-item border-b border-info/20">
+                    <input type="radio" name="faq-joint" />
+                    <div class="collapse-title font-black text-info-content pr-10 flex flex-col justify-center gap-0.5 leading-tight">
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-question text-[0.65rem] opacity-60 text-info-content"></i> 
+                            How do I change my member profile avatar?
+                        </div>
+                        <span class="font-sans font-medium text-[0.62rem] opacity-60 pl-[1.1rem]">如何更換會員頭像？</span>
+                    </div>
+                    <div class="collapse-content text-neutral/80 bg-neutral-content/10 pt-2.5 leading-relaxed space-y-2">
+                        <p class="font-sans font-medium text-info-content">
+                            Please navigate to the 
+                            <a href="{% url 'dashboard' 'profile' %}"
+                                hx-get="{% url 'dashboard' 'profile' %}"
+                                hx-target="#dashboard-content"
+                                hx-push-url="true"
+                                hx-on:click="updateActiveLink(this)"
+                                class="underline text-accent"
+                            >Edit Profile</a>
+                            page in the sidebar menu.
+                        </p>
+                        <div class="border-t border-dashed border-info/10 my-1.5 opacity-60"></div>
+                        <p class="opacity-80">
+                            請點擊並進入側邊欄的
+                            <a href="{% url 'dashboard' 'profile' %}"
+                                hx-get="{% url 'dashboard' 'profile' %}"
+                                hx-target="#dashboard-content"
+                                hx-push-url="true"
+                                hx-on:click="updateActiveLink(this)"
+                                class="underline text-accent"
+                            >會員檔案</a>
+                            頁面，在上傳檔案欄位中選取您喜愛的影像檔案（支援 PNG/JPG 格式），確認後點擊修改更新即可同步完成。
+                        </p>
                     </div>
                 </div>
-                <div class="collapse collapse-arrow bg-accent join-item">
-                    <input type="checkbox" />
-                    <div class="collapse-title font-semibold after:text-accent-content border-t-2 border-accent-content">不同的優惠券可以同時使用嗎？</div>
-                    <div class="collapse-content">
-                        抱歉每一次的購買訂單僅限使用一張優惠券。
+                
+                <!-- FAQ Item 3 -->
+                <div class="collapse collapse-arrow bg-base-100 join-item border-b border-info/20">
+                    <input type="radio" name="faq-joint" />
+                    <div class="collapse-title font-black text-info-content pr-10 flex flex-col justify-center gap-0.5 leading-tight">
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-question text-[0.65rem] opacity-60 text-info-content"></i> 
+                            Can multiple promotional vouchers be used simultaneously?
+                        </div>
+                        <span class="font-sans font-medium text-[0.62rem] opacity-60 pl-[1.1rem]">不同的優惠券可以同時使用嗎？</span>
+                    </div>
+                    <div class="collapse-content text-neutral/80 bg-neutral-content/10 pt-2.5 leading-relaxed space-y-2">
+                        <p class="font-sans font-medium text-info-content">No, only one verified gift voucher can be applied per active order checkout.</p>
+                        <div class="border-t border-dashed border-info/10 my-1.5 opacity-60"></div>
+                        <p class="opacity-80">抱歉，為維護本藝術商店之系統結算與促銷安全機制，每一次的購物結帳訂單僅限疊加套用一張實名制優惠代金券，系統目前不支援多張優惠券合併抵扣。</p>
                     </div>
                 </div>
-                <div class="collapse collapse-arrow bg-accent join-item">
-                    <input type="checkbox" />
-                    <div class="collapse-title font-semibold after:text-accent-content border-t-2 border-accent-content">可以用不同的幣種購物嗎？</div>
-                    <div class="collapse-content">
-                        抱歉，每一次訂單僅限使用一種貨幣。如果您有特殊需求的話請進入【客服熱線】頁面與本店人工客服洽商。
+                
+                <!-- FAQ Item 4 -->
+                <div class="collapse collapse-arrow bg-base-100 join-item border-b border-info/20">
+                    <input type="radio" name="faq-joint" />
+                    <div class="collapse-title font-black text-info-content pr-10 flex flex-col justify-center gap-0.5 leading-tight">
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-question text-[0.65rem] opacity-60 text-info-content"></i> 
+                            Can I purchase items using different currencies?
+                        </div>
+                        <span class="font-sans font-medium text-[0.62rem] opacity-60 pl-[1.1rem]">可以用不同的幣種購物嗎？</span>
+                    </div>
+                    <div class="collapse-content text-neutral/80 bg-neutral-content/10 pt-2.5 leading-relaxed space-y-2">
+                        <p class="font-sans font-medium text-info-content">
+                            Each transaction must be fully finalized using a single selected currency track. For offline options, please
+                            <a href="{% url 'dashboard' 'help' %}"
+                                hx-get="{% url 'dashboard' 'threed' %}"
+                                hx-target="#dashboard-content"
+                                hx-push-url="true"
+                                hx-on:click="updateActiveLink(this)"
+                                class="underline text-accent"
+                            >Chat</a>
+                            with us.
+                        </p>
+                        <div class="border-t border-dashed border-info/10 my-1.5 opacity-60"></div>
+                        <p class="opacity-80">
+                            抱歉，每一次結帳均有對應的匯率快取鎖定機制，單一筆訂單僅限使用一種貨幣進行即時結算。如果您有特殊的跨境或跨幣種支付調配需求，請進入
+                            <a href="{% url 'dashboard' 'help' %}"
+                                hx-get="{% url 'dashboard' 'threed' %}"
+                                hx-target="#dashboard-content"
+                                hx-push-url="true"
+                                hx-on:click="updateActiveLink(this)"
+                                class="underline text-accent"
+                            >客服熱線</a>
+                            洽商。
+                        </p>
                     </div>
                 </div>
-                <div class="collapse collapse-arrow bg-accent join-item">
-                    <input type="checkbox" />
-                    <div class="collapse-title font-semibold after:text-accent-content border-t-2 border-accent-content">可以開發票嗎？</div>
-                    <div class="collapse-content">
-                        若有需求，請聯繫客服。
+                
+                <!-- FAQ Item 5 -->
+                <!-- <div class="collapse collapse-arrow bg-base-100 join-item">
+                    <input type="radio" name="faq-joint" />
+                    <div class="collapse-title font-black text-info-content pr-10 flex flex-col justify-center gap-0.5 leading-tight">
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-question text-[0.65rem] opacity-60 text-info-content"></i> 
+                            Can an official commercial invoice or receipt statement be issued?
+                        </div>
+                        <span class="font-sans font-medium text-[0.62rem] opacity-60 pl-[1.1rem]">可以開發票嗎？</span>
                     </div>
-                </div>
+                    <div class="collapse-content text-neutral/80 bg-neutral-content/10 pt-2.5 leading-relaxed space-y-2">
+                        <p class="font-sans font-medium text-info-content">Yes, please contact customer support directly to submit your invoicing details.</p>
+                        <div class="border-t border-dashed border-info/10 my-1.5 opacity-60"></div>
+                        <p class="opacity-80">若您在財務報銷或公司資產核銷上有開立正式商業發票或收據憑證之需求，請於完成支付付款後，直接聯繫線上人工客服提供您的抬頭與統編資訊。</p>
+                    </div>
+                </div> -->
             </div>
         </div>
     </div>

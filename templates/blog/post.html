@@ -44,6 +44,72 @@
             
         </article>
 
+        <!-- 🌟 RESTRUCTURED DISCUSSION MODULE Matrix (Generic Comments Architecture) -->
+        <div class="my-16 border-t border-base-200 pt-8 max-w-4xl" id="comments-master-container">
+            <h2 class="text-base-content text-md font-serif tracking-widest mb-6">Thoughts & Discussion｜探討與交流</h2>
+            
+            {% if request.user.is_authenticated %}
+                <!-- Multipart async upload block for text and attachments -->
+                <form id="comment-submission-form" 
+                        hx-post="{% url 'submit_review_htmx' post.id %}" 
+                        hx-target="#reviews-display-block" 
+                        hx-swap="beforeend" 
+                        hx-encoding="multipart/form-data"
+                        hx-on::after-request="this.reset()"
+                        class="bg-base-200/50 p-5 rounded-xl border border-base-300 mb-8 font-sans">
+                    {% csrf_token %}
+                    <!-- Pass hidden generic parameters to handle validation correctly -->
+                    <input type="hidden" name="content_type" value="{{ post_content_type_id }}">
+                    <input type="hidden" name="object_id" value="{{ post.id }}">
+                    
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-base-content/70 mb-3">Share Your Thoughts｜留下您的見解</h3>
+                    
+                    <div class="space-y-3">
+                        <textarea name="comment" class="textarea textarea-sm textarea-bordered w-full text-xs font-sans h-20 bg-white" placeholder="在此留下您對這篇文章的想法... | Your comment content" required></textarea>
+                        
+                        <!-- Media uploader layout cap -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[11px] opacity-60">Attach Images (Max 5)｜附加圖片 (最多5張) :</label>
+                            <input type="file" name="review_images" multiple accept="image/*" class="file-input file-input-bordered file-input-xs w-full max-w-xs font-sans text-xs bg-white"/>
+                        </div>
+
+                        <button type="submit" class="btn btn-xs btn-neutral rounded px-4 font-light tracking-wider mt-2">Post Comment｜發表留言</button>
+                    </div>
+                </form>
+            {% else %}
+                <div class="p-4 bg-base-200/50 rounded-xl border border-base-300/40 text-xs font-light text-base-content/60 mb-8 tracking-wide font-sans leading-relaxed">
+                    <div class="flex items-start gap-1">
+                        <i class="fa-solid fa-circle-info text-primary mt-0.5"></i>
+                        <div>
+                            <p class="text-[10px] opacity-70 mt-1">Please <a href="{% url 'login' %}" class="text-secondary font-semibold underline">Login</a> to your member account to unlock full privileges and post a comment.</p>
+                            <p>請先行會員 <a href="{% url 'login' %}" class="text-secondary font-bold underline">登錄</a> 以解鎖完整發表留言權益。</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Dynamic Comments Output Feed Block -->
+            <div id="reviews-display-block" class="space-y-4 font-sans">
+                {% for review in comments_list %}
+                    {% include 'store/partials/review_card.html' %}
+                {% empty %}
+                    <p id="empty-reviews-notice" class="text-xs opacity-50 italic font-light">No discussion left yet for this post.｜暫無相關探討留言。</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 🌟 RE-USED DYNAMIC INLINE DAISYUI MODAL MATRIX BLOCK -->
+        <dialog id="global-review-modal" class="modal font-sans">
+            <div class="modal-box bg-white max-w-md p-6 rounded-xl border border-base-200 relative">
+                <button onclick="document.getElementById('global-review-modal').removeAttribute('open')" class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3 text-base-content/60">✕</button>
+                <div id="modal-form-payload-injection-slot">
+                    <!-- Dynamic update form injection target -->
+                </div>
+            </div>
+        </dialog>
+
+
+
         <!-- divider -->
         <div class="divider mt-15 lg:mt-40"></div>
 

@@ -36,4 +36,11 @@ urlpatterns = [
 
     # path("calculate_tax_duty_api/", views.calculate_tax_duty_api, name="calculate_tax_duty_api"),
     # path("get_compliance_fields/", views.get_compliance_fields, name="get_compliance_fields"),
+
+    # Asynchronous HTMX processing endpoint rules
+    path('htmx/select-variation/', views.select_variation_htmx, name='select_variation_htmx'),
+    path('htmx/add-to-cart/', views.add_to_cart_htmx, name='add_to_cart_htmx'),
+
+
 ]
+

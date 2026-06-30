@@ -298,6 +298,7 @@
                                 <td class="py-2 text-right pr-3 font-mono">{{ foreign_discount }}</td>
                             </tr>
                             <!-- cash voucher -->
+                            {% if request.user.is_authenticated %}
                             <tr class="font-normal border-b border-base-content/5">
                                 <td class="py-2 text-left text-xs text-base-content/70">Voucher Applied｜禮品券抵扣</td>
                                 {% if foreign_currency_code != 'CNY' %}
@@ -305,6 +306,7 @@
                                 {% endif %}
                                 <td class="py-2 text-right pr-3 font-mono">{{ foreign_voucher }}</td>
                             </tr>
+                            {% endif %}
                             <!-- total amount field label logic alters dynamically based on holding choice -->
                             <tr class="font-bold text-[1.1rem] text-primary">
                                 <td class="py-3 text-left">
