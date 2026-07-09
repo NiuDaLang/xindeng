@@ -1,35 +1,8 @@
 {% block content %}
 {% load static %}
-    <!-- <div class="swiper"> -->
-        <!-- slides -->
-        <!-- <div class="swiper-wrapper">
-            <div class="swiper-slide">
-                <img
-                src="media/hero/tulip.svg"
-                class="w-full" />
-            </div>
-            <div class="swiper-slide">
-                <img
-                src="media/hero/purpleFlower.svg"
-                class="w-full" />
-            </div>
-            <div class="swiper-slide">
-                <img
-                src="media/hero/lavendar.svg"
-                class="w-full" />
-            </div>
-        </div> -->
-        <!-- pagination -->
-        <!-- <div class="swiper-pagination"></div> -->
-        <!-- nav button -->
-        <!-- <div class="swiper-btn-prev text-primary"><i class="fa-solid fa-circle-chevron-left fa-2xl"></i></div>
-        <div class="swiper-btn-next text-primary"><i class="fa-solid fa-circle-chevron-right fa-2xl"></i></div> -->
-        <!-- scroll-bar -->
-        <!-- <div class="swiper-scrollbar"></div> -->   
-    <!-- </div> -->
     <!-- Video -->
-    <div class="swiper min-h-[40dvh] sm:min-h-[50dvh] md:min-h-[60dvh] flex items-center justify-center rounded-2xl bg-base-300 shadow-xl relative z-10">
-        
+    <!-- Fixed: Uses aspect-square for portrait (height > width) and switches to aspect-video for landscape (width > height) -->
+    <div id="hero-container" class="w-full aspect-square landscape:aspect-video bg-base-300 shadow-xl relative z-10 overflow-hidden">
         <!-- LAYER 1: THE ANIMATED LOADING SKELETON LAYER -->
         <div id="video-skeleton" class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-base-300 to-base-200 animate-pulse z-20 select-none">
             <span class="loading loading-spinner loading-lg text-primary/40"></span>
@@ -37,7 +10,6 @@
         </div>
 
         <!-- LAYER 2: THE HIGH-PERFORMANCE VIDEO CONTAINER -->
-        <!-- We upgrade the layering tag to z-30 so it sits cleanly on top of the skeleton loader -->
         <video id="hero-video-player" 
             class="w-full h-full object-cover opacity-0 transition-opacity duration-700 ease-in-out relative z-30" 
             muted 
@@ -45,7 +17,12 @@
             autoplay 
             playsinline 
             preload="auto">
-            <source src="/static/videos/hero_video1.mp4" type="video/mp4" />
+            <!-- Landscape Video: Loaded if width > height -->
+            <source src="/static/videos/hero_video1.mp4" type="video/mp4" media="(orientation: landscape)" />
+            
+            <!-- Portrait/Default Video: Loaded if height > width (your square mobile video) -->
+            <source src="/static/videos/hero_mobile.mp4" type="video/mp4" media="(orientation: portrait)" />
+
             Your browser does not support the video tag.
         </video>  
     </div>

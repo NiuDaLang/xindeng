@@ -22,7 +22,12 @@ export default defineConfig({
     }
   },
   plugins: [
-    tailwindcss(),
+    tailwindcss({
+      content: [
+        "./templates/**/*.html",
+        "./static/js/**/*.js"
+      ]
+    }),
     glsl(),
   ],
   server: {
@@ -36,3 +41,4 @@ export default defineConfig({
     }
   }
 })
+

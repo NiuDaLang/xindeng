@@ -4,7 +4,7 @@ from blog.models import Post
 import random
 from django.contrib.sites.shortcuts import get_current_site
 from .utils import get_soul_number
-from django.db.models import Q
+from django.db.models import Q, Min, Count
 from django.http import JsonResponse
 
 
@@ -13,10 +13,44 @@ def test(request):
 
 
 def home(request):
-    all_products = Product.products.all()
-    product_ids = all_products.values_list('id', flat=True)
-    random_ids = random.sample(list(product_ids), 6)
-    featured_products = Product.products.filter(id__in=random_ids)
+    valid_products = Product.products.filter(
+        is_active=True,
+        variations__isnull=False,
+        variations__is_available=True
+    ).distinct() # Use .distinct() to prevent duplicate rows from the variation join
+
+    # 2. Extract the safe ID list directly from the cleaned queryset pool
+    product_ids = list(valid_products.values_list('id', flat=True))
+
+    # 3. Handle a potential fallback safety guard if your active catalog drops below 6 items
+    sample_size = min(len(product_ids), 6)
+    if sample_size > 0:
+        random_ids = random.sample(product_ids, sample_size)
+    else:
+        random_ids = []
+
+    # 4. Pull the 6 random featured products AND aggregate their lowest price right inside the DB
+    featured_products = Product.products.filter(id__in=random_ids).annotate(
+        min_price=Min(
+            'variations__price', 
+            filter=Q(variations__is_available=True)
+        ),
+        # Generates a 'total_variations' integer attribute for each product row
+        total_variations=Count(
+            'variations',
+            filter=Q(variations__is_available=True)
+        )
+    )
+
+    # Attach your formatting parameters onto the object records
+    for product in featured_products:
+        if product.min_price is not None:
+            # If total_variations is greater than 1, prepend your '~' character
+            is_range = "~" if product.total_variations > 1 else ""
+            product.formatted_price = f"{product.min_price:,.2f}{is_range}"
+        else:
+            product.formatted_price = "0.00"
+
 
     domain = get_current_site(request).domain
     absolute_url = f"https://{domain}"

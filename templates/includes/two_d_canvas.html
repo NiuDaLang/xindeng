@@ -1,10 +1,12 @@
 {% block content %}
 <div class="px-[max(1rem,5vw)] py-30 bg-transparent flex justify-center items-center p-5 bg-gradient-to-b from-base-100 to-[rgba(1,15,32,1)] h-52">
     <!-- title -->
-    <h2 class="text-white text-2xl font-light text-shadow-lg text-shadow-primary-content">WECOME TO THE DREAM｜歡迎闖入夢境中</h2>
+    <h2 class="text-white text-center text-sm xs:text-base sm:text-[1.15rem] md:text-[1.25rem] lg:text-xl font-light text-shadow-lg text-shadow-primary-content">WECOME TO THE DREAM<br>歡迎闖入夢境中</h2>
 </div>
-<div id="canvas_wrapper" class="relative w-full aspect-5/3 overflow-hidden bg-[#010f20]">
+<div id="canvas_wrapper" class="relative w-full aspect-square xxs:4/3 xs:aspect-5/3 overflow-hidden bg-[#010f20]">
     <img id="canvas_backup" src="/static/images/canvas/dream.JPG" class="absolute inset-0 w-full h-full object-cover" />
     <canvas id="main_canvas" class="block w-full h-full cursor-[url(/static/images/canvas/logo_cursor_for_canvas.png),_auto] opacity-0 transition-opacity duration-500"></canvas>
+</div>
+<div class="px-[max(1rem,5vw)] py-30 bg-transparent flex justify-center items-center p-5 bg-gradient-to-b from-[rgba(1,15,32,1)] to-base-100 h-52">
 </div>
 {% endblock %}

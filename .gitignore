@@ -9,7 +9,6 @@ staticfiles/
 vscode/
 .env
 accounts_errors.html
-celerybeat-schedule
 db.sqlite3
 dump.rdb
 project_structure.txt
@@ -40,6 +39,8 @@ node_modules/
 dump.rdb
 celerybeat-schedule
 celerybeat.pid
+celerybeat-schedule-shm
+celerybeat-schedule-wal
 *.log
 .cache/
 .pytest_cache/

@@ -8,7 +8,7 @@
             <div class="dropdown dropdown-hover lg:hidden">
                 <!-- logo -->
                 <div class="flex">
-                    <div tabindex="0" role="button" class="btn btn-ghost">
+                    <div tabindex="0" role="button" class="btn btn-ghost px-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /> </svg>
                     </div>
                 </div>
@@ -52,27 +52,27 @@
                 </ul>
             </div>
             <!-- logo -->
-            <div class="hidden lg:block">
+            <div class="sm:hidden lg:block">
                 <a href="{% url 'home' %}" class="">
                     <!-- Hṛdayadīpa (हृदयदीप) -->
-                    <img id="logo_landscape" class="h-[2.25rem]" 
+                    <img id="logo_landscape" class="hidden lg:block h-[2.25rem]" 
                     src="/media/images/logos/logo_full_landscape.svg"
                     alt="logo landscape">
+                    <img id="logo_landscape" class="block sm:hidden h-[2rem]" 
+                    src="/media/images/logos/logo_transparent.svg"
+                    alt="logo square">
                 </a>
             </div>
         </div>
         
       <!-- CENTER -->
-
-            <div class="h-[2.25rem] lg:hidden mr-1">
-                <a href="{% url 'home' %}" class="">
-                    <img id="logo_square" class="h-[2.25rem] lg:hidden mr-1" 
-                    src="/media/images/logos/logo_transparent.svg" 
-                    alt="logo square">
-                </a>
-            </div>
-
-
+        <div class="h-[2.25rem] hidden sm:block lg:hidden">
+            <a href="{% url 'home' %}" class="">
+                <img id="logo_square" class="h-[2.25rem] lg:hidden mr-1" 
+                src="/media/images/logos/logo_transparent.svg" 
+                alt="logo square">
+            </a>
+        </div>
 
         <div class="navbar-center hidden lg:flex max-w-3/5">
             <ul class="menu menu-horizontal px-1">
@@ -121,7 +121,7 @@
         </div>
     
       <!-- RIGHT -->
-        <div class="flex gap-2 navbar-end">
+        <div class="flex gap-1 md:gap-2 navbar-end">
             <!-- search icon -->
             <button class="btn btn-ghost btn-circle" onclick="search.showModal()">
                 <a href="#">
@@ -171,9 +171,9 @@
                     <div class="absolute z-10 text-[0.65rem] w-max max-w-[300px] whitespace-nowrap -bottom-3 left-1/2 -translate-x-1/2">Hi, {{request.user.username}}!</div>
                     <!-- avatar -->
                     <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
-                        <div class="w-10 rounded-full">
+                        <div class="w-8 lg:w-10 rounded-full">
                             <img
-                                class="w-[1rem]"
+                                class="w-full"
                                 alt="User Picture"
                                 src="{% if request.user.profile %}{{ request.user.profile.profile_picture.url }} {% else %} /static/userprofile/default.png {% endif %}" 
                             />
@@ -292,26 +292,26 @@
                     </ul>
                 </div>
                 <!-- logout btn -->
-                <a class="flex items-center btn btn-ghost" href="{% url 'logout' %}">
+                <a class="flex items-center btn btn-ghost px-2" href="{% url 'logout' %}">
                     <i class="fa-solid fa-right-from-bracket"></i>
-                    <span class="text-xs text-center"><strong>Log out<br/>登出</strong></span>
+                    <span class="hidden sm:block text-xs text-center"><strong>Log out<br/>登出</strong></span>
                 </a>
             {% else %}
                 <!-- login btn -->
-                <a id="login_btn" class="flex items-center px-3 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg 
+                <a id="login_btn" class="flex items-center px-2 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg 
                     shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),_inset_-4px_-4px_8px_rgba(255,255,255,0.7)] 
                     active:shadow-[inset_6px_6px_12px_rgba(0,0,0,0.15),_inset_-6px_-6px_12px_rgba(255,255,255,0.8)] 
                     transition-all duration-200" href="{% url 'login' %}">
                     <i class="fa-solid fa-right-to-bracket mr-1"></i>
-                    <span class="text-xs text-center"><strong>Log in<br/>登入</strong></span>
+                    <span class="hidden xs:block text-[0.65rem] sm:text-xs text-center"><strong>Log in<br/>登入</strong></span>
                 </a>
                 <!-- register btn -->
-                <a id="register_btn" class="text-center flex items-center text-xs px-6 py-2 bg-neutral-content text-primary-content font-medium rounded-lg 
+                <a id="register_btn" class="flex items-center text-center px-2 py-2 bg-neutral-content text-primary-content font-medium rounded-lg 
                     shadow-[4px_4px_8px_rgba(0,0,0,0.1),_-4px_-4px_8px_rgba(255,255,255,0.7)] 
-                    active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),_inset_-4px_-4px_8px_rgba(255,255,255,0.7)" href="{% url 'register' %}">
-                        <i class="fa-regular fa-registered fa-xl"></i>
-                        <span>Register<br/>註冊</span>
-                    <!-- </button> -->
+                    active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),_inset_-4px_-4px_8px_rgba(255,255,255,0.7)]" href="{% url 'register' %}">
+                    <!-- Removed fa-xl and added text-base to fix the layout collapse -->
+                    <i class="fa-regular fa-registered text-base"></i>
+                    <span class="hidden xs:block text-[0.65rem] sm:text-xs text-center ml-1">Register<br/>註冊</span>
                 </a>
             {% endif %}
         </div>

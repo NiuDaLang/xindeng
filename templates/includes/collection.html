@@ -1,56 +1,75 @@
 {% block content %}
 <!-- TITLE -->
-<div class="flex justify-between p-5 mb-16">
-    <!-- title -->
-    <h2 class="text-base-content text-2xl font-light text-shadow-lg text-shadow-stone-300">FEATURED｜精選寶貝</h2>
-
-    <!-- link button -->
-    <a href="{% url 'products' category_slug='all' %}" class="btn btn-ghost font-extralight text-primary text-shadow-lg text-shadow-stone-300 text-md px-12">目 錄 | ALL</a>
+<div class="flex flex-col justify-center gap-1.5 xs:gap-2 items-center w-full mb-6 xs:mb-10 md:mb-16">
+    <h2 class="text-base-content text-sm xs:text-base sm:text-[1.15rem] md:text-[1.25rem] lg:text-xl font-light tracking-wide text-shadow-lg text-shadow-stone-300">
+        FEATURED ｜ 精選寶貝
+    </h2>
+    <div>
+        <a href="{% url 'products' category_slug='all' %}" 
+            class="btn btn-xs btn-outline font-extralight tracking-widest text-primary text-shadow-lg text-shadow-stone-300 text-[0.55rem] xxs:text-[0.6rem] sm:text-[0.65rem] md:text-[0.7rem] px-3.5 py-1 xs:py-1.5">
+            目 錄 ｜ ALL
+        </a>
+    </div>
 </div>
 
 <!-- COLLECTION -->
-<div class="grid grid-cols-2 gap-x-16 gap-y-32">
+<div class="grid grid-cols-1 xs:grid-cols-2 gap-4 xxs:gap-5 xs:gap-x-12 xs:gap-y-16 lg:gap-x-16 lg:gap-y-24 px-3 xxs:px-5 xs:px-0">
     {% for product in featured_products %}
-        <a href="{{ product.get_url }}" class="relative card col-span-1 mx-5 bg-base-100 shadow-sm group">
-            <div class="absolute -top-2 -right-2 z-10 group-hover:z-10">
-                <span class="badge badge-primary">New</span>
-                <span class="badge badge-error">Hot!</span>
+        <!-- Fixed: Increased container height slightly on mobile to accommodate the new vertical text + star stack -->
+        <a href="{{ product.get_url }}" class="relative card flex-row xs:flex-col bg-base-100 shadow-sm border border-base-200/40 xs:border-none group overflow-hidden xs:overflow-visible h-[125px] xxs:h-[145px] xs:h-auto">
+            
+            <!-- Badges -->
+            <div class="absolute top-2 left-2 xs:-top-2 xs:-right-2 xs:left-auto z-20 flex gap-1">
+                <span class="badge badge-primary badge-xs">New</span>
+                <span class="badge badge-error badge-xs">Hot!</span>
             </div>
-            <figure class="overflow-hidden rounded-t-2xl">
+            
+            <!-- Image Frame -->
+            <figure class="w-[115px] xxs:w-[145px] xs:w-full aspect-square xs:aspect-[4/3] sm:aspect-[16/11] overflow-hidden rounded-l-2xl xs:rounded-t-2xl xs:rounded-bl-none shrink-0 relative bg-base-200">
                 {% if product.images %}
                     <img
-                        class="w-full h-full object-cover transform transition duration-500 ease-in-out group-hover:scale-125 z-0 group-hover:z-0"
+                        class="w-full h-full object-cover transform transition duration-700 ease-in-out group-hover:scale-110"
                         src="{{ product.images.url }}"
                         alt="Product Image" 
                     />
                 {% endif %}
             </figure>
-            <div class="card-body">
-                <!-- BOTTOM LINE -->
-                <div class="flex justify-between items-center">
-                    <!-- product title -->
-                    <div class="flex flex-col">
-                        <p class="font-semibold">{{ product.product_name }}</p>
-                        <p>CNY2,000</p>
+            
+            <!-- Details Container -->
+            <div class="card-body p-3 xxs:p-4 xs:p-5 flex-1 flex flex-col justify-between min-w-0">
+                <!-- Fixed: On mobile, everything inside wraps into a clean flex-col, on desktop it sits side-by-side -->
+                <div class="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-1.5 xs:gap-4 w-full h-full xs:h-auto">
+                    
+                    <!-- Product Text Metadata -->
+                    <div class="flex flex-col min-w-0 w-full xs:w-auto">
+                        <!-- Fixed: Softened title size down to text-xs / text-sm to stop it competing with section headings -->
+                        <p class="font-semibold text-xs xxs:text-sm text-base-content line-clamp-2 leading-snug xs:truncate">
+                            {{ product.product_name }}
+                        </p>
+                        <p class="text-[0.7rem] xxs:text-xs font-medium text-base-content/75 mt-0.5 xxs:mt-1">
+                            CNY {{ product.formatted_price }}
+                        </p>
                     </div>
-                    <!-- rating -->
-                    <div class="rating rating-xs rating-half justify-end">
-                        <input type="radio" name="rating-11" class="rating-hidden" />
-                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="0.5 star" />
-                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="1 star" />
-                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="1.5 star" checked="checked" />
-                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="2 star" />
-                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="2.5 star" />
-                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="3 star" />
-                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="3.5 star" />
-                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="4 star" />
-                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-1 bg-green-500" aria-label="4.5 star" />
-                        <input type="radio" name="rating-11" class="mask mask-star-2 mask-half-2 bg-green-500" aria-label="5 star" />
+                    
+                    <!-- Rating Star Component -->
+                    <!-- Fixed: Changes from under-stacked (justify-start) on mobile to right-aligned (xs:justify-end) on desktop -->
+                    <!-- Fixed: Shrunk star sizes using ultra-compact arbitrary widths to keep layout proportion clean -->
+                    <div class="rating rating-[9px] xs:rating-[11px] rating-half justify-start xs:justify-end shrink-0 mt-auto xs:mt-0 pt-0.5">
+                        <input type="radio" name="rating-{{ product.id }}" class="rating-hidden" />
+                        <input type="radio" name="rating-{{ product.id }}" class="mask mask-star-2 mask-half-1 bg-green-500/25 h-2.5 w-1.25 xxs:h-3 xxs:w-1.5 xs:h-3.5 xs:w-1.75" aria-label="0.5 star" />
+                        <input type="radio" name="rating-{{ product.id }}" class="mask mask-star-2 mask-half-2 bg-green-500/25 h-2.5 w-1.25 xxs:h-3 xxs:w-1.5 xs:h-3.5 xs:w-1.75" aria-label="1 star" />
+                        <input type="radio" name="rating-{{ product.id }}" class="mask mask-star-2 mask-half-1 bg-green-500/25 h-2.5 w-1.25 xxs:h-3 xxs:w-1.5 xs:h-3.5 xs:w-1.75" aria-label="1.5 star" />
+                        <input type="radio" name="rating-{{ product.id }}" class="mask mask-star-2 mask-half-2 bg-green-500/25 h-2.5 w-1.25 xxs:h-3 xxs:w-1.5 xs:h-3.5 xs:w-1.75" aria-label="2 star" />
+                        <input type="radio" name="rating-{{ product.id }}" class="mask mask-star-2 mask-half-1 bg-green-500/25 h-2.5 w-1.25 xxs:h-3 xxs:w-1.5 xs:h-3.5 xs:w-1.75" aria-label="2.5 star" />
+                        <input type="radio" name="rating-{{ product.id }}" class="mask mask-star-2 mask-half-2 bg-green-500/25 h-2.5 w-1.25 xxs:h-3 xxs:w-1.5 xs:h-3.5 xs:w-1.75" aria-label="3 star" />
+                        <input type="radio" name="rating-{{ product.id }}" class="mask mask-star-2 mask-half-1 bg-green-500/25 h-2.5 w-1.25 xxs:h-3 xxs:w-1.5 xs:h-3.5 xs:w-1.75" aria-label="3.5 star" />
+                        <input type="radio" name="rating-{{ product.id }}" class="mask mask-star-2 mask-half-2 bg-green-500/25 h-2.5 w-1.25 xxs:h-3 xxs:w-1.5 xs:h-3.5 xs:w-1.75" aria-label="4 star" />
+                        <input type="radio" name="rating-{{ product.id }}" class="mask mask-star-2 mask-half-1 bg-green-500/25 h-2.5 w-1.25 xxs:h-3 xxs:w-1.5 xs:h-3.5 xs:w-1.75" aria-label="4.5 star" />
+                        <input type="radio" name="rating-{{ product.id }}" class="mask mask-star-2 mask-half-2 bg-green-500/25 h-2.5 w-1.25 xxs:h-3 xxs:w-1.5 xs:h-3.5 xs:w-1.75" aria-label="5 star" checked="checked" />
                     </div>
                 </div>
             </div>
         </a>
     {% endfor %}
 </div>
-
 {% endblock %}

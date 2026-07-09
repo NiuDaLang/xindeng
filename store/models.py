@@ -131,7 +131,7 @@ class Product(models.Model):
             return self.min_price
         # Otherwise, fallback to your existing method (slower, for detail pages)
         return self.lowest_price() 
-        
+
     @property
     def reviews(self):
         return self.comments.exclude(rating__isnull=True) #get only reviews that have a rating

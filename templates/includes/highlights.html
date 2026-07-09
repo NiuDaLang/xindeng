@@ -1,21 +1,23 @@
 {% block content %}
-    <div class="flex relative bg-[url(/media/hero/highlight_bg.svg)]">
-        <!-- LEFT -->
-        <div id="highlight_svg_animation" class="w-1/2 flex flex-col justify-around">
+    <!-- Fixed: Removed custom SVG background utility and applied pure Tailwind color gradients that adapt dynamically to any height -->
+    <div id="highlights" class="flex flex-col md:flex-row relative bg-gradient-to-br from-[#847C6D] via-[#D1D0BA] to-[#DFE9F5] rounded-box overflow-hidden shadow-sm">
+        
+        <!-- TOP/LEFT -->
+        <div id="highlight_svg_animation" class="w-full md:w-1/2 flex flex-col justify-around">
             <!-- mug svg animation -->
             {% include 'includes/mug_rack_svg.html' %}           
         </div>
-        <!-- RIGHT -->
-        <div class="w-1/2 flex flex-col justify-center items-center">
+        
+        <!-- BOTTOM/RIGHT -->
+        <div class="w-full md:w-1/2 flex flex-col justify-center items-center px-2 xxs:px-4 xs:px-8 py-6 xxs:py-12 xs:py-24 md:p-4">
             <!-- catch copy -->
-            <div class="text-base-content text-2xl font-light text-shadow-lg mb-3 text-shadow-stone-300">
-                PANORAMA of HṚDAYADĪPA ｜心燈縱覽
+            <div class="text-base-content text-[0.85rem] xxs:text-[0.9rem] xs:text-[0.95rem] sm:text-[1.05rem] md:text-[0.95rem] lg:text-[1.05rem] xl:text-[1.25rem] font-light text-shadow-lg mb-3 text-shadow-stone-300 text-center">
+                PANORAMA of HṚDAYADĪPA<br>心燈縱覽
             </div>
 
             <!-- vertical carousel -->
             <div class="w-full h-auto text-center relative">
-                <!-- <i class="absolute text-accent-content text-2xl fa-solid fa-arrows-up-down bottom-5 right-5 z-10 animate-bounce"></i> -->
-                <div class="w-[1.5rem] h-auto absolute bottom-5 left-5 z-10 animate-bounce">
+                <div class="w-[0.9rem] xs:w-[1.1rem] sm:w-[1.35rem] md:w-[0.9rem] lg:w-[1.15rem] xl:w-[1.35rem] h-auto absolute bottom-2 sm:bottom-5 left-1 sm:left-2 md:left-2 z-10 animate-bounce">
                     <svg viewBox="0 0 68 246" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
                         <title>scroll_arrow</title>
                         <g id="scroll_arrow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
@@ -28,54 +30,32 @@
                         </g>
                     </svg>
                 </div>
-                <div class="hover:cursor-ns-resize w-5/6 carousel carousel-vertical aspect-square v-calrousel-frame max-h-200">
+                <div class="hover:cursor-ns-resize w-5/6 carousel carousel-vertical aspect-square v-calrousel-frame max-h-200 mx-auto">
                     <!-- images -->
                     <div class="carousel-item h-full">
-                        <img class="w-full" src="/static/images/carousel/light.webp" />
+                        <img class="w-full object-cover" src="/static/images/carousel/light.webp" />
                     </div>
                     <div class="carousel-item h-full">
-                        <img class="w-full" src="/static/images/carousel/light_blue.webp" />
+                        <img class="w-full object-cover" src="/static/images/carousel/light_blue.webp" />
                     </div>
                     <div class="carousel-item h-full">
-                        <img class="w-full" src="/static/images/carousel/purple.webp" />
+                        <img class="w-full object-cover" src="/static/images/carousel/purple.webp" />
                     </div>
                     <div class="carousel-item h-full">
-                        <img class="w-full" src="/static/images/carousel/green.webp" />
+                        <img class="w-full object-cover" src="/static/images/carousel/green.webp" />
                     </div>
                     <div class="carousel-item h-full">
-                        <img class="w-full" src="/static/images/carousel/white.webp" />
+                        <img class="w-full object-cover" src="/static/images/carousel/white.webp" />
                     </div>
                     <div class="carousel-item h-full">
-                        <img class="w-full" src="/static/images/carousel/garden.webp" />
+                        <img class="w-full object-cover" src="/static/images/carousel/garden.webp" />
                     </div>
                     <div class="carousel-item h-full">
-                        <img class="w-full" src="/static/images/carousel/pond.webp" />
+                        <img class="w-full object-cover" src="/static/images/carousel/pond.webp" />
                     </div>
                 </div>
             </div>
-            <!-- arrow -->
         </div>
-
-        <!-- BG -->
-        <div class="absolute w-full h-full -z-1">
-            <svg viewBox="0 0 2040 1336" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-                <title>highlight_bg</title>
-                <defs>
-                    <linearGradient x1="-3.20898779%" y1="51.3680411%" x2="100%" y2="36.0262913%" id="linearGradient-1">
-                        <stop stop-color="#847C6D" offset="0%"></stop>
-                        <stop stop-color="#AFA48F" offset="21.9024709%"></stop>
-                        <stop stop-color="#D1D0BA" offset="39.8377811%"></stop>
-                        <stop stop-color="#ECEEEE" offset="71.8472829%"></stop>
-                        <stop stop-color="#DFEDF8" offset="90.033946%"></stop>
-                        <stop stop-color="#DFE9F5" offset="100%"></stop>
-                    </linearGradient>
-                </defs>
-                <g id="highlight_bg" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                    <rect id="bg" fill="url(#linearGradient-1)" x="1" y="0" width="2039" height="1336"></rect>
-                </g>
-            </svg>
-        </div>        
     </div>
-
 {% endblock %}
 

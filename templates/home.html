@@ -2,38 +2,133 @@
 {% load static %}
 {% load sekizai_tags %}
 {% block content %}
-    <div class="relative mt-[86px]">
-        <!-- HERO -->
+    <!-- HERO -->
+    <div class="relative mt-[64px] lg:mt-[86px]">
+        <!-- VIDEO CLIP -->
         {% include 'includes/hero.html' %}
 
         <!-- QUESTIONNAIRE -->
-        <div class="hidden absolute top-0 right-20 w-1/3 h-full md:flex justify-center items-center">
-            {% include 'includes/questionnaire.html' %}
+        <!-- MOBILE ONLY: SLIDE-OUT DRAWER LAYOUT (z-150) -->
+        <div class="drawer absolute inset-0 z-[51] pointer-events-none lg:hidden">
+            <input id="questionnaire-drawer" type="checkbox" class="drawer-toggle" />
+            
+            <div class="drawer-content flex items-end justify-center p-6 w-full h-full">
+                <label for="questionnaire-drawer" class="btn btn-warning shadow-2xl pointer-events-auto flex flex-col gap-0.5 h-auto py-2.5 px-4 bg-warning/90 backdrop-blur-sm border-none text-neutral hover:bg-warning cursor-pointer">
+                    <span class="text-xs font-semibold tracking-wider opacity-90 font-mono">Find the piece for you</span>
+                    <span class="text-xs sm:text-sm font-bold">尋找您的那一幅畫</span>
+                </label>
+            </div>
+
+            <div class="drawer-side h-full pointer-events-auto">
+                <label for="questionnaire-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+                <div class="w-[85vw] max-w-[340px] h-full flex justify-center items-center p-4 bg-base-100/98 backdrop-blur-md shadow-2xl">
+                    {% include 'includes/questionnaire.html' %}
+                </div>
+            </div>
         </div>
+
+        <!-- DESKTOP ONLY: FLOATING STATIC BLOCK -->
+        <div class="hidden lg:flex absolute top-0 right-20 w-1/3 h-full justify-center items-center z-[150] pointer-events-none">
+            <div class="pointer-events-auto">
+                {% include 'includes/questionnaire.html' %}
+            </div>
+        </div>
+
+        <!-- GLOBAL ROOT-LEVEL MODAL CONTAINER -->
+        <dialog id="resultModal" class="modal bg-black/60 backdrop-blur-sm z-[150]">
+        <!-- Fixed: Swapped static mobile h-[550px] for responsive dynamic h-[78vh] to ensure descriptions never sink/clip -->
+            <div id="modalContent" class="w-[92vw] max-w-[400px] h-[78vh] sm:h-[600px] p-2 flex justify-center items-center relative">
+                <div class="destined_card w-full h-full relative">
+                <div class="destined_content w-full h-full">
+                    
+                    <!-- BACK OF CARD (Will show on hover) -->
+                    <div class="destined_back">
+                    <div class="destined_back-content">
+                        <svg class="w-[20%] h-[20%]" viewBox="0 0 100 100" version="1.1">
+                            <defs>
+                                <linearGradient x1="38.9835362%" y1="2.91852469%" x2="50%" y2="100%" id="linearGradient-1">
+                                    <stop stop-color="#FFF4AC" offset="0%"></stop>
+                                    <stop stop-color="#FAD162" offset="48.1677511%"></stop>
+                                    <stop stop-color="#D8AC26" offset="100%"></stop>
+                                </linearGradient>
+                                <linearGradient x1="25.5948989%" y1="23.6182305%" x2="50%" y2="86.7870584%" id="linearGradient-2">
+                                    <stop stop-color="#FFE178" offset="0%"></stop>
+                                    <stop stop-color="#FFC444" offset="100%"></stop>
+                                </linearGradient>
+                            </defs>
+                            <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                <g transform="translate(2.000000, -1.588067)">
+                                    <path d="M3.69693826,60.6697627 C2.77602214,61.607117 5.4221475,70.9843238 5.4221475,72.5670744 C5.4221475,74.1498251 0,76.541053 0,78.547812 C0,80.5545709 4.72323307,82.1895746 5.4221475,83.2948252 C6.12106194,84.4000757 6.24736114,98.7636433 8.62209599,99.5485547 C10.9968308,100.333466 18.108431,89.1708353 19.8189084,88.5743448 C21.5293858,87.9778544 31.1020422,91.2563817 31.9327218,89.9920065 C32.7634014,88.7276314 25.6275106,82.5956096 25.6275106,80.6355864 C25.6275106,78.6755633 33.3554339,68.6678935 30.5623114,65.7759649 C27.769189,62.8840363 20.0972258,67.1705384 15.8347865,67.1705384 C11.5723472,67.1705384 4.61785437,59.7324084 3.69693826,60.6697627 Z" fill="url(#linearGradient-1)"></path>
+                                    <path d="M24.0144035,12.3296313 C20.7589847,9.54486611 1.89256924,64.9259596 39.8453407,78.5584231 C77.7981121,92.1908866 102.93963,48.8366996 99.8730671,48.8366996 C96.8065044,48.8366996 66.3790458,54.7343629 51.4590547,49.9422931 C36.5390636,45.1502234 27.2698223,15.1143964 24.0144035,12.3296313 Z" fill="url(#linearGradient-2)" transform="translate(58.290948, 46.719511) rotate(20.000000) translate(-58.290948, -46.719511) "></path>
+                                </g>
+                            </g>
+                        </svg>
+                        <strong>Hover Me｜滑鼠移過來</strong>
+                    </div>
+                    </div>
+
+                    <!-- FRONT OF CARD -->
+                    <div class="destined_front absolute inset-0">
+                    <div class="destined_circle"></div>
+                    <div class="destined_circle" id="destined_right"></div>
+                    <div class="destined_circle" id="destined_bottom"></div>
+                    
+                    <!-- Fixed: Adjusted vertical spacing gaps (gap-2 on mobile, gap-4 on desktop) -->
+                    <a id="destined_work_url" href="" class="destined_front-content flex flex-col justify-start items-center p-4 h-full box-border absolute inset-0 z-10 gap-2 sm:gap-4">
+                        
+                        <!-- Badge -->
+                        <small class="destined_badge text-[0.65rem] sm:text-xs font-semibold tracking-wider shrink-0">Is this the ONE?｜是這幅嗎？</small>
+                        
+                        <!-- Image Area: Tightened container marginally to h-[52%] on mobile to hand extra clearance down to text -->
+                        <div class="w-full h-[52%] sm:h-[58%] flex items-center justify-center overflow-hidden shrink-0">
+                        <img class="max-w-full max-h-full object-contain rounded-md shadow-md" id="product_image" src="" alt="">
+                        </div>
+                        
+                        <!-- Details Area: Removed min-h-0 and added flex-grow so text fills the bottom cleanly -->
+                        <div class="destined_description text-center w-full flex-grow flex flex-col justify-start pt-1">
+                            <div class="mb-1 leading-tight shrink-0">
+                                <p><strong id="product_name" class="text-xs sm:text-sm text-base-300 font-bold block truncate"></strong></p>
+                            </div>
+                            <!-- Fixed: Combined overflow-y-auto with line-clamp-4 so it truncates cleanly but allows scrolling if extra long -->
+                            <p id="product_description" class="destined_card-footer text-[0.7rem] sm:text-xs text-base-content/85 overflow-y-auto max-h-[85px] sm:max-h-none line-clamp-4 px-1 leading-normal text-center"></p>
+                        </div>
+                    </a>
+                    </div>
+                    
+                </div>
+                </div>
+            </div>
+            
+            <!-- Close button layout -->
+            <button class="absolute top-4 right-4 text-white cursor-pointer flex items-center gap-1.5 opacity-85 hover:opacity-100 transition-opacity bg-black/40 px-3 py-1.5 rounded-full text-xs sm:text-sm" onclick="document.getElementById('resultModal').close()">
+                <span>Close｜關閉</span>
+                <i class="fa-regular fa-circle-xmark fa-xl"></i>
+            </button>
+        </dialog>
     </div>
 
     <!-- BLOG / INFO -->
-    <div class="px-[max(1rem,5vw)] mt-30">
+    <div class="px-[max(1rem,5vw)] sm:px-0 sm:w-full sm:max-w-[min(1380px,90%)] max-w-full mx-auto pt-30 overflow-visible relative z-20">
         {% include 'includes/posts_fibonacci.html' %}
     </div>
 
     <!-- HIGHLIGHTS -->
-    <div class="px-[max(1rem,5vw)] pt-40 pb-10">
+    <div class="px-[max(1rem,5vw)] sm:px-0 sm:w-full sm:max-w-[min(1380px,90%)] pt-30 mx-auto md:pt-30">
         {% include 'includes/highlights.html' %}
     </div>
 
     <!-- PRODUCTS SELECTION -->
-    <div class="px-[max(1rem,5vw)] pt-20 pb-50">
+    <div class="px-[max(1rem,5vw)] sm:px-0 sm:w-full sm:max-w-[min(1380px,90%)] pt-30 mx-auto">
         {% include 'includes/collection.html' %}
     </div>
 
     <!-- ABOUT -->
-    <div class="px-[max(1rem,5vw)] mb-50">
+    <div class="px-[max(1rem,5vw)] sm:px-0 sm:w-full sm:max-w-[min(1380px,90%)] pt-30 mx-auto">
         {% include 'includes/about_section.html' %}
     </div>
 
     <!-- 2D SHOWCASE -->
-    <div class="-mb-[1px]">
+    <div class="-mb-[1px] pt-30">
         {% include 'includes/two_d_canvas.html' %}
     </div>
 
