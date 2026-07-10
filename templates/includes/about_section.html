@@ -73,7 +73,7 @@
         <!-- 1. BACK TEXT REVEAL PANEL -->
         <div class="absolute inset-0 flex flex-col text-[9px] xxs:text-[11px] leading-normal p-4 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
             <!-- ENGLISH BLOCK (Top 42% Area) -->
-            <div class="w-full h-[42%] flex flex-col justify-center gap-2 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
+            <div class="w-full h-[42%] flex flex-col justify-end gap-2 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
                 <div class="w-full h-auto flex items-end">
                     <p class="w-full text-right text-xs xxs:text-sm font-black text-neutral">LIFE & EXISTENCE</p>
                 </div>
@@ -87,7 +87,7 @@
             <div class="w-full h-[16%] shrink-0"></div>
             
             <!-- CHINESE BLOCK (Bottom 42% Area) -->
-            <div class="w-full h-[42%] flex flex-col justify-center gap-2 overflow-y-auto pl-3 scrollbar-none pointer-events-auto pt-2">
+            <div class="w-full h-[42%] flex flex-col justify-start gap-2 overflow-y-auto pl-3 scrollbar-none pointer-events-auto pt-2">
                 <div class="w-full h-auto flex items-end pr-5">
                     <p class="text-xs xxs:text-sm font-black text-neutral">生命與存在</p>
                 </div>
@@ -112,6 +112,20 @@
                 <div class="w-1/2">那一剎那</div>
             </div>
         </div>
+
+        <!-- VISUAL UX SWIPE INDICATOR: HORIZONTAL RIGHT GLIDE -->
+        <div class="absolute bottom-3 right-4 z-30 flex items-center gap-1.5 bg-black/40 backdrop-blur-xs text-white text-[9px] font-medium tracking-wider px-3 py-1 rounded-full pointer-events-none select-none">
+            <span>SWIPE｜滑動</span>
+            <!-- Pure CSS horizontal sliding keyframe definition -->
+            <i class="fa-solid fa-chevron-right" style="animation: slideRight 1.2s infinite ease-in-out;"></i>
+        </div>
+        
+        <style>
+            @keyframes slideRight {
+                0%, 100% { transform: translateX(0); opacity: 0.6; }
+                50% { transform: translateX(5px); opacity: 1; }
+            }
+        </style>
     </div>
 
     <!-- ================= SEGMENT 2: THE POLARIS ｜ 北極星 ================= -->
@@ -180,7 +194,7 @@
         <div class="absolute inset-0 flex flex-col text-[9px] xxs:text-[11px] leading-normal p-4 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
             
             <!-- CHINESE BLOCK (Top 42% Area) -->
-            <div class="w-full h-[42%] flex flex-col justify-center gap-2 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
+            <div class="w-full h-[42%] flex flex-col justify-end gap-2 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
                 <div class="w-full h-auto flex items-end">
                     <p class="w-full text-right text-xs xxs:text-sm font-black text-neutral">奇點與光點</p>
                 </div>
@@ -194,7 +208,7 @@
             <div class="w-full h-[16%] shrink-0"></div>
             
             <!-- ENGLISH BLOCK (Bottom 42% Area) -->
-            <div class="w-full h-[42%] flex flex-col justify-center gap-2 overflow-y-auto pl-3 scrollbar-none pointer-events-auto pt-2">
+            <div class="w-full h-[42%] flex flex-col justify-start gap-2 overflow-y-auto pl-3 scrollbar-none pointer-events-auto pt-2">
                 <div class="w-full h-auto flex items-end pr-5">
                     <p class="text-xs xxs:text-sm font-black text-neutral">THE SINGULARITY</p>
                 </div>
@@ -219,6 +233,26 @@
                 <div class="w-1/2">北極星</div>
             </div>
         </div>
+
+        <!-- VISUAL UX SWIPE INDICATOR: HORIZONTAL BOTH SIDES GLIDE -->
+        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 bg-black/40 backdrop-blur-xs text-white text-[9px] font-medium tracking-wider px-3 py-1 rounded-full pointer-events-none select-none">
+            <!-- Glides Leftward -->
+            <i class="fa-solid fa-chevron-left" style="animation: slideLeft 1.2s infinite ease-in-out;"></i>
+            <span>SWIPE｜左右滑動</span>
+            <!-- Glides Rightward -->
+            <i class="fa-solid fa-chevron-right" style="animation: slideRight 1.2s infinite ease-in-out;"></i>
+        </div>
+        
+        <style>
+            @keyframes slideLeft {
+                0%, 100% { transform: translateX(0); opacity: 0.6; }
+                50% { transform: translateX(-5px); opacity: 1; }
+            }
+            @keyframes slideRight {
+                0%, 100% { transform: translateX(0); opacity: 0.6; }
+                50% { transform: translateX(5px); opacity: 1; }
+            }
+        </style>
     </div>
 
     <!-- ================= SEGMENT 3: THE SOULS ｜ 靈魂們 ================= -->
@@ -296,7 +330,7 @@
         <!-- 1. BACK TEXT REVEAL PANEL -->
         <div class="absolute inset-0 flex flex-col text-[9px] xxs:text-[11px] leading-normal p-4 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
             <!-- 1. ENGLISH BLOCK -->
-            <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
+            <div class="w-full h-[42%] md:h-full flex flex-col justify-end md:justify-between gap-4 md:gap-16 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
                 <!-- 明月 Profile Block -->
                 <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
                     <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">Mingyue ｜ Frontline</p>
@@ -315,7 +349,7 @@
             <div class="w-full h-[16%] md:w-[10%] md:h-full shrink-0"></div>
 
             <!-- 3. CHINESE BLOCK -->
-            <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 border-t border-white/30 md:border-t-0 md:border-l overflow-y-auto pl-3 md:pr-5 scrollbar-none pointer-events-auto">
+            <div class="w-full h-[42%] md:h-full flex flex-col justify-start md:justify-between gap-4 md:gap-16 md:border-t-0 md:border-l overflow-y-auto pl-3 md:pr-5 scrollbar-none pointer-events-auto">
             <!-- 明月 Profile Block -->
                 <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
                     <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">明月 ｜ 前台掌櫃</p>
@@ -345,6 +379,26 @@
                 <div class="w-1/2">靈魂們</div>
             </div>
         </div>
+
+        <!-- VISUAL UX SWIPE INDICATOR: HORIZONTAL BOTH SIDES GLIDE -->
+        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 bg-black/40 backdrop-blur-xs text-white text-[9px] font-medium tracking-wider px-3 py-1 rounded-full pointer-events-none select-none">
+            <!-- Glides Leftward -->
+            <i class="fa-solid fa-chevron-left" style="animation: slideLeft 1.2s infinite ease-in-out;"></i>
+            <span>SWIPE｜左右滑動</span>
+            <!-- Glides Rightward -->
+            <i class="fa-solid fa-chevron-right" style="animation: slideRight 1.2s infinite ease-in-out;"></i>
+        </div>
+        
+        <style>
+            @keyframes slideLeft {
+                0%, 100% { transform: translateX(0); opacity: 0.6; }
+                50% { transform: translateX(-5px); opacity: 1; }
+            }
+            @keyframes slideRight {
+                0%, 100% { transform: translateX(0); opacity: 0.6; }
+                50% { transform: translateX(5px); opacity: 1; }
+            }
+        </style>
     </div>
 
     <!-- ================= SEGMENT 4: THE LIGHT ｜ 循光而行 ================= -->
@@ -415,7 +469,7 @@
         <!-- 1. BACK TEXT REVEAL PANEL -->
         <div class="absolute inset-0 flex flex-col text-[9px] xxs:text-[11px] leading-normal p-4 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
             <!-- CHINESE BLOCK (Top 42% Area) -->
-            <div class="w-full h-[42%] flex flex-col justify-center gap-2 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
+            <div class="w-full h-[42%] flex flex-col justify-end gap-2 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
                 <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
                     <p class="w-full text-xs xxs:text-sm xs:text-base font-black text-neutral">療癒與實踐</p>
                     <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">在<span class="text-amber-800 font-bold">Hṛdayadīpa</span>，創作是一場緩慢的觀想。無論是紙上暈染或是文創，皆是從多年冥想雲遊中採擷的靈魂碎片。我們將利莫里亞的懷想、花香與溫熱化作線條，在矩陣裂縫中種下靜謐。</p>
@@ -430,7 +484,7 @@
             <div class="w-full h-[16%] shrink-0"></div>
             
             <!-- ENGLISH BLOCK (Bottom 42% Area) -->
-            <div class="w-full h-[42%] flex flex-col justify-center gap-2 overflow-y-auto pl-3 scrollbar-none pointer-events-auto pt-2">
+            <div class="w-full h-[42%] flex flex-col justify-start gap-2 overflow-y-auto pl-3 scrollbar-none pointer-events-auto pt-2">
                 <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
                     <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">PRACTICE OF HEALING</p>
                     <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">Here, creation is a slow meditation. Each piece—ink or object—is a soul-fragment gathered from years of wandering through inner realms. We weave echoes of Lemuria, blooms, and sweets to sow seeds of stillness within matrix cracks.</p>
@@ -456,6 +510,20 @@
                 <div class="w-1/2">The Light</div>
             </div>
         </div>
+
+        <!-- VISUAL UX SWIPE INDICATOR: HORIZONTAL LEFT GLIDE -->
+        <div class="absolute bottom-3 left-4 z-30 flex items-center gap-1.5 bg-black/40 backdrop-blur-xs text-white text-[9px] font-medium tracking-wider px-3 py-1 rounded-full pointer-events-none select-none">
+            <!-- Glides Leftward -->
+            <i class="fa-solid fa-chevron-left" style="animation: slideLeft 1.2s infinite ease-in-out;"></i>
+            <span>SWIPE｜滑動</span>
+        </div>
+        
+        <style>
+            @keyframes slideLeft {
+                0%, 100% { transform: translateX(0); opacity: 0.6; }
+                50% { transform: translateX(-5px); opacity: 1; }
+            }
+        </style>
     </div>
 </div>
 {% endblock %}
