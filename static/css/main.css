@@ -259,18 +259,20 @@ figure > img {
     /* For Firefox */
     scrollbar-width: thin;
     scrollbar-color: #d97706 #e5e7eb; /* Thumb / Track */
+    -webkit-overflow-scrolling: touch; /* Ensures fluid kinetic swiping momentum on iPhones */
   }
 
   /* For Chrome, Safari, and Edge */
   .custom-visible-scrollbar::-webkit-scrollbar {
     height: 8px !important; /* Thickness of horizontal scrollbar */
+    width: 7px !important;
     display: block !important; /* Force render on mobile */
   }
 
   .custom-visible-scrollbar::-webkit-scrollbar-track {
     /* Fixed: Added fallback background tokens and inset shadows to force it visible over layout layers */
     background-color: #e5e7eb !important; 
-    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2) !important;
     border-radius: 9999px !important;
   }
 

@@ -7,242 +7,455 @@
 </div>
 
 <!-- HORIZONTAL PAGE SCROLL CONTAINER -->
-<!-- <div class="flex my-6 overflow-x-scroll gap-6 p-4 h-[75vh] min-h-[560px] md:h-[600px] scrollbar-thin select-none"> -->
 <div class="flex my-6 overflow-x-scroll gap-6 p-4 h-[75vh] min-h-[560px] md:h-[600px] select-none custom-visible-scrollbar">
     <!-- ================= SEGMENT 1: THE KṢAṆA ｜ 那一剎那 ================= -->
-    <figure class="diff diff-vertical md:diff-horizontal aspect-[4/5] xs:aspect-square md:aspect-video h-full shrink-0 rounded-box shadow-md overflow-hidden" tabindex="0">
-        <!-- LAYER 1 (FRONT ARTWORK) -->
-        <div class="diff-item-1 relative" role="img" tabindex="0">
-            <img class="w-full h-full object-cover" alt="The Kṣaṇa" src="/media/images/about/gold_fish-ezgif.com-optiwebp.webp" />
-            <!-- Floating Foreground Label -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="flex w-48 xs:w-64 text-center bg-white/90 text-black text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
-                    <div class="w-1/2">The Kṣaṇa</div>
-                    <div class="w-1/2">那一剎那</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- LAYER 2 (BACK TEXT REVEAL PANEL) -->
-        <div class="diff-item-2 relative text-accent" role="img">
-            <div class="absolute inset-0 flex flex-col md:flex-row text-[9px] xxs:text-[11px] xs:text-xs leading-normal p-4 xs:p-6 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
-                <!-- 1. CHINESE BLOCK -->
-                <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
-                    <div class="w-full h-auto md:h-1/2 flex items-end">
-                        <p class="w-full text-right md:text-left text-xs xxs:text-sm xs:text-base font-black text-neutral">LIFE & EXISTENCE</p>
-                    </div>
-                    <div class="w-full text-right md:text-left h-auto md:h-1/2 flex flex-col items-start">
-                        <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">Begins in a single, fleeting moment. So too does <span class="text-amber-700 font-bold">Hṛdayadīpa</span>: The House of the Heart Lamp.</p>
-                        <p class="text-neutral/80 line-clamp-4 md:line-clamp-none font-light">We are seekers from different walks of life, tasting the rich colours of existence. Even in darkness, a light was kindled from the Source, proving that shadows are but a momentary illusion.</p>
-                    </div>
-                </div>
-                
-                <!-- 2. INVISIBLE GAP ENGINE PLACEHOLDER -->
-                <div class="w-full h-[16%] md:w-[10%] md:h-full shrink-0"></div>
-                
-                <!-- 3. ENGLISH BLOCK -->
-                <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 border-t border-white/30 md:border-t-0 md:border-l overflow-y-auto pl-3 md:pr-5 scrollbar-none pointer-events-auto">
-                    <div class="w-full h-auto md:h-1/2 flex items-end pr-5">
-                        <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">生命與存在</p>
-                    </div>
-                    <div class="w-full h-auto md:h-1/2 flex flex-col items-start">
-                        <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">緣起於一剎那。無數剎那交織在我們的頻率中，凝聚成 <span class="text-amber-700 font-bold">Hṛdayadīpa 心燈之屋</span>。</p>
-                        <p class="text-neutral/80 line-clamp-4 md:line-clamp-none font-light">我們在各自的道路上修行，歷經風雨。然而那一盞燈，終由眾生之根為我們點亮。隨之，我們看透黑暗，不過是剎那幻覺。</p>
+    <!-- DESKTOP -->
+    <div class="hidden xs:block w-full h-full shrink-0">
+        <figure class="relative aspect-square md:aspect-video h-full w-full rounded-box shadow-md overflow-hidden select-none diff" tabindex="0">
+            <!-- LAYER 1 (FRONT ARTWORK) -->
+            <div class="diff-item-1" role="img" tabindex="0">
+                <img class="w-full h-full object-cover" alt="The Kṣaṇa" src="/media/images/about/gold_fish-ezgif.com-optiwebp.webp" />
+                <!-- Floating Foreground Label -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="flex w-48 xs:w-64 text-center bg-white/90 text-black text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                        <div class="w-1/2">The Kṣaṇa</div>
+                        <div class="w-1/2">那一剎那</div>
                     </div>
                 </div>
             </div>
             
-            <!-- Floating Foreground Label (Rear Layer) -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="flex w-48 xs:w-64 text-center bg-black/60 text-white text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
-                    <div class="w-1/2">The Kṣaṇa</div>
-                    <div class="w-1/2">那一剎那</div>
+            <!-- LAYER 2 (BACK TEXT REVEAL PANEL) -->
+            <div class="diff-item-2 relative text-accent" role="img">
+                <div class="absolute inset-0 flex flex-col md:flex-row text-[9px] xxs:text-[11px] xs:text-xs leading-normal p-4 xs:p-6 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
+                    <!-- 1. CHINESE BLOCK -->
+                    <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
+                        <div class="w-full h-auto md:h-1/2 flex items-end">
+                            <p class="w-full text-right md:text-left text-xs xxs:text-sm xs:text-base font-black text-neutral">LIFE & EXISTENCE</p>
+                        </div>
+                        <div class="w-full text-right md:text-left h-auto md:h-1/2 flex flex-col items-start">
+                            <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">Begins in a single, fleeting moment. So too does <span class="text-amber-700 font-bold">Hṛdayadīpa</span>: The House of the Heart Lamp.</p>
+                            <p class="text-neutral/80 line-clamp-4 md:line-clamp-none font-light">We are seekers from different walks of life, tasting the rich colours of existence. Even in darkness, a light was kindled from the Source, proving that shadows are but a momentary illusion.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 2. INVISIBLE GAP ENGINE PLACEHOLDER -->
+                    <div class="w-full h-[16%] md:w-[10%] md:h-full shrink-0"></div>
+                    
+                    <!-- 3. ENGLISH BLOCK -->
+                    <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 border-t border-white/30 md:border-t-0 md:border-l overflow-y-auto pl-3 md:pr-5 scrollbar-none pointer-events-auto">
+                        <div class="w-full h-auto md:h-1/2 flex items-end pr-5">
+                            <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">生命與存在</p>
+                        </div>
+                        <div class="w-full h-auto md:h-1/2 flex flex-col items-start">
+                            <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">緣起於一剎那。無數剎那交織在我們的頻率中，凝聚成 <span class="text-amber-800 font-bold">Hṛdayadīpa 心燈之屋</span>。</p>
+                            <p class="text-neutral/80 line-clamp-4 md:line-clamp-none font-light">我們在各自的道路上修行，歷經風雨。然而那一盞燈，終由眾生之根為我們點亮。隨之，我們看透黑暗，不過是剎那幻覺。</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Floating Foreground Label (Rear Layer) -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="flex w-48 xs:w-64 text-center bg-black/60 text-white text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                        <div class="w-1/2">The Kṣaṇa</div>
+                        <div class="w-1/2">那一剎那</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- RESIZER DRAG CONTROLLER -->
+            <div class="diff-resizer hidden xs:block"></div>
+        </figure>
+    </div>
+    <!-- MOBILE -->
+    <div class="w-full block xs:hidden relative aspect-[4/5] xxs:aspect-square h-full shrink-0 rounded-box shadow-md overflow-hidden bg-cover bg-center bg-no-repeat select-none"
+        style="background-image: url('/media/images/about/gold_fish-ezgif.com-optiwebp.webp');">
+        
+        <!-- 1. BACK TEXT REVEAL PANEL -->
+        <div class="absolute inset-0 flex flex-col text-[9px] xxs:text-[11px] leading-normal p-4 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
+            <!-- ENGLISH BLOCK (Top 42% Area) -->
+            <div class="w-full h-[42%] flex flex-col justify-center gap-2 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
+                <div class="w-full h-auto flex items-end">
+                    <p class="w-full text-right text-xs xxs:text-sm font-black text-neutral">LIFE & EXISTENCE</p>
+                </div>
+                <div class="w-full text-right h-auto flex flex-col items-start">
+                    <p class="text-neutral/80 line-clamp-3 font-light">Begins in a single, fleeting moment. So too does <span class="text-amber-700 font-bold">Hṛdayadīpa</span>: The House of the Heart Lamp.</p>
+                    <p class="text-neutral/80 line-clamp-4 font-light">We are seekers from different walks of life, tasting the rich colours of existence. Even in darkness, a light was kindled from the Source, proving that shadows are but a momentary illusion.</p>
+                </div>
+            </div>
+            
+            <!-- INVISIBLE CENTER GAP PLACEHOLDER (Middle 16% Area) -->
+            <div class="w-full h-[16%] shrink-0"></div>
+            
+            <!-- CHINESE BLOCK (Bottom 42% Area) -->
+            <div class="w-full h-[42%] flex flex-col justify-center gap-2 overflow-y-auto pl-3 scrollbar-none pointer-events-auto pt-2">
+                <div class="w-full h-auto flex items-end pr-5">
+                    <p class="text-xs xxs:text-sm font-black text-neutral">生命與存在</p>
+                </div>
+                <div class="w-full h-auto flex flex-col items-start">
+                    <p class="text-neutral/80 line-clamp-3 font-light">緣起於一剎那。無數剎那交織在我們的頻率中，凝聚成 <span class="text-amber-700 font-bold">Hṛdayadīpa 心燈之屋</span>。</p>
+                    <p class="text-neutral/80 line-clamp-4 font-light">我們在各自的道路上修行，歷經風雨。然而那一盞燈，終由眾生之根為我們點亮。隨之，我們看透黑暗，不過是剎那幻覺。</p>
                 </div>
             </div>
         </div>
-        
-        <!-- RESIZER DRAG CONTROLLER -->
-        <div class="diff-resizer cursor-col-resize md:cursor-row-resize"></div>
-    </figure>
+
+        <!-- 2. FLOATING FOREGROUND LABELS (Two-Tone Overlay) -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+            <div class="flex w-48 text-center bg-white/90 text-black text-xs font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                <div class="w-1/2">The Kṣaṇa</div>
+                <div class="w-1/2">那一剎那</div>
+            </div>
+        </div>
+        <!-- Rear layer for subtle depth effect matching the open state look -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+            <div class="flex w-48 text-center bg-black/60 text-white text-xs font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                <div class="w-1/2">The Kṣaṇa</div>
+                <div class="w-1/2">那一剎那</div>
+            </div>
+        </div>
+    </div>
 
     <!-- ================= SEGMENT 2: THE POLARIS ｜ 北極星 ================= -->
-    <figure class="diff diff-vertical md:diff-horizontal aspect-[4/5] xs:aspect-square md:aspect-video h-full shrink-0 rounded-box shadow-md overflow-hidden" tabindex="0">
-        <!-- LAYER 1 (FRONT ARTWORK) -->
-        <div class="diff-item-1 relative" role="img" tabindex="0">
-            <img class="w-full h-full object-cover" alt="POLARIS ｜ 北極星" src="/media/images/about/cherry_blossoms-ezgif.com-optiwebp.webp" />
-            <!-- Floating Foreground Label -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="flex w-48 xs:w-64 text-center bg-white/90 text-black text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
-                    <div class="w-1/2">The Polaris</div>
-                    <div class="w-1/2">北極星</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- LAYER 2 (BACK TEXT REVEAL PANEL) -->
-        <div class="diff-item-2 relative text-accent" role="img">
-            <div class="absolute inset-0 flex flex-col md:flex-row text-[9px] xxs:text-[11px] xs:text-xs leading-normal p-4 xs:p-6 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
-                <!-- 1. CHINESE BLOCK -->
-                <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
-                    <div class="w-full h-auto md:h-1/2 flex items-end">
-                        <p class="w-full text-right md:text-left text-xs xxs:text-sm xs:text-base font-black text-neutral">奇點與光點</p>
-                    </div>
-                    <div class="w-full text-right md:text-left h-auto md:h-1/2 flex flex-col items-start">
-                        <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">當人類意識懸於深淵，左岸利莫里亞，右岸亞特蘭提斯。<span class="text-amber-700 font-bold">Hṛdayadīpa</span> 的能量，源自古老的利莫里亞記憶。</p>
-                        <p class="text-neutral/80 line-clamp-4 md:line-clamp-none font-light">不求凌駕於萬物，只願與地球的脈動相契合。在眾生能量交會之處，守護真正的和諧與價值。</p>
-                    </div>
-                </div>
-                
-                <!-- 2. INVISIBLE GAP ENGINE PLACEHOLDER -->
-                <div class="w-full h-[16%] md:w-[10%] md:h-full shrink-0"></div>
-                
-                <!-- 3. ENGLISH BLOCK -->
-                <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 border-t border-white/30 md:border-t-0 md:border-l overflow-y-auto pl-3 md:pr-5 scrollbar-none pointer-events-auto">
-                    <div class="w-full h-auto md:h-1/2 flex items-end pr-5">
-                        <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">THE SINGULARITY</p>
-                    </div>
-                    <div class="w-full h-auto md:h-1/2 flex flex-col items-start">
-                        <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">Consciousness hangs precariously above the abyss. The essence of <span class="text-amber-700 font-bold">Hṛdayadīpa</span> weaves life back into Earth’s pulse, forging deep value where sentient energies converge.</p>
-                        <p class="text-neutral/80 line-clamp-4 md:line-clamp-none font-light">Lemurian cities were tapestries of verdant gardens and translucent sanctuaries. Their law is Balance, treasure is Harmony, and the coordinates are anchored firmly in Remembrance.</p>
+    <!-- DESKTOP -->
+    <div class="hidden xs:block w-full h-full shrink-0">
+        <figure class="relative aspect-square md:aspect-video h-full w-full rounded-box shadow-md overflow-hidden select-none diff" tabindex="0">
+            <!-- LAYER 1 (FRONT ARTWORK) -->
+            <div class="diff-item-1" role="img" tabindex="0">
+                <img class="w-full h-full object-cover" alt="POLARIS ｜ 北極星" src="/media/images/about/cherry_blossoms-ezgif.com-optiwebp.webp" />
+                <!-- Floating Foreground Label -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="flex w-48 xs:w-64 text-center bg-white/90 text-black text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                        <div class="w-1/2">The Polaris</div>
+                        <div class="w-1/2">北極星</div>
                     </div>
                 </div>
             </div>
             
-            <!-- Floating Foreground Label (Rear Layer) -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="flex w-48 xs:w-64 text-center bg-black/60 text-white text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
-                    <div class="w-1/2">The Polaris</div>
-                    <div class="w-1/2">北極星</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- RESIZER DRAG CONTROLLER -->
-        <div class="diff-resizer cursor-col-resize md:cursor-row-resize"></div>
-    </figure>
-    
-    <!-- ================= SEGMENT 3: THE SOULS ｜ 靈魂們 ================= -->
-    <figure class="diff diff-vertical md:diff-horizontal aspect-[4/5] xs:aspect-square md:aspect-video h-full shrink-0 rounded-box shadow-md overflow-hidden" tabindex="0">
-        <!-- LAYER 1 (FRONT ARTWORK) -->
-        <div class="diff-item-1 relative" role="img" tabindex="0">
-            <img class="w-full h-full object-cover" alt="The Souls" src="/media/images/about/boats-ezgif.com-optiwebp.webp" />
-            <!-- Floating Foreground Label -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="flex w-48 xs:w-64 text-center bg-white/90 text-black text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
-                    <div class="w-1/2">The Souls</div>
-                    <div class="w-1/2">靈魂們</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- LAYER 2 (BACK TEXT REVEAL PANEL) -->
-        <div class="diff-item-2 relative text-accent" role="img">
-            <div class="absolute inset-0 flex flex-col md:flex-row text-[9px] xxs:text-[11px] xs:text-xs leading-normal p-4 xs:p-6 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
-                <!-- 1. ENGLISH BLOCK -->
-                <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
-                    <!-- 明月 Profile Block -->
-                    <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
-                        <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">Mingyue ｜ Frontline</p>
-                        <p class="text-[8px] xxs:text-[10px] text-amber-800 font-semibold mb-1">Brand Visionary · Hand-Crafted Artworks</p>
-                        <p class="w-full leading-2.75 xxs:leading-3.25 xs:leading-4 text-neutral/80 line-clamp-4 md:line-clamp-none font-light">Crafting inspired focal points from the heart layer, threading organic forms with structural elegance to reveal timeless digital and tangible creations.</p>
+            <!-- LAYER 2 (BACK TEXT REVEAL PANEL) -->
+            <div class="diff-item-2 relative text-accent" role="img">
+                <div class="absolute inset-0 flex flex-col md:flex-row text-[9px] xxs:text-[11px] xs:text-xs leading-normal p-4 xs:p-6 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
+                    <!-- 1. CHINESE BLOCK -->
+                    <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
+                        <div class="w-full h-auto md:h-1/2 flex items-end">
+                            <p class="w-full text-right md:text-left text-xs xxs:text-sm xs:text-base font-black text-neutral">奇點與光點</p>
+                        </div>
+                        <div class="w-full text-right md:text-left h-auto md:h-1/2 flex flex-col items-start">
+                            <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">當人類意識懸於深淵，左岸利莫里亞，右岸亞特蘭提斯。<span class="text-amber-700 font-bold">Hṛdayadīpa</span> 的能量，源自古老的利莫里亞記憶。</p>
+                            <p class="text-neutral/80 line-clamp-4 md:line-clamp-none font-light">不求凌駕於萬物，只願與地球的脈動相契合。在眾生能量交會之處，守護真正的和諧與價值。</p>
+                        </div>
                     </div>
-                    <!-- 牛姊 Profile Block -->
-                    <div class="w-full text-left h-auto md:h-1/2 flex flex-col items-start">
-                        <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">NiuNiu ｜ Backstage</p>
-                        <p class="text-[8px] xxs:text-[10px] text-amber-800 font-semibold mb-1">Web Development · System Architecture</p>
-                        <p class="leading-2.75 xxs:leading-3.25 xs:leading-4 text-neutral/80 line-clamp-4 xs:line-clamp-none font-light">A seeker navigating digital realms. After a decade in mainstream machinery, I chose to exit the corporate matrix to preserve gardens, pâtisseries, and code architectures—crafting clean systems to ripple hidden secrets through the vast ocean of data.</p>
+                    
+                    <!-- 2. INVISIBLE GAP ENGINE PLACEHOLDER -->
+                    <div class="w-full h-[16%] md:w-[10%] md:h-full shrink-0"></div>
+                    
+                    <!-- 3. ENGLISH BLOCK -->
+                    <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 border-t border-white/30 md:border-t-0 md:border-l overflow-y-auto pl-3 md:pr-5 scrollbar-none pointer-events-auto">
+                        <div class="w-full h-auto md:h-1/2 flex items-end pr-5">
+                            <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">THE SINGULARITY</p>
+                        </div>
+                        <div class="w-full h-auto md:h-1/2 flex flex-col items-start">
+                            <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">Consciousness hangs precariously above the abyss. The essence of <span class="text-amber-700 font-bold">Hṛdayadīpa</span> weaves life back into Earth’s pulse, forging deep value where sentient energies converge.</p>
+                            <p class="text-neutral/80 line-clamp-4 md:line-clamp-none font-light">Lemurian cities were tapestries of verdant gardens and translucent sanctuaries. Their law is Balance, treasure is Harmony, and the coordinates are anchored firmly in Remembrance.</p>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- 2. INVISIBLE GAP ENGINE PLACEHOLDER -->
-                <div class="w-full h-[16%] md:w-[10%] md:h-full shrink-0"></div>
-                
-                <!-- 3. CHINESE BLOCK -->
-                <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 border-t border-white/30 md:border-t-0 md:border-l overflow-y-auto pl-3 md:pr-5 scrollbar-none pointer-events-auto">
-                <!-- 明月 Profile Block -->
-                    <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
-                        <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">明月 ｜ 前台掌櫃</p>
-                        <p class="text-[8px] xxs:text-[10px] text-amber-800 font-semibold mb-1">Hṛdayadīpa心燈之屋 靈感設計·作品製作</p>
-                        <p class="text-neutral/80 line-clamp-3 xs:line-clamp-none font-light">用匠心凝聚一剎那的靈感，親手雕琢與編織每一幅承載修行能量的作品，建立與有緣眾生的頻率共鳴。</p>
-                    </div>
-                    <!-- 牛姊 Profile Block -->
-                    <div class="w-full text-left h-auto md:h-1/2 flex flex-col items-start">
-                        <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">牛姊 ｜ 後台掌櫃</p>
-                        <p class="text-[8px] xxs:text-[10px] text-amber-800 font-semibold mb-1">Hṛdayadīpa心燈之屋 網站開發·維護·行政</p>
-                        <p class="text-neutral/80 line-clamp-4 xs:line-clamp-none font-light">利莫里亞區域的中年浮萍。歷經十載社會披星戴月，毅然主動棄局。曾主持甜品與花藝工作室，2020年轉折後潛心鑽研代碼。用程序在數字海洋中泛起微瀾。</p>
+                <!-- Floating Foreground Label (Rear Layer) -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="flex w-48 xs:w-64 text-center bg-black/60 text-white text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                        <div class="w-1/2">The Polaris</div>
+                        <div class="w-1/2">北極星</div>
                     </div>
                 </div>
             </div>
             
-            <!-- Floating Foreground Label (Rear Layer) -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="flex w-48 xs:w-64 text-center bg-black/60 text-white text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
-                    <div class="w-1/2">The Souls</div>
-                    <div class="w-1/2">靈魂們</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- RESIZER DRAG CONTROLLER -->
-        <div class="diff-resizer cursor-col-resize md:cursor-row-resize"></div>
-    </figure>
-    
-    <!-- ================= SEGMENT 4: THE LIGHT ｜ 循光而行 ================= -->
-    <figure class="diff diff-vertical md:diff-horizontal aspect-[4/5] xs:aspect-square md:aspect-video h-full shrink-0 rounded-box shadow-md overflow-hidden" tabindex="0">
-        <!-- LAYER 1 (FRONT ARTWORK) -->
-        <div class="diff-item-1 relative" role="img" tabindex="0">
-            <img class="w-full h-full object-cover" alt="The Light" src="/media/images/about/blossoms-ezgif.com-optiwebp.webp" />
-            <!-- Floating Foreground Label -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="flex w-48 xs:w-64 text-center bg-white/90 text-black text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
-                    <div class="w-1/2">循光而行</div>
-                    <div class="w-1/2">The Light</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- LAYER 2 (BACK TEXT REVEAL PANEL) -->
-        <div class="diff-item-2 relative text-accent" role="img">
-            <div class="absolute inset-0 flex flex-col md:flex-row text-[9px] xxs:text-[11px] xs:text-xs leading-normal p-4 xs:p-6 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
-                <!-- 1. CHINESE BLOCK -->
-                <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
-                    <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
-                        <p class="w-full text-xs xxs:text-sm xs:text-base font-black text-neutral">療癒與實踐</p>
-                        <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">在<span class="text-amber-800 font-bold">Hṛdayadīpa</span>，創作是一場緩慢的觀想。無論是紙上暈染或是文創，皆是從多年冥想雲遊中採擷的靈魂碎片。我們將利莫里亞的懷想、花香與溫熱化作線條，在矩陣裂縫中種下靜謐。</p>
-                    </div>
-                    <div class="w-full text-left h-auto md:h-1/2 flex flex-col items-start">
-                        <p class="w-full text-xs xxs:text-sm xs:text-base font-black text-neutral mb-0.5">萬光交匯 ｜ 繁星之夢</p>
-                        <p class="text-neutral/80 line-clamp-4 xs:line-clamp-none font-light">我們不願做孤島，渴望成為吸引靈魂停靠的池塘。矩陣中仍有許多撐起微光的創作者，心燈之屋誠摯邀請每位兼具慈悲與美感的靈魂帶着色彩與溫度前來，連結成網，在数字世界築起溫暖的舞台。</p>
-                    </div>
-                </div>
-                
-                <!-- 2. INVISIBLE GAP ENGINE PLACEHOLDER -->
-                <div class="w-full h-[16%] md:w-[10%] md:h-full shrink-0"></div>
-                
-                <!-- 3. ENGLISH BLOCK -->
-                <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 border-t border-white/30 md:border-t-0 md:border-l overflow-y-auto pl-3 md:pr-5 scrollbar-none pointer-events-auto">
-                    <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
-                        <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">PRACTICE OF HEALING</p>
-                        <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">Here, creation is a slow meditation. Each piece—ink or object—is a soul-fragment gathered from years of wandering through inner realms. We weave echoes of Lemuria, blooms, and sweets to sow seeds of stillness within matrix cracks.</p>
-                    </div>
-                    <div class="w-full h-auto md:h-1/2 flex flex-col items-start">
-                        <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral mb-0.5">CONVERGING LIGHTS</p>
-                        <p class="text-neutral/80 line-clamp-4 md:line-clamp-none font-light">We seek to be a tranquil pond where inspirations find reflection. <span class="text-amber-800 font-bold">Hṛdayadīpa</span> invites every creator of beauty and compassion to weave their consciousness into a shimmering web—building a digital sanctuary of warmth.</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Floating Foreground Label (Rear Layer) -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="flex w-48 xs:w-64 text-center bg-black/60 text-white text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
-                    <div class="w-1/2">循光而行</div>
-                    <div class="w-1/2">The Light</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- RESIZER DRAG CONTROLLER -->
-        <div class="diff-resizer cursor-col-resize md:cursor-row-resize"></div>
-    </figure>
+            <!-- RESIZER DRAG CONTROLLER -->
+            <div class="diff-resizer hidden xs:block"></div>
+        </figure>
     </div>
+    <!-- MOBILE -->
+    <div class="w-full block xs:hidden relative aspect-[4/5] xxs:aspect-square h-full shrink-0 rounded-box shadow-md overflow-hidden bg-cover bg-center bg-no-repeat select-none"
+        style="background-image: url('/media/images/about/cherry_blossoms-ezgif.com-optiwebp.webp');">
+        
+        <!-- 1. BACK TEXT REVEAL PANEL -->
+        <div class="absolute inset-0 flex flex-col text-[9px] xxs:text-[11px] leading-normal p-4 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
+            
+            <!-- CHINESE BLOCK (Top 42% Area) -->
+            <div class="w-full h-[42%] flex flex-col justify-center gap-2 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
+                <div class="w-full h-auto flex items-end">
+                    <p class="w-full text-right text-xs xxs:text-sm font-black text-neutral">奇點與光點</p>
+                </div>
+                <div class="w-full text-right h-auto flex flex-col items-start">
+                    <p class="text-neutral/80 line-clamp-3 font-light">當人類意識懸於深淵，左岸利莫里亞，右岸亞特蘭提斯。<span class="text-amber-700 font-bold">Hṛdayadīpa</span> 的能量，源自古老的利莫里亞記憶。</p>
+                    <p class="text-neutral/80 line-clamp-4 font-light">不求凌駕於萬物，只願與地球的脈動相契合。在眾生能量交會之處，守護真正的和諧與價值。</p>
+                </div>
+            </div>
+            
+            <!-- INVISIBLE CENTER GAP PLACEHOLDER (Middle 16% Area) -->
+            <div class="w-full h-[16%] shrink-0"></div>
+            
+            <!-- ENGLISH BLOCK (Bottom 42% Area) -->
+            <div class="w-full h-[42%] flex flex-col justify-center gap-2 overflow-y-auto pl-3 scrollbar-none pointer-events-auto pt-2">
+                <div class="w-full h-auto flex items-end pr-5">
+                    <p class="text-xs xxs:text-sm font-black text-neutral">THE SINGULARITY</p>
+                </div>
+                <div class="w-full h-auto flex flex-col items-start">
+                    <p class="text-neutral/80 line-clamp-3 font-light">Consciousness hangs precariously above the abyss. The essence of <span class="text-amber-700 font-bold">Hṛdayadīpa</span> weaves life back into Earth’s pulse, forging deep value where sentient energies converge.</p>
+                    <p class="text-neutral/80 line-clamp-4 font-light">Lemurian cities were tapestries of verdant gardens and translucent sanctuaries. Their law is Balance, treasure is Harmony, and the coordinates are anchored firmly in Remembrance.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. FLOATING FOREGROUND LABELS (Two-Tone Overlay) -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+            <div class="flex w-48 text-center bg-white/90 text-black text-xs font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                <div class="w-1/2">The Polaris</div>
+                <div class="w-1/2">北極星</div>
+            </div>
+        </div>
+        <!-- Rear layer for subtle depth effect matching the open state look -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+            <div class="flex w-48 text-center bg-black/60 text-white text-xs font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                <div class="w-1/2">The Polaris</div>
+                <div class="w-1/2">北極星</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= SEGMENT 3: THE SOULS ｜ 靈魂們 ================= -->
+    <!-- DESKTOP -->
+    <div class="hidden xs:block w-full h-full shrink-0">
+        <figure class="relative aspect-square md:aspect-video h-full w-full rounded-box shadow-md overflow-hidden select-none diff" tabindex="0">
+            <!-- LAYER 1 (FRONT ARTWORK) -->
+            <div class="diff-item-1" role="img" tabindex="0">
+                <img class="w-full h-full object-cover" alt="The Souls" src="/media/images/about/boats-ezgif.com-optiwebp.webp" />
+                <!-- Floating Foreground Label -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="flex w-48 xs:w-64 text-center bg-white/90 text-black text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                        <div class="w-1/2">The Souls</div>
+                        <div class="w-1/2">靈魂們</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- LAYER 2 (BACK TEXT REVEAL PANEL) -->
+            <div class="diff-item-2 relative text-accent" role="img">
+                <div class="absolute inset-0 flex flex-col md:flex-row text-[9px] xxs:text-[11px] xs:text-xs leading-normal p-4 xs:p-6 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
+                    <!-- 1. ENGLISH BLOCK -->
+                    <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
+                        <!-- 明月 Profile Block -->
+                        <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
+                            <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">Mingyue ｜ Frontline</p>
+                            <p class="text-[8px] xxs:text-[10px] text-amber-800 font-semibold mb-1">Brand Visionary · Hand-Crafted Artworks</p>
+                            <p class="w-full leading-2.75 xxs:leading-3.25 xs:leading-4 text-neutral/80 line-clamp-4 md:line-clamp-none font-light">Crafting inspired focal points from the heart layer, threading organic forms with structural elegance to reveal timeless digital and tangible creations.</p>
+                        </div>
+                        <!-- 牛姊 Profile Block -->
+                        <div class="w-full text-left h-auto md:h-1/2 flex flex-col items-start">
+                            <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">NiuNiu ｜ Backstage</p>
+                            <p class="text-[8px] xxs:text-[10px] text-amber-800 font-semibold mb-1">Web Development · System Architecture</p>
+                            <p class="leading-2.75 xxs:leading-3.25 xs:leading-4 text-neutral/80 line-clamp-4 xs:line-clamp-none font-light">A seeker navigating digital realms. After a decade in mainstream machinery, I chose to exit the corporate matrix to preserve gardens, pâtisseries, and code architectures—crafting clean systems to ripple hidden secrets through the vast ocean of data.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 2. INVISIBLE GAP ENGINE PLACEHOLDER -->
+                    <div class="w-full h-[16%] md:w-[10%] md:h-full shrink-0"></div>
+                    
+                    <!-- 3. CHINESE BLOCK -->
+                    <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 border-t border-white/30 md:border-t-0 md:border-l overflow-y-auto pl-3 md:pr-5 scrollbar-none pointer-events-auto">
+                    <!-- 明月 Profile Block -->
+                        <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
+                            <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">明月 ｜ 前台掌櫃</p>
+                            <p class="text-[8px] xxs:text-[10px] text-amber-800 font-semibold mb-1">Hṛdayadīpa心燈之屋 靈感設計·作品製作</p>
+                            <p class="text-neutral/80 line-clamp-3 xs:line-clamp-none font-light">用匠心凝聚一剎那的靈感，親手雕琢與編織每一幅承載修行能量的作品，建立與有緣眾生的頻率共鳴。</p>
+                        </div>
+                        <!-- 牛姊 Profile Block -->
+                        <div class="w-full text-left h-auto md:h-1/2 flex flex-col items-start">
+                            <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">牛姊 ｜ 後台掌櫃</p>
+                            <p class="text-[8px] xxs:text-[10px] text-amber-800 font-semibold mb-1">Hṛdayadīpa心燈之屋 網站開發·維護·行政</p>
+                            <p class="text-neutral/80 line-clamp-4 xs:line-clamp-none font-light">利莫里亞區域的中年浮萍。歷經十載社會披星戴月，毅然主動棄局。曾主持甜品與花藝工作室，2020年轉折後潛心鑽研代碼。用程序在數字海洋中泛起微瀾。</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Floating Foreground Label (Rear Layer) -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="flex w-48 xs:w-64 text-center bg-black/60 text-white text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                        <div class="w-1/2">The Souls</div>
+                        <div class="w-1/2">靈魂們</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- RESIZER DRAG CONTROLLER -->
+            <div class="diff-resizer hidden xs:block"></div>
+        </figure>
+    </div>
+    <!-- MOBILE -->
+    <div class="w-full block xs:hidden relative aspect-[4/5] xxs:aspect-square h-full shrink-0 rounded-box shadow-md overflow-hidden bg-cover bg-center bg-no-repeat select-none"
+        style="background-image: url('/media/images/about/boats-ezgif.com-optiwebp.webp');">
+        
+        <!-- 1. BACK TEXT REVEAL PANEL -->
+        <div class="absolute inset-0 flex flex-col text-[9px] xxs:text-[11px] leading-normal p-4 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
+            <!-- 1. ENGLISH BLOCK -->
+            <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
+                <!-- 明月 Profile Block -->
+                <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
+                    <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">Mingyue ｜ Frontline</p>
+                    <p class="text-[8px] xxs:text-[10px] text-amber-800 font-semibold mb-1">Brand Visionary · Hand-Crafted Artworks</p>
+                    <p class="w-full leading-2.75 xxs:leading-3.25 xs:leading-4 text-neutral/80 line-clamp-4 md:line-clamp-none font-light">Crafting inspired focal points from the heart layer, threading organic forms with structural elegance to reveal timeless digital and tangible creations.</p>
+                </div>
+                <!-- 牛姊 Profile Block -->
+                <div class="w-full text-left h-auto md:h-1/2 flex flex-col items-start">
+                    <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">NiuNiu ｜ Backstage</p>
+                    <p class="text-[8px] xxs:text-[10px] text-amber-800 font-semibold mb-1">Web Development · System Architecture</p>
+                    <p class="leading-2.75 xxs:leading-3.25 xs:leading-4 text-neutral/80 line-clamp-4 xs:line-clamp-none font-light">A seeker navigating digital realms. After a decade in mainstream machinery, I chose to exit the corporate matrix to preserve gardens, pâtisseries, and code architectures—crafting clean systems to ripple hidden secrets through the vast ocean of data.</p>
+                </div>
+            </div>
+            
+            <!-- 2. INVISIBLE GAP ENGINE PLACEHOLDER -->
+            <div class="w-full h-[16%] md:w-[10%] md:h-full shrink-0"></div>
+
+            <!-- 3. CHINESE BLOCK -->
+            <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 border-t border-white/30 md:border-t-0 md:border-l overflow-y-auto pl-3 md:pr-5 scrollbar-none pointer-events-auto">
+            <!-- 明月 Profile Block -->
+                <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
+                    <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">明月 ｜ 前台掌櫃</p>
+                    <p class="text-[8px] xxs:text-[10px] text-amber-800 font-semibold mb-1">Hṛdayadīpa心燈之屋 靈感設計·作品製作</p>
+                    <p class="text-neutral/80 line-clamp-3 xs:line-clamp-none font-light">用匠心凝聚一剎那的靈感，親手雕琢與編織每一幅承載修行能量的作品，建立與有緣眾生的頻率共鳴。</p>
+                </div>
+                <!-- 牛姊 Profile Block -->
+                <div class="w-full text-left h-auto md:h-1/2 flex flex-col items-start">
+                    <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">牛姊 ｜ 後台掌櫃</p>
+                    <p class="text-[8px] xxs:text-[10px] text-amber-800 font-semibold mb-1">Hṛdayadīpa心燈之屋 網站開發·維護·行政</p>
+                    <p class="text-neutral/80 line-clamp-4 xs:line-clamp-none font-light">利莫里亞區域的中年浮萍。歷經十載社會披星戴月，毅然主動棄局。曾主持甜品與花藝工作室，2020年轉折後潛心鑽研代碼。用程序在數字海洋中泛起微瀾。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. FLOATING FOREGROUND LABELS (Two-Tone Overlay) -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+            <div class="flex w-48 text-center bg-white/90 text-black text-xs font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                <div class="w-1/2">The Souls</div>
+                <div class="w-1/2">靈魂們</div>
+            </div>
+        </div>
+        <!-- Rear layer for subtle depth effect matching the open state look -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+            <div class="flex w-48 text-center bg-black/60 text-white text-xs font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                <div class="w-1/2">The Souls</div>
+                <div class="w-1/2">靈魂們</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= SEGMENT 4: THE LIGHT ｜ 循光而行 ================= -->
+    <!-- DESKTOP -->
+    <div class="hidden xs:block w-full h-full shrink-0">
+        <figure class="relative aspect-square md:aspect-video h-full w-full rounded-box shadow-md overflow-hidden select-none diff" tabindex="0">
+            <!-- LAYER 1 (FRONT ARTWORK) -->
+            <div class="diff-item-1" role="img" tabindex="0">
+                <img class="w-full h-full object-cover" alt="The Souls" src="/media/images/about/blossoms-ezgif.com-optiwebp.webp" />
+                <!-- Floating Foreground Label -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="flex w-48 xs:w-64 text-center bg-white/90 text-black text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                        <div class="w-1/2">循光而行</div>
+                        <div class="w-1/2">The Light</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- LAYER 2 (BACK TEXT REVEAL PANEL) -->
+            <div class="diff-item-2 relative text-accent" role="img">
+                <div class="absolute inset-0 flex flex-col md:flex-row text-[9px] xxs:text-[11px] xs:text-xs leading-normal p-4 xs:p-6 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
+                    <!-- 1. ENGLISH BLOCK -->
+                    <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
+                        <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
+                            <p class="w-full text-xs xxs:text-sm xs:text-base font-black text-neutral">療癒與實踐</p>
+                            <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">在<span class="text-amber-800 font-bold">Hṛdayadīpa</span>，創作是一場緩慢的觀想。無論是紙上暈染或是文創，皆是從多年冥想雲遊中採擷的靈魂碎片。我們將利莫里亞的懷想、花香與溫熱化作線條，在矩陣裂縫中種下靜謐。</p>
+                        </div>
+                        <div class="w-full text-left h-auto md:h-1/2 flex flex-col items-start">
+                            <p class="w-full text-xs xxs:text-sm xs:text-base font-black text-neutral mb-0.5">萬光交匯 ｜ 繁星之夢</p>
+                            <p class="text-neutral/80 line-clamp-4 xs:line-clamp-none font-light">我們不願做孤島，渴望成為吸引靈魂停靠的池塘。矩陣中仍有許多撐起微光的創作者，心燈之屋誠摯邀請每位兼具慈悲與美感的靈魂帶着色彩與溫度前來，連結成網，在数字世界築起溫暖的舞台。</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 2. INVISIBLE GAP ENGINE PLACEHOLDER -->
+                    <div class="w-full h-[16%] md:w-[10%] md:h-full shrink-0"></div>
+                    
+                    <!-- 3. CHINESE BLOCK -->
+                    <div class="w-full h-[42%] md:h-full flex flex-col justify-center md:justify-between gap-4 md:gap-16 border-t border-white/30 md:border-t-0 md:border-l overflow-y-auto pl-3 md:pr-5 scrollbar-none pointer-events-auto">
+                        <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
+                            <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">PRACTICE OF HEALING</p>
+                            <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">Here, creation is a slow meditation. Each piece—ink or object—is a soul-fragment gathered from years of wandering through inner realms. We weave echoes of Lemuria, blooms, and sweets to sow seeds of stillness within matrix cracks.</p>
+                        </div>
+                        <div class="w-full h-auto md:h-1/2 flex flex-col items-start">
+                            <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral mb-0.5">CONVERGING LIGHTS</p>
+                            <p class="text-neutral/80 line-clamp-4 md:line-clamp-none font-light">We seek to be a tranquil pond where inspirations find reflection. <span class="text-amber-800 font-bold">Hṛdayadīpa</span> invites every creator of beauty and compassion to weave their consciousness into a shimmering web—building a digital sanctuary of warmth.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Floating Foreground Label (Rear Layer) -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="flex w-48 xs:w-64 text-center bg-black/60 text-white text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                        <div class="w-1/2">循光而行</div>
+                        <div class="w-1/2">The Light</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- RESIZER DRAG CONTROLLER -->
+            <div class="diff-resizer hidden xs:block"></div>
+        </figure>
+    </div>
+
+    <!-- MOBILE -->
+    <div class="w-full block xs:hidden relative aspect-[4/5] xxs:aspect-square h-full shrink-0 rounded-box shadow-md overflow-hidden bg-cover bg-center bg-no-repeat select-none"
+        style="background-image: url('/media/images/about/blossoms-ezgif.com-optiwebp.webp');">
+        
+        <!-- 1. BACK TEXT REVEAL PANEL -->
+        <div class="absolute inset-0 flex flex-col text-[9px] xxs:text-[11px] leading-normal p-4 [text-shadow:_0_0_8px_#fff,_0_0_12px_#fff] overflow-hidden pointer-events-none">
+            <!-- CHINESE BLOCK (Top 42% Area) -->
+            <div class="w-full h-[42%] flex flex-col justify-center gap-2 overflow-y-auto scrollbar-none pointer-events-auto pl-5">
+                <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
+                    <p class="w-full text-xs xxs:text-sm xs:text-base font-black text-neutral">療癒與實踐</p>
+                    <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">在<span class="text-amber-800 font-bold">Hṛdayadīpa</span>，創作是一場緩慢的觀想。無論是紙上暈染或是文創，皆是從多年冥想雲遊中採擷的靈魂碎片。我們將利莫里亞的懷想、花香與溫熱化作線條，在矩陣裂縫中種下靜謐。</p>
+                </div>
+                <div class="w-full text-left h-auto md:h-1/2 flex flex-col items-start">
+                    <p class="w-full text-xs xxs:text-sm xs:text-base font-black text-neutral mb-0.5">萬光交匯 ｜ 繁星之夢</p>
+                    <p class="text-neutral/80 line-clamp-4 xs:line-clamp-none font-light">我們不願做孤島，渴望成為吸引靈魂停靠的池塘。矩陣中仍有許多撐起微光的創作者，心燈之屋誠摯邀請每位兼具慈悲與美感的靈魂帶着色彩與溫度前來，連結成網，在数字世界築起溫暖的舞台。</p>
+                </div>
+            </div>
+            
+            <!-- INVISIBLE CENTER GAP PLACEHOLDER (Middle 16% Area) -->
+            <div class="w-full h-[16%] shrink-0"></div>
+            
+            <!-- ENGLISH BLOCK (Bottom 42% Area) -->
+            <div class="w-full h-[42%] flex flex-col justify-center gap-2 overflow-y-auto pl-3 scrollbar-none pointer-events-auto pt-2">
+                <div class="w-full text-right h-auto md:h-1/2 flex flex-col justify-end items-end">
+                    <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral">PRACTICE OF HEALING</p>
+                    <p class="text-neutral/80 line-clamp-3 md:line-clamp-none font-light">Here, creation is a slow meditation. Each piece—ink or object—is a soul-fragment gathered from years of wandering through inner realms. We weave echoes of Lemuria, blooms, and sweets to sow seeds of stillness within matrix cracks.</p>
+                </div>
+                <div class="w-full h-auto md:h-1/2 flex flex-col items-start">
+                    <p class="text-xs xxs:text-sm xs:text-base font-black text-neutral mb-0.5">CONVERGING LIGHTS</p>
+                    <p class="text-neutral/80 line-clamp-4 md:line-clamp-none font-light">We seek to be a tranquil pond where inspirations find reflection. <span class="text-amber-800 font-bold">Hṛdayadīpa</span> invites every creator of beauty and compassion to weave their consciousness into a shimmering web—building a digital sanctuary of warmth.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. FLOATING FOREGROUND LABELS (Two-Tone Overlay) -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+            <div class="flex w-48 text-center bg-white/90 text-black text-xs font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                <div class="w-1/2">循光而行</div>
+                <div class="w-1/2">The Light</div>
+            </div>
+        </div>
+        <!-- Rear layer for subtle depth effect matching the open state look -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+            <div class="flex w-48 text-center bg-black/60 text-white text-xs font-bold p-3 rounded-xl shadow backdrop-blur-sm">
+                <div class="w-1/2">循光而行</div>
+                <div class="w-1/2">The Light</div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
