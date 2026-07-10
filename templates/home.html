@@ -12,13 +12,34 @@
         <div class="drawer absolute inset-0 z-[51] pointer-events-none lg:hidden">
             <input id="questionnaire-drawer" type="checkbox" class="drawer-toggle" />
             
-            <div class="drawer-content flex items-end justify-center p-6 w-full h-full">
-                <label for="questionnaire-drawer" class="btn btn-warning shadow-2xl pointer-events-auto flex flex-col gap-0.5 h-auto py-2.5 px-4 bg-warning/90 backdrop-blur-sm border-none text-neutral hover:bg-warning cursor-pointer">
-                    <span class="text-xs font-semibold tracking-wider opacity-90 font-mono">Find the piece for you</span>
-                    <span class="text-xs sm:text-sm font-bold">尋找您的那一幅畫</span>
+            <div class="drawer-content flex items-end justify-center p-6 w-full h-full pb-5">
+                <label for="questionnaire-drawer" 
+                    class="shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2),_inset_0_2px_0_0_rgba(255,255,255,0.3),_0_4px_0_0_#2A442E] 
+                        pointer-events-auto flex flex-col gap-0 w-full max-w-[11.5rem]
+                        bg-gradient-to-b from-emerald-100/50 via-emerald-200/50 to-emerald-300/40
+                        border border-emerald-400/20 text-[#1D3321] rounded-2xl backdrop-blur-sm
+                        hover:from-emerald-200/60 hover:to-emerald-400/60 
+                        active:translate-y-[4px] active:shadow-[0_8px_20px_-5px_rgba(0,0,0,0.15),_inset_0_1px_0_0_rgba(255,255,255,0.2)]
+                        transition-all duration-150 cursor-pointer select-none">
+                    
+                    <!-- TOP ROW: ENGLISH WITH LEFT HAND POINTER -->
+                    <div class="flex items-center justify-center gap-1.5 w-full shrink-0 pt-1.5">
+                        <!-- Left pulsing pointer hand icon -->
+                        <i class="fa-regular fa-hand-point-down text-[0.65rem] animate-pulse text-[#2A442E]"></i>
+                        <span class="text-[0.52rem] xxs:text-[0.58rem] font-bold uppercase tracking-widest opacity-80 font-mono flex items-center gap-1">
+                            Find the piece for you
+                        </span>
+                    </div>
+                    
+                    <!-- BOTTOM ROW: CHINESE WITH RIGHT HAND POINTER -->
+                    <div class="flex items-center justify-center gap-1.5 w-full shrink-0 border-t border-[#2A442E]/10 mt-0.5 pt-1 pb-1">
+                        <span class="text-[0.62rem] xxs:text-[0.68rem] font-medium tracking-widest text-[#1D3321]/90">尋找您的那一幅畫</span>
+                        
+                        <!-- Right pulsing pointer hand icon -->
+                        <i class="fa-regular fa-hand-pointer text-[0.65rem] animate-pulse text-[#2A442E]"></i>
+                    </div>
                 </label>
             </div>
-
             <div class="drawer-side h-full pointer-events-auto">
                 <label for="questionnaire-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
                 <div class="w-[85vw] max-w-[340px] h-full flex justify-center items-center p-4 bg-base-100/98 backdrop-blur-md shadow-2xl">
@@ -28,7 +49,7 @@
         </div>
 
         <!-- DESKTOP ONLY: FLOATING STATIC BLOCK -->
-        <div class="hidden lg:flex absolute top-0 right-20 w-1/3 h-full justify-center items-center z-[150] pointer-events-none">
+        <div class="hidden lg:flex absolute top-0 right-20 w-1/3 h-full justify-center items-center z-[99] pointer-events-none">
             <div class="pointer-events-auto">
                 {% include 'includes/questionnaire.html' %}
             </div>

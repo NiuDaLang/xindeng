@@ -256,37 +256,42 @@ figure > img {
 /* Home - About section scroll bar */
 @layer utilities {
   .custom-visible-scrollbar {
-    /* For Firefox */
-    scrollbar-width: thin;
-    scrollbar-color: #d97706 #e5e7eb; /* Thumb / Track */
-    -webkit-overflow-scrolling: touch; /* Ensures fluid kinetic swiping momentum on iPhones */
+    scrollbar-width: thin !important;
+    scrollbar-color: #d97706 #e5e7eb !important;
+    -webkit-overflow-scrolling: touch !important; /* Locks smooth kinetic swiping on mobile */
   }
 
   /* For Chrome, Safari, and Edge */
   .custom-visible-scrollbar::-webkit-scrollbar {
-    height: 8px !important; /* Thickness of horizontal scrollbar */
-    width: 7px !important;
-    display: block !important; /* Force render on mobile */
+    height: 8px !important;
+    width: 8px !important;
+    display: block !important;
+    -webkit-appearance: none !important; /* Kills default mobile hidden overlay rules */
   }
 
   .custom-visible-scrollbar::-webkit-scrollbar-track {
-    /* Fixed: Added fallback background tokens and inset shadows to force it visible over layout layers */
-    background-color: #e5e7eb !important; 
-    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2) !important;
+    background-color: #e5e7eb !important;
+    /* Inset shadow paints the layout container line directly into webkit graphics memory cards */
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.25) !important;
     border-radius: 9999px !important;
+    display: block !important;
   }
 
   .custom-visible-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #d97706 !important; /* High-visibility amber gold */
+    background-color: #d97706 !important;
     border-radius: 9999px !important;
-    border: 2px solid #e5e7eb !important; /* Creates a clean gap separating the track and thumb */
+    border: 2px solid #e5e7eb !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+    display: block !important;
   }
 
   .custom-visible-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #b45309 !important; /* Darkens on mouse hover */
+    background-color: #b45309 !important;
   }
 
-  /* Prevents horizontal expansion while blocking the browser's y-axis scrollbar */
+  /* ================= FIBONACCI SECTION: ANTI-SCROLLBAR ENGINE ================= */
+  /* CRITICAL: Do not delete this, or the vertical scrollbar on your post menu will return! */
+
   .overflow-x-hidden-clean {
     overflow-x: hidden !important;
     overflow-y: visible !important;

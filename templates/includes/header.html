@@ -5,25 +5,23 @@
       <!-- LEFT -->
         <div class="navbar-start">
             <!-- hamburger menu -->
-            <div class="dropdown lg:hidden relative group">
+            <div class="lg:hidden relative h-12 w-12 flex items-center justify-center">
                 
-                <!-- Fixed: Added an invisible checkbox helper to track tap actions on mobile screens safely -->
-                <input type="checkbox" id="mobile-menu-toggle" class="absolute inset-0 w-12 h-12 opacity-0 z-50 cursor-pointer peer" />
+                <!-- Fixed: Ensured the checkbox handles the absolute inset layer directly without any container block masks -->
+                <input type="checkbox" id="mobile-menu-toggle" class="absolute inset-0 w-full h-full opacity-0 z-50 cursor-pointer peer" />
                 
                 <!-- Logo Trigger Bar -->
-                <!-- Fixed: Added peer-checked rules to highlight the burger icon when clicked open if desired -->
-                <div class="flex pointer-events-none">
-                    <div tabindex="0" role="button" class="btn btn-ghost px-2 peer-checked:bg-base-200/50">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> 
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /> 
-                        </svg>
-                    </div>
+                <!-- Fixed: Changed pointer-events-none to peer-checked utilities so touch tracking isn't dropped -->
+                <div class="btn btn-ghost px-2 peer-checked:bg-base-200/60 transition-colors pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> 
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /> 
+                    </svg>
                 </div>
                 
                 <!-- Menu Dropdown Content -->
-                <!-- Fixed: Added 'hidden peer-checked:block' and 'pointer-events-auto' so the checkbox safely controls the visibility toggle natively on mobile -->
+                <!-- Fixed: Swapped out DaisyUI's '.dropdown-content' which was killing the absolute layout engine visibility -->
                 <ul tabindex="0"
-                    class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 w-[17rem] p-2 shadow hidden peer-checked:block pointer-events-auto absolute top-full left-0 mt-1">
+                    class="menu menu-sm bg-base-100 rounded-box z-50 w-[17rem] p-2 shadow hidden peer-checked:block pointer-events-auto absolute top-full left-0 mt-2 border border-base-200/50">
                     <li><a href="{% url 'about' %}" class="font-bold">About｜介紹</a></li>
                     <li>
                         <a href="{% url 'products' category_slug='physical' %}" class="text-primary font-bold">3D Goods｜三維寶貝</a>
@@ -56,7 +54,7 @@
                     <li><a href="{% url 'all_posts' %}" class="font-bold">Blog｜筆記</a></li>
                     <li><a href="{% url 'collaboration' %}" class="font-bold">Collab｜合作</a></li>
                 </ul>
-            </div>
+            </div>            
 
             <!-- logo -->
             <div class="sm:hidden lg:block">
@@ -136,14 +134,12 @@
                 </a>
             </button>            
             <!-- cart -->
-            <div class="dropdown dropdown-bottom flex items-center relative group">
-                
-                <!-- Fixed: Added an invisible checkbox helper to handle crisp mobile tap tracking events cleanly -->
+            <div class="flex items-center relative h-12 w-12 justify-center group">
+                <!-- Invisible Checkbox Trigger Layer -->
                 <input type="checkbox" id="header-cart-menu-toggle" class="absolute inset-0 w-full h-full opacity-0 z-50 cursor-pointer peer" />
 
                 <!-- Icon Trigger Frame -->
-                <!-- Fixed: Applied pointer-events-none so tap actions slip straight down into the checkbox trigger layer -->
-                <div tabindex="0" role="button" class="btn btn-ghost btn-circle flex items-center justify-center pointer-events-none peer-checked:bg-base-200/50">
+                <div class="btn btn-ghost btn-circle flex items-center justify-center pointer-events-none peer-checked:bg-base-200/60 transition-colors">
                     <div class="indicator">
                         <svg xmlns="http://w3.org" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -155,10 +151,8 @@
                 </div>
                 
                 <!-- Dropdown Menu Content Panel -->
-                <!-- Fixed: Replaced raw card displays with 'hidden peer-checked:block' and 'pointer-events-auto' -->
-                <!-- Fixed: Applied 'overflow-y-auto' so the cart list scrolls smoothly within the max-height limit if items stack up -->
                 <div tabindex="0" 
-                    class="card card-compact dropdown-content *:bg-base-100 z-1 mt-3 w-[23rem] shadow right-0 max-h-[calc(100vh-300px)] overflow-y-auto hidden peer-checked:block pointer-events-auto absolute top-full">
+                    class="card card-compact bg-base-100 rounded-box z-50 mt-2 w-[23rem] shadow right-0 max-h-[calc(100vh-300px)] overflow-y-auto hidden peer-checked:block pointer-events-auto absolute top-full border border-base-200/50">
                     <div class="card-body">
                         <!-- list -->
                         {% include 'store/partials/header_cart_list.html' %}
@@ -183,29 +177,27 @@
 
             <!-- user -->
             {% if user.is_authenticated %}
-                <div class="dropdown dropdown-bottom flex items-center relative group">
+                <div class="flex items-center relative h-12 w-12 justify-center group">
                     
-                    <!-- Fixed: Embedded an invisible checkbox tracker over the avatar button layout area -->
-                    <!-- This allows native tap-to-open and tap-to-close mechanics without breaking your layout look -->
+                    <!-- Invisible checkbox tracker layer -->
                     <input type="checkbox" id="user-avatar-menu-toggle" class="absolute inset-0 w-full h-full opacity-0 z-50 cursor-pointer peer" />
 
-                    <!-- Username Flag (Changes transparency layers seamlessly when menu stays active) -->
-                    <div class="absolute z-10 text-[0.65rem] w-max max-w-[300px] whitespace-nowrap -bottom-3 left-1/2 -translate-x-1/2 select-none pointer-events-none peer-checked:opacity-40 transition-opacity">
+                    <!-- Username Flag -->
+                    <div class="absolute z-10 text-[0.65rem] w-max max-w-[300px] whitespace-nowrap -bottom-1.5 left-1/2 -translate-x-1/2 select-none pointer-events-none peer-checked:opacity-40 transition-opacity">
                         Hi, {{ request.user.username }}!
                     </div>
                     
                     <!-- Avatar Button Frame -->
-                    <!-- Fixed: Set pointer-events-none so mouse actions slide down into the checkbox engine cleanly -->
-                    <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar pointer-events-none peer-checked:bg-base-200/50">
+                    <div class="btn btn-ghost btn-circle avatar pointer-events-none peer-checked:bg-base-200/60 transition-colors">
                         <div class="w-8 lg:w-10 rounded-full">
                             <img class="w-full" alt="User Picture" src="{% if request.user.profile %}{{ request.user.profile.profile_picture.url }} {% else %} /static/userprofile/default.png {% endif %}" />
                         </div>
                     </div>
                     
                     <!-- Dropdown Menu Content -->
-                    <!-- Fixed: Added 'hidden peer-checked:block' and 'pointer-events-auto' so it functions reliably on mobile touchscreens -->
+                    <!-- Fixed: Stripped '.dropdown-content', anchored left-0 to expand cleanly rightward -->
                     <ul tabindex="0"
-                        class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-[16rem] p-2 shadow right-0 absolute top-full hidden peer-checked:block pointer-events-auto">
+                        class="menu menu-sm bg-base-100 rounded-box z-50 mt-2 w-[16rem] p-2 shadow right-0 absolute top-full hidden peer-checked:block pointer-events-auto border border-base-200/50">
                         <li>
                             <a href="{% url 'dashboard' 'main' %}" 
                                 {% if request.resolver_match.url_name == 'dashboard' %}
@@ -315,7 +307,7 @@
                             </a>
                         </li>
                     </ul>
-                </div>            
+                </div>
 
                 <!-- logout btn -->
                 <a class="flex items-center btn btn-ghost px-2" href="{% url 'logout' %}">

@@ -1,14 +1,14 @@
 {% block content %}
     <!-- Fixed: Removed custom SVG background utility and applied pure Tailwind color gradients that adapt dynamically to any height -->
-    <div id="highlights" class="flex flex-col md:flex-row relative bg-gradient-to-br from-[#847C6D] via-[#D1D0BA] to-[#DFE9F5] rounded-box overflow-hidden shadow-sm">
+    <div id="highlights" class="flex flex-col-reverse md:flex-row relative bg-gradient-to-br from-[#847C6D] via-[#D1D0BA] to-[#DFE9F5] rounded-box overflow-hidden shadow-sm">
         
-        <!-- TOP/LEFT -->
+        <!-- BOTTOM/LEFT -->
         <div id="highlight_svg_animation" class="w-full md:w-1/2 flex flex-col justify-around">
             <!-- mug svg animation -->
             {% include 'includes/mug_rack_svg.html' %}           
         </div>
         
-        <!-- BOTTOM/RIGHT -->
+        <!-- TOP/RIGHT -->
         <div class="w-full md:w-1/2 flex flex-col justify-center items-center px-2 xxs:px-4 xs:px-8 py-6 xxs:py-12 xs:py-24 md:p-4">
             <!-- catch copy -->
             <div class="text-base-content text-[0.85rem] xxs:text-[0.9rem] xs:text-[0.95rem] sm:text-[1.05rem] md:text-[0.95rem] lg:text-[1.05rem] xl:text-[1.25rem] font-light text-shadow-lg mb-3 text-shadow-stone-300 text-center">

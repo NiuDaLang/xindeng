@@ -110,6 +110,58 @@
             <span>Copyright © 2026 - All rights reserved by Hṛdaya Dīpa 心燈之屋</span>
         </p>
     </footer>
+
+    <!-- GLOBAL RESPONSIVE MENU MANAGER SCRIPT -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const burgerToggle = document.getElementById('mobile-menu-toggle');
+        const cartToggle = document.getElementById('header-cart-menu-toggle');
+        const userToggle = document.getElementById('user-avatar-menu-toggle');
+        const allToggles = [burgerToggle, cartToggle, userToggle];
+
+        function closeOtherMenus(currentTarget) {
+            allToggles.forEach(toggle => {
+                if (toggle && toggle !== currentTarget) {
+                    toggle.checked = false;
+                }
+            });
+        }
+
+        allToggles.forEach(toggle => {
+            if (toggle) {
+                toggle.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        closeOtherMenus(e.target);
+                    }
+                });
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            allToggles.forEach(toggle => {
+                if (toggle && toggle.checked) {
+                    const container = toggle.closest('.relative');
+                    if (container && !container.contains(e.target)) {
+                        toggle.checked = false;
+                    }
+                }
+            });
+        });
+
+        document.querySelectorAll('.menu a, .dropdown-content a, .card-body a').forEach(link => {
+            link.addEventListener('click', () => {
+                allToggles.forEach(toggle => {
+                    if (toggle) {
+                        toggle.checked = false;
+                    }
+                });
+            });
+        });
+    });
+    </script>    
 </body>
 </html>
 {% endblock %}
