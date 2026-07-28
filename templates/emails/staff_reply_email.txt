@@ -1,0 +1,21 @@
+{% if user.username %}親愛的{{user.username}} ｜ Dear {{user.username}}{% else %}親愛的{{order.email}} ｜ Dear {{order.email}}{% endif %}
+
+客服專員回覆通知 ｜ Support Desk Care Update
+
+我們的客服人員已針對您的訂單編號 [ #{{ order.order_number }} ] 發布了新的留言回覆：
+A member of our support team has left a new response regarding your order reference #{{ order.order_number }}:
+
+============================================================
+✉️ REPLY CONTEXT ｜ 回覆內容
+============================================================
+{{ message_content }}
+============================================================
+
+您隨時可以透過下方的安全連結查閱完整的諮詢與對話歷史紀錄：
+You can view your complete communication history timeline log anytime via our live track gateway:
+{{ settings.SITE_URL }}/contact/
+
+如果您沒有在心燈 xindeng.com 購物，請忽視這份郵件。
+If you did not make a purchase at xindeng.com, please ignore this email.
+
+Copyright © 2026 | xindeng.art

@@ -8,36 +8,77 @@ from django.http import Http404
 from taggit.models import Tag
 from accounts.models import UserProfile
 from reviews.models import Comment
+from django.db.models import Count, Q
+from django.db.models.functions import TruncMonth
 
 
-# Create your views here.
 def all_posts(request):
-    all_posts = Post.objects.filter(status="Published").order_by("-created_at")
-    paginator = Paginator(all_posts, 5)
+    # 1. Base query for all published logs
+    all_published_posts = Post.objects.filter(status="Published").order_by("-created_at")
+    
+    # 2. Intercept Sidebar & Search Filters (Tag, Month, and Keyword Search)
+    search_query = request.GET.get('q')
+    tag_slug = request.GET.get('tag')
+    month_query = request.GET.get('month') # Expects format 'YYYY-MM'
+
+    if search_query:
+        all_published_posts = all_published_posts.filter(
+            Q(title__icontains=search_query) | 
+            Q(short_description__icontains=search_query)
+        )
+    if tag_slug:
+        all_published_posts = all_published_posts.filter(tags__slug=tag_slug)
+    if month_query:
+        try:
+            year, month = month_query.split('-')
+            all_published_posts = all_published_posts.filter(created_at__year=year, created_at__month=month)
+        except ValueError:
+            pass # Ignore malformed query strings gracefully
+
+    # 3. Dynamic Arrays for Tab-2 and Tab-3 (Filtered dynamically based on sidebar selections too!)
+    blog_posts = all_published_posts.filter(post_type="Blog")
+    news_posts = all_published_posts.filter(post_type="News")
+
+    # 4. Standard Paginator loop logic (5 logs per layout track block)
+    paginator = Paginator(all_published_posts, 5)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    latest_five_posts = all_posts[:5]
-    blog_posts = all_posts.filter(post_type="Blog")
-    news_posts = all_posts.filter(post_type="News")
+    # 🌟 FIX: Extract the first 5 records out of the ACTIVE filtered queryset for Tab-1 display
+    latest_five_posts = all_published_posts[:5]
+
+    # 5. Sidebar Static Queries (These always query the global published pool so they remain visible)
+    global_published = Post.objects.filter(status="Published")
+    
+    popular_posts = global_published.filter(is_featured=True)[:5]
+    if not popular_posts.exists():
+        popular_posts = global_published.order_by("-created_at")[:5]
+
+    tags_with_counts = Post.tags.filter(
+        post__status="Published"
+    ).annotate(
+        post_count=Count('post')
+    ).order_by('-post_count')[:12]
+
+    archive_dates = global_published.annotate(
+        month=TruncMonth('created_at')
+    ).values('month').annotate(
+        post_count=Count('id')
+    ).order_by('-month')
 
     context = {
-        "page_title": "Blog｜筆記",
-        "main_title": "Blog｜筆記",
-        "sub_title_1": "Life's fleeting moments are but stars that coalesce into a dazzling night",
-        "sub_title_2": "生活的點點滴滴，就像星空點點，匯聚成燦爛的夜空",
-        "bread_crumb_1": "Home｜首頁",
-        "bread_crumb_2": "Blog｜筆記",
-        "bread_crumb_1_url": "/",
-        "bread_crumb_2_url": "/blog/posts",
-        "posts": all_posts,
+        "page_title": "Art Blog ｜ 心燈筆記",
         "page_obj": page_obj,
-        "latest_five_posts": latest_five_posts,
+        "latest_five_posts": latest_five_posts,  # 🌟 RESTORED: Feeds perfectly back into Tab-1 loop
+        "popular_posts": popular_posts,
+        "tags_with_counts": tags_with_counts,
+        "archive_dates": archive_dates,
         "blog_posts": blog_posts,
         "news_posts": news_posts
     }
 
     return render(request, 'blog/all_posts.html', context)
+
 
 def all_posts_display(request, category):
     if category=='Published':

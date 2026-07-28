@@ -1,114 +1,115 @@
 {% load humanize %}
 <div id="product-purchase-panel" 
-     class="w-full"
+     class="w-full h-full transition-all duration-300"
      data-is-resolved-sku="{{ is_resolved_sku|yesno:'true,false' }}"
      data-selected-var-id="{{ selected_var_id|default:'' }}">
-     
-    <form id="add-to-cart-form" class="w-full space-y-4">
+    
+    <form id="add-to-cart-form" class="w-full h-full flex flex-col items-start space-y-5">
         {% csrf_token %}
         <input type="hidden" name="product_id" value="{{ single_product.id }}">
         
-        <!-- Pricing Metadata Header -->
-        <div class="flex flex-col">
-            <h2 class="card-title font-bold text-lg text-base-content">{{ single_product.product_name }}</h2>
-            <div class="w-full mt-1 font-extrabold text-left text-xl text-primary font-mono">
-                CNY&nbsp;<span>{{ displayed_price|floatformat:2|intcomma }}</span>
+        <!-- 🌟 DESKTOP ONLY HEADER: Hidden on small screens via 'hidden md:flex' -->
+        <div class="hidden md:flex flex-col border-b border-base-200/60 pb-3 mb-4 md:relative md:top-0 z-30 bg-base-100 w-full px-0 pt-0">
+            <h2 class="text-left text-xs xxs:text-[0.8rem] xs:text-[1rem] sm:text-sm md:text-lg font-bold tracking-tight text-base-content/90 mb-0.5 leading-snug">
+                {{ single_product.product_name }}
+            </h2>
+            <div class="w-full font-mono font-extrabold text-left text-[1rem] xs:text-[1.25rem] sm:text-2xl text-primary tracking-tight">
+                <span class="text-[0.6rem] xs:text-[0.675rem] sm:text-xs font-semibold opacity-80 mr-0.5">CNY</span>{{ displayed_price|floatformat:2|intcomma }}<span>{% if not only_one_variation and not is_resolved_sku %}~{% endif %}</span>
             </div>
         </div>
 
-        <!-- Pattern Image Variant Selectors (🌟 FIXED: Explicit padding grid eliminates overlap bugs) -->
-        <div class="my-6 flex flex-row flex-wrap justify-start items-center gap-x-6 gap-y-5 mx-auto">
-            {% for var in variations %}
-            <div id="var_option_{{ var.pk }}" 
-                 class="flex flex-col items-center justify-center w-16 text-center tooltip tooltip-bottom tooltip-neutral font-sans text-[11px] {% if var.available_production_stock == 0 %}opacity-30{% endif %}" 
-                 data-tip="{% if var.available_production_stock == 0 %}[ 暫時缺貨 ｜ OUT OF STOCK ]{% else %}{{ var.get_sku }}{% endif %}">
-                
-                <label class="cursor-pointer select-none relative block group"
-                       hx-post="{% url 'select_variation_htmx' %}"
-                       hx-vals='{"selected_variation": "{{ var.id }}", "product_id": "{{ single_product.id }}"}'
-                       hx-target="#product-purchase-panel"
-                       hx-swap="outerHTML">
-                    <input type="radio" 
-                           name="selected_variation" 
-                           value="{{ var.id }}"
-                           {% if selected_var_id == var.id %}checked{% endif %}
-                           {% if var.available_production_stock == 0 %}disabled{% endif %}
-                           class="hidden">
-                    <img src="{{ var.images.url }}" 
-                         id="var_img_{{ var.pk }}"
-                         class="w-16 h-16 object-cover rounded-md transition-all duration-200 bg-white block {% if selected_var_id == var.id %}border-2 border-primary shadow-md scale-105{% else %}border border-base-300 opacity-70 group-hover:opacity-100{% endif %}">
+        <!-- Scrollable Options Card Container -->
+        <div class="bg-base-100 border border-base-200 shadow-sm rounded-2xl p-5 sm:p-6 md:px-3 lg:px-5 space-y-5 w-full relative z-10">
+            <!-- Pattern Image Variant Selectors Layout Matrix -->
+            <div class="py-1">
+                <label class="label font-bold text-[11px] tracking-widest uppercase text-base-content/80 mb-3 block">
+                    Select Edition <span class="text-xs font-light">｜</span> 款式選取
                 </label>
-                <span class="text-[9px] text-base-content/40 truncate w-full tracking-tighter font-mono block leading-none mt-2">
-                    {{ var.get_sku }}
-                </span>
+                <div class="flex flex-row flex-wrap justify-start items-center gap-x-4 gap-y-4">
+                    {% for var in variations %}
+                    <div id="var_option_{{ var.pk }}" 
+                        class="flex flex-col items-center justify-center w-14 text-center tooltip tooltip-bottom tooltip-neutral font-sans text-[11px] {% if var.available_production_stock == 0 %}opacity-30{% endif %}" 
+                        data-tip="{% if var.available_production_stock == 0 %}[ 暫時缺貨 ｜ OUT OF STOCK ]{% else %}{{ var.get_sku }}{% endif %}">
+                        
+                        <label class="select-none relative block group rounded-xl {% if var.available_production_stock == 0 %}pointer-events-none cursor-not-allowed{% else %}cursor-pointer{% endif %}"
+                            {% if var.available_production_stock > 0 %}
+                            hx-post="{% url 'select_variation_htmx' %}"
+                            hx-vals='{"selected_variation": "{{ var.id }}", "product_id": "{{ single_product.id }}"}'
+                            hx-target="#product-purchase-panel"
+                            hx-swap="outerHTML"
+                            {% endif %}>
+                            <input type="radio" name="selected_variation" value="{{ var.id }}" {% if selected_var_id == var.id %}checked{% endif %} {% if var.available_production_stock == 0 %}disabled{% endif %} class="hidden">
+                            <img src="{{ var.images.url }}" id="var_img_{{ var.pk }}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-xl transition-all duration-300 bg-base-100 block bg-clip-padding {% if selected_var_id == var.id %}border-primary/60 ring-2 ring-primary/40 ring-offset-2 z-10 scale-[1.03]{% else %}border-base-200 opacity-60 group-hover:opacity-100 group-hover:border-base-300{% endif %}">
+                        </label>
+                        <span class="text-[9px] text-base-content/30 truncate w-full tracking-tight font-mono block leading-none mt-2 select-none">
+                            {{ var.get_sku }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
-            {% endfor %}
-        </div>
 
-        <!-- Specifications Panel -->
-        {% if has_any_valid_specifications %}
-        <div id="var_specs" class="flex flex-col space-y-3 bg-base-200/50 p-4 rounded-xl border border-base-300/60 font-sans my-4">
-            <h3 class="text-xs font-semibold uppercase tracking-wider text-base-content/60 border-b border-base-300 pb-1.5 mb-1">
-                Specifications | 作品規格明細
-            </h3>
-            {% if has_valid_sizes %}
-            <div class="flex justify-between items-center text-xs">
-                <span class="opacity-60">Size | 尺寸 :</span>
-                <span class="font-medium text-base-content {% if is_resolved_sku %}text-primary font-semibold{% endif %}">
-                    {{ active_filters.size }}
-                </span>
+            <!-- Specifications Panel Data Display Block -->
+            {% if has_any_valid_specifications %}
+            <div id="var_specs" class="flex flex-col space-y-2.5 bg-base-50 py-4 rounded-xl border border-base-200/60 font-sans my-2 animate-fade-in">
+                <h3 class="text-[10px] font-bold uppercase tracking-wider text-base-content/60 border-b border-base-200/50 pb-2 mb-1">
+                    Specifications<span class="text-xs font-light">｜</span>作品規格明細
+                </h3>
+                {% if has_valid_sizes %}
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-base-content/50">Size｜尺寸 :</span>
+                    <span class="font-medium {% if is_resolved_sku %}text-primary font-semibold{% else %}text-base-content/80{% endif %}">
+                        {{ active_filters.size }}
+                    </span>
+                </div>
+                {% endif %}
+                {% if has_valid_colors %}
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-base-content/50">Color｜顏色 :</span>
+                    <span class="font-medium {% if is_resolved_sku %}text-primary font-semibold{% else %}text-base-content/80{% endif %}">
+                        {{ active_filters.color }}
+                    </span>
+                </div>
+                {% endif %}
+                {% if has_valid_types %}
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-base-content/50">Type｜款式 :</span>
+                    <span class="font-medium {% if is_resolved_sku %}text-primary font-semibold{% else %}text-base-content/80{% endif %}">
+                        {{ active_filters.type }}
+                    </span>
+                </div>
+                {% endif %}
             </div>
             {% endif %}
-            {% if has_valid_colors %}
-            <div class="flex justify-between items-center text-xs">
-                <span class="opacity-60">Color | 顏色 :</span>
-                <span class="font-medium text-base-content {% if is_resolved_sku %}text-primary font-semibold{% endif %}">
-                    {{ active_filters.color }}
-                </span>
-            </div>
-            {% endif %}
-            {% if has_valid_types %}
-            <div class="flex justify-between items-center text-xs">
-                <span class="opacity-60">Type | 款式 :</span>
-                <span class="font-medium text-base-content {% if is_resolved_sku %}text-primary font-semibold{% endif %}">
-                    {{ active_filters.type }}
-                </span>
-            </div>
-            {% endif %}
-        </div>
-        {% endif %}
-        
-        <div class="divider my-2"></div>
 
-        <!-- Quantity Input Operations Pipeline -->
-        <div id="add-to-cart-form-wrapper" class="w-full">
-            {% if is_resolved_sku %}
-                {% if resolved_stock > 0 %}
-                    <label class="label py-1 text-[11px] opacity-60">Quantity | 數量</label>
-                    <select name="quantity" id="checkout-quantity-selector" class="select select-neutral w-full mb-3 font-sans text-xs bg-base-content text-base-100">
-                        {% for idx in stock_loop_range %}
-                            <option value="{{ idx }}">{{ idx }}</option>
-                        {% endfor %}
-                    </select>
-                    <button hx-post="{% url 'add_to_cart_htmx' %}" 
-                            hx-include="#product-purchase-panel [name]" 
-                            hx-target="#product-purchase-panel" 
-                            hx-swap="outerHTML" 
-                            type="button" 
-                            class="w-full my-1.5 btn btn-sm btn-primary font-normal text-xs tracking-wider">
-                        Add to Cart｜加入購物車&nbsp;<i class="fa-solid fa-cart-arrow-down"></i>
-                    </button>
+            <!-- Quantity & Form Submission Zone -->
+            <div id="add-to-cart-form-wrapper" class="w-full pt-1">
+                {% if is_resolved_sku %}
+                    {% if resolved_stock > 0 %}
+                        <div class="form-control w-full mb-4">
+                            <label class="label py-1 text-[11px] font-medium tracking-wide uppercase text-base-content/40 mb-1">Quantity ｜ 數量</label>
+                            <select name="quantity" id="checkout-quantity-selector" class="select select-bordered select-sm h-10 w-full bg-base-50 focus:border-primary focus:outline-none rounded-xl text-xs font-sans font-medium text-base-content/80">
+                                {% for idx in stock_loop_range %}
+                                    <option value="{{ idx }}">{{ idx }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button hx-post="{% url 'add_to_cart_htmx' %}" hx-include="#product-purchase-panel [name]" hx-target="#product-purchase-panel" hx-swap="outerHTML" type="button" class="w-full btn btn-primary rounded-xl tracking-widest text-xs font-medium transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.01] h-11 min-h-[2.75rem]">
+                            Add to Cart ｜ 加入購物車 &nbsp;<i class="fa-solid fa-cart-arrow-down opacity-80"></i>
+                        </button>
+                    {% else %}
+                        <div class="w-full p-4 text-center rounded-xl bg-error/5 text-error border border-error/20 text-xs font-semibold tracking-wide flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-circle-exclamation opacity-90"></i>
+                            <span>Out Of Stock ｜ 暫時缺貨</span>
+                        </div>
+                    {% endif %}
                 {% else %}
-                    <div class="w-full p-3 my-3 text-center rounded bg-error/10 text-error border border-error/20 text-xs font-medium">
-                        Out Of Stock | 已達數量上限或暫時缺貨 <i class="fa-solid fa-circle-exclamation"></i>
+                    <div class="w-full p-4 text-center rounded-xl bg-base-50 text-base-content/50 text-xs font-light font-sans tracking-wide leading-relaxed border border-dashed border-base-200/80 my-1">
+                        Tap above to select and witness the fine details.<br>
+                        <span class="text-[10px] opacity-60 block mt-1 font-sans">點選上方款式，觀看大美細節。</span>
                     </div>
                 {% endif %}
-            {% else %}
-                <div class="w-full p-3 my-3 text-center rounded bg-base-200 text-base-content/60 text-xs font-light font-sans tracking-wide leading-relaxed">
-                    點選上方款式，觀看大美細節。<br>
-                    <span class="text-[10px] opacity-70 block mt-0.5 font-sans">Tap above to select and witness the fine details.</span>
-                </div>
-            {% endif %}
+            </div>
         </div>
     </form>
 </div>

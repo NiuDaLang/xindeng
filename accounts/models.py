@@ -427,6 +427,8 @@ class CustomerVoucher(models.Model):
     failed_pin_attempts         = models.PositiveSmallIntegerField(default=0)
     is_locked                   = models.BooleanField(default=False)
 
+    expiry_date                 = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return f"{self.purchaser_email} - CNY {self.value}"
     
@@ -445,6 +447,23 @@ class CustomerVoucher(models.Model):
         self.registered_email = email.strip().lower()
         self.save()
         return True
+    
+    def save(self, *args, **kwargs):
+        """
+        🚀 Lifespan Controller: Automatically calculates and sets a 1-year 
+        expiry date for unclaimed guest vouchers when they are first generated.
+        """
+        if not self.pk and not self.is_claimed and not self.expiry_date:
+            # Market Standard: Enforce a strict 365-day claim window limit
+            self.expiry_date = timezone.now() + timedelta(days=365)
+        super().save(*args, **kwargs)
+
+    def is_expired(self):
+        """Evaluates whether the credit token has passed its legal lifespan."""
+        if self.expiry_date and timezone.now() > self.expiry_date:
+            return True
+        return False
+   
     
 class ChatMessage(models.Model):
     sender = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='sent_messages')

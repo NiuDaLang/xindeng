@@ -1,0 +1,56 @@
+{% autoescape off %}
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; background-color: #f7f5f3; padding: 20px;">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #cccccc; border-radius: 8px;">
+        <tr>
+            <td style="background-color: #4b9aaa; padding: 40px; text-align: center; color: white; font-size: 1.15rem; font-weight: bold;">
+                Cancellation Complete & Refund Notice
+                <br><span style="font-size: 0.9rem; font-weight: normal; opacity: 0.8;">訂單取消與退款完成通知</span>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 40px; font-size: 0.85rem; line-height: 1.45rem; color: #161616;">
+                Dear Customer,<br><br>
+                The cancellation parameters for your order reference <strong>#{{ order.order_number }}</strong> have been processed completely. Your transaction history lifecycle is now closed.<br>
+                您好，您的訂單編號 <strong>#{{ order.order_number }}</strong> 已由管理員完全處理完畢，此筆訂單取消程序已正式結案。
+
+                <!-- 🌟 CONTEXT SENSITIVE ROUTER BOX -->
+                {% if is_offline_method %}
+                <br>
+                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 8px;">
+                    <tr>
+                        <td style="padding: 16px; font-size: 0.8rem; color: #92400e; line-height: 1.4rem;">
+                            <strong>📋 Action Required: Offline Transfer Details Requested / 請回覆退款帳戶資訊:</strong><br>
+                            Because your order was settled offline via <strong>{{ payment.payment_method }}</strong>, our accounts team requires your specific account details to execute the manual transfer return. Please **REPLY DIRECTLY TO THIS EMAIL** with your:<br>
+                            由於您當初是使用 <strong>{{ payment.get_payment_method }}</strong> 進行線下轉帳，我們的財務團隊需要您提供具體的收款帳戶資訊以便為您手動匯回退款。請**直接回覆本封郵件**並提供以下資料：
+                            <br><br>
+                            1. Full Account Holder Name / 戶名全銜<br>
+                            2. Bank Name & Branch Code / 銀行名稱與分行分帳號<br>
+                            3. Card or Account Number / 銀行或行動支付帳號 (WeChat/Alipay ID)
+                        </td>
+                    </tr>
+                </table>
+                {% else %}
+                <br>
+                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+                    <tr>
+                        <td style="padding: 16px; font-size: 0.8rem; color: #166534; line-height: 1.4rem;">
+                            <strong>💳 Refund Issued:</strong><br>
+                            The financial sum of <strong>{{ order.currency_code }} {{ order.total_due_foreign }}</strong> has been electronically returned to your origin <strong>{{ payment.payment_method }}</strong> channel account wallet. Capital returns generally manifest within 3-5 bank business loops.<br>
+                            退款總額 <strong>{{ order.currency_code }} {{ order.total_due_foreign }}</strong> 已循原管道全額退回至您的 <strong>{{ payment.payment_method }}</strong> 帳戶中。資金到帳時間通常需要 3 至 5 個銀行工作天。
+                        </td>
+                    </tr>
+                </table>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: #333333; padding: 20px; text-align: center; color: white; font-size: 0.7rem;">
+                Copyright &copy; 2026 | xindeng.art
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+{% endautoescape %}

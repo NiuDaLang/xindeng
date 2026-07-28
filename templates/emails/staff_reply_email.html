@@ -1,0 +1,98 @@
+{% autoescape off %}
+<!DOCTYPE html>
+<html lang="en" style="padding:0;margin:0;box-sizing:border-box;">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Customer Service Response ｜ 客服留言回覆</title>
+        <link rel="preconnect" href="https://googleapis.com">
+        <link rel="preconnect" href="https://gstatic.com" crossorigin>
+        <link href="https://googleapis.com/css2?family=Noto+Sans+TC:wght@100..900&display=swap" rel="stylesheet">
+    </head>
+    <body style="font-family: 'Noto Sans TC', sans-serif; margin:0; background-color: #f7f5f3; padding: 20px 0;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="table-layout: fixed;">
+            <tr>
+                <td align="center" style="padding: 0 10px;">
+                    <table class="content" width="600" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse; border: 1px solid #cccccc; background-color:#f7f5f3; width: 600px; max-width: 100%;">
+                        <!-- Header Banner -->
+                        <tr>
+                            <td class="header" style="background-color: #c2bdb9; padding: 40px; text-align: center; color:#161616; font-size: 1.15rem; line-height: 1.35rem; font-weight: bold;">
+                                Customer Care Update
+                                <br/>
+                                客服專員回覆通知
+                            </td>
+                        </tr>
+
+                        <!-- Body Greeting -->
+                        <tr>
+                            <td class="body" style="padding: 40px 40px 20px 40px; text-align: left; font-size: 0.85rem; line-height: 1.35rem; color: #161616;">
+                                {% if user.username %}
+                                    Dear {{user.username}} ｜ 親愛的{{user.username}}
+                                {% else %}
+                                    Dear {{order.email}} ｜ 親愛的{{order.email}}
+                                {% endif %}
+                                <br><br>
+                                A member of our support team has left a new response regarding your order reference <strong>#{{ order.order_number }}</strong>:<br/>
+                                我們的客服人員已針對您的訂單編號 <strong>#{{ order.order_number }}</strong> 發布了新的留言回覆：
+                            </td>
+                        </tr>
+
+                        <!-- MESSAGE CONTEXT COMPONENT BOX -->
+                        <tr>
+                            <td style="padding: 0 40px 25px 40px;">
+                                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border: 1px solid #e5e5e5; border-radius: 8px; border-collapse: separate;">
+                                    <tr>
+                                        <td style="width: 100%; padding: 20px; text-align: left; font-size: 0.8rem; line-height: 1.45rem; color: #333333; font-style: italic; white-space: pre-line;">
+                                            {{ message_content }}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <!-- Link Redirection Portal Panel -->
+                        <tr>
+                            <td style="padding: 0 40px 35px 40px; text-align: center;">
+                                <p style="font-size: 0.8rem; color: #666666; margin-bottom: 15px; text-align: left; line-height: 1.35rem;">
+                                    You can view your complete communication history timeline log anytime via our live track gateway:<br/>
+                                    您隨時可以透過下方的安全連結查閱完整的諮詢與對話歷史紀錄：
+                                </p>
+                                <a href="{{ site_domain }}/contact/" style="display: inline-block; background-color: #4b9aaa; color: #ffffff; padding: 12px 25px; text-decoration: none; font-size: 0.8rem; font-weight: bold; border-radius: 6px; letter-spacing: 0.05em; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                    View Live Tracking Portal ｜ 前往進度查詢入口
+                                </a>
+                            </td>
+                        </tr>
+
+                        <!-- Disclaimer Guard / Sign-off Block -->
+                        <tr>
+                            <td class="body" style="padding: 0 40px 30px 40px; text-align: left; font-size: 0.7rem; line-height: 1.15rem; color: #666666; border-top: 1px dashed #cccccc; padding-top: 20px;">
+                                If you did not make a purchase at xindeng.com, please ignore this email.<br>
+                                如果您沒有在心燈 xindeng.com 購物，請忽視這份郵件。     
+                            </td>
+                        </tr>
+
+                        <!-- Footer Block -->
+                        <tr>
+                            <td class="footer" style="background-color: #333333; padding: 40px; text-align: center; color: white; font-size: 14px; font-family: sans-serif;">
+                                Copyright &copy; 2026 | xindeng.art
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
+
+<style>
+@media screen and (max-width: 600px) {
+    .content {
+        width: 100% !important;
+        padding: 0 !important;
+    }
+    .header, .body, .footer {
+        padding: 25px !important;
+    }
+}
+</style>
+{% endautoescape %}

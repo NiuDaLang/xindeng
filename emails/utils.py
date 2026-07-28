@@ -14,6 +14,7 @@ import mimetypes
 from pathlib import Path
 import logging
 from accounts.models import CustomerVoucher
+from django.contrib.sites.models import Site # 🌟 IMPORT THE DATABASE SITE CONFIG
 
 
 logger = logging.getLogger(__name__)
@@ -278,6 +279,109 @@ def send_secure_voucher_pin_email(v_id, pin_code):
     mail.attach_alternative(html_message, "text/html")
     mail.encoding = 'utf-8'
     mail.send()
+
+
+def send_inquiry_alert_email(order_number, message_content):
+    """Alerts shop admins immediately when a customer logs a fresh query."""
+    order = Order.objects.get(order_number=order_number)
+    mail_subject = f"🚨 New Customer Inquiry ｜ 新留言提醒 [#{order.order_number}]"
+    
+    from_email = settings.DEFAULT_FROM_EMAIL
+    # As requested, matching your admin fallback logic loops
+    to_email = ['gogocfa@yahoo.co.jp'] 
+
+    context = {
+        "order": order,
+        "message_content": message_content,
+    }
+
+    html_message = render_to_string("emails/admin_inquiry_alert_email.html", context)
+    plain_message = render_to_string("emails/admin_inquiry_alert_email.txt", context)
+
+    mail = EmailMultiAlternatives(subject=mail_subject, body=plain_message, from_email=from_email, to=to_email)
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = 'utf-8'
+    mail.send()
+
+
+def send_staff_reply_email(order_number, message_content):
+    """Streams formal message blocks down to the target customer's inbox tray."""
+    order = Order.objects.get(order_number=order_number)
+    mail_subject = f"✉️ Hṛdayadīpa ｜ 心燈 - Customer Care Reply ｜ 專員客服回覆 [#{order.order_number}]"
+
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_email = [order.email]
+
+    # 🚀 DYNAMIC SITE LOOKUP (Safe for background Celery worker threads)
+    current_site = Site.objects.get_current() 
+    # This evaluates to '127.0.0.1:8000' or 'localhost:8000' in development, 
+    # and automatically flips to 'xindeng.art' once configured in your production DB.
+    site_domain = f"http://{current_site.domain}"
+
+    context = {
+        "user": order.user,
+        "order": order,
+        "message_content": message_content,
+        "site_domain": site_domain, # 🌟 PASS THE ASYNC SAFE PROTOCOL PATH HERE
+    }
+
+    html_message = render_to_string("emails/staff_reply_email.html", context)
+    plain_message = render_to_string("emails/staff_reply_email.txt", context)
+
+    mail = EmailMultiAlternatives(subject=mail_subject, body=plain_message, from_email=from_email, to=to_email, bcc=[from_email])
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = 'utf-8'
+    mail.send()
+
+
+def send_cancellation_initiation_email(order_number):
+    """Compiles safety warning frameworks when a user clicks the cancellation trigger button."""
+    order = Order.objects.get(order_number=order_number)
+    mail_subject = f"⚠️ Cancellation Processing Alert ｜ 訂單取消申請處理中 [#{order.order_number}]"
+    
+    current_site = Site.objects.get_current()
+    site_domain = f"http://{current_site.domain}"
+    
+    context = {
+        "order": order,
+        "site_domain": site_domain,
+    }
+    
+    html_message = render_to_string("emails/cancellation_initiation_email.html", context)
+    plain_message = render_to_string("emails/cancellation_initiation_email.txt", context)
+    
+    mail = EmailMultiAlternatives(subject=mail_subject, body=plain_message, from_email=settings.DEFAULT_FROM_EMAIL, to=[order.email])
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = 'utf-8'
+    mail.send()
+
+
+def send_cancellation_finalized_email(order_number):
+    """Compiles customized closing statements adapting instructions dynamically to match payment methods."""
+    order = Order.objects.get(order_number=order_number)
+    mail_subject = f"✅ Cancellation Complete & Refund Notice ｜ 訂單取消與退款完成通知 [#{order.order_number}]"
+    
+    current_site = Site.objects.get_current()
+    site_domain = f"http://{current_site.domain}"
+    
+    # 🌟 CORE DISCRIMINATOR: Detect if payment was processed offline
+    is_offline_method = order.payment and order.payment.payment_method in ['Bank Transfer', 'AliPay', 'WeChat', 'Cash On Delivery', 'Other']
+    
+    context = {
+        "order": order,
+        "payment": order.payment,
+        "site_domain": site_domain,
+        "is_offline_method": is_offline_method,
+    }
+    
+    html_message = render_to_string("emails/cancellation_finalized_email.html", context)
+    plain_message = render_to_string("emails/cancellation_finalized_email.txt", context)
+    
+    mail = EmailMultiAlternatives(subject=mail_subject, body=plain_message, from_email=settings.DEFAULT_FROM_EMAIL, to=[order.email])
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = 'utf-8'
+    mail.send()
+
 
 
 # __str__ returned non-string (type ProductVariation)

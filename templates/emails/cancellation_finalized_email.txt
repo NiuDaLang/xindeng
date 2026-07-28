@@ -1,0 +1,22 @@
+訂單取消與退款完成通知 ｜ Cancellation Complete & Refund Notice
+
+您好，您的訂單編號 [ #{{ order.order_number }} ] 已完全處理完畢，訂單取消程序正式結案。
+The cancellation parameters for your order reference #{{ order.order_number }} have been processed completely.
+
+{% if is_offline_method %}
+============================================================
+📋 ACTION REQUIRED: REPLY WITH REFUND DETAILS ｜ 請回覆退款帳戶資訊
+============================================================
+Because your order was settled offline via {{ payment.payment_method }}, our financial operations desk requires your transfer credentials. Please REPLY DIRECTLY to this email with your Account Name, Bank details, or Mobile Payment IDs.
+
+由於您當初是使用 {{ payment.get_payment_method }} 進行線下轉帳，我們需要您直接回覆本封郵件並提供以下資料以便手動退款：
+1. 戶名全銜 / Account Holder Name
+2. 銀行名稱與分行 / Bank Name & Branch
+3. 收款帳號 / Card or Account Number
+============================================================
+{% else %}
+退款金額已循原管道全額匯回至您的 {{ payment.payment_method }} 帳戶中。資金到帳一般需要 3-5 個工作天。
+The financial balance has been electronically returned back to your origin {{ payment.payment_method }} avenue.
+{% endif %}
+
+Copyright © 2026 | xindeng.art

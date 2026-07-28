@@ -9,85 +9,118 @@
     <meta property="og:url" content="{{ absolute_url }}">
 {% endaddtoblock %}
 
-<!-- LOW-PROFILE SILK THEME BANNER (Stays completely outside of main layout loop) -->
-<div class="relative mt-[86px] w-full bg-base-300 py-6 text-center border-b border-b-base-200 select-none">
-    <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div class="text-left">
-            <h1 class="text-base md:text-lg font-serif tracking-widest text-base-content">{{ main_title }}</h1>
-            <p class="text-[11px] tracking-wide text-base-content/60 font-serif mt-0.5">{{ sub_title_2 }}</p>
+<!-- BANNER (Stays completely outside of main layout loop) -->
+<div class="relative mt-[65px] lg:mt-[86px] w-full bg-base-300 py-5 sm:py-6 border-b border-base-200 select-none">
+    <div class="max-w-4xl mx-auto px-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-6 min-w-0">
+        
+        <!-- Left: Titles Group -->
+        <div class="text-left min-w-0">
+            <h1 class="text-sm sm:text-base md:text-lg font-serif tracking-widest text-base-content truncate">{{ main_title }}</h1>
+            <p class="text-[10px] sm:text-[11px] tracking-wide text-base-content/60 font-serif mt-0.5 truncate">{{ sub_title_2 }}</p>
         </div>
-        <div class="text-xs font-light text-base-content/50 tracking-wide flex items-center gap-2 font-sans">
-            <a href="{{ bread_crumb_1_url }}" class="hover:text-primary transition-colors">{{ bread_crumb_1 }}</a>
-            <span>/</span>
-            <a href="{{ bread_crumb_2_url }}" class="hover:text-primary transition-colors">{{ bread_crumb_2 }}</a>
-            <span>/</span>
-            <span class="text-base-content/80 font-medium truncate max-w-[180px]">{{ bread_crumb_4 }}</span>
+        
+        <!-- Right: Mobile-Safe Horizontal Scrolling Breadcrumbs -->
+        <div class="text-[11px] sm:text-xs font-light text-base-content/50 tracking-wide flex items-center gap-1.5 sm:gap-2 font-sans overflow-x-auto whitespace-nowrap scrollbar-none py-1 -my-1 -mx-4 px-4 md:mx-0 md:px-0 min-w-0">
+            <a href="{{ bread_crumb_1_url }}" class="hover:text-primary transition-colors flex-shrink-0">{{ bread_crumb_1 }}</a>
+            <span class="opacity-40 flex-shrink-0">/</span>
+            <a href="{{ bread_crumb_2_url }}" class="hover:text-primary transition-colors flex-shrink-0">{{ bread_crumb_2 }}</a>
+            <span class="opacity-40 flex-shrink-0">/</span>
+            <!-- Responsive width caps on the final product name text string -->
+            <span class="text-base-content/80 font-medium truncate max-w-[140px] sm:max-w-[200px] md:max-w-[250px] lg:max-w-[300px] flex-shrink-0">
+                {{ bread_crumb_4 }}
+            </span>
         </div>
+        
     </div>
 </div>
 
-<main class="px-[max(1rem,5vw)] py-16 glight_main font-sans">
-    <div class="md:grid md:grid-cols-8 md:gap-8">
+<main class="px-[max(1rem,5vw)] py-3 xs:py-12 md:py-16 glight_main font-sans bg-base-50/30">
+    <div class="grid grid-cols-1 md:grid-cols-8 gap-0 md:gap-8 lg:gap-12 items-start relative w-full">
+        
         <!-- LEFT COLUMN: DISPLAY MEDIA CORE -->
-        <div class="col-span-5 space-y-4">
-            <!-- Product Images -->
-            <div id="product_images">
-                <!-- Main Full-Screen Viewport Anchor -->
-                <a id="open-product-gallery" href="#" class="block">
-                    <figure class="w-full aspect-4/3 rounded-xl overflow-hidden shadow-sm relative bg-base-200">
-                        <img id="main_thumbnail" src="{{ single_product.images.url }}" class="w-full h-full object-cover" alt="Master Canvas Canvas"/>
+        <div class="col-span-1 md:col-span-5 order-1 space-y-4 sticky top-[65px] md:relative md:top-0 z-20 bg-base-100 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
+            
+            <!-- Product Images Display Module -->
+            <div id="product_images" class="group">
+                <a id="open-product-gallery" href="#" class="block focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-2xl">
+                    <figure class="md:w-full mx-auto aspect-[4/3] max-h-[30vh] md:max-h-none rounded-2xl overflow-hidden shadow-sm border border-base-200 bg-base-200 relative">
+                        <img id="main_thumbnail" 
+                            src="{{ single_product.images.url }}" 
+                            class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" 
+                            alt="{{ single_product.product_name|default:'Master Canvas View' }}"/>
                     </figure>
                 </a>
                 
-                <!-- Unified Small Thumbnail List Strip Grid Layout -->
-                <div class="flex flex-wrap gap-3 mt-3 justify-start" id="product_gallery_images">
+                <!-- Gallery Thumbnails Strip -->
+                <div class="flex flex-row md:flex-wrap gap-0 xxs:gap-1 sm:gap-3 items-center justify-center md:justify-start overflow-x-auto whitespace-nowrap p-2 mt-1 sm:mt-4 scrollbar-none min-h-[64px] sm:min-h-[80px]" id="product_gallery_images">
                     {% for cell in product_gallery %}
-                        <div class="thumbnail-item w-16 h-16 rounded-md overflow-hidden cursor-pointer border 
+                        <!-- Added clear structural margin spacing (mr-3) to separate raw image edges cleanly -->
+                        <div class="thumbnail-item w-10 h-10 xxs:w-12 xxs:h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden cursor-pointer border bg-base-100 bg-clip-padding flex-shrink-0 mr-3 last:mr-0
                                 {% if forloop.first %}
-                                    border-2 border-primary shadow-md scale-105 z-10
+                                    border-primary/60 ring-2 ring-primary/40 ring-offset-2 z-10 scale-[1.02]
                                 {% else %}
-                                    border border-base-300 opacity-70 hover:opacity-100
+                                    border-base-200 opacity-60 hover:opacity-100 hover:border-base-300
                                 {% endif %} 
-                                transition-all duration-200" 
+                                transition-all duration-300" 
                             data-index="{{ forloop.counter0 }}"
                             data-src="{{ cell.href }}"
                         >
-                            <img id="product_gallery_image_{{ forloop.counter0 }}" 
-                                src="{{ cell.href }}" 
-                                class="w-full h-full object-cover" 
-                                alt="{{ cell.title|default:'Gallery Thumbnail Image Piece' }}"/>
+                            <img id="product_gallery_image_{{ forloop.counter0 }}" src="{{ cell.href }}" class="w-full h-full object-cover" alt="Thumbnail"/>
                         </div>
                     {% endfor %}
                 </div>
+
+                <!-- 🌟 MOBILE STICKY MIRROR HEADER (Initial Load) -->
+                <!-- Only renders on mobile/tablet (block md:hidden) -->
+                <div id="mobile-sticky-mirror-header" class="block md:hidden w-full border-b border-base-200/60 pb-3 mb-2 pt-1 bg-base-100">
+                    <h2 class="text-center text-xs xxs:text-[0.8rem] xs:text-[1rem] font-bold tracking-tight text-base-content/90 mb-0.5 leading-snug">
+                        {{ single_product.product_name }}
+                    </h2>
+                    <div class="w-full font-mono font-extrabold text-center text-[1rem] xs:text-[1.25rem] text-primary tracking-tight">
+                        <span class="text-[0.6rem] xs:text-[0.675rem] font-semibold opacity-80 mr-0.5">CNY</span>{{ displayed_price|floatformat:2|intcomma }}<span>{% if not only_one_variation and not is_resolved_sku %}~{% endif %}</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Share Matrix -->
-            <div class="flex items-center gap-4 pt-4 border-t border-base-200">
-                <span class="text-xs opacity-50 tracking-wider">分享藝術 | SHARE :</span>
-                <button class="hover:text-primary transition-colors cursor-pointer" data-sharer="x" data-title="{{ single_product.product_name }}" data-url="{{ absolute_url }}"><i class="fa-brands fa-square-x-twitter fa-xl"></i></button>
-                <button class="hover:text-primary transition-colors cursor-pointer" data-sharer="facebook" data-url="{{ absolute_url }}"><i class="fa-brands fa-facebook fa-xl"></i></button>
-                <button class="hover:text-primary transition-colors cursor-pointer" data-sharer="weibo" data-title="{{ single_product.product_name }}" data-url="{{ absolute_url }}"><i class="fa-brands fa-weibo fa-xl"></i></button>
-                <button class="hover:text-primary transition-colors cursor-pointer" data-sharer="email" data-title="{{ single_product.product_name }}" data-url="{{ absolute_url }}"><i class="fa-solid fa-envelope fa-xl"></i></button>
+            <!-- Share Matrix Utilities (Desktop) -->
+            <div class="hidden md:flex flex-wrap items-center gap-4 pt-4 border-t border-base-200/60">
+                <span class="text-[11px] font-medium opacity-40 tracking-widest uppercase font-sans">分享藝術 ｜ Share :</span>
+                <div class="flex items-center gap-3 text-base-content/60">
+                    <button class="hover:text-primary hover:scale-105 transition-all p-1 cursor-pointer" data-sharer="x" data-title="{{ single_product.product_name }}" data-url="{{ absolute_url }}"><i class="fa-brands fa-square-x-twitter fa-lg"></i></button>
+                    <button class="hover:text-primary hover:scale-105 transition-all p-1 cursor-pointer" data-sharer="facebook" data-url="{{ absolute_url }}"><i class="fa-brands fa-facebook fa-lg"></i></button>
+                    <button class="hover:text-primary hover:scale-105 transition-all p-1 cursor-pointer" data-sharer="weibo" data-title="{{ single_product.product_name }}" data-url="{{ absolute_url }}"><i class="fa-brands fa-weibo fa-lg"></i></button>
+                    <button class="hover:text-primary hover:scale-105 transition-all p-1 cursor-pointer" data-sharer="email" data-title="{{ single_product.product_name }}" data-url="{{ absolute_url }}"><i class="fa-solid fa-envelope fa-lg"></i></button>
+                </div>
             </div>
         </div>
 
         <!-- RIGHT COLUMN: CONTROL PANEL INPUT MATRIX INTERFACE -->
-        <div class="col-span-3 mt-6 md:mt-0">
+        <div class="col-span-1 md:col-span-3 order-2 mt-0 lg:pl-4 relative z-10">
             {% include 'store/partials/product_form.html' %}
+            <!-- Share Matrix Utilities (Hidden on mobile stack layer to preserve screen space) -->
+            <div class="flex md:hidden flex-wrap items-center gap-4 pt-4 border-t border-base-200/60">
+                <span class="text-[11px] font-medium opacity-40 tracking-widest uppercase font-sans">分享藝術 ｜ Share :</span>
+                <div class="flex items-center gap-3 text-base-content/60">
+                    <button class="hover:text-primary hover:scale-105 transition-all p-1 cursor-pointer" data-sharer="x" data-title="{{ single_product.product_name }}" data-url="{{ absolute_url }}"><i class="fa-brands fa-square-x-twitter fa-lg"></i></button>
+                    <button class="hover:text-primary hover:scale-105 transition-all p-1 cursor-pointer" data-sharer="facebook" data-url="{{ absolute_url }}"><i class="fa-brands fa-facebook fa-lg"></i></button>
+                    <button class="hover:text-primary hover:scale-105 transition-all p-1 cursor-pointer" data-sharer="weibo" data-title="{{ single_product.product_name }}" data-url="{{ absolute_url }}"><i class="fa-brands fa-weibo fa-lg"></i></button>
+                    <button class="hover:text-primary hover:scale-105 transition-all p-1 cursor-pointer" data-sharer="email" data-title="{{ single_product.product_name }}" data-url="{{ absolute_url }}"><i class="fa-solid fa-envelope fa-lg"></i></button>
+                </div>
+            </div>
         </div>
-    </div>    
+    </div>
 
     <!-- Details block view layout fields -->
-    <div class="my-16 border-t border-base-200 pt-8 max-w-4xl">
-        <h2 class="text-base-content text-lg font-serif tracking-widest mb-4">作品詳情 | Description</h2>
-        <div class="prose prose-sm max-w-none text-base-content/80 leading-relaxed">
+    <div class="my-16 border-t border-base-200 pt-8 w-full">
+        <h2 class="text-base-content text-md md:text-lg xl:text-xl font-serif tracking-widest mb-4">作品詳情 | Description</h2>
+        <div class="text-xs md:text-sm xl:text-[1rem] prose prose-sm max-w-none text-base-content/80 leading-relaxed">
             {{ single_product.details|safe }}
         </div>
     </div>
 
     <!-- Interactive Review Widget Segment (Generic Comments Architecture) -->
     <div class="my-16 border-t border-base-200 pt-8 max-w-4xl" id="reviews-master-container">
-        <h2 class="text-base-content text-lg font-serif tracking-widest mb-6">珍藏反饋 | Collector Reviews</h2>
+        <h2 class="text-base-content text-md md:text-lg xl:text-xl font-serif tracking-widest mb-6">珍藏反饋 | Collector Reviews</h2>
         
         <!-- Evaluates verified customer parameters before exposing the submission card -->
         {% if request.user.is_authenticated %}

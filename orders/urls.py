@@ -9,6 +9,8 @@ urlpatterns = [
     path('orders/cancel/<int:order_id>/', views.cancel_order, name='cancel_order'),
     path("order_complete/", views.order_complete, name="order_complete"),
     path('order/download/invoice/<str:order_id>/', views.download_invoice_pdf_view, name='generate_order_confirmation_pdf'),
+    path('order/guest_order_verify/', views.guest_order_verify, name='guest_order_verify'),
+    path('process_order_cancellation/<str:order_number>/', views.process_order_cancellation, name='process_order_cancellation'),
 
     # paypal
     path('api/paypal/token/', paypal.get_paypal_client_token, name='paypal_token'),

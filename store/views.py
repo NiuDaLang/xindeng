@@ -56,6 +56,29 @@ def products(request, category_slug=None):
     paged_products = paginator.get_page(page)
     product_count = paged_products.count
 
+    # Fetch approved product reviews for sidebar display
+    product_content_type = ContentType.objects.get_for_model(Product)
+    # Grab the latest 5 approved comments/reviews linked to products in this category
+    sidebar_reviews = Comment.objects.filter(
+        content_type=product_content_type,
+        object_id__in=available_products.values_list('id', flat=True),
+        is_approved=True
+    ).select_related('user').order_by('-created_at')[:5]
+
+    # Ensure every reviewer has a UserProfile instance so the template can safely access profile_picture
+    reviewer_ids = [c.user_id for c in sidebar_reviews]
+    existing_profile_user_ids = set(
+        UserProfile.objects.filter(user_id__in=reviewer_ids).values_list('user_id', flat=True)
+    )
+    missing_profiles = [UserProfile(user_id=uid) for uid in reviewer_ids if uid not in existing_profile_user_ids]
+    if missing_profiles:
+        UserProfile.objects.bulk_create(missing_profiles, ignore_conflicts=True)
+
+    # 🌟 FIX: Re-fetch with profile joined AND prefetch the Generic Foreign Key targets
+    product_reviews = Comment.objects.filter(
+        id__in=[c.id for c in sidebar_reviews]
+    ).select_related('user__profile').prefetch_related('content_object').order_by('-created_at')
+
     context = {
         "category": category_slug,
         "available_products": paged_products,
@@ -71,6 +94,7 @@ def products(request, category_slug=None):
         "bread_crumb_2_url": "/store/products/all",
         "bread_crumb_3_url": f"/store/products/{category_slug}",
         "available_tags": available_tags,
+        "product_reviews": product_reviews,
     }
     return render(request,'store/products.html', context)
 
@@ -81,6 +105,7 @@ def product(request, category_slug, product_slug):
     single_product.tags_string = ",".join(single_product.tags.names())
     variations = single_product.variations.filter(is_available=True)
     min_price = min([v.price for v in variations]) if variations.exists() else 0.00
+    only_one_variation = len(variations) == 1
 
     # Build default master product gallery list maps
     product_gallery = single_product.productgallery_set.all()
@@ -140,6 +165,7 @@ def product(request, category_slug, product_slug):
         "single_product": single_product,
         "variations": variations,
         "displayed_price": min_price,
+        "only_one_variation": only_one_variation,
         "selected_var_id": None,
         "is_resolved_sku": False,
         "current_main_image": single_product.images.url,
@@ -155,13 +181,13 @@ def product(request, category_slug, product_slug):
         "has_already_reviewed_flag": has_already_reviewed_flag,
         "user_can_review_flag": user_can_review_flag,
 
-        "active_filters": {"size": "點選上方圖像", "color": "點選上方圖像", "type": "點選上方圖像"},
-        "page_title": f"{single_product.product_name} ｜ XinDeng Art Shop",
+        "active_filters": {"size": "Tap image｜點選圖像 ↑", "color": "Tap image｜點選圖像 ↑", "type": "Tap image｜點選圖像 ↑"},
+        "page_title": f"{single_product.product_name}｜XinDeng Art Shop",
         "absolute_url": request.build_absolute_uri(single_product.get_url()),
-        "main_title": "Item Details ｜ 寶貝詳情",
+        "main_title": "Item Details｜寶貝詳情",
         "sub_title_2": "梅須遜雪三分白 雪卻輸梅一段香",
-        "bread_crumb_1": "Home ｜ 首頁",
-        "bread_crumb_2": "Products ｜ 寶貝們",
+        "bread_crumb_1": "Home｜首頁",
+        "bread_crumb_2": "Products｜寶貝們",
         "bread_crumb_4": single_product.product_name,
         "bread_crumb_1_url": "/",
         "bread_crumb_2_url": "/store/products/all",

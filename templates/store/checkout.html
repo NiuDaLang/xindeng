@@ -4,7 +4,7 @@
 {% block content %}
 <div id="checkout-view-container" hx-history="false">
     <!-- BANNER -->
-    <div class="relative mt-[86px] w-full">
+    <div class="relative mt-[65px] lg:mt-[86px] w-full">
         {% include 'includes/banner.html' %}
     </div>
 
@@ -515,202 +515,6 @@
         <span id="summary_voucher_applied_foreign"></span>
     </div>
 </div>
-<!-- <script>
-if (!window.htmxHistoryScrubberAttached) {
-    document.body.addEventListener('htmx:beforeHistorySave', function(evt) {
-        document.querySelectorAll('[hx-swap-oob]').forEach(el => el.removeAttribute('hx-swap-oob'));
-    });
-    window.htmxHistoryScrubberAttached = true;
-}
-window.checkoutTimer = window.checkoutTimer || { expiryTime: 0, currencyExpired: false, intervalId: null };
-
-function initAddressAutoComplete(){
-    console.log("🛠️ Checkout Validation Engine Activated.");
-    const form = document.getElementById("proforma_invoice_form");
-    const payButton = document.getElementById('pay_btn');
-    if (!form || !payButton) return;
-
-    const displayMode = form.getAttribute("data-display-mode") || "PHYSICAL";
-    const addressInput = document.getElementById('id_address_line_1');
-
-    if (addressInput) {
-        if (form.dataset.isChina === "true") {
-            addressInput.placeholder = "請輸入詳細收貨地址（如街道、門牌號碼）｜Please enter detailed address";
-        } else {
-            addressInput.placeholder = "Address 1 (Type to autocomplete)｜地址1 (輸入可啟動自動填寫)";
-            if ((addressInput.value || "").trim() === "") {
-                setTimeout(function() {
-                    if (typeof window.preAutoComplete === "function" && typeof window.initAutoComplete === "function") {
-                        window.preAutoComplete();
-                        window.initAutoComplete(form.id);
-                        if (typeof window.initRegionLogic === "function") window.initRegionLogic(form.id);
-                        if (typeof window.toggleProvinceFields === "function") window.toggleProvinceFields(form);
-                        console.log("✨ Google Maps initialized completely.");
-                    }
-                }, 100);
-            }
-        }
-    }
-
-    function validateFormState() {
-        const hasValue = (id) => {
-            const el = document.getElementById(id);
-            return el && el.value.trim() !== "";
-        };
-        const isValidEmail = (id) => {
-            const el = document.getElementById(id);
-            if (!el) return false;
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value.trim());
-        };
-
-        let isFormValid = false;
-        const contactEmailOk = isValidEmail("id_email");
-        const voucherEmailOk = isValidEmail("id_recipient_email");
-        const physicalInfoOk = hasValue("id_recipient_first_name") && 
-                               hasValue("id_recipient_last_name") && 
-                               hasValue("id_recipient_mobile_area") && 
-                               hasValue("id_recipient_mobile_number") && 
-                               hasValue("id_address_line_1");
-
-        switch (displayMode) {
-            case "PHYSICAL":
-                isFormValid = contactEmailOk && physicalInfoOk;
-                break;
-            case "PHYSICAL_AND_VOUCHER":
-                isFormValid = contactEmailOk && physicalInfoOk && voucherEmailOk;
-                break;
-            case "VOUCHER_ONLY":
-                isFormValid = contactEmailOk && voucherEmailOk;
-                break;
-            case "EPRODUCT_ONLY":
-                isFormValid = contactEmailOk;
-                break;
-        }
-
-        if (isFormValid && !window.checkoutTimer.currencyExpired) {
-            payButton.disabled = false;
-            payButton.removeAttribute("disabled");
-            payButton.classList.remove("opacity-50", "cursor-not-allowed", "pointer-events-none", "skeleton");
-        } else {
-            payButton.disabled = true;
-            payButton.setAttribute("disabled", "true");
-            payButton.classList.add("opacity-50", "cursor-not-allowed", "pointer-events-none");
-            payButton.classList.remove("skeleton");
-        }
-    }
-
-    ["id_email", "id_recipient_first_name", "id_recipient_last_name", "id_recipient_mobile_area", "id_recipient_mobile_number", "id_address_line_1", "id_recipient_email"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.removeEventListener("input", validateFormState);
-            el.removeEventListener("change", validateFormState);
-            el.addEventListener("input", validateFormState);
-            el.addEventListener("change", validateFormState);
-        }
-    });
-
-    window.updatePayButtonState = validateFormState;
-    validateFormState();
-}
-
-function checkForeignCurrencyExpiry() {
-    if (Date.now() > window.checkoutTimer.expiryTime) {
-        const warningElement = document.getElementById("price-warning");
-        if (warningElement) warningElement.classList.remove("hidden");
-        window.checkoutTimer.currencyExpired = true;
-        if (typeof window.updatePayButtonState === "function") {
-            window.updatePayButtonState();
-        } else {
-            const payButton = document.getElementById("pay_btn");
-            if (payButton) {
-                payButton.disabled = true;
-                payButton.classList.add("opacity-50", "cursor-not-allowed", "pointer-events-none");
-            }
-        }
-    }
-}
-
-function setupCheckoutLifecycle() {
-    window.checkoutTimer = window.checkoutTimer || { expiryTime: 0, currencyExpired: false, intervalId: null };
-    const sessionExpiry = parseInt("{{ rate_expiry_timestamp|default:0 }}", 10);
-    if (sessionExpiry && sessionExpiry > 0) {
-        window.checkoutTimer.expiryTime = sessionExpiry;
-        window.checkoutTimer.currencyExpired = Date.now() > window.checkoutTimer.expiryTime;
-        if (window.checkoutTimer.intervalId) clearInterval(window.checkoutTimer.intervalId);
-        window.checkoutTimer.intervalId = setInterval(checkForeignCurrencyExpiry, 5000);
-        checkForeignCurrencyExpiry();
-    }
-    initAddressAutoComplete();
-}
-
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", setupCheckoutLifecycle);
-} else {
-    setupCheckoutLifecycle();
-}
-
-document.body.removeEventListener("htmx:afterProcessNode", window.checkoutHtmxHandler);
-window.checkoutHtmxHandler = function(evt) {
-    if (document.getElementById('id_address_line_1') || document.getElementById('id_recipient_email') || document.getElementById('id_email')) {
-        initAddressAutoComplete();
-    }
-};
-document.body.addEventListener("htmx:afterProcessNode", window.checkoutHtmxHandler);
-
-document.body.addEventListener('htmx:beforeLeave', function cleanupCheckoutPage() {
-    if (window.checkoutTimer && window.checkoutTimer.intervalId) clearInterval(window.checkoutTimer.intervalId);
-    document.body.removeEventListener('htmx:beforeLeave', cleanupCheckoutPage);
-});
-
-// 🎯 HIGH-SECURITY BACK-BUTTON CACHE RECOVERY PIPELINE
-(function() {
-    function runCompleteFormSync() {
-        console.log("🔄 Browser navigation event intercepted. Syncing cached form fields...");
-        
-        // 1. Re-initialize your event listeners and autocompletes
-        if (typeof initAddressAutoComplete === "function") {
-            initAddressAutoComplete();
-        }
-
-        // 2. Find the form element
-        const form = document.getElementById("proforma_invoice_form");
-        if (form) {
-            // 3. Loop over all filled fields and manually trigger events to awaken the validation logic
-            form.querySelectorAll("input, textarea, select").forEach(el => {
-                if (el.value && el.value.trim() !== "") {
-                    el.dispatchEvent(new Event('input', { bubbles: true }));
-                    el.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            });
-        }
-
-        // 4. Force a final validation check loop state run explicitly
-        if (typeof window.updatePayButtonState === "function") {
-            window.updatePayButtonState();
-        }
-    }
-
-    document.addEventListener("DOMContentLoaded", runCompleteFormSync);
-    
-    window.addEventListener("pageshow", function(event) {
-        // 🌟 FIX: Detect if the page was thwacked out of the back-forward cache memory (bfcache)
-        // or if performance navigation history confirms a forward/back action (type 2)
-        const historyTraversal = event.persisted || 
-                                 (window.performance && window.performance.getEntriesByType("navigation")[0]?.type === "back_forward");
-        console.log("pageshow")
-        if (historyTraversal) {
-            console.warn("🚨 Stale cache detected via forward/back navigation! Forcing hard server refresh to reload pricing ledger...");
-            
-            // Clear current cache tracking flags and completely restart the view natively from Django
-            window.location.reload();
-            return; 
-        }
-        // Standard load pathway: Wait 50ms to let native browser autocomplete finish up
-        setTimeout(runCompleteFormSync, 50);
-    });
-    
-})();
-</script> -->
 
 <script>
 if (!window.htmxHistoryScrubberAttached) {
@@ -749,11 +553,20 @@ function initAddressAutoComplete(){
         }
     }
 
-    function validateFormState() {
+    // ⚙️ GLOBAL RUNTIME PAY TRIGGER STATE MONITOR
+    window.updatePayButtonState = function() {
+        if (window.checkoutTimer && window.checkoutTimer.currencyExpired) {
+            payButton.disabled = true;
+            payButton.classList.add("opacity-50", "cursor-not-allowed", "pointer-events-none");
+            return;
+        }
+
         const hasValue = (id) => {
             const el = document.getElementById(id);
+            if (el && el.hasAttribute('disabled') && el.value) return true;
             return el && el.value.trim() !== "";
         };
+
         const isValidEmail = (id) => {
             const el = document.getElementById(id);
             if (!el) return false;
@@ -764,12 +577,25 @@ function initAddressAutoComplete(){
         const contactEmailOk = isValidEmail("id_email");
         const voucherEmailOk = isValidEmail("id_recipient_email");
         
-        // 🌟 Include hidden form values to prevent background submission validation errors
+        // Dynamic lookups processing address lines across both components
+        let addressLineOk = false;
+        const gmpAutocomplete = form.querySelector('gmp-place-autocomplete') || document.getElementById("id_address_line_1");
+        const hiddenAddressInput = document.getElementById("hidden_address_line_1");
+
+        if (gmpAutocomplete && gmpAutocomplete.value.trim() !== "") {
+            // If a hidden backup input exists, it must match the text presence state
+            if (hiddenAddressInput) {
+                addressLineOk = hiddenAddressInput.value.trim() !== "";
+            } else {
+                addressLineOk = true;
+            }
+        }
+
         const physicalInfoOk = hasValue("id_recipient_first_name") && 
                                hasValue("id_recipient_last_name") && 
                                hasValue("id_recipient_mobile_area") && 
                                hasValue("id_recipient_mobile_number") && 
-                               hasValue("id_address_line_1") &&
+                               addressLineOk &&
                                hasValue("id_city") &&
                                hasValue("id_state_province_region") &&
                                hasValue("id_country");
@@ -789,7 +615,7 @@ function initAddressAutoComplete(){
                 break;
         }
 
-        if (isFormValid && !window.checkoutTimer.currencyExpired) {
+        if (isFormValid) {
             payButton.disabled = false;
             payButton.removeAttribute("disabled");
             payButton.classList.remove("opacity-50", "cursor-not-allowed", "pointer-events-none", "skeleton");
@@ -799,28 +625,15 @@ function initAddressAutoComplete(){
             payButton.classList.add("opacity-50", "cursor-not-allowed", "pointer-events-none");
             payButton.classList.remove("skeleton");
         }
-    }
+    };
 
-    // 🌟 Enforce listening loop rules across all visible and hidden required elements
-    const targetInputFields = [
-        "id_email", "id_recipient_first_name", "id_recipient_last_name", 
-        "id_recipient_mobile_area", "id_recipient_mobile_number", 
-        "id_address_line_1", "id_city", "id_state_province_region", 
-        "id_country", "id_recipient_email"
-    ];
+    // Event delegation tracking loops
+    form.removeEventListener("input", window.updatePayButtonState);
+    form.removeEventListener("change", window.updatePayButtonState);
+    form.addEventListener("input", window.updatePayButtonState);
+    form.addEventListener("change", window.updatePayButtonState);
 
-    targetInputFields.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.removeEventListener("input", validateFormState);
-            el.removeEventListener("change", validateFormState);
-            el.addEventListener("input", validateFormState);
-            el.addEventListener("change", validateFormState);
-        }
-    });
-
-    window.updatePayButtonState = validateFormState;
-    validateFormState();
+    window.updatePayButtonState();
 }
 
 function checkForeignCurrencyExpiry() {

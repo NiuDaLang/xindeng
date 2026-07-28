@@ -258,10 +258,19 @@ function updateThumbnailBorderHighlight(clickedIndex) {
 
     containers.forEach(container => {
         const itemIndex = container.getAttribute('data-index');
+        
         if (String(itemIndex) === String(clickedIndex)) {
-            container.className = "thumbnail-item w-16 h-16 rounded-md overflow-hidden cursor-pointer border-2 border-primary transition-all shadow-sm";
+            // 🌟 Apply Milder Active Ring + Scale Styles
+            container.classList.add('border-primary/60', 'ring-2', 'ring-primary/40', 'ring-offset-2', 'z-10', 'scale-[1.02]');
+            container.classList.remove('border-base-200', 'opacity-60', 'hover:border-base-300');
+            // Force full opacity for the clicked item
+            container.style.opacity = '1'; 
         } else {
-            container.className = "thumbnail-item w-16 h-16 rounded-md overflow-hidden cursor-pointer border border-base-300 opacity-70 hover:opacity-100 transition-all";
+            // 🌟 Revert back to Standard Inactive States
+            container.classList.remove('border-primary/60', 'ring-2', 'ring-primary/40', 'ring-offset-2', 'z-10', 'scale-[1.02]');
+            container.classList.add('border-base-200', 'opacity-60');
+            // Clean up inline styles so tailwind classes take back control
+            container.style.opacity = ''; 
         }
     });
 }
@@ -1252,6 +1261,17 @@ async function initAutoComplete(form_id) {
             // REMOVE name from the component again to be safe against re-renders
             autocomplete.removeAttribute('name');
         }, 1);
+
+        // 🌟 ADD THIS BLOCK HERE: Force event bubbling & refresh the button state
+        const filledFields = ['id_city', 'id_state_province_region', 'id_postal_code'];
+        filledFields.forEach(fieldId => {
+            const el = form.querySelector(`[id$="${fieldId}"]`);
+            if (el) {
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+        if (typeof window.updatePayButtonState === "function") window.updatePayButtonState();        
     });
 
     // Sync attributes so Django POST/HTMX works
@@ -1280,7 +1300,13 @@ async function initAutoComplete(form_id) {
     // Inside your autocomplete.addEventListener('input', ...
     autocomplete.addEventListener('input', (e) => {
         const val = e.target.value;
-        hiddenAddressInput.value = val;
+
+        // Find both variations of the hidden layout inputs securely
+        const hiddenInput1 = form.querySelector('#hidden_address_line_1');
+        const hiddenInput2 = form.querySelector('#id_address_line_1');
+        
+        if (hiddenInput1) hiddenInput1.value = val;
+        if (hiddenInput2) hiddenInput2.value = val;
 
         // IF USER MANUALLY CHANGES TEXT, THEY ARE NO LONGER VERIFIED
         const verifiedInput = form.querySelector('[id$="id_is_verified_by_google"]');
@@ -1292,9 +1318,18 @@ async function initAutoComplete(form_id) {
                 const el = form.querySelector(`[id$="${suffix}"]`);
                 if (el) el.value = '';
             });
+
+            // Force the hidden synced inputs to be absolutely blank strings
+            if (hiddenInput1) hiddenInput1.value = '';
+            if (hiddenInput2) hiddenInput2.value = '';
             
             const wrapper = autocomplete.closest('label');
             wrapper?.classList.remove('border-error');
+        }
+
+        // 🌟 FORCE AN IMMEDIATE RETRY ON THE VALIDATOR ENGINE
+        if (typeof window.updatePayButtonState === "function") {
+            window.updatePayButtonState();
         }
     });
 
@@ -1439,11 +1474,73 @@ function confirmSweetAlertDelete(reviewId) {
         }
     });
 }
+
+function openOrderDetailsModal(orderNumber) {
+    const targetModal = document.getElementById(`modal_${orderNumber}`);
+    if (targetModal) targetModal.showModal();
+}
+function closeOrderDetailsModal(orderNumber) {
+    const targetModal = document.getElementById(`modal_${orderNumber}`);
+    if (targetModal) targetModal.close();
+}
+function triggerOrderCancellation(orderNumber, totalDue) {
+    if (typeof closeOrderDetailsModal === "function") closeOrderDetailsModal(orderNumber);
+    
+    // Parse totalDue safely to handle numeric evaluations
+    const cashRemaining = parseFloat(totalDue || "0");
+
+    if (cashRemaining <= 0) {
+        // 🌟 If paid entirely by voucher, skip choices and process instantly
+        Swal.fire({
+            title: 'Cancel Order? ｜ 申請取消訂單？',
+            text: `This order was paid entirely using store credits. The full amount will be credited back as a voucher. / 此訂單為全額購物金支付，取消後面值將全額退回至您的虛擬禮品卡中。確定取消嗎？`,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#4b9aaa',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Confirm ｜ 確定取消',
+            cancelButtonText: 'Keep ｜ 保持原狀'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = `/orders/cancel-request/${orderNumber}/?refund_type=voucher`;
+            } else {
+                if (typeof openOrderDetailsModal === "function") openOrderDetailsModal(orderNumber);
+            }
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: 'Cancel Order? ｜ 申請取消訂單？',
+        text: `Select your preferred return avenue for order #${orderNumber}: / 請選擇您的取消與退款方式：`,
+        icon: 'warning',
+        input: 'radio',
+        inputOptions: {
+            'voucher': '100% Full Refund via Store Voucher (Instant) ｜ 100% 全額儲值購物金（無行政費、即時到帳）',
+            'cash': 'Original Payment Avenue (Minus 3% Administration Fee) ｜ 退回原支付管道（須扣除 3% 行政手續費）'
+        },
+        inputValidator: (value) => {
+            if (!value) {
+                return 'You must choose a refund pathway! ｜ 您必須選擇一種退款方式！'
+            }
+        },
+        showCancelButton: true,
+        confirmButtonColor: '#4b9aaa',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Confirm Cancellation ｜ 確定取消',
+        cancelButtonText: 'No, Keep Order ｜ 保持原狀'
+    })
+    .then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/orders/cancel-request/${orderNumber}/?refund_type=${result.value}`;
+        } else { 
+            if (typeof openOrderDetailsModal === "function") openOrderDetailsModal(orderNumber);
+        }
+    });
+}
+
+
 window.confirmSweetAlertDelete = confirmSweetAlertDelete;
-
-
-
-
 window.daysBetween = daysBetween;
 window.datePicker = datePicker;
 window.searchArchive = searchArchive;
@@ -1466,6 +1563,9 @@ window.preAutoComplete = preAutoComplete;
 window.initAutoComplete = initAutoComplete;
 window.initRegionLogic = initRegionLogic;
 window.toggleProvinceFields = toggleProvinceFields;
+window.openOrderDetailsModal = openOrderDetailsModal;
+window.closeOrderDetailsModal = closeOrderDetailsModal;
+window.triggerOrderCancellation = triggerOrderCancellation;
 
 // The SdkInitError: .start() expects a Promise. Received 'string' occurs 
 // because you are await-ing the createOrder() function before passing it to the PayPal session.

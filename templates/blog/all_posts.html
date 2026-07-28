@@ -2,7 +2,7 @@
 
 {% block content %}
 <!-- BANNER -->
-<div class="relative mt-[86px] w-full">
+<div class="relative mt-[65px] lg:mt-[86px] w-full">
     <!-- BLOG BANNER -->
     <div class="relative w-full bg-base-300 py-16 text-center border-b border-base-200 select-none">
         <div class="max-w-xl mx-auto px-4">
@@ -19,170 +19,226 @@
     </div>
 </div>
 
-<!-- MAIN -->
-<main class="px-[max(1rem,5vw)] lg:px-[max(2rem,10vw)] xl:px-[max(3rem,20vw)] py-20 min-h-[calc(100dvh-200px)]">
-
-    <div class="grid grid-cols-3 gap-8">
-        <!-- LEFT: tabs - name of each tab group should be unique -->
-        <div class="col-span-2 relative">
-            <!-- search icon -->
-            <button class="absolute right-2 top-0 btn btn-ghost btn-circle" onclick="blog_search.showModal()">
-                <a href="#">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /> </svg>
-                </a>
+<!-- MAIN CONTAINER -->
+<main class="px-[max(1rem,4vw)] lg:px-[max(2rem,8vw)] xl:px-[max(3rem,12vw)] py-10 md:py-16 min-h-[calc(100dvh-200px)] bg-base-50/20">
+    <!-- Main layout converts from a stacked column configuration on mobile into a multi-column row grid layout on larger screens -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-start w-full">
+        
+        <!-- LEFT: Primary Content Feed Area -->
+        <div class="col-span-1 lg:col-span-2 relative min-w-0">
+            <!-- Search Floating Trigger Button Asset (Adjusted layout positioning parameters safely) -->
+            <button class="absolute right-2 top-1 btn btn-ghost btn-circle btn-sm md:btn-md z-30 text-base-content/60 hover:text-primary transition-colors" onclick="blog_search.showModal()" aria-label="Search posts">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
             </button>  
-            <!-- tabs -->
-            <div class="tabs tabs-lift">
-                <!-- tab-1 latest -->
-                <label class="tab items-center">
-                    <input type="radio" name="blog_tab" checked="checked" />
-                    <i class="fa-solid fa-newspaper"></i>
-                    Latest｜近期
-                </label>
-                <!-- posts -->
-                <div class="tab-content bg-base-100 border-base-300 p-6">
-                    <!-- post cards -->
-                    {% for post in latest_five_posts%}
-                    <a href="{{ post.get_url }}" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-base-content">
-                        <div class="card-body w-2/3">
-                            <div class="flex justify-left">
-                                <h2 class="card-title block w-full truncate">{{ post.title }}</h2>
-                            </div>
-                            <p class="text-xs overflow-hidden line-clamp-3 break-all">{{ post.short_description }}</p>
-                            <small>{{ post.created_at }} | <i class="fa-solid fa-location-dot"></i>{{ post.location }}</small>
-                        </div>
-                        <figure class="w-1/3">
-                            <img
-                            class="object-cover"
-                            src="{{ post.featured_image.url}}"
-                            alt="tulip drawing image" />
-                        </figure>
+            
+            <!-- Structural Lift Tabs Component Base Setup Grid -->
+            <div class="w-full">
+                <!-- The Tab Headers Navigation Bar Row Container -->
+                <div role="tablist" class="tabs tabs-lifted font-medium mb-4 mr-[3rem]">
+                    <!-- Tab Anchor 1 -->
+                    <a role="tab" class="tab tab-active h-10 px-3 sm:px-4 flex items-center gap-2" id="tab-latest" onclick="switchBlogTab('latest')">
+                        <i class="fa-solid fa-newspaper text-xs opacity-70"></i>
+                        <span class="text-xs sm:text-sm">Latest｜近期</span>
                     </a>
-                    {% endfor %}
-                    {% if not forloop.last %}
-                    <div class="divider"></div>
-                    {% endif %}
-                    <!-- all button -->
-                    <a href="{% url 'all_posts_display' category='Published' %}" class="btn btn-outline btn-primary">
-                        <i class="fa-solid fa-folder-open"></i>
-                        全部
+                    <!-- Tab Anchor 2 -->
+                    <a role="tab" class="tab h-10 px-3 sm:px-4 flex items-center gap-2" id="tab-journal" onclick="switchBlogTab('journal')">
+                        <i class="fa-solid fa-book text-xs opacity-70"></i>
+                        <span class="text-xs sm:text-sm">Journal｜隨筆</span>
+                    </a>
+                    <!-- Tab Anchor 3 -->
+                    <a role="tab" class="tab h-10 px-3 sm:px-4 flex items-center gap-2" id="tab-updates" onclick="switchBlogTab('updates')">
+                        <i class="fa-solid fa-calendar-days text-xs opacity-70"></i>
+                        <span class="text-xs sm:text-sm">Updates｜動態</span>
                     </a>
                 </div>
-        
-                <!-- tab-2 diary -->
-                <label class="tab items-center">
-                    <input type="radio" name="blog_tab"/>
-                    <i class="fa-solid fa-book"></i>
-                    Journal｜随笔
-                </label>
-                <!-- posts -->
-                <div class="tab-content bg-base-100 border-base-300 p-6">
-                    <!-- post cards -->
-                    {% for post in blog_posts %}
-                    <a href="{{ post.get_url }}" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-warning-content">
-                        <div class="card-body w-2/3">
-                            <div class="flex justify-left">
-                                <h2 class="card-title block w-full truncate">{{ post.title }}</h2>
+
+                <!-- TAB PANEL CONTENT 1: LATEST POSTS FEED TRACK -->
+                <div id="panel-latest" role="tabpanel" class="block bg-base-100 border border-base-200 rounded-2xl p-4 md:p-6 shadow-sm">
+                    <div class="space-y-6">
+                        {% for post in latest_five_posts %}
+                        <a href="{{ post.get_url }}" class="group flex flex-col sm:flex-row bg-base-50 hover:bg-base-100 border border-base-200/50 rounded-xl overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md min-w-0">
+                            <div class="p-4 sm:p-5 flex-1 order-2 sm:order-1 min-w-0 flex flex-col justify-between">
+                                <div class="space-y-2">
+                                    <span class="badge badge-sm badge-outline text-[10px] font-normal tracking-wide uppercase opacity-70">
+                                        {{ post.get_post_category_display }}
+                                    </span>
+                                    <h2 class="text-sm sm:text-base font-bold text-base-content/80 group-hover:text-primary transition-colors truncate w-full">
+                                        {{ post.title }}
+                                    </h2>
+                                    <p class="text-xs text-base-content/60 leading-relaxed line-clamp-2 md:line-clamp-3">
+                                        {{ post.short_description }}
+                                    </p>
+                                </div>
+                                <div class="mt-4 pt-2 border-t border-base-200/30 flex items-center justify-between text-[10px] sm:text-xs text-base-content/40 font-light">
+                                    <span>{{ post.created_at|date:"Y-m-d" }}</span>
+                                    {% if post.location %}
+                                    <span class="flex items-center gap-1 truncate max-w-[15ch]">
+                                        🏷️ {{ post.location }}
+                                    </span>
+                                    {% endif %}
+                                </div>
                             </div>
-                            <p class="text-xs overflow-hidden line-clamp-3 break-all">{{ post.short_description }}</p>
-                            <small>{{ post.created_at }} | <i class="fa-solid fa-location-dot"></i>{{ post.location }}</small>
-                        </div>
-                        <figure class="w-1/3">
-                            <img
-                            class="object-cover"
-                            src="{{ post.featured_image.url}}"
-                            alt="tulip drawing image" />
-                        </figure>
-                    </a>
-                    {% endfor %}
-                    {% if not forloop.last %}
-                    <div class="divider"></div>
-                    {% endif %}
-                    <!-- all button -->
-                    <a href="{% url 'all_posts_display' category='Blog' %}" class="btn btn-outline btn-secondary">
-                        <i class="fa-solid fa-folder-open"></i>
-                        全部
-                    </a>
+                            <figure class="w-full sm:w-1/3 aspect-video sm:aspect-square order-1 sm:order-2 bg-base-200 overflow-hidden flex-shrink-0 relative">
+                                <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src="{{ post.featured_image.url }}" alt="{{ post.title }}" loading="lazy" />
+                            </figure>
+                        </a>
+                        {% if not forloop.last %}<div class="divider opacity-30 my-2"></div>{% endif %}
+                        {% empty %}
+                        <div class="text-center py-12 text-xs opacity-50">暫無近期文章 ｜ No latest articles found.</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-base-200/40">
+                        <a href="{% url 'all_posts_display' category='Published' %}" class="btn btn-outline btn-primary btn-sm rounded-xl px-4 font-normal tracking-wide">全部文章</a>
+                    </div>
                 </div>
-        
-                <!-- tab-3 events -->
-                <label class="tab items-center">
-                    <input type="radio" name="blog_tab" />
-                    <i class="fa-solid fa-calendar-days"></i>
-                    Updates｜動態
-                </label>
-                <div class="tab-content bg-base-100 border-base-300 p-6">
-                    <!-- post cards -->
-                    {% for post in news_posts %}
-                    <a href="{{ post.get_url }}" class="mb-5 card md:card-side bg-base-100 inset-shadow-xs inset-shadow-error-content">
-                        <div class="card-body w-2/3">
-                            <div class="flex justify-left">
-                                <h2 class="card-title block w-full truncate">{{ post.title }}</h2>
+
+                <!-- TAB PANEL CONTENT 2: JOURNAL ESSAYS TRACK -->
+                <div id="panel-journal" role="tabpanel" class="hidden bg-base-100 border border-base-200 rounded-2xl p-4 md:p-6 shadow-sm">
+                    <div class="space-y-6">
+                        {% for post in blog_posts %}
+                        <a href="{{ post.get_url }}" class="group flex flex-col sm:flex-row bg-base-50 hover:bg-base-100 border border-base-200/50 rounded-xl overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md min-w-0">
+                            <div class="p-4 sm:p-5 flex-1 order-2 sm:order-1 min-w-0 flex flex-col justify-between">
+                                <div class="space-y-2">
+                                    <span class="badge badge-sm badge-outline text-[10px] font-normal tracking-wide uppercase opacity-70">
+                                        {{ post.get_post_category_display }}
+                                    </span>
+                                    <h2 class="text-sm sm:text-base font-bold text-base-content/80 group-hover:text-primary transition-colors truncate w-full">
+                                        {{ post.title }}
+                                    </h2>
+                                    <p class="text-xs text-base-content/60 leading-relaxed line-clamp-2 md:line-clamp-3">
+                                        {{ post.short_description }}
+                                    </p>
+                                </div>
+                                <div class="mt-4 pt-2 border-t border-base-200/30 flex items-center justify-between text-[10px] sm:text-xs text-base-content/40 font-light">
+                                    <span>{{ post.created_at|date:"Y-m-d" }}</span>
+                                </div>
                             </div>
-                            <p class="text-xs overflow-hidden line-clamp-3 break-all">{{ post.short_description }}</p>
-                            <small>{{ post.created_at }} | <i class="fa-solid fa-location-dot"></i>{{ post.location }}</small>
-                        </div>
-                        <figure class="w-1/3">
-                            <img
-                            class="object-cover"
-                            src="{{ post.featured_image.url}}"
-                            alt="tulip drawing image" />
-                        </figure>
-                    </a>
-                    {% endfor %}
-                    {% if not forloop.last %}
-                    <div class="divider"></div>
-                    {% endif %}
-                    <!-- all button -->
-                    <a href="{% url 'all_posts_display' category='News' %}" class="btn btn-outline btn-accent">
-                        <i class="fa-solid fa-folder-open"></i>
-                        全部
-                    </a>
+                            <figure class="w-full sm:w-1/3 aspect-video sm:aspect-square order-1 sm:order-2 bg-base-200 overflow-hidden flex-shrink-0 relative">
+                                <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src="{{ post.featured_image.url }}" alt="{{ post.title }}" loading="lazy" />
+                            </figure>
+                        </a>
+                        {% if not forloop.last %}<div class="divider opacity-30 my-2"></div>{% endif %}
+                        {% empty %}
+                        <div class="text-center py-12 text-xs opacity-50">暫無隨筆文章 ｜ No journals found.</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-base-200/40">
+                        <a href="{% url 'all_posts_display' category='Blog' %}" class="btn btn-outline btn-secondary btn-sm rounded-xl px-4 font-normal tracking-wide">全部隨筆</a>
+                    </div>
+                </div>
+
+                <!-- TAB PANEL CONTENT 3: UPDATES/NEWS TRACK -->
+                <div id="panel-updates" role="tabpanel" class="hidden bg-base-100 border border-base-200 rounded-2xl p-4 md:p-6 shadow-sm">
+                    <div class="space-y-6">
+                        {% for post in news_posts %}
+                        <a href="{{ post.get_url }}" class="group flex flex-col sm:flex-row bg-base-50 hover:bg-base-100 border border-base-200/50 rounded-xl overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md min-w-0">
+                            <div class="p-4 sm:p-5 flex-1 order-2 sm:order-1 min-w-0 flex flex-col justify-between">
+                                <div class="space-y-2">
+                                    <span class="badge badge-sm badge-outline text-[10px] font-normal tracking-wide uppercase opacity-70">
+                                        {{ post.get_post_category_display }}
+                                    </span>
+                                    <h2 class="text-sm sm:text-base font-bold text-base-content/80 group-hover:text-primary transition-colors truncate w-full">
+                                        {{ post.title }}
+                                    </h2>
+                                    <p class="text-xs text-base-content/60 leading-relaxed line-clamp-2 md:line-clamp-3">
+                                        {{ post.short_description }}
+                                    </p>
+                                </div>
+                                <div class="mt-4 pt-2 border-t border-base-200/30 flex items-center justify-between text-[10px] sm:text-xs text-base-content/40 font-light">
+                                    <span>{{ post.created_at|date:"Y-m-d" }}</span>
+                                </div>
+                            </div>
+                            <figure class="w-full sm:w-1/3 aspect-video sm:aspect-square order-1 sm:order-2 bg-base-200 overflow-hidden flex-shrink-0 relative">
+                                <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src="{{ post.featured_image.url }}" alt="{{ post.title }}" loading="lazy" />
+                            </figure>
+                        </a>
+                        {% if not forloop.last %}<div class="divider opacity-30 my-2"></div>{% endif %}
+                        {% empty %}
+                        <div class="text-center py-12 text-xs opacity-50">暫無動態文章 ｜ No updates found.</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-base-200/40">
+                        <a href="{% url 'all_posts_display' category='News' %}" class="btn btn-outline btn-accent btn-sm rounded-xl px-4 font-normal tracking-wide">全部動態</a>
+                    </div>
                 </div>
             </div>
+            
+            <!-- 🌟 OPTIONAL: PAGINATION COMPONENT BLOCK CONTAINER -->
+            <!-- Configured to reference your view's page_obj securely across data requests -->
+            {% if page_obj.has_other_pages %}
+            <div class="mt-12 flex justify-center w-full">
+                <nav aria-label="Blog pagination" class="join bg-base-100 border border-base-200/60 p-1 shadow-sm rounded-xl">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}" class="join-item btn btn-sm btn-ghost rounded-lg text-xs font-normal">« Prev</a>
+                    {% endif %}
+                    
+                    <span class="join-item btn btn-sm btn-disabled bg-transparent border-none text-xs font-medium text-base-content/70">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="join-item btn btn-sm btn-ghost rounded-lg text-xs font-normal">Next »</a>
+                    {% endif %}
+                </nav>
+            </div>
+            {% endif %}
         </div>
 
-        <!-- RIGHT: sidebar -->
-        {% include 'includes/blog_sidebar.html' %}
+        <!-- RIGHT: Polished Sidebar Include Panel Layout Node -->
+        <aside class="col-span-1 w-full lg:sticky lg:top-24 space-y-8 mt-6 lg:mt-4">
+            {% include 'includes/blog_sidebar.html' %}
+        </aside>
     </div>
 
-    <!-- Search 【MODAL】-->
-    <div class="relative card w-full min-h-[5rem] justify-center items-center ">
-        <!-- modal -->
-        <dialog id="blog_search" class="modal">
-            <div class="modal-box bg-info-content relative">
-                <div class="modal-action py-[2rem] px-[3rem]">
-                    <!-- form -->
-                    <form action="" method="GET" class="flex gap-1">
-                        <label class="w-full input">
-                            <svg class="h-[1em] opacity-50" viewBox="0 0 24 24">
-                                <g
-                                stroke-linejoin="round"
-                                stroke-linecap="round"
-                                stroke-width="2.5"
-                                fill="none"
-                                stroke="currentColor"
-                                >
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <path d="m21 21-4.3-4.3"></path>
-                                </g>
-                            </svg>
-                            <input type="search" class="grow w-full" placeholder="Search Post｜搜索筆記" />
-                            <kbd class="kbd kbd-sm">⌘</kbd>
-                            <kbd class="kbd kbd-sm">K</kbd>
-                        </label>  
-                        <button class="btn btn-secondary" type="submit">Search｜搜索</button>              
-                    </form>
-                    <!-- close button -->
-                    <form method="dialog">
-                        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
-                    </form>
-                </div>
-            </div>
-        </dialog>
-    </div>
-
-
+    <!-- Search 【MODAL WINDOW CONTROLS】 -->
+    <dialog id="blog_search" class="modal backdrop-blur-xs transition-all duration-300">
+        <div class="modal-box bg-base-100 max-w-md p-6 rounded-2xl border border-base-200 shadow-2xl relative">
+            <h3 class="font-medium text-sm tracking-wide text-base-content/90 mb-4 pb-2 border-b border-base-100 flex items-center gap-2">
+                <svg xmlns="http://w3.org" class="h-4 w-4 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Search Notes ｜ 搜尋筆記
+            </h3>
+            
+            <!-- Complete Search Input Form Pipeline Mapping -->
+            <form action="{% url 'all_posts' %}" method="GET" class="flex gap-2 w-full items-center">
+                <label class="input input-bordered flex items-center gap-2 grow rounded-xl bg-base-50 h-10 text-xs focus-within:border-primary">
+                    <input type="search" name="q" class="grow font-sans font-light bg-transparent" placeholder="Search Post ｜ 搜索筆記" />
+                    <kbd class="kbd kbd-sm hidden sm:inline-flex opacity-40 select-none">⌘</kbd>
+                    <kbd class="kbd kbd-sm hidden sm:inline-flex opacity-40 select-none">K</kbd>
+                </label>  
+                <button class="btn btn-primary btn-sm h-10 rounded-xl px-4 font-normal tracking-wider text-xs" type="submit">
+                    Search
+                </button>              
+            </form>
+            
+            <!-- Absolute Top Corner Dismiss Action Trigger -->
+            <form method="dialog">
+                <button class="btn btn-sm btn-circle btn-ghost text-base-content/40 hover:text-base-content absolute right-3 top-3">✕</button>
+            </form>
+        </div>
+        <!-- Tap backdrop area to dismiss window safely -->
+        <form method="dialog" class="modal-backdrop bg-base-950/20"></form>
+    </dialog>
 </main>
 
+<script>
+function switchBlogTab(targetTab) {
+    // 1. Reset all tab headers back to inactive states
+    document.querySelectorAll('.tabs-lifted .tab').forEach(el => el.classList.remove('tab-active'));
+    // 2. Hide all tab panels out of the rendering pipeline
+    document.querySelectorAll('div[role="tabpanel"]').forEach(el => {
+        el.classList.add('hidden');
+        el.classList.remove('block');
+    });
+    
+    // 3. Activate the specific target header and panel nodes clicked
+    document.getElementById(`tab-${targetTab}`).classList.add('tab-active');
+    const targetPanel = document.getElementById(`panel-${targetTab}`);
+    targetPanel.classList.remove('hidden');
+    targetPanel.classList.add('block');
+}
+</script>
 {% endblock %}

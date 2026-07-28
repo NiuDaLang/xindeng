@@ -135,11 +135,11 @@
             </div>
 
             <!-- DYNAMIC ITEM MANIFEST DETAILS MODAL DRAWER CONTAINER -->
-            <dialog id="modal_{{ order.order_number }}" class="modal modal-bottom sm:modal-middle bg-black/60 backdrop-blur-sm select-none">
+            <dialog id="modal_{{ order.order_number }}" class="min-w-modal modal-bottom sm:modal-middle bg-black/60 backdrop-blur-sm select-none">
                 <div class="modal-box bg-base-100 border border-base-300 rounded-2xl max-w-xl p-0 overflow-hidden shadow-2xl animate-fade-in relative text-base-content">
                     
                     <!-- MODAL TITLE HEADER STRIP (Matching your elegant dark info-content theme accents) -->
-                    <div class="bg-info-content text-white p-4 flex items-center justify-between shadow-sm">
+                    <div class="bg-info-content text-white p-4 flex items-center justify-between shadow-sm rounded-t-2xl">
                         <div class="flex items-center gap-2">
                             <i class="fa-solid fa-receipt text-accent text-sm"></i>
                             <div class="flex flex-col">
@@ -151,7 +151,7 @@
                     </div>
                     
                     <!-- INNER SUMMARY GRID DETAILS -->
-                    <div class="p-5 space-y-4 text-xs font-sans max-h-[30rem] overflow-y-auto">
+                    <div class="p-3 space-y-4 text-xs font-sans max-h-[30rem] overflow-y-auto">
                         
                         <!-- 1. BASELINE ACCOUNTING TRANSACTION LEDGER SUMMARY BOX -->
                         <div class="grid grid-cols-2 gap-x-4 gap-y-2 bg-base-200/60 border border-base-300 p-3 rounded-xl font-mono text-[0.7rem] shadow-inner text-base-content/80">
@@ -227,7 +227,7 @@
                             <!-- Invoice Print Pass -->
                             {% if order.is_ordered %}
                             <a href="{% url 'generate_order_confirmation_pdf' order.order_number %}" target="_blank" class="btn btn-xs btn-outline border-base-content/20 text-base-content/80 hover:bg-base-content hover:text-base-100 font-bold flex gap-1 items-center justify-center py-2 h-auto min-h-0 rounded-lg shadow-sm">
-                                <i class="fa-solid fa-file-pdf"></i> Download Receipt ｜ 下載 PDF 水單
+                                <i class="fa-solid fa-file-pdf"></i> Download Receipt｜下載 PDF 水單
                             </a>
                             {% else %}
                             <div></div> <!-- Safe alignment spacer token -->
@@ -236,16 +236,15 @@
                             <div class="flex gap-2">
                                 {% if order.order_status == 'Processing' or order.order_status == 'Hold_Pending' %}
                                     <!-- Self-cancellation hook allowed only before active fulfillment runs -->
-                                    <button onclick="triggerOrderCancellation('{{ order.order_number }}')" class="btn btn-xs btn-error btn-outline font-bold rounded-lg px-3 py-2 h-auto min-h-0 shadow-sm grow sm:grow-0">
-                                        Cancel Order ｜ 取消訂單
+                                    <button onclick="triggerOrderCancellation('{{ order.order_number }}', '{{ order.total_due }}')" class="btn btn-xs btn-error btn-outline font-bold rounded-lg px-2 py-2 h-auto min-h-0 shadow-sm grow sm:grow-0">
+                                        Cancel Order｜取消訂單
                                     </button>
                                 {% endif %}
-                                <button onclick="closeOrderDetailsModal('{{ order.order_number }}')" class="btn btn-xs btn-neutral font-bold rounded-lg px-4 py-2 h-auto min-h-0 shadow-sm grow sm:grow-0">
-                                    Close ｜ 關閉
+                                <button onclick="closeOrderDetailsModal('{{ order.order_number }}')" class="btn btn-xs btn-neutral font-bold rounded-lg px-2 py-2 h-auto min-h-0 shadow-sm grow sm:grow-0">
+                                    Close｜關閉
                                 </button>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </dialog>
@@ -257,7 +256,7 @@
     <!-- ================================================================= -->
     <!-- 💳 SECTION 2: SETTLED & COMPLETED ORDERS HISTORY                   -->
     <!-- ================================================================= -->
-    <div class="mt-8 mb-4 pl-1 select-none animate-fade-in border-t border-base-content/5 pt-5">
+    <div class="mt-2 mb-4 pl-1 select-none animate-fade-in pt-2">
         <h4 class="text-sm font-black text-info-content uppercase tracking-wider">歷史購物紀錄 ｜ Order History</h4>
     </div>
 
@@ -341,7 +340,7 @@
                 <div class="modal-box bg-base-100 border border-base-300 rounded-2xl max-w-xl p-0 overflow-hidden shadow-2xl animate-fade-in relative text-base-content">
                     
                     <!-- MODAL TITLE HEADER STRIP (Matching your elegant dark info-content theme accents) -->
-                    <div class="bg-info-content text-white p-4 flex items-center justify-between shadow-sm">
+                    <div class="bg-info-content text-white p-4 flex items-center justify-between shadow-sm rounded-t-2xl">
                         <div class="flex items-center gap-2">
                             <i class="fa-solid fa-receipt text-accent text-sm"></i>
                             <div class="flex flex-col">
@@ -353,7 +352,7 @@
                     </div>
                     
                     <!-- INNER SUMMARY GRID DETAILS -->
-                    <div class="p-5 space-y-4 text-xs font-sans max-h-[30rem] overflow-y-auto">
+                    <div class="p-3 space-y-4 text-xs font-sans max-h-[30rem] overflow-y-auto">
                         
                         <!-- 1. BASELINE ACCOUNTING TRANSACTION LEDGER SUMMARY BOX -->
                         <div class="grid grid-cols-2 gap-x-4 gap-y-2 bg-base-200/60 border border-base-300 p-3 rounded-xl font-mono text-[0.7rem] shadow-inner text-base-content/80">
@@ -429,7 +428,7 @@
                             <!-- Invoice Print Pass -->
                             {% if order.is_ordered %}
                             <a href="{% url 'generate_order_confirmation_pdf' order.order_number %}" target="_blank" class="btn btn-xs btn-outline border-base-content/20 text-base-content/80 hover:bg-base-content hover:text-base-100 font-bold flex gap-1 items-center justify-center py-2 h-auto min-h-0 rounded-lg shadow-sm">
-                                <i class="fa-solid fa-file-pdf"></i> Download Receipt ｜ 下載 PDF 水單
+                                <i class="fa-solid fa-file-pdf"></i> Download Receipt｜下載 PDF 水單
                             </a>
                             {% else %}
                             <div></div> <!-- Safe alignment spacer token -->
@@ -438,12 +437,12 @@
                             <div class="flex gap-2">
                                 {% if order.order_status == 'Processing' or order.order_status == 'Hold_Pending' %}
                                     <!-- Self-cancellation hook allowed only before active fulfillment runs -->
-                                    <button onclick="triggerOrderCancellation('{{ order.order_number }}')" class="btn btn-xs btn-error btn-outline font-bold rounded-lg px-3 py-2 h-auto min-h-0 shadow-sm grow sm:grow-0">
-                                        Cancel Order ｜ 取消訂單
+                                    <button onclick="triggerOrderCancellation('{{ order.order_number }}', '{{ order.total_due }}')" class="btn btn-xs btn-error btn-outline font-bold rounded-lg px-2 py-2 h-auto min-h-0 shadow-sm grow sm:grow-0">
+                                        Cancel Order｜取消訂單
                                     </button>
                                 {% endif %}
-                                <button onclick="closeOrderDetailsModal('{{ order.order_number }}')" class="btn btn-xs btn-neutral font-bold rounded-lg px-4 py-2 h-auto min-h-0 shadow-sm grow sm:grow-0">
-                                    Close ｜ 關閉
+                                <button onclick="closeOrderDetailsModal('{{ order.order_number }}')" class="btn btn-xs btn-neutral font-bold rounded-lg px-2 py-2 h-auto min-h-0 shadow-sm grow sm:grow-0">
+                                    Close｜關閉
                                 </button>
                             </div>
                         </div>
@@ -560,34 +559,3 @@
 
 
 </div>
-<script>
-    function openOrderDetailsModal(orderNumber) {
-        const targetModal = document.getElementById(`modal_${orderNumber}`);
-        if (targetModal) targetModal.showModal();
-    }
-    function closeOrderDetailsModal(orderNumber) {
-        const targetModal = document.getElementById(`modal_${orderNumber}`);
-        if (targetModal) targetModal.close();
-    }
-    function triggerOrderCancellation(orderNumber) {
-        closeOrderDetailsModal(orderNumber);
-        Swal.fire({
-            title: 'Cancel Order?｜申請取消訂單？',
-            text: `Are you sure you want to request cancellation for order #${orderNumber}?｜您確定要取消此訂單嗎？`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, Cancel｜確定取消',
-            cancelButtonText: 'No, Keep｜保持原狀'
-        })
-        .then((result) => {
-            if (result.isConfirmed) {
-                // Point this to your standard HTMX cancellation or Django view endpoint route
-                window.location.href = `/orders/cancel-request/${orderNumber}/`;
-            } else { 
-                openOrderDetailsModal(orderNumber);
-            }
-        });
-    }
-</script>

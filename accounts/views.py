@@ -81,6 +81,14 @@ def register(request):
                 password=password, # Pass it here!
             )
 
+            # 🌟 DEDICATED SEPARATE INTERCEPT: Cache guest cancellations under its own key
+            # This keeps your pre-existing 'pending_claim_voucher_id' for gifted cards completely safe!
+            claim_voucher_id = request.GET.get('claim_voucher_id')
+            if claim_voucher_id:
+                request.session['pending_cancellation_voucher_id'] = claim_voucher_id
+                request.session.modified = True
+                print(f"💾 CANCELLATION CACHE SUCCESS: Logged guest refund voucher {claim_voucher_id} inside user session channel.")
+
             # user activation
             current_site = get_current_site(request)
             mail_subject = "Please activate your Hṛdayadīpa (हृदयदीप) account｜請激活您的【心燈】帳號"
@@ -194,7 +202,9 @@ def activate(request, uidb64, token):
         # 🌟 THE NET FIX: Auto-authenticate and log in the user on verification success
         auth_login(request, user)
 
-        # 🎯 VOUCHER INTERCEPT LOGIC: Check for cached guest vouchers inside session records
+        success_messages_list = ["帳號已成功激活！ | Account activated!"]
+
+        # 🎁 WORKFLOW 1: Pre-existing Gifted Cash Voucher Logic Loops (Left completely untouched)
         pending_voucher_id = request.session.pop('pending_claim_voucher_id', None)
         if pending_voucher_id:
             try:
@@ -206,11 +216,42 @@ def activate(request, uidb64, token):
                 messages.success(request, "Account activated｜帳號已成功激活")
         else:
             messages.success(request, "Account activated｜帳號已成功激活")
+
+        # 🎁 WORKFLOW 1: Pre-existing Gifted Cash Voucher Logic Loops (Left completely untouched)
+        pending_gift_voucher_id = request.session.pop('pending_claim_voucher_id', None)
+        if pending_gift_voucher_id:
+            try:
+                gift_voucher = CustomerVoucher.objects.get(id=pending_gift_voucher_id, is_claimed=False)
+                gift_voucher.owner = user
+                gift_voucher.claim(user.email)
+                success_messages_list.append(f"面值 CNY {gift_voucher.value} 的贈送禮品券已自動匯入您的錢包。 | Gifted voucher worth CNY {gift_voucher.value} has been added to your wallet.")
+            except (CustomerVoucher.DoesNotExist, ValueError):
+                pass
+
+        # 🎫 WORKFLOW 2: The New Automated Guest Cancellation Refund Engine
+        pending_cancel_voucher_id = request.session.pop('pending_cancellation_voucher_id', None)
+        if pending_cancel_voucher_id:
+            try:
+                cancel_voucher = CustomerVoucher.objects.get(id=pending_cancel_voucher_id, is_claimed=False)
+                
+                # Verify that the voucher has not passed its 1-year legal lifespan
+                if cancel_voucher.is_expired():
+                    messages.warning(request, "該取消訂單退回之全額購物金已超過一年領取時限，面值已自動失效。 | However, your order cancellation credit has expired (1-year claim window exceeded).")
+                else:
+                    cancel_voucher.owner = user
+                    cancel_voucher.claim(user.email)
+                    success_messages_list.append(f"因取消訂單退回面值 CNY {cancel_voucher.value} 的全額購物金已成功存入。 | Cancellation refund voucher worth CNY {cancel_voucher.value} has been added to your account.")
+                    print(f"🎉 GUEST REFUND VOUCHER REDEEMED: Token {cancel_voucher.id} successfully claimed by {user.email}")
+            except (CustomerVoucher.DoesNotExist, ValueError):
+                pass
+
+        # Display the aggregated success array blocks clearly on their screen viewport
+        messages.success(request, " ".join(success_messages_list))
             
         # Redirect directly into their dashboard panel since they are now fully logged in
         return redirect("dashboard", subpage="main")
     else:
-        messages.error(request, "Invalid activation link｜激活連結無效")
+        messages.error(request, "Invalid activation link or token expired. ｜激活連結無效或驗證權杖已過期")
         return redirect("register")
     
 

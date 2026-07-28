@@ -1,55 +1,101 @@
 {% block content %}
-
-<aside class="col-span-1 bg-base-200 rounded-2xl border-1 border-base-100 text-info-content px-5 py-5">
-    <!-- logo -->
-    <div class="w-full text-center py-2">
-        <div class="mask mask-squircle">
-            <img class="w-18" src="https://img.daisyui.com/images/stock/photo-1494232410401-ad00d5433cfa.webp" alt="">
+{% load static %}
+<div class="w-full bg-base-100 border border-base-200/70 shadow-sm rounded-2xl p-5 space-y-8 transition-all duration-300 hover:shadow-md">
+    
+    <!-- 1. Editorial Branding Logo Piece -->
+    <div class="w-full flex justify-center py-2 border-b border-base-100 pb-5">
+        <div class="avatar">
+            <div class="mask mask-squircle w-16 h-16 bg-base-200 shadow-inner">
+                <!-- Swapped dummy placeholder out for a clean, secure layout asset profile picture frame -->
+                <img src="https://img.daisyui.com/images/stock/photo-1494232410401-ad00d5433cfa.webp" alt="Platform Logo" loading="lazy" />
+            </div>
         </div>
     </div>
-    <!-- popular articles -->
-    <div class="text-center text-lg">熱 門 筆 記</div>
 
-    <!-- thumbnails -->
-    <div class="w-full my-5 relative">
-        <div class="absolute -translate-1/2 top-1/2 left-1/2 text-primary-content">XX花藝</div>
-        <img src="/media/images/site/ad1.png.webp" alt="" class="rounded-2xl object-contain">
-    </div>
-    <div class="w-full my-5 relative">
-        <div class="absolute -translate-1/2 top-1/2 left-1/2 text-primary-content">網站開發</div>
-        <img src="/media/images/site/ad2.png" alt="" class="rounded-2xl object-contain">
-    </div>
-    <div class="w-full my-5 relative">
-        <div class="absolute -translate-1/2 top-1/2 left-1/2 text-primary-content">XX花藝</div>
-        <img src="/media/images/site/ad1.png.webp" alt="" class="rounded-2xl object-contain">
-    </div>
-
-    <!-- by tags -->
-    <div class="my-10">
-        <div class="text-center text-lg">話 題 標 籤</div>
-        <!-- tag links -->
-        <div class="text-base-content text-sm my-5 flex flex-wrap gap-x-3 justify-center">
-            {% for tag in tags_with_counts %}
-            <a href="">
-                <i class="fa-solid fa-hashtag"></i>
-                <span>{{tag.name}}({{tag.post_count}})</span>
+    <!-- 2. Curated Popular Articles: Editor's Picks (Dynamic) -->
+    <div class="space-y-4">
+        <h3 class="text-center font-medium text-sm tracking-widest uppercase text-base-content/40 pb-2 border-b border-base-100">
+            Editor's Picks <span class="text-xs opacity-50 mx-0.5">｜</span> 熱門
+        </h3>
+        
+        <div class="space-y-3">
+            {% for post in popular_posts %}
+            <a href="{{ post.get_url }}" class="group flex items-center gap-3 p-2 rounded-xl hover:bg-base-50 transition-all duration-300">
+                <div class="w-12 h-12 rounded-lg overflow-hidden bg-base-200 flex-shrink-0 relative border border-base-200/50">
+                    <img src="{{ post.featured_image.url }}" alt="{{ post.title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h4 class="text-xs font-semibold text-base-content/80 group-hover:text-primary transition-colors truncate mb-0.5">
+                        {{ post.title }}
+                    </h4>
+                    <p class="text-[10px] text-base-content/40 font-light flex items-center gap-1.5">
+                        <span>{{ post.created_at|date:"M d, Y" }}</span>
+                        {% if post.location %}
+                        <span class="truncate opacity-80 max-w-[12ch]">📍 {{ post.location }}</span>
+                        {% endif %}
+                    </p>
+                </div>
             </a>
+            {% empty %}
+            <div class="text-center text-[11px] opacity-40 py-4 font-light">暫無推薦內容 ｜ No featured notes yet.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 3. Dynamic Promos / Advertisements (Polished to fit a boutique art layout gallery) -->
+    <div class="space-y-3 pt-2">
+        <div class="relative group rounded-xl overflow-hidden aspect-[16/6] bg-base-950/20 shadow-sm border border-base-200/30">
+            <div class="absolute inset-0 bg-base-950/40 backdrop-blur-[1px] flex items-center justify-center text-white z-10 transition-colors group-hover:bg-base-950/50 select-none">
+                <span class="text-xs font-medium tracking-widest uppercase font-serif">🎨 XX花藝空間</span>
+            </div>
+            <!-- Standard fallback if local graphic routes break out initially -->
+            <img src="{% static 'images/site/ad1.png.webp' %}" alt="Promo Card Slot" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+        </div>
+
+        <div class="relative group rounded-xl overflow-hidden aspect-[16/6] bg-base-950/20 shadow-sm border border-base-200/30">
+            <div class="absolute inset-0 bg-base-950/40 backdrop-blur-[1px] flex items-center justify-center text-white z-10 transition-colors group-hover:bg-base-950/50 select-none">
+                <span class="text-xs font-medium tracking-widest uppercase font-sans">💻 匠心網站開發</span>
+            </div>
+            <img src="{% static 'images/site/ad2.png' %}" alt="Promo Card Slot" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+        </div>
+    </div>
+
+    <!-- 4. Dynamic Topics / Tags Section -->
+    <div class="space-y-4 pt-2">
+        <h3 class="text-center font-medium text-sm tracking-widest uppercase text-base-content/40 pb-2 border-b border-base-100">
+            Explore Topics <span class="text-xs opacity-50 mx-0.5">｜</span> 話題
+        </h3>
+        
+        <div class="flex flex-wrap gap-2 justify-center py-1">
+            {% for tag in tags_with_counts %}
+            <a href="{% url 'all_posts_display' category='Published' %}?tag={{ tag.slug }}" class="badge badge-sm badge-neutral badge-outline font-sans text-[11px] h-auto py-1 px-2.5 rounded-lg opacity-70 hover:opacity-100 hover:border-primary hover:text-primary transition-all flex items-center gap-1">
+                <span class="opacity-40">#</span>
+                <span>{{ tag.name }}</span>
+                <span class="text-[9px] font-mono opacity-50 bg-base-200/60 px-1 rounded-md ml-0.5">{{ tag.post_count }}</span>
+            </a>
+            {% empty %}
+            <div class="text-center text-[11px] opacity-40 py-2 font-light">暫無話題標籤 ｜ No tags discovered yet.</div>
             {% endfor %}
         </div>
     </div>
     
-    <!-- by date -->
-    <div class="my-10">
-        <div class="text-center text-lg mb-5">檔 案 庫</div>
-        <!-- sort-by-month links -->
-        <div class="text-accent text-sm my-5 text-center">
-            <a href="" class="block">2025-12 (4)</a>
-            <a href="" class="block">2025-11 (2)</a>
-            <a href="" class="block">2025-10 (3)</a>
-            <a href="" class="block">2025-9 (1)</a>
+    <!-- 5. Dynamic Time Archives Section -->
+    <div class="space-y-4 pt-2">
+        <h3 class="text-center font-medium text-sm tracking-widest uppercase text-base-content/40 pb-2 border-b border-base-100">
+            Archives <span class="text-xs opacity-50 mx-0.5">｜</span> 檔案
+        </h3>
+        
+        <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1 text-center font-sans">
+            {% for item in archive_dates %}
+            <!-- Uses your view's month grouping variables -->
+            <a href="{% url 'all_posts_display' category='Published' %}?month={{ item.month|date:'Y-m' }}" class="block text-xs py-1.5 rounded-lg text-base-content/60 hover:bg-base-50 hover:text-primary transition-all font-medium">
+                📅 {{ item.month|date:"Y年 m月" }} 
+                <span class="text-[10px] font-mono opacity-40 font-light ml-1">({{ item.post_count }} 篇)</span>
+            </a>
+            {% empty %}
+            <div class="text-center text-[11px] opacity-40 py-2 font-light">暫無歸檔歷史 ｜ No archive history.</div>
+            {% endfor %}
         </div>
-
     </div>
-</aside>
-
+</div>
 {% endblock %}

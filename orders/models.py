@@ -79,6 +79,8 @@ class Order(models.Model):
         ('All_Dispatched', 'All Dispatched ｜ 已全部發貨'),
         ('Delivered', 'Delivered ｜ 已妥投完成'),
         ('Cancelled', 'Cancelled ｜ 已取消'),
+        ('Refunding', 'Refunding ｜ 退款處理中'),
+        ('Refunded', 'Refunded ｜ 已完成退款'),
     ]
     
     user                    = models.ForeignKey(Account, on_delete=models.SET_NULL, blank=True, null=True)
@@ -249,3 +251,23 @@ def auto_recalculate_order_fulfillment_state(sender, instance, created, **kwargs
         # Save the updated status string value firmly to the disk drive
         parent_order.save(update_fields=['order_status'])
         print(f"⚡ SIGNAL SYNC: Recalculated status for Order #{parent_order.order_number} to: {parent_order.order_status}")
+
+
+class OrderInquiry(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='inquiries')
+    message_content = models.TextField(max_length=1000)
+    is_from_staff = models.BooleanField(default=False)
+    
+    # Updated related_name for structural clarity across your Account tables
+    staff_user = models.ForeignKey(
+        Account, 
+        on_delete=models.SET_NULL, 
+        related_name='staff_responses', 
+        blank=True, 
+        null=True
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']

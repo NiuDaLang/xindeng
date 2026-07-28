@@ -1,0 +1,12 @@
+🚨 新顧客留言諮詢提醒 ｜ NEW CUSTOMER INQUIRY LOGGED
+
+訂單編號 ｜ Order Number: #{{ order.order_number }}
+顧客郵箱 ｜ Customer Email: {{ order.email }}
+
+============================================================
+📝 MESSAGE DETAIL ｜ 留言詳情
+============================================================
+{{ message_content }}
+============================================================
+
+Please process this request within your administrator operations dashboard environment.

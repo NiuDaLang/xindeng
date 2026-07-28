@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="px-4 xxs:px-[max(1rem,5vw)] sm:px-0 sm:w-full sm:max-w-[min(1380px,90%)] pt-22 lg:pt-30 mx-auto">
+    
+    <!-- HEADER BAR: Order Metadata and Global Action Routing -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-base-200 pb-6 mb-8 lg:mt-4 gap-4">
+        <div>
+            <span class="text-xs tracking-widest text-base-content/50 font-mono uppercase">Secure Guest Lookup / 訪客專享查詢</span>
+            <h1 class="text-2xl sm:text-3xl font-serif tracking-wide mt-1">
+                Order {{ order.order_number }} <span class="font-sans font-light text-lg text-base-content/60 ml-2">/ 訂單明細</span>
+            </h1>
+            <p class="text-xs text-base-content/50 font-mono mt-1">Placed on: {{ order.ordered_at|date:"Y-m-d H:i" }}</p>
+        </div>
+        
+        <!-- DYNAMIC FULFILLMENT STATUS GATES -->
+        <div class="badge badge-lg p-4 font-sans font-medium text-xs tracking-wider uppercase rounded-lg shadow-sm
+            {% if order.order_status == 'Delivered' %}badge-success text-success-content
+            {% elif order.order_status == 'All_Dispatched' or order.order_status == 'Partly_Dispatched' %}badge-info text-info-content
+            {% elif order.order_status == 'Processing' %}badge-warning text-warning-content
+            {% elif order.order_status == 'Cancelled' %}badge-error text-error-content
+            {% else %}badge-neutral{% endif %}">
+            {{ order.get_order_status_display }}
+        </div>
+    </div>
+
+    <!-- MAIN TWO-COLUMN RESPONSIVE LAYOUT -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-24">
+        
+        <!-- LEFT/CENTER SECTIONS: Product Information & Live Inquiries -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- ORDER CONTENTS ACCORDION/CARD PANEL -->
+            <div class="bg-base-100 border border-base-200 rounded-xl p-5 sm:p-6 shadow-sm">
+                <h3 class="text-base font-serif border-b border-base-200 pb-3 mb-4 flex items-center justify-start gap-2">
+                    <span>Purchased Items</span>
+                    <span class="font-sans font-light text-xs opacity-60">/ 購買品項</span>
+                </h3>
+                
+                <!-- DYNAMIC ORDERPRODUCT QUERYSET LOOP -->
+                <div class="space-y-4">
+                    {% if order.orderproduct_set.all %}
+                        {% for item in order.orderproduct_set.all %}
+                        <div class="flex items-center justify-between gap-4 p-3 rounded-xl bg-base-200/40 border border-base-200/60">
+                            <div class="flex items-center gap-3">
+                                {% if item.product_variation.product.image %}
+                                    <img src="{{ item.product_variation.product.image.url }}" alt="{{ item.product_variation.product.product_name }}" class="w-12 h-12 rounded-md object-cover bg-base-300" />
+                                {% endif %}
+                                <div>
+                                    <h4 class="text-xs sm:text-sm font-medium leading-snug">{{ item.product_variation.product.product_name }}</h4>
+                                    <p class="text-[11px] text-base-content/50 font-mono mt-0.5">
+                                        Qty: {{ item.quantity }} {% if item.product_variation.variation_value %} | Variant: {{ item.product_variation.variation_value }}{% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-right font-mono text-xs font-semibold">
+                                CNY ¥{{ item.product_price }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-xs text-base-content/50 italic py-2">No product lines linked to this distribution path.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 💬 THE DYNAMIC MESSAGE TIMELINE CONSOLE BLOCK -->
+            <div class="bg-base-100 border border-base-200 rounded-xl p-5 sm:p-6 shadow-sm">
+                <h3 class="text-base font-serif border-b border-base-200 pb-3 mb-4 flex items-center justify-start gap-2 select-none">
+                    <span>Communication Log</span>
+                    <span class="font-sans font-light text-xs opacity-60">/ 諮詢與留言紀錄</span>
+                </h3>
+
+                <!-- 🌟 ENFORCE CONTAINER ID CLOSURE FOR HTMX TARGETING -->
+                <div id="conversation-timeline" class="space-y-4 max-h-[24rem] overflow-y-auto pr-2">
+                    {% if order.inquiries.all %}
+                        {% for inquiry in order.inquiries.all %}
+                            <!-- Your existing chat bubbles layout code logic remains completely unchanged here -->
+                            <div class="chat {% if inquiry.is_from_staff %}chat-start{% else %}chat-end{% endif %}">
+                                <div class="chat-header text-[10px] opacity-50 font-sans mb-1">
+                                    {% if inquiry.is_from_staff %}<span>✨ Customer Care</span>{% else %}<span>Buyer</span>{% endif %}
+                                    <time class="ml-1 font-mono text-[9px]">{{ inquiry.created_at|date:"Y-m-d H:i" }}</time>
+                                </div>
+                                <div class="chat-bubble text-xs rounded-2xl p-3 {% if inquiry.is_from_staff %}bg-base-200 text-base-content{% else %}bg-neutral text-neutral-content{% endif %}">
+                                    {{ inquiry.message_content|linebreaksbr }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Initial fallback if no messages exist yet -->
+                        <p id="timeline-fallback-text" class="text-xs text-base-content/40 font-serif italic text-center py-6">
+                            No historical queries recorded for this fulfillment pathway.<br>
+                            <span class="block mt-1 font-sans font-light text-[11px] opacity-70 not-italic">此訂單尚無歷史諮詢紀錄。</span>
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- SECURE ENCRYPTED INTERACTIVE CUSTOMER MESSAGE PANEL -->
+            <div class="bg-base-100 border border-base-200 rounded-xl p-5 sm:p-6 shadow-sm">
+                <h3 class="text-base font-serif border-b border-base-200 pb-3 mb-4">
+                    Leave a Message <span class="font-sans font-light text-xs opacity-60 ml-1">/ 留言諮詢</span>
+                </h3>
+                <form hx-post="" 
+                    hx-target="#conversation-timeline" 
+                    hx-swap="beforeend" 
+                    hx-on::after-request="this.reset()"
+                    class="space-y-4">
+                    {% csrf_token %}
+                    <div class="form-control">
+                        <label class="label pt-0 select-none">
+                            <span class="label-text text-xs text-base-content/60 font-serif leading-relaxed">
+                                Your message will be logged securely under this tracking reference.<br>
+                                <span class="block mt-0.5 font-sans font-light text-[11px] opacity-70">留言將安全記錄於此訂單中。</span>
+                            </span>
+                        </label>
+                        <!-- Form reset handler requires everything on a single line with no internal tabs/breaks -->
+                        <textarea id="inquiry_textarea" name="message_content" required class="textarea textarea-bordered h-32 text-sm w-full font-sans placeholder:opacity-40" placeholder="Describe your query comprehensively... / 在此輸入您要諮詢的詳細內容..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-neutral btn-sm font-sans tracking-wider px-5 text-xs select-none">
+                        Submit Inquiry / 提交留言
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDEBAR: Shipping Metrics, Receipt Tokens & Lifecycle Controls -->
+        <div class="space-y-6">
+            
+            <!-- REAL-TIME CONTEXTUAL ACTION DOCK -->
+            <div class="bg-base-100 border border-base-200 rounded-xl p-5 sm:p-6 shadow-sm space-y-3">
+                <h3 class="text-base font-serif border-b border-base-200 pb-3 mb-2">
+                    Order Controls <span class="font-sans font-light text-xs opacity-60 ml-1">/ 訂單操作</span>
+                </h3>
+                
+                <!-- BANK HOLDS & PAID CONFIRMATION RECEIPT ENGINE -->
+                {% if order.is_ordered and order.payment %}
+                <a href="{% url 'generate_order_confirmation_pdf' order.order_number %}" class="btn btn-sm btn-outline border-base-300 hover:btn-neutral font-sans text-xs flex gap-2 items-center justify-center w-full rounded-lg shadow-sm">
+                    <i class="fa-solid fa-file-pdf text-[11px]"></i> Download Receipt ｜ 下載 PDF 水單
+                </a>
+                {% endif %}
+                
+                <div class="flex flex-col gap-2 pt-1">
+                    <!-- LIFECYCLE CHRONO GATE: ALLOW SELF CANCELLATIONS STRICTLY ON SAFE STATUS HOOKS -->
+                    {% if order.order_status == 'Processing' or order.order_status == 'Hold_Pending' %}
+                    <button onclick="triggerOrderCancellation('{{ order.order_number }}', '{{ order.total_due }}')" class="btn btn-sm btn-error btn-outline font-sans text-xs rounded-lg w-full shadow-sm tracking-wide">
+                        Cancel Order ｜ 取消訂單
+                    </button>
+                    {% endif %}
+                    
+                    <a href="{% url 'contact' %}" class="btn btn-sm btn-neutral font-sans text-xs rounded-lg w-full shadow-sm tracking-wide">
+                        Back to Contact ｜ 返回聯繫頁面
+                    </a>
+                </div>
+            </div>
+
+            <!-- PHYSICAL/DIGITAL RECIPIENT DATA MASK -->
+            <div class="bg-base-100 border border-base-200 rounded-xl p-5 sm:p-6 shadow-sm">
+                <h3 class="text-base font-serif border-b border-base-200 pb-3 mb-4">
+                    Fulfillment Destination <span class="font-sans font-light text-xs opacity-60 ml-1">/ 配送資訊</span>
+                </h3>
+                <div class="space-y-3 font-sans text-xs">
+                    <div>
+                        <span class="text-base-content/50 block">Recipient / 收件人</span>
+                        <span class="font-medium text-sm">{{ order.recipient_first_name }} {{ order.recipient_last_name }}</span>
+                    </div>
+                    
+                    {% if order.recipient_email %}
+                    <div>
+                        <span class="text-base-content/50 block">Voucher Recipient / 電子憑證接收郵箱</span>
+                        <span class="font-mono text-base-content/80">{{ order.recipient_email }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div>
+                        <span class="text-base-content/50 block">Destination Region / 目的國家地區</span>
+                        <span class="font-medium uppercase tracking-wider">{{ order.get_country_display }}</span>
+                    </div>
+                    
+                    {% if order.delivery_note %}
+                    <div class="bg-base-200/60 p-3 rounded-lg border border-base-200 mt-2">
+                        <span class="text-[11px] text-base-content/50 block mb-0.5">Delivery Note / 配送備註</span>
+                        <p class="text-base-content/80 italic leading-relaxed">{{ order.delivery_note }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- FINANCIAL CURRENCY TOTALS DASHBOARD -->
+            <div class="bg-base-300/40 border border-base-200 rounded-xl p-5 sm:p-6 shadow-sm">
+                <h3 class="text-base font-serif border-b border-base-200 pb-3 mb-4 select-none">
+                    Payment Breakdown <span class="font-sans font-light text-xs opacity-60 ml-1">/ 費用明細</span>
+                </h3>
+                
+                <div class="space-y-2.5 font-sans text-xs border-b border-base-200 pb-4 mb-4">
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60 select-none">Subtotal / 商品總計</span>
+                        <span class="font-mono">
+                            {% if order.currency_code != "CNY" %}{{ order.currency_code }} {{ order.product_total_foreign }}{% else %}¥{{ order.product_total }}{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60 select-none">Shipping / 運費費率</span>
+                        <span class="font-mono">
+                            + {% if order.currency_code != "CNY" %}{{ order.currency_code }} {{ order.shipping_cost_foreign }}{% else %}¥{{ order.shipping_cost }}{% endif %}
+                        </span>
+                    </div>
+                    {% if order.discount > 0 or order.voucher_applied > 0 %}
+                    <div class="flex justify-between text-success">
+                        <span class="select-none">Discounts & Vouchers / 優惠折抵</span>
+                        <span class="font-mono">
+                            - {% if order.currency_code != "CNY" %}{{ order.currency_code }} {{ order.discount_foreign }}{% else %}¥{{ order.discount }}{% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="flex justify-between items-baseline">
+                    <span class="font-serif text-sm font-medium select-none">Total Paid / 實付總額</span>
+                    <div class="text-right">
+                        <span class="text-xl font-bold font-mono tracking-tight text-primary">
+                            {{ order.currency_code }} {{ order.total_due_foreign }}
+                        </span>
+                        {% if order.currency_code != "CNY" %}
+                        <span class="block text-[10px] text-base-content/40 font-mono mt-0.5 select-none">Base equivalent: ¥{{ order.total_due }} CNY</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 1. GLOBAL ROOT HTMX LIFECYCLE LISTENERS
+document.body.addEventListener("htmx:afterSwap", function(evt) {
+    console.log("✨ HTMX lifecycle interceptor caught node modification. Target:", evt.detail.target ? evt.detail.target.id : "None");
+    
+    if (evt.detail.target && evt.detail.target.id === "conversation-timeline") {
+        const timelineContainer = document.getElementById("conversation-timeline");
+        if (timelineContainer) {
+            const fallbackText = document.getElementById("timeline-fallback-text");
+            if (fallbackText) fallbackText.remove();
+
+            setTimeout(() => {
+                timelineContainer.scrollTo({
+                    top: timelineContainer.scrollHeight,
+                    behavior: 'smooth'
+                });
+                console.log("🚀 Smooth auto-scroll snap to baseline finished successfully!");
+            }, 40);
+        }
+    }
+});
+
+// 2. SECURE LIFECYCLE ASYNCHRONOUS INITIALISATION DECK
+document.addEventListener("DOMContentLoaded", function() {
+    // A. Pre-snap conversation log list container window downward instantly on fresh loads
+    const timelineContainer = document.getElementById("conversation-timeline");
+    if (timelineContainer) {
+        timelineContainer.scrollTop = timelineContainer.scrollHeight;
+        console.log("📜 Conversation timeline pre-snapped to baseline on load mount pass.");
+    }
+
+    // B. Safe Context Parsing Loop Intercept Layer
+    // 🌟 FIXED: Removed string quotes entirely! Django dumps the text as a native JS null or object literal.
+    const swalPayload = {{ trigger_swal_json|safe }};
+    
+    // Safety check evaluates the native object directly
+    if (!swalPayload) {
+        console.log("ℹ️ No historical status alerts queued for this transaction lookup pass.");
+        return; 
+    }
+
+    // C. DEPENDENCY GUARD ENGINE ROUTER
+    function executeSwalPopupAlert() {
+        const targetSwalObject = window.Swal || Swal;
+        if (!targetSwalObject) {
+            console.warn("⏳ SweetAlert library dependencies still packaging. Re-queueing micro-check cycle...");
+            setTimeout(executeSwalPopupAlert, 100);
+            return;
+        }
+
+        try {
+            // 🌟 FIXED: No more JSON.parse() needed since swalPayload is already a native JavaScript object!
+            targetSwalObject.fire({
+                title: swalPayload.title,
+                html: swalPayload.html, // Maps cleanly to your updated view key string parameters
+                icon: swalPayload.icon,
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'Review Invoice Pass ｜ 檢視單據明細'
+            });
+            console.log("🎯 SweetAlert verification modal dispatched cleanly.");
+        } catch (err) {
+            console.error("❌ SWAL operational execution failure anomaly tracking log:", err);
+        }
+    }
+
+    // Fire the validation intercept loop array sequence instantly
+    executeSwalPopupAlert();
+});
+</script>
+{% endblock %}

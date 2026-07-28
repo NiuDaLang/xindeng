@@ -1,23 +1,52 @@
+{% load humanize %}
 <!-- 🌟 FIXED DATA OVERRIDE: Bound using a single-element item tracking loop to ensure clean indexing -->
-<div id="product_images" hx-swap-oob="true" class="space-y-4">
+<div id="product_images" hx-swap-oob="true" class="group">
     <!-- Main Zoom Viewport Frame Anchor -->
-    <a id="open-product-gallery" href="#" class="block">
-        <figure class="w-full aspect-4/3 rounded-xl overflow-hidden shadow-sm relative bg-base-200">
-            <img id="main_thumbnail" src="{{ current_main_image }}" class="w-full h-full object-cover" alt="Master Canvas Preview"/>
+    <a id="open-product-gallery" href="#" class="block focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-2xl">
+        <figure class="md:w-full mx-auto aspect-[4/3] max-h-[30vh] md:max-h-none rounded-2xl overflow-hidden shadow-sm border border-base-200 bg-base-200 relative">
+            <img id="main_thumbnail" 
+                 src="{{ current_main_image }}" 
+                 class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" 
+                 alt="{{ single_product.product_name|default:'Master Canvas View' }}"/>
+            
+            <!-- Floating Subtle Expand Visual Cue -->
+            <div class="absolute bottom-3 right-3 bg-base-950/40 backdrop-blur-md text-white p-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 20.25v-4.5m0 4.5h-4.5m4.5 0L15 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m-11.25 11.25h4.5m-4.5 0v-4.5m0 4.5L9 15" />
+                </svg>
+            </div>
         </figure>
     </a>
 
     <!-- Unified Small Thumbnail Strip List Layout -->
-    <div class="flex flex-wrap gap-3 mt-3 justify-start" id="product_gallery_images">
+    <div class="flex flex-row md:flex-wrap gap-0 xxs:gap-1 sm:gap-3 items-center justify-center md:justify-start overflow-x-auto whitespace-nowrap p-2 mt-1 sm:mt-4 scrollbar-none min-h-[64px] sm:min-h-[80px]" id="product_gallery_images">
         {% for cell in product_gallery %}
-            <div class="thumbnail-item w-16 h-16 rounded-md overflow-hidden cursor-pointer border {% if forloop.first %}border-2 border-primary shadow-sm scale-105 z-10{% else %}border border-base-300 opacity-70 hover:opacity-100{% endif %} transition-all duration-200" 
+            <!-- 🌟 FIXED: Swapped out legacy styles to match main.js class highlights perfectly -->
+            <div class="thumbnail-item w-10 h-10 xxs:w-12 xxs:h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden cursor-pointer border bg-base-100 bg-clip-padding flex-shrink-0 mr-3 last:mr-0
+                        {% if forloop.first %}
+                            border-primary/60 ring-2 ring-primary/40 ring-offset-2 z-10 scale-[1.02]
+                        {% else %}
+                            border-base-200 opacity-60 hover:opacity-100 hover:border-base-300
+                        {% endif %} 
+                        transition-all duration-300" 
                  data-index="{{ forloop.counter0 }}"
                  data-src="{{ cell.href }}">
                 <img id="product_gallery_image_{{ forloop.counter0 }}" 
                      src="{{ cell.href }}" 
                      class="w-full h-full object-cover" 
-                     alt="{{ cell.title|default:'Gallery Thumbnail Image Piece' }}"/>
+                     alt="{{ cell.title|default:'Gallery Thumbnail Piece' }}"/>
             </div>
         {% endfor %}
+    </div>
+
+    <!-- 🌟 DYNAMIC SWAPPED MOBILE HEADER MIRROR -->
+    <!-- Sitting inside the hx-swap-oob box means it updates automatically upon variation click -->
+    <div id="mobile-sticky-mirror-header" class="block md:hidden w-full border-b border-base-200/60 pb-3 mb-2 pt-1 bg-base-100">
+        <h2 class="text-center text-xs xxs:text-[0.8rem] xs:text-[1rem] font-bold tracking-tight text-base-content/90 mb-0.5 leading-snug">
+            {{ single_product.product_name }}
+        </h2>
+        <div class="w-full font-mono font-extrabold text-center text-[1rem] xs:text-[1.25rem] text-primary tracking-tight">
+            <span class="text-[0.6rem] xs:text-[0.675rem] font-semibold opacity-80 mr-0.5">CNY</span>{{ displayed_price|floatformat:2|intcomma }}
+        </div>
     </div>
 </div>

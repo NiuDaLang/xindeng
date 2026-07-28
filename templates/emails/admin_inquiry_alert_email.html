@@ -1,0 +1,34 @@
+{% autoescape off %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>New Client Message</title>
+</head>
+<body style="font-family: sans-serif; background-color: #f7f5f3; padding: 20px;">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #cccccc; border-radius: 8px;">
+        <tr>
+            <td style="background-color: #4b9aaa; padding: 25px; text-align: center; color: white; font-size: 1.1rem; font-weight: bold;">
+                🚨 New Customer Inquiry Received
+                <br><span style="font-size: 0.85rem; font-weight: normal; opacity: 0.9;">收到新顧客留言諮詢</span>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 30px; font-size: 0.85rem; line-height: 1.4rem; color: #161616;">
+                <strong>Order Reference ｜ 關聯訂單編號:</strong> #{{ order.order_number }}<br>
+                <strong>Client Email ｜ 顧客電子郵箱:</strong> {{ order.email }}<br><br>
+                
+                <div style="background-color: #f9f9f9; border-left: 4px solid #4b9aaa; padding: 15px; margin-top: 10px; font-style: italic; white-space: pre-line;">
+                    {{ message_content }}
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: #333333; padding: 20px; text-align: center; color: white; font-size: 0.7rem;">
+                Hṛdayadīpa System Engine Automation Control Deck
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+{% endautoescape %}

@@ -152,24 +152,24 @@
                 
                 <!-- Dropdown Menu Content Panel -->
                 <div tabindex="0" 
-                    class="card card-compact bg-base-100 rounded-box z-50 mt-2 w-[23rem] shadow right-0 max-h-[calc(100vh-300px)] overflow-y-auto hidden peer-checked:block pointer-events-auto absolute top-full border border-base-200/50">
-                    <div class="card-body">
+                    class="card card-compact bg-base-100 rounded-box z-50 mt-2 w-[15rem] xs:w-[23rem] shadow left-1/2 -translate-x-1/2 max-h-[calc(100vh-300px)] overflow-y-auto hidden peer-checked:block pointer-events-auto absolute top-full border border-base-200/50">
+                    <div class="card-body px-2">
                         <!-- list -->
                         {% include 'store/partials/header_cart_list.html' %}
                         <div class="divider -mb-2"></div>
                         <!-- summary -->
-                        <div class="flex flex-col gap-1">
-                            <span class="text-sm font-light flex justify-between">
+                        <div class="flex flex-col gap-1 text-xs xs:text-sm ">
+                            <span class="font-light flex justify-between">
                                 <b>Total {% if item_count > 1 %}Items{% else %}Item{% endif %}｜總件數: </b>
                                 <b id="cart_count" class="font-bold">{{ item_count }} {% if item_count > 1 %}items{% else %}item{% endif %}</b>
                             </span>
-                            <span class="text-sm flex justify-between">
+                            <span class="flex justify-between">
                                 <b>Sub-Total｜小計: </b>
                                 <b id="cart_sub_total" class="font-bold">CNY ¥ {{ header_cart_total }}</b>
                             </span>
                         </div>
                         <div class="card-actions mt-3">
-                            <a href="{% url 'cart' %}" class="btn btn-primary btn-block font-light text-[1.05rem]">購物車 | View cart</a>
+                            <a href="{% url 'cart' %}" class="btn btn-primary btn-block font-light text-sm xs:text-[1.05rem]">View cart｜購物車</a>
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,5 @@
 from datetime import timedelta
-from .models import Payment, OrderVoucherUsage, Order, OrderProduct
+from .models import Payment, OrderVoucherUsage, Order, OrderProduct, OrderInquiry
 from store.models import DigitalDownloadToken
 from carts.models import ProformaInvoice, CheckoutInfo, Cart, CartItem
 from store.models import ProductVariation
@@ -7,7 +7,7 @@ from accounts.models import CustomerVoucher
 from django.contrib import admin, messages
 from django.db import transaction
 from django.utils import timezone
-from .tasks import send_order_confirmation_email_task, send_gift_voucher_email_task, send_e_product_email_task
+from .tasks import send_order_confirmation_email_task, send_gift_voucher_email_task, send_e_product_email_task, send_inquiry_notification_email_task, send_cancellation_completion_email_task
 from django.urls import reverse
 
 
@@ -16,6 +16,35 @@ class PaymentAdmin(admin.ModelAdmin):
     list_display = ["payment_id", "user", "payment_method", "amount_paid", "status", "created_at"]
     search_fields = ["payment_id", "user", "payment_method", "status"]
     list_filter = ["status", "created_at"]
+
+
+@admin.register(OrderInquiry)
+class OrderInquiryAdmin(admin.ModelAdmin):
+    # Control list headers inside your admin dashboard list grid
+    list_display = ('order', 'is_from_staff', 'staff_user', 'created_at')
+    list_filter = ('is_from_staff', 'created_at')
+    search_fields = ('order__order_number', 'message_content')
+    
+    # Exclude staff metrics from manual selection so Django assigns them automatically
+    exclude = ('staff_user', 'is_from_staff')
+
+    def save_model(self, request, obj, form, change):
+        """
+        🚀 ADMIN INTERCEPT ENGINE
+        Catches dashboard manual inserts, applies staff attributes,
+        and triggers your background Celery tasks automatically.
+        """
+        # If it's being created inside the Django Admin panel, it's definitely from staff
+        if not change: # Check ensures this runs strictly on creation pass, not on sub-edits
+            obj.is_from_staff = True
+            obj.staff_user = request.user
+            
+        # Commit row item securely to the database ledger layout
+        super().save_model(request, obj, form, change)
+        
+        # 🎯 CELERY EMAIL DISPATCH
+        # This will evaluate 'is_from_staff=True' inside tasks.py and email the customer instantly!
+        send_inquiry_notification_email_task.delay(obj.id)
 
 
 class OrderVoucherUsageInline(admin.TabularInline):
@@ -200,11 +229,10 @@ def confirm_bank_payment_admin_action(modeladmin, request, queryset):
     if processed_count > 0:
         messages.success(request, f"成功確認 {processed_count} 筆訂單的付款！ Successfully processed {processed_count} orders.")
 
-
+    
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ["user", "payment", "order_number", "order_status", "recipient_first_name", "recipient_last_name", "email", "total_due", "is_ordered", "created_at"]
-    # search_fields = ["user",  "payment", "order_number", "email", "order_status"]
     search_fields = ["user__email", "user__username", "payment__payment_id", "order_number", "email", "order_status"]
     list_filter = ["is_ordered", "order_status", "created_at"]
 
@@ -218,13 +246,44 @@ class OrderAdmin(admin.ModelAdmin):
         """
         actions = super().get_actions(request)
         
-        # If the logged-in user is not a superuser, remove the choice from their interface completely
+        # Adjust this flag check to perfectly match your custom Account model property (e.g. is_superadmin)
         if not request.user.is_superadmin:
             if 'confirm_bank_payment_admin_action' in actions:
                 del actions['confirm_bank_payment_admin_action']
                 
         return actions
-    
+
+    def save_model(self, request, obj, form, change):
+        """
+        🚀 STAFF COMPLETION HOOK INTERCEPT
+        Surgically monitors order_status changes inside Django Admin. If an order transitions
+        to a completed cancellation state, it appends the logs and queues client notification emails.
+        """
+        if change and 'order_status' in form.changed_data:
+            # Check if the staff member is moving the order into an absolute dead/complete state
+            if obj.order_status in ['Refunded', 'Cancelled']:
+                timestamp_str = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+                current_notes = obj.delivery_note or ""
+                
+                # 1. Annex text entries surgically onto the baseline text field string matrix without wiping history
+                new_alert = f"\n\n[System Alert - {timestamp_str}]: Cancellation lifecycle complete. Financial reimbursement finalized by store administration staff. / 更改提示：訂單取消與退款手續已由管理人員核值完畢，此交易正式結案。"
+                obj.delivery_note = current_notes + new_alert
+                
+                # 2. Automatically sync and lock down the attached Payment instance state
+                if obj.payment:
+                    payment_record = obj.payment
+                    payment_record.status = 'Refunded'
+                    payment_record.save(update_fields=['status', 'updated_at'])
+
+                # 3. 🎯 CELERY ASYNC NOTIFICATION ENGINE DISPATCH
+                # Queues up the background completion template compiler pass
+                send_cancellation_completion_email_task.delay(obj.id)
+                
+        # Commit layout structural parameters safely down to database engines
+        super().save_model(request, obj, form, change)
+
+
+
 
 @admin.register(OrderProduct)
 class OrderProductAdmin(admin.ModelAdmin):

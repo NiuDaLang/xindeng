@@ -2,70 +2,140 @@
 {% load static %}
 
 {% block content %}
-    <!-- BANNER -->
-    <div class="relative mt-16 w-full">
-        {% include 'includes/banner.html' %}
+<!-- BANNER -->
+<div class="relative mt-[65px] lg:mt-[86px] w-full">
+    <!-- CONTACT BANNER -->
+    <div class="relative w-full bg-base-300 py-16 text-center border-b border-base-200 select-none">
+        <div class="max-w-xl mx-auto px-4">
+            <h1 class="text-2xl md:text-3xl font-serif tracking-widest text-base-content mb-3">
+                Contact Us <span class="font-sans font-light text-xl opacity-60 ml-2">/ 聯繫我們</span>
+            </h1>
+            <p class="text-xs md:text-sm tracking-wide text-base-content/70 leading-relaxed font-serif">
+                Boundless in presence, responding to the wind; reach out and connect across the ten directions.<br>
+                <span class="block mt-1 font-sans font-light text-[11px] md:text-xs opacity-60 italic">
+                    應物空三世 隨緣遍十方
+                </span>
+            </p>
+        </div>
     </div>
+</div> 
 
-    <!-- MAIN -->
-    <!-- heading -->
-    <div class="px-[max(1rem,5vw)] w-full mt-20">
-        <h2 class="text-5xl font-extrabold mb-2">期待您的來信！</h2>
-        <h4 class="text-2xl font-semibold text-base-300">專享福利 福利！</h4>
-        <h4 class="text-2xl font-semibold text-base-300">驚喜不斷 驚喜不斷 源源不絕！！</h4>
+<!-- MAIN -->
+<div class="px-[max(1rem,5vw)] sm:px-0 sm:w-full sm:max-w-[min(1380px,90%)] mx-auto">
+    <!-- Heading Section -->
+    <div class="w-full mt-16 md:mt-20 text-center md:text-left px-4 xxs:px-[max(1rem,5vw)]">
+        <h2 class="text-2xl xs:text-3xl md:text-[1.75rem] font-extrabold mb-3 tracking-tight">
+            We Look Forward to Your Letter 
+            <span class="block md:inline text-[1.05rem] xs:text-2xl md:text-[1.35rem] font-medium text-base-content/60 ml-0 md:ml-3">
+                / 期待您的來信！
+            </span>
+        </h2>
+        <p class="text-xs md:text-sm font-serif text-base-content/70 italic max-w-2xl">
+            Unlock tailored benefits and curated experiences designed just for you. Continuous inspiration, flowing endlessly.<br>
+            <span class="block mt-1 font-sans font-normal text-xs md:text-sm text-base-content/50 not-italic">
+                專享福利，驚喜不斷，源源不絕。
+            </span>
+        </p>
     </div> 
-    <div class="px-[max(1rem,5vw)] mt-10 mb-50 grid grid-cols-3 gap-4 sm:columns-3 sm:gap-8">
-        <!-- CARD-1 -->
-        <div class="card col-span-1 bg-base-100 shadow-sm">
-            <figure>
-                <img
-                src="/media/hero/lavendar.svg"
-                alt="Shoes" />
+
+    <!-- Cards Grid Container -->
+    <div class="px-4 xxs:px-[max(1rem,5vw)] mt-12 mb-32 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4 xl:gap-8">
+        
+        <!-- CARD-1: Member Hotline -->
+        <div class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+            <figure class="pt-6 max-w-[160px] mx-auto">
+                <img src="/media/hero/lavendar.svg" alt="Lavender" class="rounded-xl w-full h-auto object-contain" />
             </figure>
-            <div class="card-body">
-                <div class="flex justify-center">
-                    <h2 class="card-title">會員熱線</h2>
+            <div class="flex flex-col flex-grow justify-between gap-3 items-center text-center p-6 md:px-3 lg:p-6">
+                <div class="flex flex-col gap-3 text-left">
+                    <h2 class="text-center card-title text-[0.9rem] lg:text-lg font-serif flex flex-col items-center xl:flex-row xl:justify-center gap-0 xl:gap-2">
+                        <span>Member Hotline</span>
+                        <span class="font-sans font-light text-xs xl:text-sm opacity-60 leading-non">/ 會員熱線</span>
+                    </h2>
+                    <p class="text-xs text-base-content/60 mb-4 font-serif">
+                        Access your private dashboard to drop us a direct line.<br>
+                        <span class="block mt-1 font-sans font-light text-[11px] opacity-60">登入專屬後台，即可直接與我們留言聯繫。</span>
+                    </p>
                 </div>
-                <div class="card-actions justify-center">
-                    <button class="btn btn-primary">進入後台畫面留言</button>
+                <div class="card-actions w-full flex flex-col justify-center">
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-md btn-block tracking-wider font-sans font-light text-xs md:text-[0.7rem] lg:text-xs flex items-center justify-center">
+                        <span>Dashboard </span>
+                        <span>/ 進入後台</span>
+                    </a>
                 </div>
             </div>
         </div>
-        <!-- CARD-2 -->
-        <div class="card col-span-1 bg-base-100 shadow-sm">
-            <figure>
-                <img
-                src="/media/hero/purpleFlower.svg"
-                alt="Shoes" />
+
+        <!-- CARD-2: Guest Inquiries -->
+        <div class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+            <figure class="pt-6 max-w-[160px] mx-auto">
+                <img src="/media/hero/purpleFlower.svg" alt="Purple Flower" class="rounded-xl w-full h-auto object-contain" />
             </figure>
-            <div class="card-body text-accent-content">
-                <div class="flex justify-center">
-                    <h2 class="card-title">非會員顧客專線</h2>
-                </div>
-                <div class="card-actions justify-center">
-                    <label class="input text-xs">
-                        <input type="text" class="grow" placeholder="您在本店曾使用的郵箱" />
-                        <span class="badge badge-neutral badge-xs"><a href="" roll="submit">GO!</a></span>
-                    </label>
-                </div>
+            <div class="flex flex-col flex-grow justify-between gap-3 items-center text-center p-6 md:px-3 lg:p-6">
+                <div class="flex flex-col gap-3 text-left">
+                    <h2 class="card-title text-[0.9rem] lg:text-lg font-serif flex flex-col items-center xl:flex-row xl:justify-center gap-0 xl:gap-2">
+                        <span>Guest Support </span>
+                        <span class="font-sans font-light text-xs xl:text-sm opacity-60">/ 非會員顧客專線</span>
+                    </h2>
+                    <p class="text-xs text-base-content/60 mb-4 font-serif">
+                        Verify your purchase securely to connect with our care team.<br>
+                        <span class="block mt-1 font-sans font-light text-[11px] opacity-60">驗證您的訂單資訊以發起諮詢。</span>
+                    </p>
+                </div>               
+                <form action="{% url 'guest_order_verify' %}" method="POST" class="w-full space-y-2 flex flex-col justify-end flex-grow">
+                    {% csrf_token %}
+                    <!-- Order Number Input -->
+                    <input 
+                        type="text" 
+                        name="order_number"
+                        required
+                        class="input input-sm input-bordered w-full text-xs font-sans placeholder:opacity-50" 
+                        placeholder="Order No. / 訂單編號" 
+                    />
+                    <!-- Separated Stack Layout -->
+                    <div class="w-full flex flex-col gap-2">
+                        <!-- Email Input -->
+                        <input 
+                            type="email" 
+                            name="guest_email"
+                            required
+                            class="input input-sm input-bordered w-full text-xs font-sans placeholder:opacity-50" 
+                            placeholder="Email / 郵箱" 
+                        />
+                        <!-- Separate Full-Width Submit Button -->
+                        <button type="submit" class="btn btn-sm btn-neutral w-full font-sans text-xs tracking-wider whitespace-nowrap">
+                            <span>Verify </span>
+                            <span>/ 驗證</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
-        <!-- CARD-3 -->
-        <div class="card col-span-1 bg-base-100 shadow-sm">
-            <figure>
-                <img
-                src="/media/hero/tulip.svg"
-                alt="Shoes" />
+
+        <!-- CARD-3: General Consultation -->
+        <div class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+            <figure class="pt-6 max-w-[160px] mx-auto">
+                <img src="/media/hero/tulip.svg" alt="Tulip" class="rounded-xl w-full h-auto object-contain" />
             </figure>
-            <div class="card-body text-warning">
-                <div class="flex justify-center">
-                    <h2 class="card-title">諮詢郵箱</h2>
+            <div class="flex flex-col flex-grow justify-between gap-3 items-center text-center p-6 md:px-3 lg:p-6">
+                <div class="flex flex-col gap-3 text-left">
+                    <h2 class="card-title text-[0.9rem] lg:text-lg font-serif flex flex-col items-center xl:flex-row xl:justify-center gap-0 xl:gap-2">
+                        <span>General Queries </span>
+                        <span class="font-sans font-light text-xs xl:text-sm opacity-60 leading-non">/ 諮詢郵箱</span>
+                    </h2>
+                    <p class="text-xs text-base-content/60 mb-4 font-serif">
+                        Write to us directly for collaborative visions and queries.<br>
+                        <span class="block mt-1 font-sans font-light text-[11px] opacity-60">歡迎直接來信，開展合作願景或進行相關諮詢。</span>
+                    </p>
                 </div>
-                <div class="card-actions justify-center">
-                    <button class="btn btn-warning btn-outline">info@xxx.com</button>
+                <div class="card-actions w-full flex flex-col justify-center">
+                    <a href="mailto:info@xxx.com" class="btn btn-warning btn-outline btn-md md:btn-md btn-block tracking-widest font-mono text-xs">
+                        info@xxx.com
+                    </a>
                 </div>
             </div>
         </div>
 
     </div>
+</div>
 {% endblock %}

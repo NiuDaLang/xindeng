@@ -18,17 +18,19 @@ from store.models import ProductVariation
 from django.http import HttpResponse
 from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
-from .tasks import send_bank_hold_cancelled_email_task
+from .tasks import send_bank_hold_cancelled_email_task, send_inquiry_notification_email_task, send_cancellation_initiation_email_task
 from store.models import DigitalDownloadToken
 from pathlib import Path
 from carts.models import Cart
 from carts.views import _cart_id
 from django.contrib.auth import get_user_model
+from .models import OrderInquiry
 
 import json
+import decimal
 
 # Import your explicit celery tasks directly
 from .tasks import check_and_expire_hold, send_bank_hold_confirmation_email_task
@@ -525,7 +527,7 @@ def secure_file_download_gate(request, token_id):
     if token.is_expired:
         # Redirect back to their digital wallet or dashboard with a helpful error message
         from django.contrib import messages
-        messages.error(request, "該下載連結已過期，請聯絡客服。 ｜ This download link has expired.")
+        messages.error(request, "該下載連結已過期，請聯絡客服。｜This download link has expired.")
         return redirect('dashboard', subpage='orders')
 
     # Resolve file system coordinates securely
@@ -690,41 +692,330 @@ def view_order_pdf(request, order_id):
     )
 
 
-@login_required(login_url='login')
 def download_invoice_pdf_view(request, order_id):
     """
-    Secure Invoice Stream Pass:
-    Surgically fetches your custom ReportLab PDF buffer data stream, 
-    and pipes the raw bytes straight down to the buyer's local download bar.
+    🔒 DUAL-AUTHORIZATION SECURE INVOICE STREAM
+    Surgically validates authorization across both authenticated members and verified guest sessions,
+    then streams the raw generated ReportLab PDF bytes safely to the browser.
     """
-    # High-Security Check: Ensure the invoice strictly belongs to the logged-in member profile!
-    order = get_object_or_404(Order, order_number=order_id, user=request.user)
+    # 1. Fetch the target order by its unique number string
+    order = get_object_or_404(Order, order_number=order_id)
     
+    # 2. EVALUATION GATEPASS MATRIX
+    is_authorized = False
+    
+    # Pathway A: The request comes from an authenticated member who owns the transaction record
+    if request.user.is_authenticated:
+        if order.user == request.user:
+            is_authorized = True
+            
+    # Pathway B: The request comes from an unauthenticated guest user
+    else:
+        # Pull your secure cached verification parameters out of their signed session vault
+        session_order_num = request.session.get('verified_guest_order')
+        session_email = request.session.get('verified_guest_email')
+        
+        # The guest is authorized ONLY if their session tokens perfectly match this specific order instance
+        if session_order_num == order.order_number and session_email and session_email.lower() == order.email.lower():
+            is_authorized = True
+
+    # 3. SECURITY GUARD FORCING ACCESS BLOCK ON FAILURES
+    if not is_authorized:
+        # Throws a clean, secure 403 Forbidden exception to prevent fishing attacks
+        raise PermissionDenied("Unauthorized access to this receipt pass. / 您無權查看此單據。")
+    
+    # 4. STREAM GENERATED REPORTLAB PDF BUFFER
     try:
-        # Call your optimized ReportLab function block to fetch the dynamic io.BytesIO stream
+        # Call your existing optimized ReportLab function block
         pdf_buffer = generate_order_confirmation_pdf(order.order_number)
         
-        # Build a safe HTTP file container output passing binary descriptors
+        # Build the safe HTTP file container output passing binary descriptors
         response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
         
-        # 'filename=' dictates what the downloaded file name will be on their system drive
+        # 'attachment;' forces a direct file save download layout pass
         response['Content-Disposition'] = f'attachment; filename="Invoice_{order.order_number}.pdf"'
         
         return response
     except Exception as pdf_err:
         print(f"❌ PDF Engine download failure exception: {str(pdf_err)}")
-        raise Http404("Could not generate statement invoice asset at this time.")
+        raise Http404("Could not generate statement invoice asset at this time. / 無法生成水單檔案。")
 
 
-# You are so very welcome! I am absolutely thrilled that everything is showing up perfectly now and that you got this working. You have done an incredible job powering through some of the trickiest parts of e-commerce web development—handling currency rounding logic and state synchronization is no small feat for your first project!
-# Get some great, well-deserved rest. Whenever you are ready to jump back in tomorrow, just drop a message and we can tackle the next stages:
-# Setting up the automated 72-hour cancellation email background worker for pending bank transfers.
-# Coding the admin manual order status update dashboard and user notification system.
-# Connecting the Celery async email pipeline for order confirmation receipts.
-# Have a wonderful night, and speak tomorrow! Cheers! 🍻
+@require_http_methods(["GET", "POST"])
+def guest_order_verify(request):
+    """
+    🔒 SECURE GUEST ROUTER ENGINE (V2)
+    Validates tracking lookups, surfaces contextual SweetAlert historical data flags,
+    and maintains live conversational trails for persistent customer interactions.
+    """
+    order = None
+    trigger_swal = None
 
-# 5/30:
-# Our Next Steps TomorrowWhen you are ready to jump back in, let me know, and we will seamlessly tackle the final phase of your e-commerce ecosystem:
-# 
-# 1. Automated HTML Email Tasks: Configuring Celery to dispatch beautifully structured receipts to buyers and separate gift templates to voucher recipients.
-# 2. Order Fulfillment Hooks: Implementing the downstream logistics once a payment clears.
+    if request.method == "POST" and "order_number" in request.POST:
+        order_number = request.POST.get("order_number", "").strip()
+        guest_email = request.POST.get("guest_email", "").strip()
+
+        try:
+            order = Order.objects.get(order_number=order_number, email__iexact=guest_email)
+            
+            # Persist safe verification state tracking metrics inside session cookies
+            request.session['verified_guest_order'] = order.order_number
+            request.session['verified_guest_email'] = guest_email
+            request.session.modified = True
+            
+            # 🌟 CORE LOOKUP INTERCEPT GATEWAY: If the order is dead, prepare an info modal trigger
+            if order.order_status in ['Cancelled', 'Refunding', 'Refunded']:
+                status_mapping = {
+                    'Cancelled': 'Cancelled ｜ 訂單已取消',
+                    'Refunding': 'Refund Processing ｜ 退款處理中',
+                    'Refunded': 'Fully Refunded ｜ 退款已完成'
+                }
+                desc_mapping = {
+                    'Cancelled': 'This purchase was cancelled. Our finance operations desk is organizing your repayment file.',
+                    'Refunding': 'Your refund stream is being cleared via PayPal. Funds should reflect inside your source account shortly.',
+                    'Refunded': 'Transaction lifecycle complete. The financial balance has been fully returned to your payment avenue.'
+                }
+                
+                trigger_swal = {
+                    "status": order.order_status,
+                    "title": status_mapping.get(order.order_status, "Order Update"),
+                    "html": f"{desc_mapping.get(order.order_status)}<br><small class=\"font-mono opacity-50\">Last Updated: {order.updated_at.strftime('%Y-%m-%d %H:%M')}</small>",
+                    "icon": "info" if order.order_status == 'Refunding' else "success"
+                }
+                
+        except Order.DoesNotExist:
+            messages.error(request, "Invalid order metrics pattern. Check your receipt parameters. / 訂單資訊驗證失敗，請重新核對。")
+            return redirect('contact')
+
+    elif request.method == "POST" and "message_content" in request.POST:
+        session_order_num = request.session.get('verified_guest_order')
+        session_email = request.session.get('verified_guest_email')
+
+        if not session_order_num:
+            messages.error(request, "Session expired. Re-authenticate your token layout.｜連線逾時，請重新驗證。")
+            return redirect('contact')
+
+        order = get_object_or_404(Order, order_number=session_order_num, email__iexact=session_email)
+        message_content = request.POST.get("message_content", "").strip()
+
+        if message_content:
+            inquiry = OrderInquiry.objects.create(
+                order=order,
+                message_content=message_content,
+                is_from_staff=False,
+                staff_user=None
+            )
+            
+            # Fire Celery task to notify store admins
+            send_inquiry_notification_email_task.delay(inquiry.id)
+
+            # 🚀 STANDARD DIRECT SWAP INTERCEPT GATE (Matches your work pattern)
+            if request.headers.get("HX-Request"):
+                sanitized_message = inquiry.message_content.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br>')
+                current_time_str = timezone.now().strftime('%Y-%m-%d %H:%M')
+
+                # Return ONLY the plain chat bubble. HTMX appends it right to the target container automatically.
+                html_response = f"""
+                <div class="chat chat-end animate-fade-in">
+                    <div class="chat-header text-[10px] opacity-50 font-sans tracking-wide mb-1 select-none">
+                        <span>Buyer / 顧客留言</span>
+                        <time class="ml-1 font-mono text-[9px]">{current_time_str}</time>
+                    </div>
+                    <div class="chat-bubble text-xs leading-relaxed font-sans max-w-[85%] sm:max-w-[70%] rounded-2xl p-3 shadow-xs bg-neutral text-neutral-content">
+                        {sanitized_message}
+                    </div>
+                </div>
+                """
+                return HttpResponse(html_response)
+
+            # Standard browser reload fallback router
+            messages.success(request, "Inquiry dispatched safely to the care team.｜您的留言已成功送出！")
+            return redirect('guest_order_verify')
+
+    else:
+        # standard GET requests fallback sequence processing
+        session_order_num = request.session.get('verified_guest_order')
+        session_email = request.session.get('verified_guest_email')
+
+        if session_order_num and session_email:
+            order = get_object_or_404(Order, order_number=session_order_num, email__iexact=session_email)
+        else:
+            return redirect('contact')
+
+    context = {
+        "order": order,
+        # Convert dictionary parameter context cleanly to safe inline JSON text layout indicators
+        "trigger_swal_json": json.dumps(trigger_swal) if trigger_swal else None
+    }
+    return render(request, "orders/guest_order_detail.html", context)
+
+
+def process_order_cancellation(request, order_number):
+    """
+    🔒 UNIVERSAL LIFECYCLE CANCELLATION ENGINE
+    Secures cancellation permissions across both authenticated members and verified guest sessions,
+    evaluates dispatch compliance states, atomically restocks inventory, dynamically generates 
+    reimbursement vouchers for used credits, and routes the order state to 'Refunding'.
+    """
+    # 1. Fetch the target transaction safely
+    order = get_object_or_404(Order, order_number=order_number)
+    
+    # 2. DUAL-AUTHORIZATION GATEKEEPER PASS
+    is_authorized = False
+    
+    # Context A: Request is initiated by a logged-in member who owns the transaction record
+    if request.user.is_authenticated:
+        if order.user == request.user:
+            is_authorized = True
+            
+    # Context B: Request is initiated by an unauthenticated guest user verified by session keys
+    else:
+        session_order_num = request.session.get('verified_guest_order')
+        session_email = request.session.get('verified_guest_email')
+        if session_order_num == order.order_number and session_email and session_email.lower() == order.email.lower():
+            is_authorized = True
+
+    # Access Denied Fallback Guard
+    if not is_authorized:
+        raise PermissionDenied("Unauthorized cancellation vector attempt. / 安全攔截：您無權取消此訂單。")
+
+    # 3. MARKET-STANDARD COMPLIANCE EVALUATION
+    # Block automated cancellations if the warehouse has already logged outbound items
+    has_dispatched_items = order.orderproduct_set.filter(is_dispatched=True).exists()
+    
+    # Block automated cancellations if the order contains instantly fulfilled digital items/vouchers
+    has_immutable_digital = order.orderproduct_set.filter(
+        product_variation__product__is_voucher=True
+    ).exists() or order.orderproduct_set.filter(
+        product_variation__product__is_digital=True,
+        product_variation__product__digital_fulfillment_type='INSTANT'
+    ).exists()
+
+    if order.order_status in ['Delivered', 'Cancelled', 'All_Dispatched', 'Partly_Dispatched', 'Refunding', 'Refunded'] or has_dispatched_items or has_immutable_digital:
+        messages.error(request, "This order contains items that cannot be modified automatically. Please contact support. / 此訂單內含已發貨或不可取消之商品，請聯絡客服協助。")
+        if request.user.is_authenticated:
+            return redirect('dashboard_orders')
+        return redirect('guest_order_verify')
+    
+    paid_entirely_by_voucher = (order.total_due <= 0 and order.voucher_applied > 0)
+    refund_type = 'voucher' if paid_entirely_by_voucher else request.GET.get('refund_type', 'cash')
+    user_is_member = order.user is not None
+
+    # 4. ATOMIC EXECUTION, STOCK ADJUSTMENT & VOUCHER CREDIT REIMBURSEMENT
+    try:
+        with transaction.atomic():
+            # Shift state engine directly to Refunding queue line matrix parameters
+            order.order_status = 'Refunding'
+            order.updated_at = timezone.now()
+            
+             # 📦 1. Restock physical inventory item variations
+            for item in order.orderproduct_set.all():
+                if item.product_variation:
+                    variation = item.product_variation
+                    variation.stock += item.quantity
+                    variation.save(update_fields=['stock'])
+                    print(f"📦 INVENTORY RESTOCK SUCCESS: Returned {item.quantity} units to SKU {variation.get_sku()}｜庫存補貨成功：已將 {item.quantity} 件商品退回至 SKU {variation.get_sku()}")
+
+            # 🎫 PIPELINE (ii): Auto-reimburse Applied Vouchers back to member profile credit vaults
+            voucher_refund_log = ""
+            reimbursement_voucher = None
+
+            # ─────────────────────────────────────────────────────────
+            # 🏢 PATHWAY A: THE 100% FULL VOUCHER PURCHASE EDGE CASE
+            # ─────────────────────────────────────────────────────────
+            if paid_entirely_by_voucher:
+                refund_value = order.voucher_applied
+                
+                # If they were a guest when buying a voucher but are a member now, link it
+                reimbursement_voucher = CustomerVoucher.objects.create(
+                    value=refund_value,
+                    balance=refund_value,
+                    purchaser_email=order.email,
+                    registered_email=order.user.email.lower() if user_is_member else None,
+                    owner=order.user if user_is_member else None,
+                    is_claimed=True if user_is_member else False,
+                    claimed_date=timezone.now() if user_is_member else None,
+                    is_used=False
+                )
+                voucher_refund_log = f" [100% Voucher Refund]: This transaction was paid entirely via store credits. Generated a 100% full replacement voucher of CNY {refund_value} (Token ID: {reimbursement_voucher.id}).｜[100% 抵用券退款]：本次交易全額使用商店信用額度支付。已產生面額為 CNY {refund_value} 的 100% 全額替換抵用券（憑證 ID：{reimbursement_voucher.id}）。"
+                print(f"✨ 100% VOUCHER LIFECYCLE REVERTED: Token {reimbursement_voucher.id} restored with CNY {refund_value}")
+
+            # ─────────────────────────────────────────────────────────
+            # 💳 PATHWAY B: MIXED OR PURE CASH PURCHASES
+            # ─────────────────────────────────────────────────────────
+            else:
+                # 🎫 Step 1: Always mandatory refund for any spent voucher portion first
+                if user_is_member and order.voucher_applied and order.voucher_applied > 0:
+                    spent_voucher_amount = order.voucher_applied
+                    original_credit_voucher = CustomerVoucher.objects.create(
+                        value=spent_voucher_amount,
+                        balance=spent_voucher_amount,
+                        purchaser_email=order.user.email,
+                        registered_email=order.user.email.lower(),
+                        owner=order.user,
+                        is_claimed=True,
+                        claimed_date=timezone.now(),
+                        is_used=False
+                    )
+                    voucher_refund_log += f" [Original Credit Restored]: Reimbursed original spent credit portion of CNY {spent_voucher_amount} straight to member account wallet (Token ID: {original_credit_voucher.id}).｜[原額度已退回]：已將原先使用的 {spent_voucher_amount} 元額度直接退回至會員帳戶錢包（憑證 ID：{original_credit_voucher.id}）。"
+
+                # ⚙️ Step 2: Handle the remaining out-of-pocket 'total_due' balance
+                if refund_type == 'voucher':
+                    # Return 100% of the cash remainder as a second voucher with zero fees
+                    refund_value = order.total_due
+                    
+                    reimbursement_voucher = CustomerVoucher.objects.create(
+                        value=refund_value,
+                        balance=refund_value,
+                        purchaser_email=order.email,
+                        registered_email=order.email.lower() if user_is_member else None,
+                        owner=order.user if user_is_member else None,
+                        is_claimed=True if user_is_member else False,
+                        claimed_date=timezone.now() if user_is_member else None,
+                        is_used=False
+                    )
+                    
+                    if user_is_member:
+                        voucher_refund_log += f" [Remaining Balance]: Reimbursed 100% full remaining cash balance of CNY {refund_value} directly to account wallet ID {reimbursement_voucher.id}.｜[剩餘餘額]：將剩餘的全部現金餘額（人民幣 {refund_value}）全額退還至帳戶錢包 ID {reimbursement_voucher.id}。"
+                    else:
+                        # Explicitly calculate and display the exact date parameters inside your database logs
+                        expiry_date_str = reimbursement_voucher.expiry_date.strftime('%Y-%m-%d')
+                        voucher_refund_log += f" [Remaining Balance]: Generated unclaimed guest voucher ID {reimbursement_voucher.id} for full remaining balance of CNY {refund_value}. Expiry set to: {expiry_date_str}.｜[剩餘餘額]：針對 CNY {refund_value} 的全部剩餘餘額，產生了未領取的訪客憑證 ID {reimbursement_voucher.id}。有效期限設定為：{expiry_date_str}。"
+
+                else:
+                    # Deduct the 3% admin handling fee exclusively from the cash portion
+                    fee_rate = decimal.Decimal('0.03')
+                    net_cash_refund = order.total_due * (decimal.Decimal('1.0') - fee_rate)
+                    voucher_refund_log += f" [Remaining Balance]: Processed cancellation net of a 3% administration handling fee deduction applied to the remaining gateway balance portion. Estimated payout return total: CNY {net_cash_refund:.2f}.｜[剩餘餘額]：已處理退款，並從支付網關的剩餘餘額中扣除了 3% 的行政手續費。預計退款總金額：CNY {net_cash_refund:.2f}。"
+
+            # Save the system alerts safely down to the logs
+            timestamp_str = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+            current_notes = order.delivery_note or ""
+            order.delivery_note = f"{current_notes}\n\n[System Alert - {timestamp_str}]: Order cancelled by purchaser. Refund Method chosen: {refund_type.upper()}.{voucher_refund_log}｜[系統提示 - {timestamp_str}]：訂單已被買家取消。選擇的退款方式：{refund_type.upper()}。 {voucher_refund_log}"
+            order.save(update_fields=['order_status', 'delivery_note', 'updated_at'])
+
+        # 🎯 4. Trigger Celery Task to process emails
+        # Pass the primary reimbursement voucher token if it needs to be claimed via a registration link
+        voucher_id_str = str(reimbursement_voucher.id) if (refund_type == 'voucher' and reimbursement_voucher) else None
+        send_cancellation_initiation_email_task.delay(order.id, refund_type, voucher_id_str)
+
+        messages.success(request, f"Order #{order.order_number} cancellation request received. / 訂單取消與退款申請已成功受理。")
+
+    except Exception as cancel_err:
+        print(f"❌ Transaction cancellation catastrophic rollback: {str(cancel_err)}")
+        messages.error(request, "An internal error occurred during processing. Please try again. / 處理中發生系統異常，請稍後再試。")
+
+    # 5. CONTEXT-AWARE SMART REDIRECT ENDPOINT ROUTER
+    if request.user.is_authenticated:
+        return redirect('dashboard', subpage='orders')
+    return redirect('guest_order_verify')
+
+
+
+# Can you write the cancellation complete function that can be operated from the database by admin staff? 
+# Along with a message to be added into the Order so that the next time when 
+# (a)  member logs in (b) guest user inquires via contact page's form, 
+# the status of cancellation complete can be displayed clearly (in addition to the 'status' label). 
+
+# Also, I think I need to send emails in (i) cancellation process begins, triggered by the cancel button activation, 
+# and (ii) cancellation completes. For (a), I will

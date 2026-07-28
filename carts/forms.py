@@ -169,58 +169,45 @@ class ProformaInvoiceForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         """
         🔒 HIGH-SECURITY DYNAMIC ADAPTATION CONSTRUCTOR:
-        Alters standard field mandatory validation parameters dynamically based 
-        on the required checkout display mode structure.
         """
         self.display_mode = kwargs.pop('display_mode', 'PHYSICAL')
         super().__init__(*args, **kwargs)
 
+        # Step A: Pop elements from the DOM if they are completely unused in digital checkouts
         if self.display_mode in ['EPRODUCT_ONLY', 'VOUCHER_ONLY']:
-            if 'country' in self.fields:
-                self.fields.pop('country')
-            if 'state_province_region' in self.fields:
-                self.fields.pop('state_province_region')
+            self.fields.pop('country', None)
+            self.fields.pop('state_province_region', None)
 
-        if self.display_mode in ['VOUCHER_ONLY', 'PHYSICAL_AND_VOUCHER']:
-            self.fields['recipient_email'].required = True  # 🌟 Forces validation lock!
-            if not any(isinstance(v, EmailValidator) for v in self.fields['recipient_email'].validators):
-                self.fields['recipient_email'].validators.append(EmailValidator())                
-
-        # 1. Strip default required configurations completely
+        # Step B: Baseline Reset — Strip absolute defaults to clear space for conditional assignments
         for field in self.fields.values():
             field.required = False
         
-        # 2. Re-apply strict mandatory locks surgically based on display conditions
-        self.fields['email'].required = True # Buyer email channel is globally required
+        # Step C: Globally Lock Buyer Account Identity Tracking
+        if 'email' in self.fields:
+            self.fields['email'].required = True
 
+        # Step D: Apply Physical Requirements Surgically
         if self.display_mode in ['PHYSICAL', 'PHYSICAL_AND_VOUCHER']:
-            self.fields['recipient_first_name'].required = True
-            self.fields['recipient_last_name'].required = True
-            self.fields['recipient_mobile_area'].required = True
-            self.fields['recipient_mobile_number'].required = True
-            self.fields['address_line_1'].required = True
-            self.fields['city'].required = True
-            self.fields['state_province_region'].required = True
-            self.fields['country'].required = True
+            required_physical_fields = [
+                'recipient_first_name', 'recipient_last_name', 
+                'recipient_mobile_area', 'recipient_mobile_number',
+                'address_line_1', 'city', 'state_province_region', 'country'
+            ]
+            for field_name in required_physical_fields:
+                if field_name in self.fields:
+                    self.fields[field_name].required = True
 
-        # if self.display_mode in ['VOUCHER_ONLY', 'PHYSICAL_AND_VOUCHER']:
-        #     self.fields['recipient_email'].required = True
-        #     self.fields['recipient_email'].validators.append(EmailValidator())
+        # Step E: Apply Voucher Email Processing Parameters Safely
         if self.display_mode in ['VOUCHER_ONLY', 'PHYSICAL_AND_VOUCHER']:
-            self.fields['recipient_email'].required = True
-            # Safe application using the confirmed import hook
-            if not any(isinstance(v, EmailValidator) for v in self.fields['recipient_email'].validators):
-                self.fields['recipient_email'].validators.append(EmailValidator())
+            if 'recipient_email' in self.fields:
+                self.fields['recipient_email'].required = True
+                if not any(isinstance(v, EmailValidator) for v in self.fields['recipient_email'].validators):
+                    self.fields['recipient_email'].validators.append(EmailValidator())
 
-    # 🎯 FIX 2: Intercept form validation and explicitly inject the properties onto the instance 
-    # This prevents the model-level 'blank=False' rule from tripping up over an absent value
     def clean(self):
         return super().clean()
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        
-        # 🌟 Run the live domain check inside the clean cycle
         validate_email_mx_domain(email)
-        
         return email

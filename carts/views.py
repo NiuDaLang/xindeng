@@ -310,7 +310,7 @@ def select_variation_htmx(request):
         "size": resolved_variation.size.size_name if resolved_variation and resolved_variation.size else "標準",
         "color": resolved_variation.color.color_name if resolved_variation and resolved_variation.color else "標準",
         "type": resolved_variation.type.type_name if resolved_variation and resolved_variation.type else "標準"
-    } if is_resolved_sku else {"size": "點選上方圖像", "color": "點選上方圖像", "type": "點選上方圖像"}
+    } if is_resolved_sku else {"size": "Tap image｜點選圖像 ↑", "color": "Tap image｜點選圖像 ↑", "type": "Tap image｜點選圖像 ↑"}
 
     product_content_type = ContentType.objects.get_for_model(single_product)
     reviews_list = Comment.objects.filter(content_type=product_content_type, object_id=single_product.id, is_approved=True)
@@ -1709,31 +1709,10 @@ def checkout(request):
             return response
         messages.warning(request, "Your session has changed or your cart is empty.｜您的工作階段已變更或購物車已空，請重新檢視。")
         return redirect('cart')
-
-    # if has_physical_items:
-    #     if not shipping_data or not shipping_data.get("is_calculated") or shipping_data.get("shipping_cost") == "0.00":
             
-    #         print("🚨 Stale history forward action caught. Routing clean native redirection.")
-            
-    #         # Save the messaging data payload inside Django's secure database session engine
-    #         request.session["show_stale_checkout_alert"] = {
-    #             "title": "購物車頁已變更 ｜ Cart State Updated",
-    #             "text": "檢測到您的購物車內容或配送地址有所變更，請重新計算運費。<br><br>Your cart items or destination details were modified. Please recalculate shipping fees first."
-    #         }
-    #         request.session.modified = True
-            
-    #         # 🌟 CLEAN FIX: Standard 302 redirection completely supported by the browser load cycle
-    #         return redirect('cart')
-            
-    # # -------------------------------------------------------------
-    # # 1. SHARED PRE-FLIGHT BOUNDARY CONTEXT (Executes for both GET & POST)
-    # # -------------------------------------------------------------
-    # if not cart or not cart.cartitem_set.filter(is_active=True).exists():
-    #     return redirect("cart")
-    
-    # cart_items = cart.cartitem_set.filter(is_active=True)
-    # has_physical_items = cart_items.filter(product_variation__product__is_physical=True).exists()
-    
+    # -------------------------------------------------------------
+    # 1. SHARED PRE-FLIGHT BOUNDARY CONTEXT (Executes for both GET & POST)
+    # -------------------------------------------------------------
     shipping_data = request.session.get("shipping_data", {})
     offer_data = request.session.get("offer_applied", {})
     voucher_data = request.session.get("applied_voucher", {})
@@ -1790,8 +1769,8 @@ def checkout(request):
         - clean_for_db(cart.get_voucher_products_subtotal_foreign(current_currency_code, locked_rate))
     )
    
-    has_e_items = cart_items.filter(product_variation__product__is_physical=False, product_variation__product__is_voucher=False).exists()
-    has_voucher_items = cart_items.filter(product_variation__product__is_voucher=True).exists()
+    # has_e_items = cart_items.filter(product_variation__product__is_physical=False, product_variation__product__is_voucher=False).exists()
+    # has_voucher_items = cart_items.filter(product_variation__product__is_voucher=True).exists()
 
     if has_physical_items and has_voucher_items:
         display_mode = "PHYSICAL_AND_VOUCHER"
@@ -1805,7 +1784,6 @@ def checkout(request):
     checkout_info, _ = CheckoutInfo.objects.update_or_create(
         cart=cart,
         defaults={
-            # 🌟 FIX 2: Convert AnonymousUser instance safely to None for nullable ForeignKey field mappings
             "user": user if user.is_authenticated else None,
             "display_mode": display_mode,
             "cart_total": clean_for_db(cart.get_cart_total()),
@@ -1855,7 +1833,6 @@ def checkout(request):
                 state = None
                 country = session_dest_id 
 
-        # 🌟 FIX 3: Guard profile address book fallback; non-members don't have profiles
         if not country and user.is_authenticated:
             fallback_address = Address.objects.filter(profile__user=user, is_default=True).first()
             if fallback_address:
@@ -1882,6 +1859,26 @@ def checkout(request):
                 proforma_invoice_form.data['state_province_region'] = state
 
         if proforma_invoice_form.is_valid():
+            form_payload_cache = {
+                'email': proforma_invoice_form.cleaned_data.get('email', ''),
+                'recipient_first_name': proforma_invoice_form.cleaned_data.get('recipient_first_name', ''),
+                'recipient_last_name': proforma_invoice_form.cleaned_data.get('recipient_last_name', ''),
+                'recipient_mobile_area': proforma_invoice_form.cleaned_data.get('recipient_mobile_area', ''),
+                'recipient_mobile_number': proforma_invoice_form.cleaned_data.get('recipient_mobile_number', ''),
+                'address_line_1': proforma_invoice_form.cleaned_data.get('address_line_1', ''),
+                'address_line_2': proforma_invoice_form.cleaned_data.get('address_line_2', ''),
+                'city': proforma_invoice_form.cleaned_data.get('city', ''),
+                'state_province_region': proforma_invoice_form.cleaned_data.get('state_province_region', ''),
+                'postal_code': proforma_invoice_form.cleaned_data.get('postal_code', ''),
+                'recipient_email': proforma_invoice_form.cleaned_data.get('recipient_email', ''),
+                'gift_message': proforma_invoice_form.cleaned_data.get('gift_message', ''),
+                'delivery_note': proforma_invoice_form.cleaned_data.get('delivery_note', ''),
+                'do_not_send_invoice': proforma_invoice_form.cleaned_data.get('do_not_send_invoice', False),
+            }
+            
+            request.session['cached_checkout_form_data'] = form_payload_cache
+            request.session.modified = True
+
             # 🌟 INTERCEPT ENGINE: Check if guest email matches an existing account
             if not user.is_authenticated:
                 inputted_email = proforma_invoice_form.cleaned_data.get("email")
@@ -2067,7 +2064,6 @@ def checkout(request):
                 print(f"   👉 Field [{field}]: {error_list}")
             print("==================================================\n")
 
-            # 🌟 FIX: Loop through individual field failures and promote specific messages to the user
             error_promoted = False
             for field, error_list in proforma_invoice_form.errors.items():
                 for error in error_list:
@@ -2085,24 +2081,30 @@ def checkout(request):
     # 3. GET INITIAL VIEW SETUP LIFECYCLE
     # -------------------------------------------------------------
     else:
-        initial_data = {
-            "email": user.email if user.is_authenticated else None,
-            "recipient_first_name": address.recipient_first_name if address else None,
-            "recipient_last_name": address.recipient_last_name if address else None,
-            "recipient_mobile_area": address.mobile_area if address else None,
-            "recipient_mobile_number": address.mobile_number if address else None,
-            "address_line_1": address.address_line_1 if address else None,
-            "address_line_2": address.address_line_2 if address else None,
-            "city": address.city if address else None,
-            "state_province_region": state,
-            "country": country,
-            "postal_code": address.postal_code if address else None,
-            "google_place_id": address.google_place_id if address else checkout_info.address_id,
-            "latitude": address.latitude if address else None,
-            "longitude": address.longitude if address else None,
-            "is_verified_by_google": True if address else False,            
-        }
-        proforma_invoice_form = ProformaInvoiceForm(initial=initial_data, display_mode=display_mode)
+        cached_data = request.session.get('cached_checkout_form_data', None)
+        
+        if cached_data:
+            proforma_invoice_form = ProformaInvoiceForm(initial=cached_data, display_mode=display_mode)
+            print("🔄 SESSION RESTORATION PASS: Re-hydrated input fields out of secure memory storage.")
+        else:
+            initial_data = {
+                "email": user.email if user.is_authenticated else None,
+                "recipient_first_name": address.recipient_first_name if address else None,
+                "recipient_last_name": address.recipient_last_name if address else None,
+                "recipient_mobile_area": address.mobile_area if address else None,
+                "recipient_mobile_number": address.mobile_number if address else None,
+                "address_line_1": address.address_line_1 if address else None,
+                "address_line_2": address.address_line_2 if address else None,
+                "city": address.city if address else None,
+                "state_province_region": state,
+                "country": country,
+                "postal_code": address.postal_code if address else None,
+                "google_place_id": address.google_place_id if address else checkout_info.address_id,
+                "latitude": address.latitude if address else None,
+                "longitude": address.longitude if address else None,
+                "is_verified_by_google": True if address else False,            
+            }
+            proforma_invoice_form = ProformaInvoiceForm(initial=initial_data, display_mode=display_mode)
 
     # 💡 FALL-THROUGH SAFETY POINT: If the POST form fails validation,
     # execution skips the "else:" block below and moves straight to widget attributes styling and rendering.

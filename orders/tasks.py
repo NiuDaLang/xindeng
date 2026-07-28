@@ -6,9 +6,9 @@ from celery.signals import worker_ready
 from django.core.cache import cache
 from django.conf import settings
 from django.template.loader import render_to_string
-from emails.utils import send_order_confirmation_email, send_gift_voucher_email, send_secure_voucher_pin_email
+from emails.utils import send_order_confirmation_email, send_gift_voucher_email, send_secure_voucher_pin_email, send_cancellation_initiation_email, send_cancellation_finalized_email
 from .utils import generate_order_confirmation_pdf
-from orders.models import Order
+from orders.models import Order, OrderInquiry
 from django.db import transaction
 from carts.models import ProformaInvoice
 from orders.models import Payment, OrderProduct
@@ -23,7 +23,6 @@ from email.mime.image import MIMEImage
 import os
 import traceback
 from carts.models import Cart
-
 
 
 logger = logging.getLogger(__name__)
@@ -317,6 +316,51 @@ def send_e_product_email_task(token_id):
         return f"Failed to execute digital link dispatch for Token ID {token_id}. Error: {str(e)}"
 
 
+@shared_task(name="tasks.send_inquiry_notification_email_task")
+def send_inquiry_notification_email_task(inquiry_id):
+    """
+    Asynchronously parses message contexts, shifts parameters, 
+    and handles two-way dispatch runs between buyers and admins.
+    """
+    from .models import OrderInquiry
+    from emails.utils import send_inquiry_alert_email, send_staff_reply_email
+    try:
+        inquiry = OrderInquiry.objects.get(id=inquiry_id)
+        order = inquiry.order
+        
+        if inquiry.is_from_staff:
+            # 📬 Dispatch notice down to the buyer's checkout email
+            send_staff_reply_email(order.order_number, inquiry.message_content)
+            return f"Staff response email successfully queued to user: {order.email}"
+        else:
+            # 🚨 Dispatch alert note to shop administrator channels
+            send_inquiry_alert_email(order.order_number, inquiry.message_content)
+            return f"Admin alert email successfully logged for Order {order.order_number}"
+            
+    except OrderInquiry.DoesNotExist:
+        return f"Inquiry record tracker ID {inquiry_id} not found."
+
+
+@shared_task(name="tasks.send_cancellation_initiation_email_task")
+def send_cancellation_initiation_email_task(order_id):
+    """Dispatches real-time security warnings when a user initiates a cancellation request."""
+    try:
+        order = Order.objects.get(id=order_id)
+        send_cancellation_initiation_email(order.order_number)
+        return f"🔒 Safety cancellation warning email dispatched down to customer: {order.email}"
+    except Order.DoesNotExist:
+        return f"Order entity tracker record ID {order_id} missing on system mount logs."
+
+
+@shared_task(name="tasks.send_cancellation_completion_email_task")
+def send_cancellation_completion_email_task(order_id):
+    """Processes final closure statements notifying clients that funds have been processed."""
+    try:
+        order = Order.objects.get(id=order_id)
+        send_cancellation_finalized_email(order.order_number)
+        return f"✉️ Finalized completion notification dispatched down to user: {order.email}"
+    except Order.DoesNotExist:
+        return f"Order entity tracker record ID {order_id} missing on system mount logs."
 
 # For scheduled tasks to work, you must run two separate processes simultaneously: 
 # 1. The Worker: Executes the tasks.
