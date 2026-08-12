@@ -41,7 +41,7 @@
                             <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-3.5 w-3.5 opacity-70">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                             </svg>
-                            <span>Items ｜ 寶貝們</span>
+                            <span>Items｜寶貝們</span>
                         </a>
                     </li>
                     {% if category_slug != "all" %}
@@ -163,10 +163,10 @@
             <!-- Section: Category -->
             <div class="form-control w-full">
                 <label class="label font-medium text-xs tracking-wide uppercase text-base-content/70 mb-1">
-                    Category ｜ 類別
+                    Category｜類別
                 </label>
                 <select name="category" class="select select-bordered w-full bg-base-50 focus:border-primary focus:outline-none transition-colors rounded-xl text-sm">
-                    <option value="" selected class="text-base-content/50">Category ｜ 寶貝類別</option>
+                    <option value="" selected class="text-base-content/50">Category｜寶貝類別</option>
                     {% for link in links %}
                         <option value="{{ link.slug }}">{{ link.category_name}}</option>
                     {% endfor %}
@@ -176,22 +176,22 @@
             <!-- Section: Color -->
             <div class="form-control w-full">
                 <label class="label font-medium text-xs tracking-wide uppercase text-base-content/70 mb-1">
-                    Color ｜ 色系
+                    Color｜色系
                 </label>
                 <div class="relative">
                     <select name="color" class="select select-bordered w-full bg-base-50 focus:border-primary focus:outline-none transition-colors rounded-xl text-sm appearance-none">
-                        <option value="" selected class="text-base-content/50">Favorite Color ｜ 喜歡的顏色</option>
-                        <option value="RED" class="font-medium" style="color: #FF0000;">🔴 Red ｜ 紅色</option>
-                        <option value="PINK" class="font-medium" style="color: #FFC0CB">🌸 Pink ｜ 粉紅色</option>
-                        <option value="ORANGE" class="font-medium" style="color: #FFA500">🟠 Orange ｜ 橙色</option>
-                        <option value="YELLOW" class="font-medium" style="color: #FFFF00">💛 Yellow ｜ 黃色</option>
-                        <option value="PURPLE" class="font-medium" style="color: #800080">🟣 Purple ｜ 紫色</option>
-                        <option value="VIOLET" class="font-medium" style="color: #EE82EE">🔮 Violet ｜ 紫羅蘭色</option>
-                        <option value="GREEN" class="font-medium" style="color: #008000">🟢 Green ｜ 綠色</option>
-                        <option value="BLUE" class="font-medium" style="color: #0000FF">🔵 Blue ｜ 藍色</option>
-                        <option value="BROWN" class="font-medium" style="color: #A52A2A">🟤 Brown ｜ 褐色</option>
-                        <option value="GRAY" class="font-medium" style="color: #A0A0A0;">⚪ White ｜ 白色</option>
-                        <option value="GREYBLACK" class="font-medium" style="color: #333333">⚫ Grey/Black ｜ 灰/黑色</option>
+                        <option value="" selected class="text-base-content/50">Favorite Color｜喜歡的顏色</option>
+                        <option value="RED" class="font-medium" style="color: #FF0000;">🔴 Red｜紅色</option>
+                        <option value="PINK" class="font-medium" style="color: #FFC0CB">🌸 Pink｜粉紅色</option>
+                        <option value="ORANGE" class="font-medium" style="color: #FFA500">🟠 Orange｜橙色</option>
+                        <option value="YELLOW" class="font-medium" style="color: #FFFF00">💛 Yellow｜黃色</option>
+                        <option value="PURPLE" class="font-medium" style="color: #800080">🟣 Purple｜紫色</option>
+                        <option value="VIOLET" class="font-medium" style="color: #EE82EE">🔮 Violet｜紫羅蘭色</option>
+                        <option value="GREEN" class="font-medium" style="color: #008000">🟢 Green｜綠色</option>
+                        <option value="BLUE" class="font-medium" style="color: #0000FF">🔵 Blue｜藍色</option>
+                        <option value="BROWN" class="font-medium" style="color: #A52A2A">🟤 Brown｜褐色</option>
+                        <option value="GRAY" class="font-medium" style="color: #A0A0A0;">⚪ White｜白色</option>
+                        <option value="GREYBLACK" class="font-medium" style="color: #333333">⚫ Grey/Black｜灰/黑色</option>
                     </select>
                 </div>
             </div>   
@@ -199,12 +199,12 @@
             <!-- Section: Keyword Tags -->
             <div class="form-control w-full">
                 <label class="label font-medium text-xs tracking-wide uppercase text-base-content/70 mb-1">
-                    Keyword ｜ 關鍵詞
+                    Keyword｜關鍵詞
                 </label>
                 <div class="dropdown dropdown-bottom w-full">
                     <div tabindex="0" role="button" 
                         class="select select-bordered w-full bg-base-50 flex items-center justify-between font-normal text-sm rounded-xl focus:border-primary focus:outline-none transition-colors">
-                        <span class="opacity-60">Pick Any ｜ 可多選</span>
+                        <span class="opacity-60">Pick Any｜可多選</span>
                         <svg xmlns="http://w3.org" class="h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                     </div>
                     
@@ -254,7 +254,7 @@
             <!-- Submit Button -->
             <div class="pt-4">
                 <button type="submit" class="btn btn-primary w-full rounded-xl tracking-widest text-sm font-medium transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.01]">
-                    Search ｜ 尋 覓
+                    Search｜尋 覓
                 </button>
             </div>
         </form>

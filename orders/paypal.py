@@ -125,7 +125,7 @@ def create_paypal_order(request):
                 if variation.stock < item.quantity:
                     return JsonResponse({
                         "error_code": "OUT_OF_STOCK",
-                        "title": "庫存不足 ｜ Out of Stock Alert",
+                        "title": "庫存不足｜Out of Stock Alert",
                         "text": f"抱歉，商品 [{variation}] 僅剩 {variation.stock} 件可用庫存，無法完成鎖定。<br>Sorry, [{variation}] only has {variation.stock} units remaining.",
                         "redirect_url": "/carts/cart/"
                     }, status=400)
@@ -269,7 +269,7 @@ def create_paypal_order(request):
             intent=CheckoutPaymentIntent.CAPTURE,
             purchase_units=[purchase_unit],
             application_context=OrderApplicationContext(
-                brand_name="Hṛdayadīpa ｜ 心燈",
+                brand_name="Hṛdayadīpa｜心燈",
                 user_action=OrderApplicationContextUserAction.PAY_NOW,
                 return_url=request.build_absolute_uri(f"/orders/order_complete/?order_number={proforma_order.proforma_order_number}"),
                 cancel_url=request.build_absolute_uri("/carts/cart/")
@@ -499,7 +499,6 @@ def capture_paypal_order(request):
                     # 8. SYSTEM CLEANUP (CORRECTED ORDER OF OPERATIONS)
                     proforma_order.is_ordered = True
 
-                    
                     # 🌟 Cache a local reference to the active cart BEFORE wiping it from the model
                     active_cart = proforma_order.cart
 
@@ -508,22 +507,33 @@ def capture_paypal_order(request):
                         active_cart.cartitem_set.all().delete()
                         
                         # 2. Delete temporary snapshot entries from CheckoutInfo using the exact cart reference
-                        from carts.models import CheckoutInfo
                         CheckoutInfo.objects.filter(cart=active_cart).delete()
 
                     # 🌟 Sever the relationship link only after your wipes complete successfully
                     proforma_order.cart = None
                     proforma_order.save()
 
-                # 9. Clear session keys safely OUTSIDE the transaction/row-locking framework
+                # ─────────────────────────────────────────────────────────────────
+                # 🔒 SECURE AUTHORIZATION & SESSION MATRIX (Outside Transaction Lock)
+                # ─────────────────────────────────────────────────────────────────
+                # 1. Clear completed checkout configurations from session cache
                 for session_key in ["applied_voucher", "offer_applied", "shipping_data", "active_proforma_id"]:
                     request.session.pop(session_key, None)
-                request.session.modified = True
-    
-                    
-                # 10. Fire order notification email to the buyer post-commit
-                transaction.on_commit(lambda: send_order_confirmation_email_task.delay(order.order_number))
+
+                # 2. Add the order number to the guest session whitelist
+                accessible = request.session.get("accessible_receipts", [])
+                if proforma_invoice_number not in accessible:
+                    accessible.append(proforma_invoice_number)
+                    request.session["accessible_receipts"] = accessible
                 
+                # 3. 🚀 THE CRITICAL FIX: Explicitly force Django to write and save the session rows 
+                # to the database right now. This ensures the cookie is active before the frontend SDK redirects.
+                request.session.save()
+
+                # 4. Trigger order notification email safely via post-commit hooks
+                transaction.on_commit(lambda: send_order_confirmation_email_task.delay(order.order_number))
+
+                print(f"💰 [PayPal Capture Success] Invoice {proforma_invoice_number} cleared. Session authorized safely.")
                 return JsonResponse({"status": "SUCCESS", "transaction_id": transaction_id, "order_number": proforma_invoice_number}, status=200)
 
             except ValueError as stock_err:
@@ -701,7 +711,6 @@ def paypal_order_success(request):
                 active_cart.cartitem_set.all().delete()
                 
                 # 2. Drop the temporary snapshot cache parameters row cleanly
-                from carts.models import CheckoutInfo
                 CheckoutInfo.objects.filter(cart=active_cart).delete()
                 
             # 3. Sever relationship link only after wipes execute safely on disk
@@ -729,5 +738,5 @@ def paypal_order_success(request):
 
 # def paypal_order_failure(request, order_id=None):
 #     user = request.user
-#     context = {"user": user, "order_id": order_id, "page_title": "Payment Failed ｜ 支付失敗"}
+#     context = {"user": user, "order_id": order_id, "page_title": "Payment Failed｜支付失敗"}
 #     return render(request, "orders/payment_failure.html", context)

@@ -1005,6 +1005,7 @@ CURRENCY_SYMBOL = {
     "PKR": "₨",
     "BDT": "৳",
     "VND": "₫",
+    "NZD": "NZ$",
 }
 
 INTERNAL_CURRENCY_ADJUSTMENT = 1.05

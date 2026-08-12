@@ -1,6 +1,6 @@
-Dear {{user.username}} ｜ 親愛的{{user.username}}
+Dear {{user.username}}｜親愛的{{user.username}}
 
-Activate your Account ｜ 激活您的心燈帳號
+Activate your Account｜激活您的心燈帳號
 
 Thank you for registering with us. In order to activate your account, please visit the following link.
 感謝您註冊成為心燈會員！請進入下方鏈/連接，並啟動您的帳號。

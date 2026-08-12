@@ -1,11 +1,18 @@
-<div id="shipping-section-wrapper" 
-    {% if is_oob %}hx-swap-oob="true"{% endif %}>
+<!-- store/partials/shipping_section_wrapper.html -->
+<div id="shipping-section-wrapper" class="w-full" {% if is_oob %}hx-swap-oob="true"{% endif %}>
     {% if has_physical_items %}
         {% include 'store/partials/shipping_section.html' %}
     {% else %}
-        <h2 class="text-[1.25rem] mb-5">Shipping｜配送</h2>
-        <div class="alert alert-info shadow-sm mb-4 justify-center">
-            <span>No shipping required for digital products.｜數位產品無需物流。</span>
+        <div id="shipping-section-wrapper" hx-swap-oob="true" class="w-full font-sans select-none">
+            <h2 class="text-sm min-[400px]:text-base md:text-[0.85rem] lg:text-base font-bold tracking-tight text-base-content/90 mb-3">
+                Shipping｜配送
+            </h2>
+            <div class="alert alert-info bg-info/5 border border-info/20 shadow-none p-3.5 rounded-xl flex items-center justify-center gap-2">
+                <i class="fa-solid fa-circle-info text-info text-xs shrink-0"></i>
+                <span class="text-[11px] text-info font-medium tracking-wide leading-relaxed text-center">
+                    No shipping required for digital products.<br>數位產品無需物流。
+                </span>
+            </div>
         </div>
-    {% endif %}                
+    {% endif %}
 </div>

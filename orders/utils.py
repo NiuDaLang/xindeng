@@ -252,8 +252,8 @@ def generate_order_confirmation_pdf(order_id):
 
     # *** payment line_1 ***
     payment_1_data = [[
-        [Paragraph("Payment Method｜支付方式", styles['LabelXS']), Paragraph(f"<b>{order.payment.payment_method if order.payment else 'Bank Transfer ｜ 銀行轉帳'}</b>", styles['BodyTextCustom'])],
-        [Paragraph("Transaction ID｜交易ID", styles['LabelXS']), Paragraph(f"<b>{order.payment.payment_id if order.payment else 'Pending Manual Hold ｜ 待核對'}</b>", styles['BodyTextCustom'])]        
+        [Paragraph("Payment Method｜支付方式", styles['LabelXS']), Paragraph(f"<b>{order.payment.payment_method if order.payment else 'Bank Transfer｜銀行轉帳'}</b>", styles['BodyTextCustom'])],
+        [Paragraph("Transaction ID｜交易ID", styles['LabelXS']), Paragraph(f"<b>{order.payment.payment_id if order.payment else 'Pending Manual Hold｜待核對'}</b>", styles['BodyTextCustom'])]        
     ]]
     payment_1_table = Table(payment_1_data, colWidths=[87*mm, 87*mm])
     payment_1_table.hAlign = "LEFT"
@@ -298,7 +298,7 @@ def generate_order_confirmation_pdf(order_id):
     # *** shipping info_3 ***
     shipping_3_data = [[
         [Paragraph("City｜城市", styles['LabelXS']), Paragraph(f"<b>{order.city if order.city else '&nbsp;'}</b>", styles['BodyTextCustom'])],
-        [Paragraph("State/Province ｜ 州/省/縣", styles['LabelXS']), Paragraph(f"<b>{order.state_province_region if order.state_province_region else '&nbsp;'}</b>", styles['BodyTextCustom'])],
+        [Paragraph("State/Province｜州/省/縣", styles['LabelXS']), Paragraph(f"<b>{order.state_province_region if order.state_province_region else '&nbsp;'}</b>", styles['BodyTextCustom'])],
     ]]
     shipping_3_table = Table(shipping_3_data, colWidths=[87*mm, 87*mm])
     shipping_3_table.hAlign = "LEFT"
@@ -322,7 +322,7 @@ def generate_order_confirmation_pdf(order_id):
     shipping_5_table.hAlign = "LEFT"
 
     # *** shipping info_6 ***
-    send_invoice = "Yes, include invoice with delivery. ｜ 是，將帳單一起配送。" if order.do_not_send_invoice == False \
+    send_invoice = "Yes, include invoice with delivery.｜是，將帳單一起配送。" if order.do_not_send_invoice == False \
                     else "No, do NOT include invoice with delivery.｜不，不要將帳單一起配送。"
 
     shipping_6_data = [[
@@ -681,32 +681,34 @@ def mark_off_perk_at_checkout(user, session_code_string):
         perk = Perk.objects.select_for_update().filter(code=code_clean, is_active=True).first()
 
     if not perk:
-        raise ValidationError("This offer code is no longer available. ｜ 優惠碼不存在或已失效。")
+        raise ValidationError("This offer code is no longer available.｜優惠碼不存在或已失效。")
 
     # 2. Final Second Re-Evaluation Pass
     status = PerkEvaluator.get_eligibility_status(user, perk)
     if status != "VALID":
-        raise ValidationError(f"Offer validation conditions failed: {status}. ｜ 條件不符，無法套用此優惠。")
+        raise ValidationError(f"Offer validation conditions failed: {status}.｜條件不符，無法套用此優惠。")
 
     # 3. Increment Global Counter using row-locked atomic assignments
     success = perk.increment_usage()
     if not success:
-        raise ValidationError("Sorry, this limited offer just ran out! ｜ 抱歉，此優惠名額剛剛已滿！")
+        raise ValidationError("Sorry, this limited offer just ran out!｜抱歉，此優惠名額剛剛已滿！")
 
     # 4. Mark User Membership instances as settled
     if user_perk_instance:
         user_perk_instance.is_used = True
         user_perk_instance.used_at = timezone.now()
-        user_perk_instance.save(update_fields=['is_used', 'used_at'])
+        # user_perk_instance.save(update_fields=['is_used', 'used_at'])
+        user_perk_instance.save()
     elif user and user.is_authenticated:
         # Fallback tracking if they used a global code name string directly
         # Marks the first eligible matching instance found
-        up = UserPerk.objects.select_for_update().filter(user=user, perk=perk, is_used=False).first()
+        up = UserPerk.objects.select_for_update().filter(user=user, perk=perk, is_used=False, used_at__isnull=True).first()
         if up:
             up.is_used = True
             up.used_at = timezone.now()
-            up.save(update_fields=['is_used', 'used_at'])
-
+            # up.save(update_fields=['is_used', 'used_at'])
+            up.save()
+            
     return perk
 
 
@@ -777,40 +779,42 @@ def execute_atomic_voucher_deduction(user, session_input_amount):
     target_deduction = Decimal(str(session_input_amount).replace(",", ""))
     
     # Row-lock available claimed vouchers using select_for_update()
-    vouchers = (
-        CustomerVoucher.objects.select_for_update()
-        .filter(owner=user, is_claimed=True, is_used=False, balance__gt=0)
-        .order_by('created_date')  # Strict FIFO execution tracking anchor
-    )
+    vouchers = CustomerVoucher.objects.select_for_update().filter(
+        owner=user, 
+        is_claimed=True, 
+        is_used=False, 
+        balance__gt=0
+    ).order_by('created_date')
     
-    total_available_balance = sum(v.balance for v in vouchers)
-    if target_deduction > total_available_balance:
-        raise ValueError(f"餘額不足 ｜ Insufficient voucher balance. Available: CNY {total_available_balance:.2f}")
-
     remaining_to_deduct = target_deduction
-    usage_records = [] 
+    usage_records = []
 
     for voucher in vouchers:
         if remaining_to_deduct <= 0:
             break
-
+            
         deduction = min(voucher.balance, remaining_to_deduct)
         voucher.balance -= deduction
-               
+        
+        # 💡 CLEANUP: Clear out active session locks upon final balance deduction
+        voucher.is_locked = False
+        voucher.locked_at = None
+        voucher.locked_by_session = None
+        
         if voucher.balance <= 0:
             voucher.is_used = True
             voucher.used_date = timezone.now()
-        
-        voucher.save(update_fields=['balance', 'is_used', 'used_date'])
+            
+        voucher.save(update_fields=['balance', 'is_used', 'used_date', 'is_locked', 'locked_at', 'locked_by_session'])
         
         usage_records.append({
             'voucher_instance': voucher,
             'amount': deduction
         })
         remaining_to_deduct -= deduction
-
+    
     if remaining_to_deduct > 0:
-        raise ValueError("交易校驗失敗 ｜ Voucher balance tracking drift caught during deduction execution.")
+        raise ValueError("交易校驗失敗｜Voucher balance tracking drift caught during deduction execution.")
         
     return usage_records  # 🌟 Net Fix: Correctly returns the list matrix for your views to iterate over!
 

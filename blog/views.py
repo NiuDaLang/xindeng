@@ -67,7 +67,7 @@ def all_posts(request):
     ).order_by('-month')
 
     context = {
-        "page_title": "Art Blog ｜ 心燈筆記",
+        "page_title": "Art Blog｜心燈筆記",
         "page_obj": page_obj,
         "latest_five_posts": latest_five_posts,  # 🌟 RESTORED: Feeds perfectly back into Tab-1 loop
         "popular_posts": popular_posts,
@@ -134,16 +134,16 @@ def post(request, post_slug):
     random_img_path = f"/static/images/post/img_{random_img_num}.JPG"
 
     context = {
-        "main_title": "店主筆記 ｜ Notes",
+        "main_title": "店主筆記｜Notes",
         "sub_title_1": current_post.title,
-        "bread_crumb_1": "首頁 ｜ Home",
-        "bread_crumb_2": "筆記 ｜ Notes",
+        "bread_crumb_1": "首頁｜Home",
+        "bread_crumb_2": "筆記｜Notes",
         "bread_crumb_4": current_post.title,
         "bread_crumb_1_url": "/",
         "bread_crumb_2_url": "/blog/posts",
         
         "post": current_post,
-        "posts": sidebar_highlights, # Maps smoothly into your existing highlights grid template loops
+        "posts": sidebar_highlights, 
         
         "has_prev": has_prev,
         "previous_post": previous_post,

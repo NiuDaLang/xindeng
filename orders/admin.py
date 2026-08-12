@@ -88,29 +88,29 @@ class OrderVoucherUsageAdmin(admin.ModelAdmin):
     def order_number_link(self, obj):
         """Displays the matching parent order number handle."""
         return obj.order.order_number
-    order_number_link.short_description = "Order Number ｜ 訂單號"
+    order_number_link.short_description = "Order Number｜訂單號"
 
     def voucher_owner(self, obj):
         """Displays the current registered profile owner of the voucher."""
         return obj.voucher.owner if obj.voucher.owner else "Guest / Unclaimed"
-    voucher_owner.short_description = "Voucher Owner ｜ 禮品券所有人"
+    voucher_owner.short_description = "Voucher Owner｜禮品券所有人"
 
     def voucher_identifier(self, obj):
         """Displays the unique database UUID key block of the voucher asset."""
         return str(obj.voucher.id)[:8] + "..."  # Truncates long UUID for clean scannability
-    voucher_identifier.short_description = "Voucher ID (Short) ｜ 券號"
+    voucher_identifier.short_description = "Voucher ID (Short)｜券號"
 
     def amount_deducted_display(self, obj):
         """Formats the transaction currency metrics cleanly."""
         return f"CNY {obj.amount_deducted:.2f}"
-    amount_deducted_display.short_description = "Amount Spent ｜ 扣減金額"
+    amount_deducted_display.short_description = "Amount Spent｜扣減金額"
 
     def has_add_permission(self, request):
         """Prevents staff from creating manual entries outside the checkout engine."""
         return False
 
 
-@admin.action(description="Confirm Selected Bank Payments ｜ 確認所選銀行匯款")
+@admin.action(description="Confirm Selected Bank Payments｜確認所選銀行匯款")
 def confirm_bank_payment_admin_action(modeladmin, request, queryset):
     """
     Admin action to manually verify that a customer bank transfer has cleared.

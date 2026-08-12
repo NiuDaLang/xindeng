@@ -52,7 +52,7 @@ class PerkAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at', 'updated_at']
     
     fieldsets = [
-        ['General Info', {'fields': ['code', 'description', 'featured_image', 'is_active']}],
+        ['General Info', {'fields': ['code', 'description', 'featured_image', 'is_active', 'is_member_exclusive']}],
         ['Discount Settings', {'fields': ['discount_type', 'discount_value', 'min_spending_requirement']}],
         ['Usage & Validity', {'fields': ['valid_from', 'valid_to', 'max_uses', 'uses_count']}],
         ['Timestamps', {'fields': ['created_at', 'updated_at']}],

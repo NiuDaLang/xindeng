@@ -136,7 +136,7 @@
                 <!-- BANK HOLDS & PAID CONFIRMATION RECEIPT ENGINE -->
                 {% if order.is_ordered and order.payment %}
                 <a href="{% url 'generate_order_confirmation_pdf' order.order_number %}" class="btn btn-sm btn-outline border-base-300 hover:btn-neutral font-sans text-xs flex gap-2 items-center justify-center w-full rounded-lg shadow-sm">
-                    <i class="fa-solid fa-file-pdf text-[11px]"></i> Download Receipt ｜ 下載 PDF 水單
+                    <i class="fa-solid fa-file-pdf text-[11px]"></i> Download Receipt｜下載 PDF 水單
                 </a>
                 {% endif %}
                 
@@ -144,12 +144,12 @@
                     <!-- LIFECYCLE CHRONO GATE: ALLOW SELF CANCELLATIONS STRICTLY ON SAFE STATUS HOOKS -->
                     {% if order.order_status == 'Processing' or order.order_status == 'Hold_Pending' %}
                     <button onclick="triggerOrderCancellation('{{ order.order_number }}', '{{ order.total_due }}')" class="btn btn-sm btn-error btn-outline font-sans text-xs rounded-lg w-full shadow-sm tracking-wide">
-                        Cancel Order ｜ 取消訂單
+                        Cancel Order｜取消訂單
                     </button>
                     {% endif %}
                     
                     <a href="{% url 'contact' %}" class="btn btn-sm btn-neutral font-sans text-xs rounded-lg w-full shadow-sm tracking-wide">
-                        Back to Contact ｜ 返回聯繫頁面
+                        Back to Contact｜返回聯繫頁面
                     </a>
                 </div>
             </div>
@@ -287,7 +287,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 html: swalPayload.html, // Maps cleanly to your updated view key string parameters
                 icon: swalPayload.icon,
                 confirmButtonColor: '#3085d6',
-                confirmButtonText: 'Review Invoice Pass ｜ 檢視單據明細'
+                confirmButtonText: 'Review Invoice Pass｜檢視單據明細'
             });
             console.log("🎯 SweetAlert verification modal dispatched cleanly.");
         } catch (err) {

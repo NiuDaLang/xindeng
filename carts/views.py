@@ -28,7 +28,7 @@ from .forms import ProformaInvoiceForm
 from django.contrib import messages
 from decimal import Decimal
 from django.utils import timezone
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.template.loader import render_to_string
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.defaultfilters import floatformat
@@ -88,7 +88,7 @@ def update_exchange_rate_api(request):
 
     # 0. Forex Rate Layout Definition
     if current_currency_code.upper() == "CNY":
-        display_rate = f"{four_digit_rate} (Base Currency ｜ 本位貨幣)"
+        display_rate = f"{four_digit_rate} (Base Currency｜本位貨幣)"
     else:
         display_rate = four_digit_rate
 
@@ -251,7 +251,7 @@ def select_variation_htmx(request):
     if selected_var_id and selected_var_id.isdigit():
         resolved_variation = variations.filter(id=int(selected_var_id)).first()
 
-    exclusion_blacklist = [None, "", "NONE", "N/A", "N/A｜不適用", "N/A ｜ 不適用"]
+    exclusion_blacklist = [None, "", "NONE", "N/A", "N/A｜不適用", "N/A｜不適用"]
     has_valid_colors, has_valid_sizes, has_valid_types = False, False, False
 
     if resolved_variation:
@@ -394,7 +394,7 @@ def add_to_cart_htmx(request):
         "type": product_var.type.type_name if product_var.type else "標準"
     }
 
-    exclusion_blacklist = [None, "", "NONE", "N/A", "N/A｜不適用", "N/A ｜ 不適用"]
+    exclusion_blacklist = [None, "", "NONE", "N/A", "N/A｜不適用", "N/A｜不適用"]
     has_valid_colors, has_valid_sizes, has_valid_types = False, False, False
 
     for var in variations:
@@ -441,10 +441,6 @@ def add_to_cart_htmx(request):
     }
     
     header_list_html = render_to_string('store/partials/header_cart_list.html', header_context, request=request)
-    
-    # oob_count_span = f'<span id="cart_count_icon" hx-swap-oob="true" class="badge badge-sm indicator-item">{ header_context["item_count"] }</span>'
-    # oob_total_b = f'<b id="cart_sub_total" hx-swap-oob="true" class="font-bold">CNY ¥ { header_context["header_cart_total"] }</b>'
-    # oob_summary_count = f'<b id="cart_count" hx-swap-oob="true" class="font-bold">{ header_context["item_count"] } items</b>'
 
     updated_header_summary = update_header_cart_summary(cart)
         
@@ -486,8 +482,9 @@ def cart(request):
 
     is_history_navigation = request.headers.get("HX-History-Restore-Request") == "true"
 
-    # Only wipe out shipping and voucher settings if this is a deliberate fresh landing 
-    # (Do NOT clear them if the user simply hit the back button from the checkout screen!)
+    # ─────────────────────────────────────────────────────────────
+    # CASE A: DELIBERATE FRESH LANDING (Forward navigation)
+    # ─────────────────────────────────────────────────────────────
     if not is_history_navigation:
         print("🧹 Fresh cart landing detected. Initializing pristine baseline parameters.")
         request.session["shipping_data"] = {
@@ -501,24 +498,64 @@ def cart(request):
         request.session["applied_voucher"] = {"applied_voucher_amount": "0.00", "applied_voucher_amount_foreign": "0" if is_integer else "0.00"}
         request.session["has_physical_items"] = False 
         request.session.modified = True
+
+    # ─────────────────────────────────────────────────────────────
+    # CASE B: BROWSER BACK BUTTON DETECTED (History Restore Request)
+    # ─────────────────────────────────────────────────────────────
     else:
         print("♻️ Back-navigation detected. Retaining existing active shipping & voucher parameters safely.")
 
-    # 1. 🔥 THE INITIALIZATION FIX: Setup clean, blank baseline maps 
-    # instead of completely deleting the dictionary reference frames!
-    request.session["shipping_data"] = {
-        "method": "DEFAULT",
-        "region": "digital",
-        "destination_id": "",
-        "shipping_cost": "0.00",
-        "shipping_cost_foreign": "0" if is_integer else "0.00"
-    }
-    request.session["offer_applied"] = {"offer_code": "", "discount_amount": "0.00", "discount_amount_foreign": "0" if is_integer else "0.00"}
-    request.session["applied_voucher"] = {"applied_voucher_amount": "0.00", "applied_voucher_amount_foreign": "0" if is_integer else "0.00"}
-    request.session.modified = True
+        # 🔒 LOCK SYSTEM SELF-HEALING AUTOMATION GATEWAY
+        # The user hit 'Back' from the payment screen. We surgically release any active 
+        # database-level coupon locks held by this specific browser session key.
+        if user and user.is_authenticated:
+            current_session_key = request.session.session_key or cart_id
+            
+            with transaction.atomic():
+                locked_perk = UserPerk.objects.select_for_update().filter(
+                    user=user,
+                    is_locked=True,
+                    locked_by_session=current_session_key
+                ).first()
+                
+                if locked_perk:
+                    locked_perk.is_locked = False
+                    locked_perk.locked_at = None
+                    locked_perk.locked_by_session = None
+                    locked_perk.save(update_fields=['is_locked', 'locked_at', 'locked_by_session'])
+                    print(f"🔓 [Self-Healing Engine] Successfully released coupon row lock for session: {current_session_key}")
+
+                # 🔓 AUTOMATED VOUCHER SELF-HEALING RELEASE
+                # Find any vouchers locked by this session and unlock them instantly
+                locked_vouchers = CustomerVoucher.objects.select_for_update().filter(
+                    owner=user,
+                    is_locked=True,
+                    locked_by_session=current_session_key
+                )
+                for voucher in locked_vouchers:
+                    voucher.is_locked = False
+                    voucher.locked_at = None
+                    voucher.locked_by_session = None
+                    voucher.save(update_fields=['is_locked', 'locked_at', 'locked_by_session'])
+                print(f"解鎖｜Released active cash voucher holds for session: {current_session_key}")
+
+        # 1. 🔥 THE INITIALIZATION FIX: Setup clean, blank baseline maps 
+        # instead of completely deleting the dictionary reference frames!
+        request.session["shipping_data"] = {
+            "method": "DEFAULT",
+            "region": "digital",
+            "destination_id": "",
+            "shipping_cost": "0.00",
+            "shipping_cost_foreign": "0" if is_integer else "0.00"
+        }
+        request.session["offer_applied"] = {"offer_code": "", "discount_amount": "0.00", "discount_amount_foreign": "0" if is_integer else "0.00"}
+        request.session["applied_voucher"] = {"applied_voucher_amount": "0.00", "applied_voucher_amount_foreign": "0" if is_integer else "0.00"}
+        request.session.modified = True
 
     try:
+        print("try bloc")
         if user:
+            print("user: ", user)
             cart, created = Cart.objects.get_or_create(user=user, defaults={'cart_id': cart_id})
             wishlist = UserProductList.objects.filter(user=user, list_type='WISHLIST').order_by('-added_date') or None 
             if wishlist:
@@ -532,10 +569,12 @@ def cart(request):
             total_payable, total_payable_foreign = get_grand_total_before_voucher(request, cart)
             max_voucher_enterable = min(cash_voucher_balance, total_payable)
         else:
+            print("cart: ", cart)
             cart, created = Cart.objects.get_or_create(cart_id=cart_id, user=None)
             cash_voucher_balance = None
 
         if created:
+            print("created")
             cart.saved()
   
         cart_items = CartItem.objects.filter(cart=cart, is_active=True).order_by(
@@ -543,6 +582,7 @@ def cart(request):
             'product_variation__product__is_voucher',  
             'product_variation__product__product_name' 
         )
+        print("cart_items: ", cart_items)
         has_physical_items = cart_items.filter(product_variation__product__is_physical=True).exists()
         has_e_items = cart_items.filter(product_variation__product__is_physical=False, product_variation__product__is_voucher=False).exists()
         has_cash_voucher_items = cart_items.filter(product_variation__product__is_voucher=True).exists()
@@ -675,10 +715,13 @@ def calculate_shipping(request):
 
     main_badge_html = render_to_string("store/partials/shipping_result.html", {"shipping_cost": formatted_shipping_cost}, request=request)
     shipping_cost_html = f"""
-        <div id="shipping-result-container" hx-swap-oob="outerHTML" class="mt-4 border-t border-dashed border-base-300">
+        <div id="shipping-result-container" hx-swap-oob="outerHTML" class="mt-4 border-t border-dashed border-base-200">
             {main_badge_html}
         </div>
     """
+        # <div id="shipping-result-container" hx-swap-oob="outerHTML" class="mt-4 border-t border-dashed border-base-300">
+        #     {main_badge_html}
+        # </div>
     summary_shipping_oob = f"""
         <span id="summary-shipping" hx-swap-oob="true">¥ { formatted_shipping_cost }</span>
         <span id="shipping_cost_amount_foreign" hx-swap-oob="true">{ foreign_currency_symbol } { formatted_shipping_cost_foreign }</span>
@@ -688,13 +731,9 @@ def calculate_shipping(request):
 
     active_button_html = f"""
         <div id="checkout-btn-wrapper" hx-swap-oob="true" class="mt-6">
-            <a href="/carts/checkout/" 
-                hx-boost="true" 
-                id="checkout-btn" 
-                class="btn btn-success btn-block flex gap-3 h-auto py-2 min-h-0 animate-bounce-once"
-            >
-                <span>Proceed to Checkout<br>前往結帳</span>
-                <span><i class="fa-solid fa-arrow-right fa-xl"></i></span>
+            <a href="/carts/checkout/" id="checkout-btn" hx-boost="true" class="btn btn-success btn-sm btn-block flex items-center justify-between px-4 h-11 min-h-0 text-white rounded-xl shadow-md font-sans tracking-wide transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] hover:opacity-95">
+                <span class="text-left font-bold text-xs leading-tight">Proceed to Checkout<br><span class="text-[9px] font-normal opacity-80">前往結帳</span></span>
+                <span><i class="fa-solid fa-arrow-right fa-sm"></i></span>
             </a>
             <!-- payment methods -->
             <div class="flex justify-around fill-primary stroke-primary my-[30px]">
@@ -790,8 +829,23 @@ def apply_offer(request):
     Polymorphically processes coupon codes submitted manually by the client.
     Safely resolves both member specific vouchers and global system coupon strings.
     """
+    if not request.headers.get("HX-Request"):
+        return HttpResponseBadRequest("Invalid request architecture.")
+        
+    code_input = request.POST.get("code", "")
+    if not code_input:
+        return htmx_invalid_offer_response(request, "Please enter a code | 請輸入優惠碼", "")
+    code = code_input.strip().upper()
     user = request.user
-    
+
+    perk_target = None
+    user_perk = None 
+
+    # 🔒 BUSINESS SANITATION RULE: Prevent coupon stacking mutations
+    # If they are trying to apply a code, flush any existing offers first 
+    request.session.pop("offer_applied", None)
+    request.session.modified = True 
+
     # 1. Active Cart Retrieval Security Pass
     if user.is_authenticated:
         cart = Cart.objects.filter(user=user).first()
@@ -801,37 +855,57 @@ def apply_offer(request):
     if not cart or cart.get_items_count() == 0:
         return htmx_invalid_offer_response(request, "Cart is Empty | 購物車是空的", "")
     
-    # 2. Extract and Sanitize code inputs
-    raw_code = request.POST.get('code')
-    if not raw_code:
-        return htmx_invalid_offer_response(request, "Please enter a code | 請輸入優惠碼", "")
+    # 2. Evaluate if code belongs to an exclusive Member UserPerk list
+    if user and user.is_authenticated:
+        user_perk = UserPerk.objects.filter(unique_code=code, is_used=False).first()
+
+    if user_perk:
+        # User is executing a personal unique membership code tracker
+        perk_target = user_perk.perk
+    else:
+        # Fall back to checking global registry configurations
+        perk_target = Perk.objects.filter(code=code, is_active=True).first()
         
-    code = raw_code.strip().upper()
-    perk = None
+    if not perk_target:
+        return htmx_invalid_offer_response(request, "Invalid Code｜該無效優惠碼不存在。", "")
+
+    # 3. Execute full lifecycle condition validation pass
+    status = PerkEvaluator.get_eligibility_status(user, perk_target)
+    if status != "VALID":
+        return htmx_invalid_offer_response(request, f"Ineligible: {status}｜條件不符，無法套用。", "")
+    formatted_min_spend = intcomma(f"{perk_target.safe_min_spending:.2f}")
+
+    # 4. Save clean parameters into session storage state container
+    request.session["offer_applied"] = {
+        "offer_code": code,
+        "perk_id": perk_target.id,
+        "is_personal_member_code": user_perk is not None
+    }
+    request.session.modified = True
 
     # 3. Polymorphic Lookup Pipeline Track
     # First Track: Look up personal membership coupon mapping assignments safely
-    if user and user.is_authenticated:
-        try:
-            user_perk = UserPerk.objects.select_related('perk').get(user=user, unique_code=code)
-            perk = user_perk.perk
-        except UserPerk.DoesNotExist:
-            perk = None
+    # if user and user.is_authenticated:
+    #     try:
+    #         user_perk = UserPerk.objects.select_related('perk').get(user=user, unique_code=code)
+    #         perk = user_perk.perk
+    #     except UserPerk.DoesNotExist:
+    #         perk = None
 
     # Second Track: Fall back to checking global registry matrices if member lookup missed
-    if not perk:
-        perk = Perk.objects.filter(code=code, is_active=True).first()
+    # if not perk:
+    #     perk = Perk.objects.filter(code=code, is_active=True).first()
 
-    # 4. Error Catchment Defensive Boundary
-    if not perk:
-        return htmx_invalid_offer_response(request, "Invalid Code | 可能打錯了？", "")
+    # # 4. Error Catchment Defensive Boundary
+    # if not perk:
+    #     return htmx_invalid_offer_response(request, "Invalid Code | 可能打錯了？", "")
     
     # 5. Check Eligibility Conditions via our custom validator helper
-    status = PerkEvaluator.get_eligibility_status(user, perk)
-    formatted_min_spend = intcomma(f"{perk.safe_min_spending:.2f}")
+    # status = PerkEvaluator.get_eligibility_status(user, perk)
+    # formatted_min_spend = intcomma(f"{perk.safe_min_spending:.2f}")
 
     # Process and return completed OOB block responses seamlessly to the DOM layers
-    return handle_perk_status(request, status, cart, code, perk, formatted_min_spend)
+    return handle_perk_status(request, status, cart, code, perk_target, formatted_min_spend)
 
 
 def reset_offer(request):
@@ -852,7 +926,7 @@ def reset_offer(request):
         form_content = render_to_string('store/partials/offer_input.html', {}, request=request)
         
         # 4. Securely wrap it in the Out-Of-Band container target block
-        offer_wrapper_oob = f'<div id="offer-form-wrapper" hx-swap-oob="true">{form_content}</div>'
+        offer_wrapper_oob = f'<div id="offer-form-wrapper" hx-swap-oob="true" class="w-full">{form_content}</div>'
        
         # 5. Build currency indicators
         is_integer, foreign_currency_code = get_currency_format(request)
@@ -881,7 +955,7 @@ def reset_offer(request):
         print(f"Reset Offer Error: {e}")
         # Fallback payload layout to avoid blank pages or broken containers on critical errors
         form_content = render_to_string('store/partials/offer_input.html', {}, request=request)
-        fallback_oob = f'<div id="offer-form-wrapper" hx-swap-oob="true">{form_content}</div>'
+        fallback_oob = f'<div id="offer-form-wrapper" hx-swap-oob="true" class="w-full">{form_content}</div>'
         broadcast_cart_change(request)
         return HttpResponse(fallback_oob)
     
@@ -919,8 +993,8 @@ def apply_voucher(request):
     context = {'voucher_applied': user_input}
     voucher_wrapper_oob = render_to_string('store/partials/voucher_active.html', context, request=request)
 
-    oob_html_1 = f'<span id="voucher-balance" hx-swap-oob="true" class="badge badge-outline">CNY {formatted_cash_voucher_balance}</span>'
-    
+    oob_html_1 = f'<span id="voucher-balance" hx-swap-oob="true" class="badge badge-neutral font-mono text-xs px-2.5 py-2.5 rounded-lg border-none tracking-wide shrink-0">CNY {formatted_cash_voucher_balance}</span>'
+
     foreign_currency_symbol, formatted_voucher_applied_foreign = calculate_foreign_amount(request, user_input)
     oob_html_2 = f'''
         <span id="summary_voucher_applied" hx-swap-oob="true">¥ ({formatted_voucher_applied})</span>
@@ -958,10 +1032,10 @@ def reset_voucher(request):
         context = {"max_voucher_enterable": limit}
         form_content = render_to_string('store/partials/voucher_input.html', context, request=request)
 
-        voucher_wrapper_oob = f'<div id="voucher-form-wrapper" hx-swap-oob="true">{form_content}</div>'
+        voucher_wrapper_oob = f'<div id="voucher-form-wrapper" hx-swap-oob="true" class="w-full">{form_content}</div>'
         
         formatted_cash_voucher_balance = intcomma(f"{cash_voucher_balance:.2f}")
-        oob_html_1 = f'<span id="voucher-balance" hx-swap-oob="true" class="badge badge-outline">CNY {formatted_cash_voucher_balance}</span>'
+        oob_html_1 = f'<span id="voucher-balance" hx-swap-oob="true" class="badge badge-neutral font-mono text-xs px-2.5 py-2.5 rounded-lg border-none tracking-wide shrink-0">CNY {formatted_cash_voucher_balance}</span>'
         
         is_integer, foreign_currency_code = get_currency_format(request)
         foreign_currency_symbol = CURRENCY_SYMBOL[foreign_currency_code]
@@ -982,72 +1056,163 @@ def reset_voucher(request):
         print(f"Reset Voucher Error: {e}")
         # Secure error fallback wrapper return view layout block
         form_content = render_to_string('store/partials/voucher_input.html', {}, request=request)
-        fallback_oob = f'<div id="voucher-form-wrapper" hx-swap-oob="true">{form_content}</div>'
+        fallback_oob = f'<div id="voucher-form-wrapper" hx-swap-oob="true" class="w-full">{form_content}</div>'
 
         broadcast_cart_change(request)
         return HttpResponse(fallback_oob)   
 
 
+# @require_POST
+# def update_cart_item_qty(request, item_id):
+#     """
+#     Surgically updates a single cart item's quantity via HTMX POST.
+#     Enforces Ledger-First execution order to capture weight-based changes,
+#     while appending pre-built helper markup blocks to preserve structural layout styles.
+#     """
+#     htmx_htmls = []
+
+#     # 1. Update the Target Item's Quantity Natively
+#     cart_item = get_object_or_404(CartItem, id=item_id)
+#     new_qty = int(request.POST.get('quantity'))
+#     cart_item.quantity = new_qty
+#     cart_item.save()
+
+#     cart = cart_item.cart
+#     cart_items_quantity = cart.get_items_count()
+
+#     # Force session baseline synchronization before executing utility functions
+#     request.session["has_physical_items"] = cart.cartitem_set.filter(is_active=True, product_variation__product__is_physical=True).exists()
+#     request.session.modified = True
+
+#     # forex
+#     is_integer, foreign_currency_code = get_currency_format(request)
+#     foreign_currency_symbol = CURRENCY_SYMBOL.get(foreign_currency_code, '$')
+#     locked_rate = request.session.get('locked_rate', '1.0000')
+
+#     # costs updates
+#     oob_updates, triggers = update_costs_oobs(request, cart, is_integer, foreign_currency_code, foreign_currency_symbol, locked_rate)
+
+#     # quantity update
+#     subtotal = cart_item.subtotal
+#     formatted_subtotal = intcomma(f"{subtotal:.2f}")
+#     # subtotal_html = f'<div id="subtotal_{item_id}" hx-swap-oob="true" class="text-right w-[calc((50%-4rem)/2)] text-[0.8rem] text-base-content font-semibold pr-3">CNY {formatted_subtotal}</div>'
+#     subtotal_html = f'<div id="subtotal_{item_id}" hx-swap-oob="true" class="font-mono text-xs sm:text-sm font-extrabold text-base-content leading-tight">CNY {formatted_subtotal}</div>'
+#     oob_updates.append(subtotal_html)
+
+#     # updated_header_item_count_html = f'<span id="header_item_qty_{item_id}" hx-swap-oob="true" class="flex-grow-1">{ new_qty }</span>'
+#     updated_header_item_count_html = f'<span id="header_item_qty_{item_id}" hx-swap-oob="true" class="text-xs font-mono font-bold text-base-content/80 bg-base-200/60 px-1.5 py-0.5 rounded-md min-w-[1.25rem] text-center">{ new_qty }</span>'
+#     oob_updates.append(updated_header_item_count_html)
+
+#     row_context = {
+#         "formated_subtotal": formatted_subtotal,
+#         "new_cart_total_count": cart_items_quantity,
+#         "formatted_new_cart_grand_total": cart.get_cart_total(),
+#     }
+
+#     change_qty_result_html = render_to_string('store/partials/change_qty_result.html', row_context, request=request)
+#     htmx_htmls.append(change_qty_result_html)
+
+#     # COMPILE
+#     final_html = "".join(filter(None, htmx_htmls))
+#     final_oob = "".join(filter(None, oob_updates))
+
+#     response = HttpResponse(final_html)
+#     response.content += final_oob.encode()
+#     if triggers:
+#         response['HX-Trigger'] = json.dumps(triggers)
+
+#     broadcast_cart_change(request)
+#     return response
+
+
+
+# views.py
 @require_POST
 def update_cart_item_qty(request, item_id):
     """
     Surgically updates a single cart item's quantity via HTMX POST.
-    Enforces Ledger-First execution order to capture weight-based changes,
-    while appending pre-built helper markup blocks to preserve structural layout styles.
+    Enforces capacity gates to lock operational elements when warehouse stocks run thin.
     """
     htmx_htmls = []
-
-    # 1. Update the Target Item's Quantity Natively
     cart_item = get_object_or_404(CartItem, id=item_id)
-    new_qty = int(request.POST.get('quantity'))
+    product_stock = cart_item.product_variation.stock
+    
+    try:
+        new_qty = int(request.POST.get('quantity', 1))
+    except (ValueError, TypeError):
+        new_qty = 1
+
+    # Enforce strict stock boundaries before writing to database logs
+    if new_qty > product_stock:
+        new_qty = product_stock
+    elif new_qty < 1:
+        new_qty = 1
+
     cart_item.quantity = new_qty
     cart_item.save()
 
     cart = cart_item.cart
     cart_items_quantity = cart.get_items_count()
-
-    # Force session baseline synchronization before executing utility functions
-    request.session["has_physical_items"] = cart.cartitem_set.filter(is_active=True, product_variation__product__is_physical=True).exists()
+    print("cart_items_quantity: ", cart_items_quantity)
+    request.session["has_physical_items"] = cart.cartitem_set.filter(
+        is_active=True, 
+        product_variation__product__is_physical=True
+    ).exists()
     request.session.modified = True
-
-    # forex
+    
     is_integer, foreign_currency_code = get_currency_format(request)
     foreign_currency_symbol = CURRENCY_SYMBOL.get(foreign_currency_code, '$')
     locked_rate = request.session.get('locked_rate', '1.0000')
-
-    # costs updates
+    
     oob_updates, triggers = update_costs_oobs(request, cart, is_integer, foreign_currency_code, foreign_currency_symbol, locked_rate)
-
-    # quantity update
+    
+    # Render updated row pricing information
+    # Render updated row pricing information
     subtotal = cart_item.subtotal
     formatted_subtotal = intcomma(f"{subtotal:.2f}")
-    subtotal_html = f'<div id="subtotal_{item_id}" hx-swap-oob="true" class="text-right w-[calc((50%-4rem)/2)] text-[0.8rem] text-base-content font-semibold pr-3">CNY {formatted_subtotal}</div>'
+    subtotal_html = f'<span id="subtotal_{item_id}" hx-swap-oob="true" class="font-mono text-xs sm:text-sm font-extrabold text-base-content leading-tight">¥&nbsp;{formatted_subtotal}</span>'
     oob_updates.append(subtotal_html)
+    
+    # 💡 FIX: Removed the redundant .2f and intcomma string parsing since get_cart_total() handles formatting natively
+    updated_header_total_html = f'<span id="cart_sub_total" hx-swap-oob="true" class="font-mono text-primary text-sm xs:text-base">CNY ¥ {cart.get_cart_total()}</span>'
+    oob_updates.append(updated_header_total_html)
 
-    updated_header_item_count_html = f'<span id="header_item_qty_{item_id}" hx-swap-oob="true" class="flex-grow-1">{ new_qty }</span>'
-    oob_updates.append(updated_header_item_count_html)
+    # 🔒 SECURED INTERACTIVE CAPACITY GATES (OOB State Swaps)
+    if new_qty >= product_stock:
+        # 1. Lock the plus button and append an inline stock warning label
+        plus_btn_oob = f'<button id="plus_btn_{item_id}" hx-swap-oob="true" class="h-1/2 cursor-not-allowed bg-base-200/50 opacity-30 flex justify-center items-center font-bold text-[10px] border-b border-base-200 select-none p-0" disabled>+</button>'
+        alert_msg_oob = f'<span id="stock_alert_message_{item_id}" hx-swap-oob="true" class="text-[9px] font-bold text-error bg-error/10 px-1.5 py-0.5 rounded ml-1 animate-pulse">Max Available｜已達庫存上限</span>'
+    else:
+        # 2. Unlock the plus button and remove the stock warning label cleanly
+        plus_btn_oob = '''
+            <button id="plus_btn_%s" hx-swap-oob="true" class="h-1/2 cursor-pointer hover:bg-base-200 active:scale-95 flex justify-center items-center font-bold text-[10px] border-b border-base-200 select-none p-0" 
+                    onclick="let btn = document.getElementById('quantity_input_%s'); if(parseInt(btn.value) < %s) { btn.value++; btn.setAttribute('value', btn.value); }">+</button>
+        '''.strip() % (item_id, item_id, product_stock)
+        
+        alert_msg_oob = f'<span id="stock_alert_message_{item_id}" hx-swap-oob="true" class="inline-block transition-all duration-300"></span>'
+        
+    oob_updates.append(plus_btn_oob)
+    oob_updates.append(alert_msg_oob)
 
     row_context = {
         "formated_subtotal": formatted_subtotal,
         "new_cart_total_count": cart_items_quantity,
         "formatted_new_cart_grand_total": cart.get_cart_total(),
     }
-
     change_qty_result_html = render_to_string('store/partials/change_qty_result.html', row_context, request=request)
     htmx_htmls.append(change_qty_result_html)
 
-    # COMPILE
     final_html = "".join(filter(None, htmx_htmls))
     final_oob = "".join(filter(None, oob_updates))
-
+    
     response = HttpResponse(final_html)
     response.content += final_oob.encode()
+    
     if triggers:
         response['HX-Trigger'] = json.dumps(triggers)
-
+        
     broadcast_cart_change(request)
     return response
-
 
 @login_required(login_url="login")
 @require_POST
@@ -1124,7 +1289,7 @@ def add_wish_to_cart(request, wish_id):
         "cart_total": cart_total,
     }
     main_cart_html = render_to_string("store/partials/cart_item_row.html", cart_row_context, request=request)
-    final_oob_fragments.append(f'<div id="cart_item_list_container" hx-swap-oob="true">{main_cart_html}</div>')
+    final_oob_fragments.append(f'<div id="cart_item_list_container" hx-swap-oob="true" class="w-full">{main_cart_html}</div>')
 
     request.session["has_physical_items"] = bool(updated_cart_items.filter(product_variation__product__is_physical=True).exists())
     request.session.modified = True
@@ -1151,7 +1316,7 @@ def add_wish_to_cart(request, wish_id):
     updated_wishlist = UserProductList.objects.filter(user=user, list_type='WISHLIST').order_by('-added_date') if user else []
     wishlist_html = render_to_string("store/partials/wishlist_row.html", {"wishlist": updated_wishlist}, request=request)
     final_oob_fragments.append(
-        f'<div id="wishlist_wrapper_ul" hx-swap-oob="true" class="wishlist_wrapper flex flex-col divide-y divide-white/10">{wishlist_html}</div>'
+        f'<div id="wishlist_wrapper_ul" hx-swap-oob="true" class="wishlist_wrapper flex flex-col divide-y divide-base-200/50 w-full">{wishlist_html}</div>'
     )
 
     # 4. INTEGRATED COSTS CALCULATIONS RIPPLE EFFECTS
@@ -1169,9 +1334,9 @@ def add_wish_to_cart(request, wish_id):
             final_oob_fragments.append(shipping_section_html)
 
             disabled_checkout_btn_html = """
-                <button id="checkout-btn" hx-swap-oob="true" class="flex gap-3 btn btn-block btn-disabled opacity-80 cursor-not-allowed h-auto py-2 min-h-0" disabled>
-                    <span>Please calculate shipping first<br>請先計算運費</span>
-                    <span><i class="fa-solid fa-arrow-up fa-xl"></i></span>
+                <button id="checkout-btn" hx-swap-oob="true" class="btn btn-block btn-disabled opacity-60 flex items-center justify-between px-4 h-11 min-h-0 rounded-xl border border-base-200 font-sans tracking-wide" disabled>
+                    <span class="text-left text-xs font-medium text-base-content/40 treatment-text leading-tight">Please calculate shipping first<br><span class="text-[9px] opacity-70">請先計算運費</span></span>
+                    <span class="text-base-content/30"><i class="fa-solid fa-arrow-up fa-sm"></i></span>
                 </button>
             """
             final_oob_fragments.append(disabled_checkout_btn_html)
@@ -1246,7 +1411,7 @@ def add_wish_to_cart(request, wish_id):
         is_already_moved = CartItem.objects.filter(cart=cart, product_variation_id=variation_id).exists()
 
         if is_already_moved:
-            title = "Already Syncing | 已同步"
+            title = "Already Syncing｜已同步"
             msg =  "Item was already moved to cart.<br>該項目已移入購物車。"
             triggers["infoMssg"] = {"title": title, "html": msg, "icon": "info"}
 
@@ -1254,7 +1419,6 @@ def add_wish_to_cart(request, wish_id):
         response['HX-Trigger'] = json.dumps(triggers)
 
     return response
-
 
 @require_POST
 def delete_cart_item(request, item_id):
@@ -1316,7 +1480,7 @@ def delete_cart_item(request, item_id):
     }
 
     main_cart_html = render_to_string("store/partials/cart_item_row.html", cart_row_context, request=request)
-    htmx_htmls.append(f'<div id="cart_item_list_container" hx-swap-oob="true">{main_cart_html}</div>')
+    htmx_htmls.append(f'<div id="cart_item_list_container" hx-swap-oob="true" class="w-full">{main_cart_html}</div>')
 
     # Update background session flags
     has_physical = bool(updated_cart_items.filter(product_variation__product__is_physical=True).exists())
@@ -1470,7 +1634,7 @@ def add_to_wishlist(request, item_id):
         "cart_total": cart_total,
     }
     main_cart_html = render_to_string("store/partials/cart_item_row.html", cart_row_context, request=request)
-    final_oob_fragments.append(f'<div id="cart_item_list_container" hx-swap-oob="true">{main_cart_html}</div>')
+    final_oob_fragments.append(f'<div id="cart_item_list_container" hx-swap-oob="true" class="w-full">{main_cart_html}</div>')
 
     request.session["has_physical_items"] = bool(updated_cart_items.filter(product_variation__product__is_physical=True).exists())
     request.session.modified = True
@@ -1554,7 +1718,7 @@ def add_to_wishlist(request, item_id):
     updated_wishlist = UserProductList.objects.filter(user=user, list_type='WISHLIST').order_by('-added_date') if user else []
     wishlist_html = render_to_string("store/partials/wishlist_row.html", {"wishlist": updated_wishlist}, request=request)
     final_oob_fragments.append(
-        f'<div id="wishlist_wrapper_ul" hx-swap-oob="true" class="wishlist_wrapper flex flex-col divide-y divide-white/10">{wishlist_html}</div>'
+        f'<div id="wishlist_wrapper_ul" hx-swap-oob="true" class="wishlist_wrapper flex flex-col divide-y divide-base-200/50 w-full">{wishlist_html}</div>'
     )
 
     broadcast_cart_change(request)
@@ -1875,7 +2039,8 @@ def checkout(request):
                 'delivery_note': proforma_invoice_form.cleaned_data.get('delivery_note', ''),
                 'do_not_send_invoice': proforma_invoice_form.cleaned_data.get('do_not_send_invoice', False),
             }
-            
+            current_session_key = request.session.session_key or _cart_id(request)
+
             request.session['cached_checkout_form_data'] = form_payload_cache
             request.session.modified = True
 
@@ -1905,7 +2070,121 @@ def checkout(request):
                     
                     messages.info(request, "Email registered. Please log in.｜該電子郵件已註冊。請先登入以繼續結帳。")
                     return redirect("login") # Replace with your exact login route name
-                           
+
+            # ─────────────────────────────────────────────────────────────
+            # 🔒 LOCK SYSTEM GATEWAY: Lock the applied coupon code safely
+            # ─────────────────────────────────────────────────────────────
+            if user.is_authenticated and offer_data.get("offer_code"):
+                current_session_key = request.session.session_key or _cart_id(request)
+                applied_code = offer_data.get("offer_code").strip().upper()
+                
+                with transaction.atomic():
+                    # 💡 STEP 1: Secure an exclusive row-level database lock on the coupon row immediately.
+                    # This serializes multi-tab requests and forces concurrent attempts to queue up cleanly.
+                    up_perk = UserPerk.objects.select_for_update().filter(
+                        user=user, 
+                        unique_code=applied_code, 
+                        is_used=False
+                    ).first()
+                    
+                    if up_perk:
+                        fifteen_minutes_ago = timezone.now() - timezone.timedelta(minutes=15)
+                        
+                        # 💡 STEP 2: Safe In-Memory Validation Pass.
+                        # Verify if a different session holds an unexpired lock on this specific row.
+                        is_locked_by_other = (
+                            up_perk.is_locked and 
+                            up_perk.locked_at and 
+                            up_perk.locked_at >= fifteen_minutes_ago and 
+                            up_perk.locked_by_session != current_session_key
+                        )
+
+                        if is_locked_by_other:
+                            # 🛑 BLOCK EXPLOIT: Send an immediate response telling the user the code is busy
+                            if request.headers.get("HX-Request"):
+                                response = HttpResponse(status=200)
+                                response["HX-Trigger"] = json.dumps({
+                                    "errorMssg": {
+                                        "title": "Coupon Currently Engaged｜優惠碼已被佔用",
+                                        "text": "This offer code is currently being used in another active checkout session. Please cancel or complete that session first.<br>該優惠碼目前正於另一個視窗結帳中。請先關閉或完成該視窗的交易，或等待15分鐘解鎖後再試。",
+                                        "redirect_url": "/carts/cart/"
+                                    }
+                                })
+                                return response
+                            messages.error(request, "This code is currently locked in another session.｜該優惠碼正於另一個視窗結帳中。")
+                            return redirect('cart')
+                    
+                        # 💡 STEP 3: Self-Preservation Override Check.
+                        # Only write to the database if the lock is actually new or has expired.
+                        # This stops page refreshes from resetting the 15-minute countdown clock.
+                        is_lock_expired_or_new = (
+                            not up_perk.is_locked or 
+                            not up_perk.locked_at or 
+                            up_perk.locked_at < fifteen_minutes_ago
+                        )
+                        
+                        if is_lock_expired_or_new or up_perk.locked_by_session != current_session_key:
+                            up_perk.is_locked = True
+                            up_perk.locked_at = timezone.now()
+                            up_perk.locked_by_session = current_session_key
+                            up_perk.save(update_fields=['is_locked', 'locked_at', 'locked_by_session'])
+                            print(f"🔒 [Lock System] Coupon {applied_code} successfully secured for session: {current_session_key}")
+
+            # ─────────────────────────────────────────────────────────────
+            # 🔒 CASH VOUCHER LOCK ENFORCER: Secure wallet funds at checkout
+            # ─────────────────────────────────────────────────────────────
+            applied_voucher_str = voucher_data.get("applied_voucher_amount", "0.00")
+            target_voucher_lock = Decimal(str(applied_voucher_str).replace(",", ""))
+
+            if user.is_authenticated and target_voucher_lock > 0:
+                with transaction.atomic():
+                    fifteen_minutes_ago = timezone.now() - timezone.timedelta(minutes=15)
+                    
+                    # Fetch all unspent voucher rows under an exclusive database write lock
+                    vouchers_to_lock = CustomerVoucher.objects.select_for_update().filter(
+                        owner=user,
+                        is_used=False,
+                        balance__gt=0
+                    ).order_by('created_date') # FIFO ordering
+                    
+                    # Filter available funds in-memory, excluding competing active locks
+                    unlocked_pool = [
+                        v for v in vouchers_to_lock 
+                        if not v.is_locked or v.locked_at < fifteen_minutes_ago or v.locked_by_session == current_session_key
+                    ]
+                    
+                    total_unlocked_funds = sum(v.balance for v in unlocked_pool)
+                    
+                    if target_voucher_lock > total_unlocked_funds:
+                        # 🛑 BLOCK EXPLOIT: Competing tabs have already claimed/locked these voucher funds!
+                        if request.headers.get("HX-Request"):
+                            response = HttpResponse(status=200)
+                            response["HX-Trigger"] = json.dumps({
+                                "errorMssg": {
+                                    "title": "Voucher Balance Engaged｜現金券已被佔用",
+                                    "text": "Part of your applied voucher balance is locked in another active checkout window. Please complete that session or wait 15 minutes.<br>您套用的部分現金券金額正於另一個分頁結帳中。請於該分頁完成交易，或等待15分鐘解鎖後再試。",
+                                    "redirect_url": "/carts/cart/"
+                                }
+                            })
+                            return response
+                        messages.error(request, "Voucher funds are currently locked in another session.｜現金券正於另一個視窗結帳中。")
+                        return redirect('cart')
+                        
+                    # 📝 ACQUISITION: Commit session locks to the required voucher rows
+                    remaining_to_lock = target_voucher_lock
+                    for voucher in unlocked_pool:
+                        if remaining_to_lock <= 0:
+                            break
+                        
+                        # Mark this specific voucher row as locked by the current session
+                        voucher.is_locked = True
+                        voucher.locked_at = timezone.now()
+                        voucher.locked_by_session = current_session_key
+                        voucher.save(update_fields=['is_locked', 'locked_at', 'locked_by_session'])
+                        
+                        remaining_to_lock -= voucher.balance
+                        print(f"🔒 [Voucher Lock] Secured voucher row {str(voucher.id)[:8]} for session {current_session_key}")
+
             try:
                 proforma_invoice = ProformaInvoice.objects.filter(cart=cart).order_by('-updated_at').first()
                 
@@ -2128,6 +2407,7 @@ def checkout(request):
         "bread_crumb_2": "Order Details｜訂單訊息",
         "bread_crumb_1_url": "/",
         "bread_crumb_2_url": "/carts/checkout",
+        "cart_total_quantity": checkout_info.cart.get_items_count(),
         "cart_total": checkout_info.cart_total,
         "shipping_cost": checkout_info.shipping_cost,
         "discount_amount": checkout_info.discount_amount,

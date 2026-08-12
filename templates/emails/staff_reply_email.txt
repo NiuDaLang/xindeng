@@ -1,12 +1,12 @@
-{% if user.username %}親愛的{{user.username}} ｜ Dear {{user.username}}{% else %}親愛的{{order.email}} ｜ Dear {{order.email}}{% endif %}
+{% if user.username %}親愛的{{user.username}}｜Dear {{user.username}}{% else %}親愛的{{order.email}}｜Dear {{order.email}}{% endif %}
 
-客服專員回覆通知 ｜ Support Desk Care Update
+客服專員回覆通知｜Support Desk Care Update
 
 我們的客服人員已針對您的訂單編號 [ #{{ order.order_number }} ] 發布了新的留言回覆：
 A member of our support team has left a new response regarding your order reference #{{ order.order_number }}:
 
 ============================================================
-✉️ REPLY CONTEXT ｜ 回覆內容
+✉️ REPLY CONTEXT｜回覆內容
 ============================================================
 {{ message_content }}
 ============================================================

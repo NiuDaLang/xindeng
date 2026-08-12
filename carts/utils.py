@@ -11,7 +11,7 @@ from django.template.defaultfilters import floatformat
 from django.template.loader import render_to_string
 from accounts.data import CURRENCY_SYMBOL
 from django.http import HttpResponse
-from django.db.models import F, Sum
+from django.db.models import F, Sum, Q
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from decimal import Decimal, ROUND_HALF_UP
@@ -24,7 +24,6 @@ from accounts.evaluators import PerkEvaluator
 from django.db import transaction
 import socket
 from django.core.exceptions import ValidationError
-
 
 
 def clean_decimal(val):
@@ -247,6 +246,9 @@ def htmx_invalid_offer_update_response(request, title, text, icon="error"):
 
 def handle_perk_status(request, status, cart, code, perk, formatted_min_spend, offer_context=None):
     match status:
+        case "REQUIRES_AUTHENTICATION":
+            return htmx_invalid_offer_response(request, "Member Exclusive｜會員專屬限定", "This offer code is only available for registered members.<br>此優惠碼僅限註冊會員使用，請先登入或註冊以套用優惠。")
+
         case "VALID" if Decimal(str(cart.get_cart_total_ex_voucher()).replace(",", "")) < Decimal(str(perk.safe_min_spending).replace(",", "")):
             return htmx_invalid_offer_response(request, "Minimum Spend (Excl. Voucher Items) Not Met\n未達最低消費金額(現金禮券除外)", f"Sorry, this offer requires a minimum spending of CNY { formatted_min_spend }. Please add more items to your cart to qualify.<br>很抱歉，此優惠需消費滿 { formatted_min_spend } 元方可使用。請再多選購一些商品以符合資格。")
         
@@ -357,9 +359,9 @@ def update_header_cart_summary(cart):
             { new_cart_total_count }
         </span>
     '''
-    
-    header_qty_html = f'<b id="cart_count" hx-swap-oob="true" class="font-bold">{ new_cart_total_count } {item_str}</b>'
-    header_total_html = f'<b id="cart_sub_total" hx-swap-oob="true" class="font-bold">CNY ¥ { formatted_new_cart_grand_total }</b>'
+
+    header_qty_html = f'<span id="cart_count" hx-swap-oob="true" class="font-mono font-bold text-base-content">{ new_cart_total_count } {item_str}</span>'
+    header_total_html = f'<span id="cart_sub_total" hx-swap-oob="true" class="font-mono text-primary text-sm xs:text-base">CNY ¥ { formatted_new_cart_grand_total }</span>'
     oob_updates.extend([header_num_icon_html, header_qty_html, header_total_html])
     return "".join(filter(None, oob_updates))
 
@@ -373,49 +375,98 @@ def calculate_foreign_amount(request, cny_amount):
     return foreign_currency_symbol, formatted_foreign
 
 
+# def get_row_oob(row_id, label_en, label_zh, id_local, id_foreign, amount=0.00, amount_foreign=0.00, symbol="", is_integer=False, show=True):
+#     """Surgically formats dynamic table row updates for out-of-band HTMX swaps."""
+#     try:
+#         clean_amount = Decimal(str(amount).replace(",", "")) if amount is not None else Decimal("0.00")
+#     except (ValueError, TypeError, InvalidOperation):
+#         clean_amount = Decimal("0.00")
+
+#     hidden_class = "" if show else "hidden"
+#     val_local = f"¥ {intcomma(f'{clean_amount:.2f}')}"
+    
+#     if amount_foreign is not None and show:
+#         try:
+#             clean_foreign = Decimal(str(amount_foreign).replace(",", ""))
+#             val_foreign = f"{symbol} {intcomma(f'{clean_foreign:.0f}')}" if is_integer else f"{symbol} {intcomma(f'{clean_foreign:.2f}')}"
+#         except (ValueError, TypeError, InvalidOperation):
+#             zero_str = "0" if is_integer else "0.00"
+#             val_foreign = f"{symbol} {zero_str}"
+#     else:
+#         zero_str = "0" if is_integer else "0.00"
+#         val_foreign = f"{symbol} {zero_str}" if show else ""
+
+#     return f"""
+#         <tr id="{row_id}" class="font-normal {hidden_class}" hx-swap-oob="true">
+#             <td class="py-1 text-left text-xs/4">{label_en}<br>{label_zh}</td>
+#             <td class="py-1 mr-2 text-right text-sm">
+#                 <span id="{id_local}">{val_local}</span>
+#             </td>
+#             <td class="py-1 text-right text-info-content text-sm">
+#                 <span id="{id_foreign}">{val_foreign}</span>
+#             </td>
+#         </tr>
+#     """.strip().replace("\n", "").replace("    ", "")
+
+
 def get_row_oob(row_id, label_en, label_zh, id_local, id_foreign, amount=0.00, amount_foreign=0.00, symbol="", is_integer=False, show=True):
-    """Surgically formats dynamic table row updates for out-of-band HTMX swaps."""
+    """Safely handles price conversions and hands rendering control over to Django templates."""
     try:
         clean_amount = Decimal(str(amount).replace(",", "")) if amount is not None else Decimal("0.00")
     except (ValueError, TypeError, InvalidOperation):
         clean_amount = Decimal("0.00")
 
-    hidden_class = "" if show else "hidden"
-    val_local = f"¥ {intcomma(f'{clean_amount:.2f}')}"
-    
     if amount_foreign is not None and show:
         try:
             clean_foreign = Decimal(str(amount_foreign).replace(",", ""))
-            val_foreign = f"{symbol} {intcomma(f'{clean_foreign:.0f}')}" if is_integer else f"{symbol} {intcomma(f'{clean_foreign:.2f}')}"
+            val_foreign = f"{intcomma(f'{clean_foreign:.0f}')}" if is_integer else f"{intcomma(f'{clean_foreign:.2f}')}"
         except (ValueError, TypeError, InvalidOperation):
-            zero_str = "0" if is_integer else "0.00"
-            val_foreign = f"{symbol} {zero_str}"
+            val_foreign = "0" if is_integer else "0.00"
     else:
-        zero_str = "0" if is_integer else "0.00"
-        val_foreign = f"{symbol} {zero_str}" if show else ""
+        val_foreign = "0" if is_integer else "0.00"
 
-    return f"""
-        <tr id="{row_id}" class="font-normal {hidden_class}" hx-swap-oob="true">
-            <td class="py-1 text-left text-xs/4">{label_en}<br>{label_zh}</td>
-            <td class="py-1 mr-2 text-right text-sm">
-                <span id="{id_local}">{val_local}</span>
-            </td>
-            <td class="py-1 text-right text-info-content text-sm">
-                <span id="{id_foreign}">{val_foreign}</span>
-            </td>
-        </tr>
-    """.strip().replace("\n", "").replace("    ", "")
+    # Context maps directly to template keywords
+    context = {
+        'row_id': row_id,
+        'label_en': label_en,
+        'label_zh': label_zh,
+        'id_local': id_local,
+        'id_foreign': id_foreign,
+        'clean_amount': clean_amount,
+        'val_foreign': val_foreign,
+        'symbol': symbol,
+        'show': show,
+    }
+
+    # Render template down to string and remove trailing tabs
+    return render_to_string('store/partials/row_oob_template.html', context).strip().replace("\n", "")
+
 
 
 def get_cash_voucher_balance(request):
     """Calculates true unallocated voucher funds remaining in a user's wallet."""
+
     if not request.user.is_authenticated:
         return Decimal('0.00')
-    return CustomerVoucher.objects.filter(
-        owner=request.user, 
+
+    # 💡 FIX: Safely read the session key string. If it doesn't exist yet, 
+    # fall back to an empty string to prevent recursive database row writes.
+    current_session_key = request.session.session_key or ""
+    fifteen_minutes_ago = timezone.now() - timezone.timedelta(minutes=15)
+
+    # A voucher row is considered available if it is completely unlocked, OR
+    # if the lock has expired (>15 mins), OR if it was locked by this exact browser session.
+    available_vouchers = CustomerVoucher.objects.filter(
+        owner=request.user,
         is_used=False,
         balance__gt=0
-    ).aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
+    ).filter(
+        Q(is_locked=False) |
+        Q(locked_at__lt=fifteen_minutes_ago) |
+        Q(locked_by_session=current_session_key)
+    )
+
+    return available_vouchers.aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
 
 
 def update_applied_voucher(request, cart):
@@ -436,8 +487,8 @@ def update_applied_voucher(request, cart):
         request.session["applied_voucher"]["applied_voucher_amount_foreign"] = str(new_total_payable_foreign)
 
         updated_voucher_html = render_to_string('store/partials/voucher_active.html', updated_voucher_context, request=request)
-        updated_voucher_oob = f'<div id="voucher-form-wrapper" hx-swap-oob="true">{updated_voucher_html}</div>'
-        oob_html_1 = f'<span id="voucher-balance" hx-swap-oob="true" class="badge badge-outline">CNY {formatted_new_remaining_balance}</span>'
+        updated_voucher_oob = f'<div id="voucher-form-wrapper" hx-swap-oob="true" class="w-full">{updated_voucher_html}</div>'
+        oob_html_1 = f'<span id="voucher-balance" hx-swap-oob="true" class="badge badge-neutral font-mono text-xs px-2.5 py-2.5 rounded-lg border-none tracking-wide shrink-0">CNY {formatted_new_remaining_balance}</span>'
 
         foreign_currency_symbol, formatted_voucher_applied_foreign = calculate_foreign_amount(request, new_total_payable)
         oob_html_2 = f'''
@@ -454,7 +505,7 @@ def update_applied_voucher(request, cart):
         max_voucher_enterable = min(voucher_balance, new_total_payable)
         updated_voucher_context = {"max_voucher_enterable": max_voucher_enterable}
         updated_voucher_html = render_to_string('store/partials/voucher_input.html', updated_voucher_context, request=request)
-        updated_voucher_oob = f'<div id="voucher-form-wrapper" hx-swap-oob="true">{updated_voucher_html}</div>'
+        updated_voucher_oob = f'<div id="voucher-form-wrapper" hx-swap-oob="true" class="w-full">{updated_voucher_html}</div>'
 
         return updated_voucher_oob
     
@@ -561,8 +612,11 @@ def update_total_payable(request, cart):
 
     total_due_html = f'''
         <span id="total_payable_amount" hx-swap-oob="true">¥ {formatted_net_total_payable}</span>
-        <span id="total_payable_amount_foreign" hx-swap-oob="true">{foreign_currency_symbol} {formatted_net_total_payable_foreign}</span>
+        <span id="total_payable_amount_foreign" style="text-shadow: 2px 2px 0px rgb(244, 252, 1);" hx-swap-oob="true" class="font-mono text-xs min-[576px]:max-[767px]:text-[16px] min-[768px]:max-[960px]:text-[11px] min-[961px]:text-[13px] font-black text-primary tracking-tight block">
+            {foreign_currency_symbol} {formatted_net_total_payable_foreign}
+        </span>
     '''
+
     return total_due_html, formatted_net_total_payable, formatted_net_total_payable_foreign
 
 
@@ -687,8 +741,8 @@ def update_shipping_cost(request, cart):
             # -----------------------------------------------------------------
             
             # 4-1. Shipping Cost Badges
-            shipping_html = f'<strong id="shipping_cost_amount" hx-swap-oob="true" class="font-semibold">CNY ¥ { formatted }</strong>'
-            
+            shipping_html = f'<span id="shipping_cost_amount" hx-swap-oob="true" class="font-mono text-xs font-bold text-success">CNY ¥ { formatted }</span>'
+            print("shipping_html: ", shipping_html)
             # 4-2. Summary-Shipping Row Modification (Swaps target via get_row_oob)
             summary_html = get_row_oob(
                 "shipping_cost_row", "Shipping", "運費",
@@ -713,26 +767,32 @@ def update_shipping_cost(request, cart):
             request.session.pop('shipping_data', None)
             request.session.modified = True
             shipping_html = """
-                <div id="shipping-section-wrapper" hx-swap-oob="true">
-                    <h2 class="text-[1.25rem] mb-5">Shipping｜配送</h2>
-                    <div class="alert alert-info shadow-sm mb-4 justify-center">
-                        <span>No shipping required for digital products.｜數位產品無需物流。</span>
+                <div id="shipping-section-wrapper" hx-swap-oob="true" class="w-full font-sans select-none">
+                    <h2 class="text-sm min-[400px]:text-base md:text-[0.85rem] lg:text-base font-bold tracking-tight text-base-content/90 mb-3">
+                        Shipping｜配送
+                    </h2>
+                    <div class="alert alert-info bg-info/5 border border-info/20 shadow-none p-3.5 rounded-xl flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-circle-info text-info text-xs shrink-0"></i>
+                        <span class="text-[11px] text-info font-medium tracking-wide leading-relaxed text-center">
+                            No shipping required for digital products.<br>數位產品無需物流。
+                        </span>
                     </div>
                 </div>
-                <div id="checkout-btn-wrapper" hx-swap-oob="true" class="mt-6">
-                    <a href="/carts/checkout/" 
-                        hx-boost="true" 
-                        id="checkout-btn" 
-                        class="btn btn-success btn-block flex gap-3 h-auto py-2 min-h-0 animate-bounce-once"
-                    >
-                        <span>Proceed to Checkout<br>前往結帳</span>
-                        <span><i class="fa-solid fa-arrow-right fa-xl"></i></span>
+                <div id="checkout-btn-wrapper" hx-swap-oob="true" class="mt-4 select-none">
+                    <a href="/carts/checkout/" id="checkout-btn" hx-boost="true" class="btn btn-success btn-sm btn-block flex items-center justify-between px-4 h-11 min-h-0 text-white rounded-xl shadow-md font-sans tracking-wide transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] hover:opacity-95">
+                        <div class="text-left leading-tight">
+                            <span class="block font-bold text-xs tracking-wide">Proceed to Checkout</span>
+                            <span class="block text-[9px] font-normal opacity-80 mt-0.5">前往結帳</span>
+                        </div>
+                        <span><i class="fa-solid fa-arrow-right fa-sm"></i></span>
                     </a>
-                    <!-- payment methods -->
-                    <div class="flex justify-around fill-primary stroke-primary my-[30px]">
-                        <i class="fa-brands fa-cc-paypal fa-2xl"></i>
-                        <i class="fa-solid fa-money-bill-transfer fa-2xl"></i>
-                        <i class="fa-solid fa-qrcode fa-2xl"></i>
+
+                    <div id="ap-disclaimer-box"></div>
+                    
+                    <div class="flex justify-around items-center text-base-content/30 my-6 px-4">
+                        <i class="fa-brands fa-cc-paypal text-2xl hover:text-base-content/50 transition-colors duration-200 cursor-help" title="PayPal"></i>
+                        <i class="fa-solid fa-money-bill-transfer text-xl hover:text-base-content/50 transition-colors duration-200 cursor-help" title="Bank Transfer"></i>
+                        <i class="fa-solid fa-qrcode text-xl hover:text-base-content/50 transition-colors duration-200 cursor-help" title="QR Code Payment"></i>
                     </div>
                 </div>
             """
@@ -777,28 +837,39 @@ def update_shipping_cost(request, cart):
             )
         else:
             shipping_html = """
-                <div id="shipping-section-wrapper" hx-swap-oob="true">
-                    <h2 class="text-[1.25rem] mb-5">Shipping｜配送</h2>
-                    <div class="alert alert-info shadow-sm mb-4 justify-center">
-                        <span>No shipping required for digital products.｜數位產品無需物流。</span>
+                <div id="shipping-section-wrapper" hx-swap-oob="true" class="w-full font-sans select-none">
+                    <h2 class="text-sm min-[400px]:text-base md:text-[0.85rem] lg:text-base font-bold tracking-tight text-base-content/90 mb-3">
+                        Shipping｜配送
+                    </h2>
+                    <div class="alert alert-info bg-info/5 border border-info/20 shadow-none p-3.5 rounded-xl flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-circle-info text-info text-xs shrink-0"></i>
+                        <span class="text-[11px] text-info font-medium tracking-wide leading-relaxed text-center">
+                            No shipping required for digital products.<br>數位產品無需物流。
+                        </span>
                     </div>
                 </div>
-                <div id="checkout-btn-wrapper" hx-swap-oob="true" class="mt-6">
+                <div id="checkout-btn-wrapper" hx-swap-oob="true" class="mt-4 select-none">
                     <a href="/carts/checkout/" 
-                        hx-boost="true" 
-                        id="checkout-btn" 
-                        class="btn btn-success btn-block flex gap-3 h-auto py-2 min-h-0 animate-bounce-once"
-                    >
-                        <span>Proceed to Checkout<br>前往結帳</span>
-                        <span><i class="fa-solid fa-arrow-right fa-xl"></i></span>
+                    id="checkout-btn"
+                    hx-boost="true" 
+                    class="btn btn-success btn-sm btn-block flex items-center justify-between px-4 h-11 min-h-0 text-white rounded-xl shadow-md font-sans tracking-wide transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] hover:opacity-95">
+                        <div class="text-left leading-tight">
+                            <span class="block font-bold text-xs tracking-wide">Proceed to Checkout</span>
+                            <span class="block text-[9px] font-normal opacity-80 mt-0.5">前往結帳</span>
+                        </div>
+                        <span><i class="fa-solid fa-arrow-right fa-sm"></i></span>
                     </a>
-                    <!-- payment methods -->
-                    <div class="flex justify-around fill-primary stroke-primary my-[30px]">
-                        <i class="fa-brands fa-cc-paypal fa-2xl"></i>
-                        <i class="fa-solid fa-money-bill-transfer fa-2xl"></i>
-                        <i class="fa-solid fa-qrcode fa-2xl"></i>
+                    
+                    <div id="ap-disclaimer-box"></div>
+                    
+                    <div class="flex justify-around items-center text-base-content/30 my-6 px-4">
+                        <i class="fa-brands fa-cc-paypal text-2xl hover:text-base-content/50 transition-colors duration-200 cursor-help" title="PayPal"></i>
+                        <i class="fa-solid fa-money-bill-transfer text-xl hover:text-base-content/50 transition-colors duration-200 cursor-help" title="Bank Transfer"></i>
+                        <i class="fa-solid fa-qrcode text-xl hover:text-base-content/50 transition-colors duration-200 cursor-help" title="QR Code Payment"></i>
                     </div>
                 </div>
+
+
             """
             summary_html = get_row_oob(
                 "shipping_cost_row", "Shipping", "運費",
@@ -850,23 +921,24 @@ def update_shipping_cost(request, cart):
                 <div id="shipping-section-wrapper" hx-swap-oob="true">
                     <h2 class="text-[1.25rem] mb-5">Shipping｜配送</h2>
                     <div class="alert alert-info shadow-sm mb-4 justify-center">
-                        <span>No shipping required for digital products.｜數位產品無需物流。</span>
+                        <span>No shipping required for digital products.<br>數位產品無需物流。</span>
                     </div>
                 </div>
-                <div id="checkout-btn-wrapper" hx-swap-oob="true" class="mt-6">
-                    <a href="/carts/checkout/" 
-                        hx-boost="true" 
-                        id="checkout-btn" 
-                        class="btn btn-success btn-block flex gap-3 h-auto py-2 min-h-0 animate-bounce-once"
-                    >
-                        <span>Proceed to Checkout<br>前往結帳</span>
-                        <span><i class="fa-solid fa-arrow-right fa-xl"></i></span>
+                <div id="checkout-btn-wrapper" hx-swap-oob="true" class="mt-4 select-none">
+                    <a href="/carts/checkout/" id="checkout-btn" hx-boost="true" class="btn btn-success btn-sm btn-block flex items-center justify-between px-4 h-11 min-h-0 text-white rounded-xl shadow-md font-sans tracking-wide transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] hover:opacity-95">
+                        <div class="text-left leading-tight">
+                            <span class="block font-bold text-xs tracking-wide">Proceed to Checkout</span>
+                            <span class="block text-[9px] font-normal opacity-80 mt-0.5">前往結帳</span>
+                        </div>
+                        <span><i class="fa-solid fa-arrow-right fa-sm"></i></span>
                     </a>
-                    <!-- payment methods -->
-                    <div class="flex justify-around fill-primary stroke-primary my-[30px]">
-                        <i class="fa-brands fa-cc-paypal fa-2xl"></i>
-                        <i class="fa-solid fa-money-bill-transfer fa-2xl"></i>
-                        <i class="fa-solid fa-qrcode fa-2xl"></i>
+
+                    <div id="ap-disclaimer-box"></div>
+                    
+                    <div class="flex justify-around items-center text-base-content/30 my-6 px-4">
+                        <i class="fa-brands fa-cc-paypal text-2xl hover:text-base-content/50 transition-colors duration-200 cursor-help" title="PayPal"></i>
+                        <i class="fa-solid fa-money-bill-transfer text-xl hover:text-base-content/50 transition-colors duration-200 cursor-help" title="Bank Transfer"></i>
+                        <i class="fa-solid fa-qrcode text-xl hover:text-base-content/50 transition-colors duration-200 cursor-help" title="QR Code Payment"></i>
                     </div>
                 </div>
             """
@@ -887,8 +959,6 @@ def update_shipping_cost(request, cart):
 def update_offer(request, cart):
     """
     Safely scales active promo codes during basket mutations.
-    💡 FIXED: Removed all redundant offer-error-container tags to perfectly match
-    your actual template files and permanently eliminate HTMX target errors.
     """
     offer_data = request.session.get("offer_applied", {})
     code = offer_data.get("offer_code")
@@ -920,7 +990,7 @@ def update_offer(request, cart):
         request.session.modified = True
         
         fresh_input_html = render_to_string('store/partials/offer_input.html', {}, request=request)
-        fresh_input_wrapper = f'<div id="offer-form-wrapper" hx-swap-oob="true">{fresh_input_html}</div>'
+        fresh_input_wrapper = f'<div id="offer-form-wrapper" hx-swap-oob="true" class="w-full">{fresh_input_html}</div>'
         
         fx_zero = "0" if is_integer else "0.00"
         clear_pricing_oob = f'''
@@ -934,18 +1004,24 @@ def update_offer(request, cart):
     offer_input_html = None
     update_offer_error_trigger_data = None
 
-    if status == "VALID" and Decimal(str(cart.get_cart_total_ex_voucher()).replace(",", "")) < Decimal(str(perk.safe_min_spending).replace(",", "")):
+    if status == "REQUIRES_AUTHENTICATION":
+        offer_input_html, update_offer_error_trigger_data = htmx_invalid_offer_update_response(
+            request, 
+            "Authentication Required｜請先登入會員", 
+            "This promo code is only available for registered members.<br>此優惠碼僅限註冊會員使用，請先登入或註冊以套用優惠。"
+        )
+    elif status == "VALID" and Decimal(str(cart.get_cart_total_ex_voucher()).replace(",", "")) < Decimal(str(perk.safe_min_spending).replace(",", "")):
         offer_input_html, update_offer_error_trigger_data = htmx_invalid_offer_update_response(request, "Minimum Spend Not Met\n未達最低消費金額", f"Sorry, this offer requires a minimum spending of CNY { formatted_min_spend }.<br>很抱歉，此優惠需消費滿 { formatted_min_spend } 元方可使用。請再多選購一些商品以符合資格。")
     elif status == "OUT_OF_STOCK":
-        offer_input_html, update_offer_error_trigger_data = htmx_invalid_offer_update_response(request, "Limit Reached\n優惠名額已滿", "All available offers have been claimed.")
+        offer_input_html, update_offer_error_trigger_data = htmx_invalid_offer_update_response(request, "Limit Reached\n優惠名額已滿", "All available offers have been claimed.<br>此優惠名額已滿，感謝您的支持。")
     elif status == "ALREADY_USED":
-        offer_input_html, update_offer_error_trigger_data = htmx_invalid_offer_update_response(request, "Already Redeemed\n此優惠碼已使用", "This promo code has already been used.")
+        offer_input_html, update_offer_error_trigger_data = htmx_invalid_offer_update_response(request, "Already Redeemed\n此優惠碼已使用", "This promo code has already been used.<br>您已使用過此優惠碼。")
     elif status == "NO_DOB_DATA":
-        offer_input_html, update_offer_error_trigger_data = htmx_invalid_offer_update_response(request, "Missing birthday information\n缺少您的生日資訊", "We don’t have your birthday data, so this promo cannot be applied.")
+        offer_input_html, update_offer_error_trigger_data = htmx_invalid_offer_update_response(request, "Missing birthday information\n缺少您的生日資訊", "We don’t have your birthday data, so this promo cannot be applied.<br>我們沒有您的生日資料，因此無法套用此優惠。")
     elif status == "FEMALE_ONLY" :
-        offer_input_html, update_offer_error_trigger_data = htmx_invalid_offer_update_response(request, "Ladies only\n女士專屬限定", "This promo code is only available for female members.")
+        offer_input_html, update_offer_error_trigger_data = htmx_invalid_offer_update_response(request, "Ladies only\n女士專屬限定", "This promo code is only available for female members.<br>此優惠碼僅限女性會員使用。")
     elif status == "EXPIRED" or status == "THIS_BIRTHDAY_PERK_EXPIRED" or status == "NEW_MEMBER_PERK_EXPIRED":
-        offer_input_html, update_offer_error_trigger_data = htmx_invalid_offer_update_response(request, "Offer Expired\n優惠已過期", "Sorry, this offer has expired.")
+        offer_input_html, update_offer_error_trigger_data = htmx_invalid_offer_update_response(request, "Offer Expired\n優惠已過期", "Sorry, this offer has expired.<br>抱歉！您輸入的優惠碼已過期。")
     
     # Successful Validated Path
     elif status == "VALID":
@@ -966,6 +1042,7 @@ def update_offer(request, cart):
             "offer_code": code,
             "discount_amount": intcomma(f"{discount_amount:.2f}"),
             "discount_amount_foreign": format_fx_value(fx_offer, currency_code),
+            "is_personal_member_code": offer_data.get("is_personal_member_code", False)
         }
         request.session.modified = True
 
@@ -990,7 +1067,7 @@ def update_offer(request, cart):
         
     # Invalid / Ineligible Track
     if offer_input_html is not None and update_offer_error_trigger_data is not None:
-        updated_offer_input_oob = f'<div id="offer-form-wrapper" hx-swap-oob="true">{offer_input_html}</div>'
+        updated_offer_input_oob = f'<div id="offer-form-wrapper" hx-swap-oob="true" class="w-full">{offer_input_html}</div>'
         
         fx_offer_zero = "0" if is_integer else "0.00"
         pricing_resets_oob = f'''
@@ -1119,6 +1196,21 @@ def update_costs_oobs(request, cart, is_integer, foreign_currency_code, foreign_
             </tbody>
         </table>
     """
+    # oob_updates.append(summary_cart_wrapper_html)
+       
+    # 💡 THE ULTIMATE FIX: Strip away the outer <table> wrapper elements completely!
+    # Sending the <tbody> as a clean root tag stops the browser from breaking the DOM attributes.
+    # summary_cart_wrapper_html = f'''
+    # <tbody id="cart_summary_section"
+    #        hx-get="/carts/update_exchange_rate_api/"
+    #        hx-trigger="refresh_forex from:body"
+    #        hx-swap-oob="true"
+    #        hx-swap="none"
+    #        class="bg-transparent">
+    #     {summary_cart_total_html}
+    # </tbody>
+    # '''.strip().replace("\n", "").replace("    ", "")
+    
     oob_updates.append(summary_cart_wrapper_html)
 
     if shipping_html:
@@ -1171,7 +1263,7 @@ def update_cart_totals(request, updated_cart_items, cart):
     fx_voucher_p = quantize_amount(cny_voucher_p * rate, currency_code)
 
     cart_totals_html = []
-    cart_totals_html.append(get_row_oob("physical_items_row", "Physical Products", "實物商品小計", "physical_products_total", "physical_products_total_foreign", intcomma(f"{cny_physical:.2f}"), format_fx_value(fx_physical, currency_code), symbol, is_integer))
+    cart_totals_html.append(get_row_oob("physical_items_row", "Physical Products", "實物商品", "physical_products_total", "physical_products_total_foreign", intcomma(f"{cny_physical:.2f}"), format_fx_value(fx_physical, currency_code), symbol, is_integer))
     cart_totals_html.append(get_row_oob("e_items_row", "eProducts", "電子商品小計", "e_products_total", "e_products_total_foreign", intcomma(f"{cny_electronic:.2f}"), format_fx_value(fx_electronic, currency_code), symbol, is_integer))
     cart_totals_html.append(get_row_oob("voucher_items_row", "Voucher Purchase", "禮品券購買金額", "voucher_purchase_total", "voucher_purchase_total_foreign", intcomma(f"{cny_voucher_p:.2f}"), format_fx_value(fx_voucher_p, currency_code), symbol, is_integer))
     return "".join(filter(None, cart_totals_html))
@@ -1221,7 +1313,7 @@ def validate_email_mx_domain(email_string):
     except (socket.gaierror, ValueError):
         # Raise an explicit validation error caught cleanly by your Django form loop layout
         raise ValidationError(
-            "The email domain appears to be invalid or unavailable. Please check your spelling. ｜ 電子郵件網域無效，請檢查拼字。"
+            "The email domain appears to be invalid or unavailable. Please check your spelling.｜電子郵件網域無效，請檢查拼字。"
         )
 
 
@@ -1263,8 +1355,3 @@ def validate_email_mx_domain(email_string):
 #                 raise ValueError("Balance mismatch during processing.")
 #     except Exception as e:
 #         return htmx_invalid_offer_response(request, "Input Error\輸入錯誤", f"An error occurred while applying your balance.<br>禮品券適用過程中有錯誤。")
-
-
-
-
-

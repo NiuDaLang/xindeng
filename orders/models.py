@@ -8,6 +8,7 @@ from accounts.models import CustomerVoucher
 from django.conf import settings
 from django.dispatch import receiver
 from django.db.models.signals import post_save
+from django.db.models import Sum
 
 
 # Create your models here.
@@ -73,14 +74,14 @@ class Payment(models.Model):
 
 class Order(models.Model):
     ORDER_STATUS_CHOICES = [
-        ('Hold_Pending', 'Wait Pending ｜ 待付款'),
-        ('Processing', 'Processing ｜ 處理中'),
-        ('Partly_Dispatched', 'Partly Dispatched ｜ 部分發貨'),
-        ('All_Dispatched', 'All Dispatched ｜ 已全部發貨'),
-        ('Delivered', 'Delivered ｜ 已妥投完成'),
-        ('Cancelled', 'Cancelled ｜ 已取消'),
-        ('Refunding', 'Refunding ｜ 退款處理中'),
-        ('Refunded', 'Refunded ｜ 已完成退款'),
+        ('Hold_Pending', 'Wait Pending｜待付款'),
+        ('Processing', 'Processing｜處理中'),
+        ('Partly_Dispatched', 'Partly Dispatched｜部分發貨'),
+        ('All_Dispatched', 'All Dispatched｜已全部發貨'),
+        ('Delivered', 'Delivered｜已妥投完成'),
+        ('Cancelled', 'Cancelled｜已取消'),
+        ('Refunding', 'Refunding｜退款處理中'),
+        ('Refunded', 'Refunded｜已完成退款'),
     ]
     
     user                    = models.ForeignKey(Account, on_delete=models.SET_NULL, blank=True, null=True)
@@ -197,6 +198,14 @@ class Order(models.Model):
 
         # Note: We do not call self.save() here since your views and signals 
         # handle committing the fields via update_fields=['order_status'] atomically!
+
+    # 💡 ADD this method inside your Order class:
+    def get_total_items_count(self):
+        """
+        Calculates the true aggregate sum of all item quantities purchased.
+        """
+        result = self.orderproduct_set.aggregate(total_qty=Sum('quantity'))
+        return result['total_qty'] or 0
 
 
 class OrderProduct(models.Model):

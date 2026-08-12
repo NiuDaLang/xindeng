@@ -56,8 +56,11 @@ celerybeat-schedule-wal
 .idea/
 .DS_Store
 accounts_errors.html
-cart_copy.html
 product_copy.html
+checkout_copy.html
+order_complete_copy.html
+place_order_copy.html
+
 test.html
 project_structure.txt
 build/

@@ -216,14 +216,14 @@
         if (urlParams.get('status') === 'claimed_success') {
             Swal.fire({
                 icon: 'success',
-                title: 'Congratulations! ｜ 領取成功 🎉',
+                title: 'Congratulations!｜領取成功 🎉',
                 html: `
                     <div class="text-center font-sans">
                         <p class="font-bold text-teal-600 text-lg">禮品券已成功存入您的錢包！</p>
                         <p class="text-xs text-base-content/70 mt-2">Voucher has been securely credited. You can now apply this balance directly on your next checkout.</p>
                     </div>
                 `,
-                confirmButtonText: 'Excellent ｜ 太棒了',
+                confirmButtonText: 'Excellent｜太棒了',
                 confirmButtonColor: '#0d9488'
             }).then(() => {
                 // Clear the query parameters out of browser navigation stack natively

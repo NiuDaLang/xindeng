@@ -1,112 +1,129 @@
 {% load static %}
 {% load humanize %}
-<div id="costs_calculations_wrapper" {% if is_htmx_update %}hx-swap-oob="true"{% endif %}class="flex flex-col h-full w-full">
-    {% if cart_items_quantity > 0 %}
-        <!-- UPPER/LEFT -->
-        <div class="flex flex-col">
-            <!-- Shipping Cost Section -->
-            {% include 'store/partials/shipping_section_wrapper.html' %}
-            <!-- Offer & Voucher Section -->
-            {% include 'store/partials/offers_section.html' %}
-        </div>
-    
-        <!-- LOWER/RIGHT -->
-        <div class="flex flex-col mt-6">
-            <div id="summary-wrapper" class="relative">
-                <!-- Summary Section -->
-                <div id="summary_section" class="px-3 py-6">
-                    <table class="w-full bg-transparent border-collapse table-fixed">
-                        <thead>
-                            <!-- labels -->
-                            <tr class="font-normal">
-                                <td class="py-1 text-left text-xs/4"></td>
-                                <td class="py-1 mr-2 text-right font-semibold text-xs">
-                                    <span>
-                                        Amount<br>金額
-                                    </span>
-                                </td>
-                                <td class="py-1 text-right text-info-content font-semibold text-xs">
-                                    <span>
-                                        Pay In<br>支付貨幣
-                                    </span>
-                                </td>
-                            </tr>
-                            <!-- currency selection -->
-                            <tr>
-                                <th class="w-[32%] py-1 text-left"></th>
-                                <th class="w-[32%] py-1 text-right text-xs">CNY</th>
-                                <th class="w-[36%] py-1 text-right text-info-content text-xs">
-                                    <form id="select_currency_form" method="POST" autocomplete="off">
-                                        {% csrf_token %}
-                                        <select id="select_currency_input" name="select_currency" class="focus:outline-none focus:ring-0 focus:border-transparent">
-                                        <!-- 💡 Simply make sure "CNY" is included in your backend context collection 'currency_selection' -->
+<div id="costs_calculations_wrapper" {% if is_htmx_update %}hx-swap-oob="true"{% endif %} class="flex flex-col h-full w-full font-sans">
+ {% if cart_items_quantity > 0 %}
+ <!-- UPPER/LEFT -->
+ <div class="flex flex-col">
+ <!-- Shipping Cost Section -->
+ {% include 'store/partials/shipping_section_wrapper.html' %}
+ <!-- Offer & Voucher Section -->
+ {% include 'store/partials/offers_section.html' %}
+ </div>
+ 
+ <!-- LOWER/RIGHT -->
+ <div class="flex flex-col mt-8">
+     <!-- Heading Added to match look and feel of Shipping section -->
+     <h2 class="text-sm min-[400px]:text-base md:text-[0.85rem] lg:text-base font-bold tracking-tight text-base-content/90 mb-3 select-none">
+         Summary｜結算總結
+     </h2>
+
+     <div id="summary-wrapper" class="relative bg-base-100 border border-base-200 shadow-sm rounded-2xl overflow-hidden p-3 sm:p-4 md:p-2 lg:p-4">
+         <!-- Summary Section -->
+         <div id="summary_section" class="w-full">
+             <table class="w-full bg-transparent border-collapse table-fixed">
+                 <thead>
+                     <!-- labels -->
+                     <tr class="font-normal select-none border-b border-base-100">
+                         <td class="w-[26%] min-[768px]:max-[900px]:w-[26%] py-1.5 text-left font-semibold text-[10px] text-base-content/40">Item<br>項目</td>
+                         <td class="w-[34%] min-[768px]:max-[900px]:w-[32%] py-1.5 text-right font-semibold text-[10px] text-base-content/40 tracking-wider">
+                             <span>Amount<br>基準金額</span>
+                         </td>
+                         <td class="w-[40%] min-[768px]:max-[900px]:w-[42%] py-1.5 text-right font-semibold text-[10px] text-primary/60 tracking-wider">
+                             <span>Pay In<br>應付貨幣</span>
+                         </td>
+                     </tr>
+                     <!-- currency selection -->
+                    <tr class="border-b border-dashed border-base-200/60">
+                        <th class="py-2 text-left"></th>
+                        <th class="py-2 text-right text-[10px] font-mono text-base-content/40 tracking-wide font-normal">CNY (¥)</th>
+                        <th class="py-2 pl-[2px] text-right text-xs">
+                            <div class="flex justify-end items-center w-full">
+                                <form id="select_currency_form" method="POST" autocomplete="off" class="m-0 p-0 w-full max-w-[85px] relative group">
+                                    {% csrf_token %}
+                                    
+                                    <!-- 💡 Added 'bg-none' and '!appearance-none' to safely target and wipe out the hidden background SVG arrow -->
+                                    <select id="select_currency_input" 
+                                            name="select_currency" 
+                                            style="font-size: clamp(0.675rem, 1vw + 0.1rem, 0.75rem);"
+                                            class="select select-bordered select-xs font-bold text-primary focus:outline-none focus:border-primary min-h-0 h-7 cursor-pointer bg-base-200 border-base-300 w-full text-left pl-2.5 pr-6 rounded-lg transition-all !appearance-none bg-none hover:bg-base-300/60">
                                         {% for currency_code in currency_selection %}
-                                            <option {% if request.currency == currency_code %}
-                                                        selected
-                                                    {% elif not request.currency and currency_code == "HKD" %}
-                                                        selected
-                                                    {% endif %} 
-                                                    value="{{ currency_code }}" >{{ currency_code }}
-                                            </option>
+                                            <option {% if request.currency == currency_code %}selected
+                                                    {% elif not request.currency and currency_code == "HKD" %}selected{% endif %}
+                                                    value="{{ currency_code }}">{{ currency_code }}</option>
                                         {% endfor %}
                                     </select>
-                                    </form>
-                                </th>
-                            </tr>
-                        </thead>
-                        {% include "store/partials/cart_summary_wrapper.html" %}
-                    </table>
-                </div>
-                <!-- Exchange rate expiry warning -->
-                <div id="forex_notes" class="mt-2">
-                    <p class="text-xs">
-                        *Exchange Rate｜兌換率：<span id="locked_exchange_rate" class="font-semibold">{{ locked_rate|floatformat:4|intcomma }}</span>
-                        <br/>
-                        (Store Exchange Rate - Valid for 24hrs｜店內匯率 - 24小時有效)
-                    </p>
-                </div>
-                <!-- The Overlay (hidden by default) -->
-                <div id="price-overlay" class="hidden absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center cursor-not-allowed">
-                    <span class="bg-white px-3 py-1 rounded shadow-sm border text-xs font-bold uppercase tracking-wider">Expired / 已失效</span>
-                </div>
-            </div>
-            <div id="price-warning" class="hidden bg-error p-2 text-xs mt-6 border border-error-content">
-                Exchange rate <strong>{{ locked_rate|floatformat:4|intcomma }}</strong> has expired. <a href="." class="underline font-semibold">Refresh page</a> to recalculate.
-                <br>
-                兌換率 <strong>{{ locked_rate|floatformat:4|intcomma }}</strong> 已失效。請<a href="." class="underline font-semibold">更新頁面</a>重新計算。
-            </div>
-                <div id="checkout-btn-wrapper" class="mt-6">
-                {% if cart.get_physical_products_subtotal == 0 or not has_physical_items %}
-                    <!-- Enabled for E-products immediately -->
-                    <a href="{% url 'checkout' %}" 
-                        id="checkout-btn"
-                        hx-boost="true" 
-                        class="btn btn-success btn-block flex gap-3 h-auto py-2 min-h-0">
-                        <span>Proceed to Checkout<br>前往結帳</span>
-                        <span><i class="fa-solid fa-arrow-right fa-xl"></i></span>
-                    </a>
-                    <div id="ap-disclaimer-box"></div>
-                    <!-- payment methods -->
-                    <div class="flex justify-around fill-primary stroke-primary my-[30px]">
-                        <i class="fa-brands fa-cc-paypal fa-2xl"></i>
-                        <i class="fa-solid fa-money-bill-transfer fa-2xl"></i>
-                        <i class="fa-solid fa-qrcode fa-2xl"></i>
-                    </div>
-                {% else %}
-                    <!-- Existing disabled button for physical goods -->
-                    <button id="checkout-btn" class="flex gap-3 btn btn-block btn-disabled opacity-80 cursor-not-allowed h-auto py-2 min-h-0" disabled>
-                        <span>Please calculate shipping first<br>請先計算運費</span>
-                        <span><i class="fa-solid fa-arrow-up fa-xl"></i></span>
-                    </button>
-                {% endif %}
-            </div>                
-        </div>
-    {% else %}
-        <div class="flex flex-col relative items-center justify-center min-h-[450px] h-full flex-grow select-none pointer-events-none opacity-50 bg-cover bg-center bg-no-repeat rounded-4xl overflow-hidden blur-[0.8px] p-6 border border-base-300"            
-                style="background-image: url('{% static "hero/lavendar.svg" %}');">
-                <span class="text-sm font-semibold p-10 bg-base-100/80 rounded-box shadow-sm">
-                    Cart is Empty ｜ 購物車是空的
-                </span>
-        </div>
-    {% endif %}
+
+                                    <!-- Fixed Custom Chevron Arrow Layout Control Layer -->
+                                    <div class="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-primary/60 group-hover:text-primary transition-colors">
+                                        <i class="fa-solid fa-chevron-down text-[9px]"></i>
+                                    </div>
+                                </form>
+                            </div>
+                        </th>
+                    </tr>
+                 </thead>
+                 {% include "store/partials/cart_summary_wrapper.html" %}
+             </table>
+         </div>
+
+         <!-- Exchange rate expiry warning -->
+         <div id="forex_notes" class="mt-4 pt-3 border-t border-base-100 select-none">
+             <p class="text-[10px] text-base-content/40 leading-relaxed font-medium">
+                 *Exchange Rate｜兌換率：<span id="locked_exchange_rate" class="font-mono font-bold text-base-content/60">{{ locked_rate|floatformat:4|intcomma }}</span>
+                 <br/>
+                 (Store Exchange Rate - Valid for 24hrs｜店內匯率 - 24小時有效)
+             </p>
+         </div>
+
+         <!-- The Overlay (hidden by default) -->
+         <div id="price-overlay" class="hidden absolute inset-0 bg-base-100/80 backdrop-blur-[1px] z-10 flex items-center justify-center cursor-not-allowed select-none">
+             <span class="bg-error/10 text-error px-3 py-1.5 rounded-xl border border-error/20 text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                 Expired｜已失效
+             </span>
+         </div>
+     </div>
+
+     <div id="price-warning" class="hidden alert alert-error p-3 text-[11px] mt-4 border border-error/20 rounded-xl leading-relaxed">
+         <div>
+             <i class="fa-solid fa-triangle-exclamation text-error text-sm shrink-0"></i>
+             <span>
+                 Exchange rate <strong>{{ locked_rate|floatformat:4|intcomma }}</strong> has expired. <a href="." class="underline font-bold hover:text-error-content">Refresh page</a> to recalculate.
+                 <br>
+                 兌換率 <strong>{{ locked_rate|floatformat:4|intcomma }}</strong> 已失效。請<a href="." class="underline font-bold hover:text-error-content">更新頁面</a>重新計算。
+             </span>
+         </div>
+     </div>
+
+     <div id="checkout-btn-wrapper" class="mt-4 select-none">
+         {% if cart.get_physical_products_subtotal == 0 or not has_physical_items %}
+             <a href="{% url 'checkout' %}"
+                id="checkout-btn"
+                hx-boost="true"
+                class="btn btn-success btn-sm btn-block flex items-center justify-between px-4 h-11 min-h-0 text-white rounded-xl shadow-md font-sans tracking-wide transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] hover:opacity-95">
+                <span class="text-left font-bold text-xs leading-tight">Proceed to Checkout<br><span class="text-[9px] font-normal opacity-80">前往結帳</span></span>
+                <span><i class="fa-solid fa-arrow-right fa-sm"></i></span>
+             </a>
+             <div id="ap-disclaimer-box"></div>
+             <!-- payment methods -->
+             <div class="flex justify-around items-center text-base-content/30 my-6 px-4">
+                 <i class="fa-brands fa-cc-paypal text-2xl hover:text-base-content/50 transition-colors"></i>
+                 <i class="fa-solid fa-money-bill-transfer text-xl hover:text-base-content/50 transition-colors"></i>
+                 <i class="fa-solid fa-qrcode text-xl hover:text-base-content/50 transition-colors"></i>
+             </div>
+         {% else %}
+             <button id="checkout-btn" class="btn btn-block btn-disabled opacity-60 flex items-center justify-between px-4 h-11 min-h-0 rounded-xl border border-base-200 font-sans tracking-wide" disabled>
+                 <span class="text-left text-xs font-medium text-base-content/40 treatment-text leading-tight">Please calculate shipping first<br><span class="text-[9px] opacity-70">請先計算運費</span></span>
+                 <span class="text-base-content/30"><i class="fa-solid fa-arrow-up fa-sm"></i></span>
+             </button>
+         {% endif %}
+     </div>
+ </div>
+ {% else %}
+ <div class="flex flex-col relative items-center justify-center min-h-[450px] h-full flex-grow select-none pointer-events-none opacity-50 bg-cover bg-center bg-no-repeat rounded-3xl overflow-hidden blur-[0.8px] p-6 border border-base-300" 
+      style="background-image: url('{% static "hero/lavendar.svg" %}');">
+     <span class="text-xs font-bold p-6 bg-base-100/90 rounded-2xl shadow-sm tracking-wide">
+         Cart is Empty｜購物車是空的
+     </span>
+ </div>
+ {% endif %}
 </div>

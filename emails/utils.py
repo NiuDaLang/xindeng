@@ -250,7 +250,7 @@ def send_secure_voucher_pin_email(v_id, pin_code):
     ).order_by('-created_at').first()
     
     target_recipient = voucher.registered_email if voucher.registered_email else voucher.purchaser_email
-    mail_subject = f"🔒 Secure PIN: Claim Your Gift Voucher ｜ 安全驗證碼：領取您的禮品券 [#{str(voucher.id)[:8].upper()}]"
+    mail_subject = f"🔒 Secure PIN: Claim Your Gift Voucher｜安全驗證碼：領取您的禮品券 [#{str(voucher.id)[:8].upper()}]"
 
     # 🌟 THE SNAP FIX: Append the voucher instance directly into the dictionary context maps!
     # This satisfies line 7's voucher.value demand, allowing your template engine to print the 6-digit PIN code perfectly.
@@ -284,7 +284,7 @@ def send_secure_voucher_pin_email(v_id, pin_code):
 def send_inquiry_alert_email(order_number, message_content):
     """Alerts shop admins immediately when a customer logs a fresh query."""
     order = Order.objects.get(order_number=order_number)
-    mail_subject = f"🚨 New Customer Inquiry ｜ 新留言提醒 [#{order.order_number}]"
+    mail_subject = f"🚨 New Customer Inquiry｜新留言提醒 [#{order.order_number}]"
     
     from_email = settings.DEFAULT_FROM_EMAIL
     # As requested, matching your admin fallback logic loops
@@ -307,7 +307,7 @@ def send_inquiry_alert_email(order_number, message_content):
 def send_staff_reply_email(order_number, message_content):
     """Streams formal message blocks down to the target customer's inbox tray."""
     order = Order.objects.get(order_number=order_number)
-    mail_subject = f"✉️ Hṛdayadīpa ｜ 心燈 - Customer Care Reply ｜ 專員客服回覆 [#{order.order_number}]"
+    mail_subject = f"✉️ Hṛdayadīpa｜心燈 - Customer Care Reply｜專員客服回覆 [#{order.order_number}]"
 
     from_email = settings.DEFAULT_FROM_EMAIL
     to_email = [order.email]
@@ -337,7 +337,7 @@ def send_staff_reply_email(order_number, message_content):
 def send_cancellation_initiation_email(order_number):
     """Compiles safety warning frameworks when a user clicks the cancellation trigger button."""
     order = Order.objects.get(order_number=order_number)
-    mail_subject = f"⚠️ Cancellation Processing Alert ｜ 訂單取消申請處理中 [#{order.order_number}]"
+    mail_subject = f"⚠️ Cancellation Processing Alert｜訂單取消申請處理中 [#{order.order_number}]"
     
     current_site = Site.objects.get_current()
     site_domain = f"http://{current_site.domain}"
@@ -359,7 +359,7 @@ def send_cancellation_initiation_email(order_number):
 def send_cancellation_finalized_email(order_number):
     """Compiles customized closing statements adapting instructions dynamically to match payment methods."""
     order = Order.objects.get(order_number=order_number)
-    mail_subject = f"✅ Cancellation Complete & Refund Notice ｜ 訂單取消與退款完成通知 [#{order.order_number}]"
+    mail_subject = f"✅ Cancellation Complete & Refund Notice｜訂單取消與退款完成通知 [#{order.order_number}]"
     
     current_site = Site.objects.get_current()
     site_domain = f"http://{current_site.domain}"

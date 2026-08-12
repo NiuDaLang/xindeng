@@ -1,30 +1,30 @@
-Hṛdayadīpa (हृदयदीप) ｜ 心燈
-Bank Transfer Instructions ｜ 銀行轉帳與線下匯款指引
+Hṛdayadīpa (हृदयदीप)｜心燈
+Bank Transfer Instructions｜銀行轉帳與線下匯款指引
 
 {% if user.username %}親愛的 {{ user.username }}，{% else %}親愛的 {{ order.email }}，{% endif %}
 
-銀行轉帳與線下匯款指引 ｜ Bank Transfer Instructions
+銀行轉帳與線下匯款指引｜Bank Transfer Instructions
 
 您的商品庫存已成功鎖定！訂單號碼為：{{ order.order_number }}
 Your inventory hold request has been successfully processed under order number: {{ order.order_number }}
 
-⚠️ 庫存保留截止期限 ｜ Stock Hold Expiration: {{ expiry_date|date:"Y-m-d H:i" }}
+⚠️ 庫存保留截止期限｜Stock Hold Expiration: {{ expiry_date|date:"Y-m-d H:i" }}
 請於期限前完成付款，逾期未付訂單將被系統自動取消。
 
 ============================================================
-🏦 1. 銀行轉帳帳號資訊 ｜ BANK REMITTANCE COORDINATES
+🏦 1. 銀行轉帳帳號資訊｜BANK REMITTANCE COORDINATES
 ============================================================
-開戶銀行 ｜ Bank Name: Bank of China (Mainland) / Tailored Bank Name
-開戶名稱 ｜ Account Name: Xindeng Corporate Entity Ltd.
-銀行帳號 ｜ Account Number: 6217 0000 0000 0000 000
-國際代碼 ｜ Swift Code: BKCHCNBJXXX
-應付總額 ｜ Total Due: ¥ {{ order.total_due }} CNY
+開戶銀行｜Bank Name: Bank of China (Mainland) / Tailored Bank Name
+開戶名稱｜Account Name: Xindeng Corporate Entity Ltd.
+銀行帳號｜Account Number: 6217 0000 0000 0000 000
+國際代碼｜Swift Code: BKCHCNBJXXX
+應付總額｜Total Due: ¥ {{ order.total_due }} CNY
 
 *重要提示：請務必在匯款備註/附言中填寫您的訂單號碼：{{ order.order_number }}
 *Important: Please include order number {{ order.order_number }} in payment memo/remark.
 
 ============================================================
-📱 2. 行動支付搜尋明細 ｜ MOBILE ACCOUNTS DIRECTORY
+📱 2. 行動支付搜尋明細｜MOBILE ACCOUNTS DIRECTORY
 ============================================================
 以下為手動搜尋添加明細，便於添加好友或核對實名資訊：
 

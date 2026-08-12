@@ -1,4 +1,4 @@
-Hṛdayadīpa (हृदयदीप)｜心燈 — Security Verification PIN ｜ 安全驗證碼
+Hṛdayadīpa (हृदयदीप)｜心燈 — Security Verification PIN｜安全驗證碼
 
 Hello,
 
@@ -13,4 +13,4 @@ This code is strictly valid for 15 minutes from the generation timestamp.
 ⚠️ Security Warning: If you did not execute this action, please ignore this email. Do not disclose this secure verification access code to anyone.
 
 Warmest regards,
-The Hṛdayadīpa ｜ 心燈 Support Operations Team
+The Hṛdayadīpa｜心燈 Support Operations Team

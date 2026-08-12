@@ -685,15 +685,20 @@ body::selection {
 :root {
     --cube-size: 250px; /* Default, adjusted by JS */
 }
-#cube_display {
+/* #cube_display {
     background: var(--color-base-100); 
     color: white; 
     margin: 0;
     font-family: sans-serif; 
     overflow: hidden;
     display: flex; 
-    flex-direction: column; 
+    flex-direction: column;  */
     /* height: 80vh; */
+/* } */
+#cube_display {
+    margin: 0;
+    display: flex; 
+    flex-direction: column; 
 }
 #cube-viewport {
     height: 75vh; 
@@ -1602,6 +1607,10 @@ gmp-place-autocomplete::part(clear-button):hover {
 
 /* Order_Complete html */
 /* 🌟 THE PRODUCTION CLEAN RECEIPT MATRIX */
+/* custom.css */
+/* Order_Complete html */
+
+/* 🌟 STEP 1: THE PORTAL CONTROLLER SHADOW WRAPPER */
 .box {
     display: block; /* Changes to block display to allow standard downward content expansion */
     width: 100%;
@@ -1662,5 +1671,40 @@ gmp-place-autocomplete::part(clear-button):hover {
     .zigzag table.min-w-\[35rem\] {
         min-width: 0 !important;
         width: 100% !important;
+    }
+}
+
+
+
+
+/* 🌟 THE RESILIENT STICKER POP MATRIX */
+.receipt-total-display {
+    position: relative;
+    display: inline-block;
+    color: var(--fallback-p, rgb(var(--p))); /* Safely binds your daisyUI primary brand color */
+}
+
+/* 📊 PRODUCTION LEDGER ACCOUNTING ANCHOR */
+/* Draws a double underline rule directly under your figures to emphasize completion totals */
+.receipt-total-display::after {
+    content: "";
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    bottom: -4px;
+    height: 3px;
+    
+    /* Traditional bookkeeping double-line stroke effect */
+    border-bottom: 3px double currentColor;
+    opacity: 0.85;
+}
+
+/* Fluid responsive stacking overrides for small mobile screens */
+@media screen and (max-width: 640px) {
+    .box-table-override {
+        font-size: 0.75rem !important;
+    }
+    .mobile-row-stack {
+        justify-content: center !important;
     }
 }

@@ -1,24 +1,49 @@
 {% load humanize %}
+<!-- 🌟 UL CORE OVERHAUL: Set unified scrolling constraints with invisible customized scroll bars trackers -->
 <ul id="cart_items_list" 
-    class="overflow-y-scroll max-h-[calc(100vh-500px)] w-full custom-visible-scrollbar"
+    class="overflow-y-auto max-h-[35vh] xs:max-h-[45vh] w-full divide-y divide-base-100 pr-1 scrollbar-none space-y-1.5"
     {% if is_htmx_update %} hx-swap-oob="true" {% endif %}>
+    
     {% if current_cart_items %}
         {% for item in current_cart_items %}
-            <li class="flex hover:bg-base-200 transition-colors duration-300 ease-in-out rounded-2xl items-center mt-2">
-                <a href="{{ item.product_variation.product.get_url }}" class="flex flex-col flex-grow-0 items-start p-2">
-                    <span class="text-xs xs:text-sm font-medium"><strong>{{ item.product_variation.product }}</strong></span>
-                    <span class="text-[0.65rem]">{{ item.product_variation.get_sku }}</span>
-                    <img src="{{ item.product_variation.images.url }}" alt="product image" class="rounded-e-4xl">
+            <!-- Flexible horizontal slice line -->
+            <li class="flex items-center justify-between bg-base-50/50 hover:bg-base-50 border border-base-200/30 rounded-xl p-1.5 transition-all duration-300 gap-2 group">
+                
+                <!-- Main link captures both photo thumbnails and text fields uniformly -->
+                <a href="{{ item.product_variation.product.get_url }}" class="flex items-center gap-3 min-w-0 flex-1 select-none">
+                    <!-- 🌟 FIXED: Structured thumbnail card container prevents overflow breaks -->
+                    <div class="w-10 h-10 xs:w-12 xs:h-12 rounded-lg overflow-hidden bg-base-200 border border-base-200/50 flex-shrink-0 relative">
+                        <img src="{{ item.product_variation.images.url }}" alt="product thumbnail" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">
+                    </div>
+                    
+                    <!-- Text Metadata Details Alignment Frame -->
+                    <div class="flex flex-col min-w-0">
+                        <span class="text-xs font-bold text-base-content/80 group-hover:text-primary transition-colors truncate">
+                            {{ item.product_variation.product.product_name|default:item.product_variation.product }}
+                        </span>
+                        <span class="text-[9px] xs:text-[10px] font-mono text-base-content/40 tracking-tight truncate mt-0.5">
+                            SKU: {{ item.product_variation.get_sku }}
+                        </span>
+                    </div>
                 </a>
-                <div class="h-full flex gap-1 items-center mr-2">
-                    <span class="text-xs xs:text-sm font-medium">X</span>
-                    <span id="header_item_qty_{{item.id}}" class="text-xs xs:text-sm flex-grow-1 font-medium">{{ item.quantity }}</span>
+                
+                <!-- 🌟 FIXED: Right-side alignment block utilizes clean typography badge markers -->
+                <div class="flex items-center gap-1 text-base-content/60 font-sans font-medium px-2 flex-shrink-0 text-right">
+                    <span class="text-[10px] opacity-40">✕</span>
+                    <span id="header_item_qty_{{item.id}}" class="text-xs font-mono font-bold text-base-content/80 bg-base-200/60 px-1.5 py-0.5 rounded-md min-w-[1.25rem] text-center">
+                        {{ item.quantity }}
+                    </span>
                 </div>
+                
             </li>
         {% endfor %}
     {% else %}
-        <li class="p-4 text-center text-sm text-gray-500">
-            Your cart is empty<br>您的購物車是空的
+        <!-- Empty State Visual Cue Placeholder Wrapper Card -->
+        <li class="flex flex-col items-center justify-center py-8 px-4 text-center select-none animate-fade-in">
+            <span class="text-2xl mb-1.5 opacity-40">🛍️</span>
+            <p class="text-xs font-medium text-base-content/50">Your cart is empty</p>
+            <p class="text-[10px] text-base-content/30 mt-0.5">您的購物車是空的</p>
         </li>
     {% endif %}
+    
 </ul>

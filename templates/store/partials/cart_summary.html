@@ -1,115 +1,118 @@
+<!-- store/partials/cart_summary.html -->
 {% load humanize %}
-    <!-- physical items row -->
-    <tr id="physical_items_row" class="font-normal {% if not has_physical_items %}hidden{% endif %}">
-        <td class="py-1 text-left text-xs/4">Physical Products<br>實物商品小計</td>
-        <td class="py-1 mr-2 text-right text-sm">
-            <span id="physical_products_total">
-                ¥&nbsp;{{ physical_products_total|default:"0.00" }}
-            </span>
-        </td>
-        <td class="py-1 text-right text-info-content text-sm">
-            <span id="physical_products_total_foreign">
-                {{ foreign_currency_symbol }}&nbsp;
-                {{ physical_products_total_foreign }}
-            </span>
-        </td>
-    </tr>
-    
-    <!-- shipping cost -->
-    <tr id="shipping_cost_row" class="font-normal {% if not has_physical_items %}hidden{% endif %}">
-        <td class="py-1 text-left text-xs/4">Shipping<br>運費</td>
-        <td class="py-1 mr-2 text-right text-sm">
-            <span id="summary-shipping">
-                ¥&nbsp;{{ shipping_cost|default:"0.00" }}
-            </span>
-        </td>
-        <td class="py-1 text-right text-info-content text-sm">
-            <span id="shipping_cost_amount_foreign">
-                {{ foreign_currency_symbol }}&nbsp;
-                {{ shipping_cost_foreign }}
-            </span>
-        </td>
-    </tr>
-    
-    <!-- e-products subtotal -->
-    <tr id="e_items_row" class="font-normal {% if not has_e_items %}hidden{% endif %}">
-        <td class="py-1 text-left text-xs/4">eProducts<br>電子商品小計</td>
-        <td class="py-1 mr-2 text-right text-sm">
-            <span id="e_products_total">
-                ¥&nbsp;{{ e_products_total|default:"0.00" }}
-            </span>
-        </td>
-        <td class="py-1 text-right text-info-content text-sm">
-            <span id="e_products_total_foreign">
-                {{ foreign_currency_symbol }}&nbsp;
-                {{ e_products_total_foreign }}
-            </span>
-        </td>
-    </tr>
-    
-    <!-- Offer row -->
-    <tr id="offer_row" class="font-normal {% if not has_physical_items and not has_e_items %}hidden{% endif %}">
-        <td class="py-1 text-left text-xs/4">Offer<br>優惠</td>
-        <td class="py-1 mr-2 text-right text-sm">
-            <span id="summary-discount">
-                ¥&nbsp;({{ offer_applied }})
-            </span>
-        </td>
-        <td class="py-1 text-right text-info-content text-sm">
-            <span id="discount_amount_foreign">
-                {{ foreign_currency_symbol }}&nbsp;
-                ({{ offer_applied_foreign }})
-            </span>
-        </td>
-    </tr>
-    
-    <!-- cash voucher application row -->
-    <tr id="voucher_apply_row" class="font-normal 
-        {% if not has_physical_items and not has_e_items or not request.user.is_authenticated %}
-            hidden
-        {% endif %}"
-    >
-        <td class="py-1 text-left text-xs/4">Voucher Applied<br>禮品券適用金額</td>
-        <td class="py-1 mr-2 text-right text-sm">
-            <span id="summary_voucher_applied">
-                ¥&nbsp;({{ voucher_applied }})
-            </span>
-        </td>
-        <td class="py-1 text-right text-info-content text-sm">
-            <span id="summary_voucher_applied_foreign">
-                {{ foreign_currency_symbol }}&nbsp;
-                ({{ voucher_applied_foreign }})
-            </span>
-        </td>
-    </tr>
 
-    <!-- cash voucher purchase -->
-    <tr id="voucher_items_row" class="font-normal {% if not has_cash_voucher_items %}hidden{% endif %}">
-        <td class="py-1 text-left text-xs/4">Voucher Purchase<br>禮品券購買金額</td>
-        <td class="py-1 mr-2 text-right text-sm">
-            <span id="voucher_purchase_total">
-                ¥&nbsp;{{ voucher_products_total }}</span>
-        </td>
-        <td class="py-1 text-right text-info-content text-sm">
-            <span id="voucher_purchase_total_foreign">
-                {{ foreign_currency_symbol }}&nbsp;
-                {{ voucher_products_total_foreign }}
-            </span>
-        </td>
-    </tr>
+ <!-- physical items row -->
+ <tr id="physical_items_row" class="font-normal border-b border-base-100 {% if not has_physical_items %}hidden{% endif %}">
+     <td class="py-2 text-left text-[11px] min-[576px]:max-[767px]:text-[13px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[11px] leading-tight text-base-content/70">
+         Physical Products<br><span class="text-[10px] text-base-content/40">實物商品</span>
+    </td>
+     <td class="py-2 text-right font-mono text-[10px] min-[576px]:max-[767px]:text-[12px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[10px] text-base-content/40 tracking-tight pr-1">
+         <span id="physical_products_total">¥ {{ physical_products_total|default:"0.00" }}</span>
+     </td>
+     <td class="py-2 text-right font-mono text-xs min-[576px]:max-[767px]:text-[13.5px] min-[768px]:max-[960px]:text-[10px] min-[961px]:text-xs font-semibold text-base-content/80">
+         <span id="physical_products_total_foreign">
+             {{ foreign_currency_symbol }} {{ physical_products_total_foreign }}
+         </span>
+     </td>
+ </tr>
 
-    <!-- total amount -->
-    <tr class="font-semibold text-sm">
-        <td class="py-1 text-left">Total Due<br>總支付金額</td>
-        <td class="py-1 mr-2 text-right">
-            <span id="total_payable_amount">
-                ¥&nbsp;{{ total_payable }}</span>
-            <div hx-get="{% url 'reset_shipping_fragment' %}" hx-trigger="refresh_shipping from:body" hx-swap="none"></div>
-        </td>
-        <td class="py-1 text-right text-info-content">
-            <span id="total_payable_amount_foreign">
-                {{ foreign_currency_symbol }}&nbsp;
-                {{ total_payable_foreign }}
-            </span>
-        </td>
-    </tr>
+ <!-- shipping cost -->
+ <tr id="shipping_cost_row" class="font-normal border-b border-base-100 {% if not has_physical_items %}hidden{% endif %}">
+     <td class="py-2 text-left text-[11px] min-[576px]:max-[767px]:text-[13px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[11px] leading-tight text-base-content/70">
+         Shipping<br><span class="text-[10px] text-base-content/40">運費加計</span>
+     </td>
+     <td class="py-2 text-right font-mono text-[10px] min-[576px]:max-[767px]:text-[12px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[10px] text-base-content/40 tracking-tight pr-1">
+         <span id="summary-shipping">¥ {{ shipping_cost|default:"0.00" }}</span>
+     </td>
+     <td class="py-2 text-right font-mono text-xs min-[576px]:max-[767px]:text-[13.5px] min-[768px]:max-[960px]:text-[10px] min-[961px]:text-xs font-semibold text-success">
+         <span id="shipping_cost_amount_foreign">
+             {{ foreign_currency_symbol }} {{ shipping_cost_foreign }}
+         </span>
+     </td>
+ </tr>
+
+ <!-- e-products subtotal -->
+ <tr id="e_items_row" class="font-normal border-b border-base-100 {% if not has_e_items %}hidden{% endif %}">
+     <td class="py-2 text-left text-[11px] min-[576px]:max-[767px]:text-[13px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[11px] leading-tight text-base-content/70">
+         eProducts<br><span class="text-[10px] text-base-content/40">電子商品小計</span>
+     </td>
+     <td class="py-2 text-right font-mono text-[10px] min-[576px]:max-[767px]:text-[12px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[10px] text-base-content/40 tracking-tight pr-1">
+         <span id="e_products_total">¥ {{ e_products_total|default:"0.00" }}</span>
+     </td>
+     <td class="py-2 text-right font-mono text-xs min-[576px]:max-[767px]:text-[13.5px] min-[768px]:max-[960px]:text-[10px] min-[961px]:text-xs font-semibold text-base-content/80">
+         <span id="e_products_total_foreign">
+             {{ foreign_currency_symbol }} {{ e_products_total_foreign }}
+         </span>
+     </td>
+ </tr>
+
+ <!-- Offer row -->
+ <tr id="offer_row" class="font-normal border-b border-base-100 {% if not has_physical_items and not has_e_items %}hidden{% endif %}">
+     <td class="py-2 text-left text-[11px] min-[576px]:max-[767px]:text-[13px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[11px] leading-tight text-base-content/70">
+         Offer<br><span class="text-[10px] text-base-content/40">優惠折抵</span>
+     </td>
+     <td class="py-2 text-right font-mono text-[10px] min-[576px]:max-[767px]:text-[12px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[10px] text-error/50 tracking-tight pr-1">
+         <span id="summary-discount">¥ ({{ offer_applied }})</span>
+     </td>
+     <td class="py-2 text-right font-mono text-xs min-[576px]:max-[767px]:text-[13.5px] min-[768px]:max-[960px]:text-[10px] min-[961px]:text-xs font-semibold text-error">
+         <span id="discount_amount_foreign">
+             {{ foreign_currency_symbol }} ({{ offer_applied_foreign }})
+         </span>
+     </td>
+ </tr>
+
+ <!-- cash voucher application row -->
+ <tr id="voucher_apply_row" class="font-normal border-b border-base-100 {% if not has_physical_items and not has_e_items or not request.user.is_authenticated %}hidden{% endif %}">
+     <td class="py-2 text-left text-[11px] min-[576px]:max-[767px]:text-[13px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[11px] leading-tight text-base-content/70">
+         Voucher Applied<br><span class="text-[10px] text-base-content/40">現金券扣抵</span>
+     </td>
+     <td class="py-2 text-right font-mono text-[10px] min-[576px]:max-[767px]:text-[12px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[10px] text-info/50 tracking-tight pr-1">
+         <span id="summary_voucher_applied">¥ ({{ voucher_applied }})</span>
+     </td>
+     <td class="py-2 text-right font-mono text-xs min-[576px]:max-[767px]:text-[13.5px] min-[768px]:max-[960px]:text-[10px] min-[961px]:text-xs font-semibold text-info">
+         <span id="summary_voucher_applied_foreign">
+             {{ foreign_currency_symbol }} ({{ voucher_applied_foreign }})
+         </span>
+     </td>
+ </tr>
+
+ <!-- cash voucher purchase -->
+ <tr id="voucher_items_row" class="font-normal border-b border-base-100 {% if not has_cash_voucher_items %}hidden{% endif %}">
+     <td class="py-2 text-left text-[11px] min-[576px]:max-[767px]:text-[13px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[11px] leading-tight text-base-content/70">
+         Voucher Purchase<br><span class="text-[10px] text-base-content/40">現金券購買金額</span>
+     </td>
+     <td class="py-2 text-right font-mono text-[10px] min-[576px]:max-[767px]:text-[12px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[10px] text-base-content/40 tracking-tight pr-1">
+         <span id="voucher_purchase_total">¥ {{ voucher_products_total }}</span>
+     </td>
+     <td class="py-2 text-right font-mono text-xs min-[576px]:max-[767px]:text-[13.5px] min-[768px]:max-[960px]:text-[10px] min-[961px]:text-xs font-semibold text-base-content/80">
+         <span id="voucher_purchase_total_foreign">
+             {{ foreign_currency_symbol }} {{ voucher_products_total_foreign }}
+         </span>
+     </td>
+ </tr>
+
+ <!-- total amount -->
+ <tr class="border-t-2 border-base-200 bg-base-50/40">
+     <td class="py-3 text-left text-[12px] min-[576px]:max-[767px]:text-[14px] min-[768px]:max-[960px]:text-[10px] min-[961px]:text-[12px] font-bold text-base-content/90 leading-tight rounded-l-xl">
+         Total Due<br><span class="text-[10px] xs:text-[12px] min-[768px]:max-[960px]:text-[7px] min-[961px]:text-[10.5px] font-normal text-base-content/80">應付總額</span>
+     </td>
+     <td class="py-3 text-right font-mono text-[11px] min-[576px]:max-[767px]:text-[13px] min-[768px]:max-[960px]:text-[9.5px] min-[961px]:text-[12px] font-medium text-base-content/60 tracking-tight pr-1">
+         <span id="total_payable_amount">¥ {{ total_payable }}</span>
+         <div hx-get="{% url 'reset_shipping_fragment' %}" hx-trigger="refresh_shipping from:body" hx-swap="none"></div>
+     </td>
+     <!-- <td class="py-3 text-right rounded-r-xl pr-1">
+         <span id="total_payable_amount_foreign" class="font-mono text-xs min-[576px]:max-[767px]:text-[16px] min-[768px]:max-[960px]:text-[11px] min-[961px]:text-[13px] font-black text-primary tracking-tight block ">
+            {{ foreign_currency_symbol }} {{ total_payable_foreign }}
+         </span>
+     </td> -->
+<td class="py-3 text-right rounded-r-xl pr-1">
+    <!-- 💡 Using inline style for guaranteed cross-browser text-shadow execution -->
+    <span id="total_payable_amount_foreign" 
+          style="text-shadow: 2px 2px 0px rgb(244, 252, 1);"
+          class="font-mono text-xs min-[576px]:max-[767px]:text-[16px] min-[768px]:max-[960px]:text-[11px] min-[961px]:text-[13px] font-black text-primary tracking-tight block">
+        {{ foreign_currency_symbol }} {{ total_payable_foreign }}
+    </span>
+</td>
+
+
+ </tr>

@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 
 {% block content %}
-
 <!-- BANNER -->
 <div class="relative mt-[65px] lg:mt-[86px] w-full">
     <!-- COLLABORATION BANNER -->
@@ -20,55 +19,95 @@
     </div>
 </div> 
 
-<!-- MAIN -->
-<div id="cube_display">
-    <div id="controls-area">
-        <div class="button-grid">
-            <button class="btn" onclick="step('y', -5)"><i class="fa-solid fa-angle-left"></i></button>
-            <button class="btn" onclick="step('x', 5)"><i class="fa-solid fa-angle-up"></i></button>
-            <button class="btn" onclick="step('x', -5)"><i class="fa-solid fa-angle-down"></i></button>
-            <button class="btn" onclick="step('y', 5)"><i class="fa-solid fa-angle-right"></i></button>
-            <button class="btn auto text-neutral" data-axis="y" data-val="-0.5"><i class="fa-solid fa-angles-left"></i></button>
-            <button class="btn auto text-neutral" data-axis="x" data-val="0.5"><i class="fa-solid fa-angles-up"></i></button>
-            <button class="btn auto text-neutral" data-axis="x" data-val="-0.5"><i class="fa-solid fa-angles-down"></i></button>
-            <button class="btn auto text-neutral" data-axis="y" data-val="0.5"><i class="fa-solid fa-angles-right"></i></button>
+<!-- 2. The Railway Track Container -->
+<!-- 🌟 MUST BE 'relative' so the child knows where its coordinate system belongs -->
+<div id="cube_display" class="relative w-full bg-base-100 font-sans flex flex-col">
+    
+    <!-- 🌟 THE STICKY ELEMENT (el_a) -->
+    <!-- Stays floating side-by-side on desktop (md:) while el_b scrolls underneath -->
+    <div id="controls-area" class="sticky top-[63px] lg:top-[85px] z-30 bg-base-100 border border-base-200 sm:p-5 rounded-2xl shadow-sm">
+        <!-- <h3 class="font-bold text-sm mb-2 text-primary">Sticky Component｜固守元素 A</h3>
+        <p class="text-xs text-base-content/60 leading-relaxed">
+            I will stick here flush right below your header layout boundary line while Element B glides downwards.
+        </p> -->
+        <div class="flex flex-row flex-wrap justify-center items-center gap-x-2 gap-y-2 w-full max-w-xl mx-auto">
+            <!-- Group 1: Primary Rotations (Step & Auto) -->
+            <!-- Wrapped in a nested flex box to ensure arrow clusters never fragment individually -->
+            <div class="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
+                <button class="btn btn-xs xs:btn-md p-0 min-h-0 h-8 w-7 xs:h-9 xs:w-9 sm:h-11 sm:w-11 text-[11px] xs:text-xs sm:text-sm rounded-lg" onclick="step('y', -5)"><i class="fa-solid fa-angle-left"></i></button>
+                <button class="btn btn-xs xs:btn-md p-0 min-h-0 h-8 w-7 xs:h-9 xs:w-9 sm:h-11 sm:w-11 text-[11px] xs:text-xs sm:text-sm rounded-lg" onclick="step('x', 5)"><i class="fa-solid fa-angle-up"></i></button>
+                <button class="btn btn-xs xs:btn-md p-0 min-h-0 h-8 w-7 xs:h-9 xs:w-9 sm:h-11 sm:w-11 text-[11px] xs:text-xs sm:text-sm rounded-lg" onclick="step('x', -5)"><i class="fa-solid fa-angle-down"></i></button>
+                <button class="btn btn-xs xs:btn-md p-0 min-h-0 h-8 w-7 xs:h-9 xs:w-9 sm:h-11 sm:w-11 text-[11px] xs:text-xs sm:text-sm rounded-lg" onclick="step('y', 5)"><i class="fa-solid fa-angle-right"></i></button>
+                
+                <button class="auto btn btn-xs xs:btn-md p-0 min-h-0 h-8 w-7 xs:h-9 xs:w-9 sm:h-11 sm:w-11 text-[11px] xs:text-xs sm:text-sm rounded-lg text-neutral" data-axis="y" data-val="-0.5"><i class="fa-solid fa-angles-left"></i></button>
+                <button class="auto btn btn-xs xs:btn-md p-0 min-h-0 h-8 w-7 xs:h-9 xs:w-9 sm:h-11 sm:w-11 text-[11px] xs:text-xs sm:text-sm rounded-lg text-neutral" data-axis="x" data-val="0.5"><i class="fa-solid fa-angles-up"></i></button>
+                <button class="auto btn btn-xs xs:btn-md p-0 min-h-0 h-8 w-7 xs:h-9 xs:w-9 sm:h-11 sm:w-11 text-[11px] xs:text-xs sm:text-sm rounded-lg text-neutral" data-axis="x" data-val="-0.5"><i class="fa-solid fa-angles-down"></i></button>
+                <button class="auto btn btn-xs xs:btn-md p-0 min-h-0 h-8 w-7 xs:h-9 xs:w-9 sm:h-11 sm:w-11 text-[11px] xs:text-xs sm:text-sm rounded-lg text-neutral" data-axis="y" data-val="0.5"><i class="fa-solid fa-angles-right"></i></button>
+            </div>
             
-            <button class="btn" onclick="pause()" style="color: #ff9800;">||</button>
-            <button id="reset_btn" class="btn text-2xl font-light" onclick="reset()">↺</button>
+            <!-- Group 2: Loop Management Utilities -->
+            <!-- 🌟 Automatically breaks to Line 2 on tiny screens and settles perfectly centered underneath -->
+            <div class="flex items-center justify-center gap-1 sm:gap-2">
+                <button class="btn p-0 min-h-0 h-8 w-8 xs:h-9 xs:w-9 sm:h-11 sm:w-11 text-[11px] xs:text-xs sm:text-sm rounded-lg text-amber-500 font-bold border border-base-300" onclick="pause()">||</button>
+                <button id="reset_btn" class="btn p-0 min-h-0 h-8 w-8 xs:h-9 xs:w-9 sm:h-11 sm:w-11 text-xs xs:text-sm sm:text-lg rounded-lg font-light border border-base-300" onclick="reset()">↺</button>
+            </div>
         </div>
+        
     </div>
-    <div id="cube-viewport" class="flex-shrink-0 min-h-[300px] w-full">
-        <div id="info-overlay">
-            <div id="initial_msg" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-                <!-- Icon -->
-                <div class="w-1/5 flex items-center justify-center text-base-content">
-                    <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
+
+    <div id="cube-viewport" class="relative flex-shrink-0 min-h-[300px] sm:min-h-[400px] w-full bg-base-100 overflow-hidden flex items-center justify-center">
+        
+        <!-- Info Overlay Box Matrix Layer -->
+        <div id="info-overlay" class="absolute top-4 left-1/2 -translate-x-1/2 w-[94%] sm:w-[85%] max-w-2xl z-10 pointer-events-none transition-all duration-300">
+            
+            <div id="initial_msg" class="flex flex-col sm:flex-row w-full h-auto gap-3 sm:gap-4 items-center sm:items-stretch pointer-events-auto">
+                
+                <!-- 1. Center Balanced Dynamic Icon Section Layer -->
+                <div class="w-full sm:w-[12%] flex items-center justify-center flex-shrink-0">
+                    <!-- Compact isolated button icon bubble -->
+                    <span class="h-8 w-8 sm:h-12 sm:w-12 rounded-full bg-base-100 border border-base-300 shadow-md text-xs sm:text-base flex items-center justify-center text-primary flex-shrink-0">
                         <i class="fa-solid fa-info"></i>
                     </span>
                 </div>
-                <!-- English -->
-                <div class="w-2/5 flex flex-col justify-start gap-3 items-center text-center">
-                    <p class="text-xl font-bold">We can be<br>your trusted patner<br>as...</p>
-                    <p class="text-[0.75rem] text-left">* Rotate the cube with above control buttons</p>
+                
+                <!-- 2. Primary English Typographic Display Block Panel -->
+                <!-- 🌟 CONTRAST TWEEK: Added an explicit background shield (bg-base-100/90) and dark text (text-base-900) directly to the column panel box -->
+                <div class="w-full sm:w-[44%] flex flex-col justify-between gap-2 text-center sm:text-left min-w-0 bg-base-100/90 border border-base-200/80 p-3 rounded-xl shadow-md backdrop-blur-xs">
+                    <h3 class="text-[11px] sm:text-xs md:text-sm font-bold font-serif text-base-content/95 tracking-wide leading-snug">
+                        We can be<br class="hidden sm:inline"> your trusted partner<br class="hidden sm:inline"> as...
+                    </h3>
+                    <p class="text-[9px] md:text-[10px] text-base-content/50 font-medium flex items-center justify-center sm:justify-start gap-1 pt-1 border-t border-base-200/40">
+                        <span>💡</span> * Rotate the cube with above control buttons
+                    </p>
                 </div>
-                <!-- Divider -->
-                <div class="w-[1px] bg-warning"></div>
-                <!-- Chinese -->
-                <div class="w-2/5 flex flex-col justify-start gap-3 items-center text-center">
-                    <p class="w-full text-xl font-bold">我們可以是<br>您的合作夥伴<br>做為...</p>
-                    <p class="w-full text-[0.75rem]">* 點擊控制面板上的按鈕來轉動方塊</p>
+                
+                <!-- 3. Dynamic Dividing Interceptor Grid line strip line -->
+                <!-- Hidden on mobile viewports now to keep layout neat and tiny -->
+                <div class="hidden sm:block w-[1px] bg-warning/40 self-stretch select-none opacity-60"></div>
+                
+                <!-- 4. Primary Traditional Chinese Language Display Block Panel -->
+                <!-- 🌟 CONTRAST TWEEK: Matching background bubble shield protection with high visibility text rules -->
+                <div class="w-full sm:w-[44%] flex flex-col justify-between gap-2 text-center sm:text-left min-w-0 bg-base-100/90 border border-base-200/80 p-3 rounded-xl shadow-md backdrop-blur-xs">
+                    <h3 class="text-[11px] sm:text-xs md:text-sm font-bold font-sans text-base-content/95 tracking-wide leading-snug">
+                        我們可以是<br class="hidden sm:inline"> 您的合作夥伴<br class="hidden sm:inline"> 做為...
+                    </h3>
+                    <p class="text-[9px] md:text-[10px] text-base-content/50 font-medium flex items-center justify-center sm:justify-start gap-1 pt-1 border-t border-base-200/40">
+                        <span>💡</span> * 點擊控制面板上的按鈕來轉動方塊
+                    </p>
                 </div>
+                
             </div>
         </div>
 
         <div class="scene">
             <div class="rubiksCube" id="cube">
-                <div class="f1 text-9xl"><i class="fa-regular fa-lightbulb opacity-60"></i></div>
-                <div class="f2 text-9xl"><i class="fa-solid fa-laptop-code opacity-60"></i></div>
-                <div class="f3 text-9xl"><i class="fa-solid fa-store opacity-60"></i></div>
-                <div class="f4 text-9xl"><i class="fa-solid fa-palette opacity-60"></i></div>
-                <div class="f5 text-9xl"><i class="fa-regular fa-handshake opacity-60"></i></div>
-                <div class="f6 text-9xl"><i class="fa-solid fa-earth-asia opacity-60"></i></div>
+        <div class="f1 text-9xl flex items-center justify-center"><i class="fa-regular fa-lightbulb opacity-60 text-white transform scale-[0.5] sm:scale-[0.7] md:scale-100"></i></div>
+        <div class="f2 text-9xl flex items-center justify-center"><i class="fa-solid fa-laptop-code opacity-60 text-white transform scale-[0.5] sm:scale-[0.7] md:scale-100"></i></div>
+        <div class="f3 text-9xl flex items-center justify-center"><i class="fa-solid fa-store opacity-60 text-white transform scale-[0.5] sm:scale-[0.7] md:scale-100"></i></div>
+        <div class="f4 text-9xl flex items-center justify-center"><i class="fa-solid fa-palette opacity-60 text-white transform scale-[0.5] sm:scale-[0.7] md:scale-100"></i></div>
+        <div class="f5 text-9xl flex items-center justify-center"><i class="fa-regular fa-handshake opacity-60 text-white transform scale-[0.5] sm:scale-[0.7] md:scale-100"></i></div>
+        <div class="f6 text-9xl flex items-center justify-center"><i class="fa-solid fa-earth-asia opacity-60 text-white transform scale-[0.5] sm:scale-[0.7] md:scale-100"></i></div>
+
             </div>
         </div>
     </div>
@@ -110,364 +149,119 @@
 </dialog>  
 
 <script>
+    // 🌟 THE INITIAL DECLARATIONS BLOCK
     let rotX = -25, rotY = 45;
-    let autoX = 0, autoY = 0;
+    let autoX = 0, autoY = 0;    // 🌟 FIX: Added explicit default values to prevent ReferenceErrors
     let initial_state = true;
     let currentFaceId = null; 
-    const collab_heading = document.getElementById("collab_heading")
-    const collab_description = document.getElementById("collab_description")
-    const collab_b_b_head = document.getElementById("collab_b_b_head")
-    const collab_b_b_desc = document.getElementById("collab_b_b_desc")
-    const collab_b_c_head = document.getElementById("collab_b_c_head")
-    const collab_b_c_desc = document.getElementById("collab_b_c_desc")
-    const collab_svg = document.getElementById("collab_svg")
+
+    const collab_heading = document.getElementById("collab_heading");
+    const collab_description = document.getElementById("collab_description");
+    const collab_b_b_head = document.getElementById("collab_b_b_head");
+    const collab_b_b_desc = document.getElementById("collab_b_b_desc");
+    const collab_b_c_head = document.getElementById("collab_b_c_head");
+    const collab_b_c_desc = document.getElementById("collab_b_c_desc");
+    const collab_svg = document.getElementById("collab_svg");
+    const modal = document.getElementById("detailModal");
+    const cube = document.getElementById('cube');
+    const infoOverlay = document.getElementById('info-overlay');
+
+    // 🌟 INLINE STRING MAP DEFINITIONS (Wired cleanly to fit your responsive columns)
+    // const initial_msg_html = `
+    //     <div class="w-full sm:w-[15%] flex items-center justify-center">
+    //         <span class="h-10 w-10 sm:h-14 sm:w-16 md:h-20 md:w-20 rounded-full bg-base-200 text-sm sm:text-xl md:text-2xl flex items-center justify-center text-primary border border-base-300/50 shadow-inner flex-shrink-0">
+    //             <i class="fa-solid fa-info"></i>
+    //         </span>
+    //     </div>
+    //     <div class="w-full sm:w-[42%] flex flex-col justify-between gap-2 text-center sm:text-left min-w-0">
+    //         <h3 class="text-xs sm:text-sm md:text-base font-bold font-serif text-base-content/90 tracking-wide leading-snug">
+    //             We can be<br class="hidden sm:inline"> your trusted partner<br class="hidden sm:inline"> as...
+    //         </h3>
+    //         <p class="text-[9px] sm:text-[10px] md:text-xs text-base-content/40 font-light flex items-center justify-center sm:justify-start gap-1">
+    //             <span>💡</span> * Rotate the cube with above control buttons
+    //         </p>
+    //     </div>
+    //     <div class="w-full h-[1px] sm:w-[1px] sm:h-auto bg-warning/40 self-stretch select-none opacity-60"></div>
+    //     <div class="w-full sm:w-[42%] flex flex-col justify-between gap-2 text-center sm:text-left min-w-0">
+    //         <h3 class="text-xs sm:text-sm md:text-base font-bold font-sans text-base-content/90 tracking-wide leading-snug">
+    //             我們可以是<br class="hidden sm:inline"> 您的合作夥伴<br class="hidden sm:inline"> 做為...
+    //         </h3>
+    //         <p class="text-[9px] sm:text-[10px] md:text-xs text-base-content/40 font-light flex items-center justify-center sm:justify-start gap-1">
+    //             <span>💡</span> * 點擊控制面板上的按鈕來轉動方塊
+    //         </p>
+    //     </div>`;
 
     const initial_msg_html = `
-        <div id="initial_msg" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-            <!-- Icon -->
-            <div class="w-1/5 flex items-center justify-center text-base-content">
-                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                    <i class="fa-solid fa-info"></i>
-                </span>
-            </div>
-            <!-- English -->
-            <div class="w-2/5 flex flex-col justify-start gap-3 items-center text-center">
-                <p class="text-xl font-bold">We can be<br>your trusted patner<br>as...</p>
-                <p class="text-[0.75rem] text-left">* Rotate the cube with above control buttons</p>
-            </div>
-            <!-- Divider -->
-            <div class="w-[1px] bg-warning"></div>
-            <!-- Chinese -->
-            <div class="w-2/5 flex flex-col justify-start gap-3 items-center text-center">
-                <p class="w-full text-xl font-bold">我們可以是<br>您的合作夥伴<br>做為...</p>
-                <p class="w-full text-[0.75rem]">* 點擊控制面板上的按鈕來轉動方塊</p>
-            </div>
+        <div class="w-full sm:w-[15%] flex items-center justify-center">
+            <span class="h-8 w-8 sm:h-12 sm:w-12 md:h-16 md:w-16 rounded-full bg-base-100/20 text-xs sm:text-base md:text-xl flex items-center justify-center text-primary border border-primary/40 shadow-[0_0_15px_rgba(145,57,240,0.4)] flex-shrink-0 backdrop-blur-xs">
+                <i class="fa-solid fa-info"></i>
+            </span>
+        </div>
+        
+        <div class="w-full sm:w-[42%] flex flex-col justify-between gap-1 text-center sm:text-left min-w-0" 
+             style="text-shadow: 0 0 10px rgba(255,255,255,1), 0 0 20px rgba(255,255,255,0.8), 0 0 30px rgba(255,255,255,0.6); --dark-glow: 0 0 8px rgba(0,0,0,0.9);">
+            <h3 class="text-[11px] sm:text-xs md:text-sm font-bold font-serif text-base-content tracking-wide leading-snug">
+                We can be<br class="hidden sm:inline"> your trusted partner<br class="hidden sm:inline"> as...
+            </h3>
+            <p class="text-[9px] md:text-[10px] text-base-content/70 font-semibold flex items-center justify-center sm:justify-start gap-1">
+                <span>💡</span> * Rotate the cube with above control buttons
+            </p>
+        </div>
+        
+        <div class="hidden sm:block w-[1px] bg-warning/40 self-stretch select-none opacity-60"></div>
+        
+        <div class="w-full sm:w-[42%] flex flex-col justify-between gap-1 text-center sm:text-left min-w-0"
+             style="text-shadow: 0 0 10px rgba(255,255,255,1), 0 0 20px rgba(255,255,255,0.8), 0 0 30px rgba(255,255,255,0.6);">
+            <h3 class="text-[11px] sm:text-xs md:text-sm font-bold font-sans text-base-content tracking-wide leading-snug">
+                我們可以是<br class="hidden sm:inline"> 您的合作夥伴<br class="hidden sm:inline"> 做為...
+            </h3>
+            <p class="text-[9px] md:text-[10px] text-base-content/70 font-semibold flex items-center justify-center sm:justify-start gap-1">
+                <span>💡</span> * 點擊控制面板上的按鈕來轉動方塊
+            </p>
         </div>
     `
-    const face_one_html = `
-        <div id="face_one" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-            <!-- Icon -->
-            <div class="w-1/5 flex items-center justify-center text-base-content">
-                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                    <i class="fa-regular fa-lightbulb"></i>
+    // Macro wrapper function to format text lines inside panels dynamically
+    function generateFaceHtml(iconClass, enTitle, enDesc, cnTitle, cnDesc, indexId) {
+        return `
+            <div class="w-full sm:w-[15%] flex items-center justify-center">
+                <span class="h-8 w-8 sm:h-12 sm:w-12 md:h-16 md:w-16 rounded-full bg-base-100/20 text-xs sm:text-base md:text-xl flex items-center justify-center text-primary border border-primary/40 shadow-[0_0_15px_rgba(145,57,240,0.4)] flex-shrink-0 backdrop-blur-xs">
+                    <i class="${iconClass}"></i>
                 </span>
             </div>
-            <!-- English -->
-            <div class="w-2/5 flex items-start">
-                <p class="text-md text-left">
-                    <span class="font-semibold inline-block w-full text-center">
-                        <span>Your Partner in Aesthetic Realization</span>
-                        <button class="btn btn-square btn-xs" data-lg="en" data-index="0" onclick="modal_open(this)">
-                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                <g id="SVGRepo_iconCarrier"> 
-                                    <g fill="none" fill-rule="evenodd"> 
-                                        <path d="m0 0h32v32h-32z"></path> 
-                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
-                                    </g> 
-                                </g>
-                            </svg>
-                        </button>
-                    </span>
-                    <span class="text-sm inline-block w-full text-justify">A Creative Guide from Spark to Touch.</span>
-                </p>
+            <div class="w-full sm:w-[42%] flex flex-col justify-between gap-1 text-center sm:text-left min-w-0" 
+                 style="text-shadow: 0 0 10px rgba(255,255,255,1), 0 0 20px rgba(255,255,255,0.8), 0 0 30px rgba(255,255,255,0.6); --dark-glow: 0 0 8px rgba(0,0,0,0.9);">
+                <h3 class="text-[11px] sm:text-xs md:text-sm font-bold font-serif text-base-content tracking-wide leading-snug">
+                    <span>${enTitle}</span>
+                    <button class="btn btn-square btn-xs rounded-md bg-base-200 border-base-300" data-lg="en" data-index="${indexId}" onclick="modal_open(this)">
+                        <svg class="w-3 h-3 fill-base-content/60" viewBox="0 0 32 32"><path d="M15 0c8.284 0 15 6.716 15 15 0 3.782-1.4 7.237-3.709 9.875l4.659 4.66c.39.39.39 1.024 0 1.414s-1.024.39-1.414 0l-4.66-4.659C22.237 28.6 18.782 30 15 30 6.716 30 0 23.284 0 15 0 6.716 6.716 0 15 0zm0 2C7.82 2 2 7.82 2 15s5.82 13 13 13 13-5.82 13-13S22.18 2 15 2zm0 7c.552 0 1 .448 1 1v4h4c.552 0 1 .448 1 1s-.448 1-1 1h-4v4c0 .552-.448 1-1 1s-1-.448-1-1v-4h-4c-.552 0-1-.448-1-1s.448-1 1-1h4v-4c0-.552.448-1 1-1z"/></svg>
+                    </button>
+                </h4>
+                <p class="text-[9px] md:text-[10px] text-base-content/70 font-semibold flex items-center justify-center sm:justify-start gap-1">${enDesc}</p>
             </div>
-            <!-- Divider -->
-            <div class="w-[1px] bg-warning"></div>
-            <!-- Chinese -->
-            <div class="w-2/5 flex items-start">
-                <p class="text-md text-left">
-                    <span class="font-semibold inline-block w-full text-center">
-                        <span>您的美學實踐夥伴</span>
-                        <button class="btn btn-square btn-xs" data-lg="cn" data-index="0" onclick="modal_open(this)">
-                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                <g id="SVGRepo_iconCarrier">
-                                    <g fill="none" fill-rule="evenodd"> 
-                                        <path d="m0 0h32v32h-32z"></path> 
-                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
-                                    </g> 
-                                </g>
-                            </svg>
-                        </button>
-                    </span>
-                    <span class="text-sm inline-block w-full text-center">從靈感微光到指尖溫度的創意引路人。</span>
-                </p>
-            </div>
-        </div>
-    `
-    const face_two_html = `
-        <div id="face_two" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-            <!-- Icon -->
-            <div class="w-1/5 flex items-center justify-center text-base-content">
-                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                    <i class="fa-solid fa-laptop-code"></i>
-                </span>
-            </div>
-            <!-- English -->
-            <div class="w-2/5 flex items-start">
-                <p class="text-md text-left">
-                    <span class="font-semibold inline-block w-full text-center">
-                        <span>All-in-One Digital Architect</span>
-                        <button class="btn btn-square btn-xs" data-lg="en" data-index="1" onclick="modal_open(this)">
-                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                <g id="SVGRepo_iconCarrier"> 
-                                    <g fill="none" fill-rule="evenodd"> 
-                                        <path d="m0 0h32v32h-32z"></path> 
-                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
-                                    </g> 
-                                </g>
-                            </svg>
-                        </button>
-                    </span>
-                    <span class="text-sm inline-block w-full text-justify">The complete website creator for your unique business, building seamless digital experiences from the ground up</span>
-                </p>
-            </div>
-            <!-- Divider -->
-            <div class="w-[1px] bg-warning"></div>
-            <!-- Chinese -->
-            <div class="w-2/5 flex items-start">
-                <p class="text-md text-left">
-                    <span class="font-semibold inline-block w-full text-center">
-                        <span>全方位數位建築師</span>
-                        <button class="btn btn-square btn-xs" data-lg="cn" data-index="1" onclick="modal_open(this)">
-                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                <g id="SVGRepo_iconCarrier"> 
-                                    <g fill="none" fill-rule="evenodd"> 
-                                        <path d="m0 0h32v32h-32z"></path> 
-                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
-                                    </g> 
-                                </g>
-                            </svg>
-                        </button>
-                    </span>
-                    <span class="text-sm inline-block w-full text-justify">為您的獨特業務量身打造的一站式網站構建專家，從零打造流暢的數位體驗</span>
-                </p>
-            </div>
-        </div>
-    `
-    const face_three_html = `
-        <div id="face_three" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-            <!-- Icon -->
-            <div class="w-1/5 flex items-center justify-center text-base-content">
-                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                    <i class="fa-regular fa-handshake"></i>
-                </span>
-            </div>
-            <!-- English -->
-            <div class="w-2/5 flex items-start">
-                <p class="text-md text-left">
-                    <span class="font-semibold inline-block w-full text-center">
-                        <span>Strategic Affiliate Partner</span>
-                        <button class="btn btn-square btn-xs" data-lg="en" data-index="2" onclick="modal_open(this)">
-                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                <g id="SVGRepo_iconCarrier"> 
-                                    <g fill="none" fill-rule="evenodd"> 
-                                        <path d="m0 0h32v32h-32z"></path> 
-                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
-                                    </g> 
-                                </g>
-                            </svg>
-                        </button>
-                    </span>
-                    <span class="text-sm inline-block w-full text-justify">A flexible ally in your affiliate ecosystem, serving as both a high-reach advertiser and a premium publisher</span>
-                </p>
-            </div>
-            <!-- Divider -->
-            <div class="w-[1px] bg-warning"></div>
-            <!-- Chinese -->
-            <div class="w-2/5 flex items-start">
-                <p class="text-md text-left">
-                    <span class="font-semibold inline-block w-full text-center">
-                        <span>聯盟行銷夥伴</span>
-                        <button class="btn btn-square btn-xs" data-lg="cn" data-index="2" onclick="modal_open(this)">
-                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                <g id="SVGRepo_iconCarrier"> 
-                                    <g fill="none" fill-rule="evenodd"> 
-                                        <path d="m0 0h32v32h-32z"></path> 
-                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
-                                    </g> 
-                                </g>
-                            </svg>
-                        </button>
-                    </span>
-                    <span class="text-sm inline-block w-full text-justify">聯盟營銷生態中的靈活盟友，可兼任高觸及率的廣告商或優質發布商</span>
-                </p>
-            </div>
-        </div>
-    `
-    const face_four_html = `
-        <div id="face_four" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-            <!-- Icon -->
-            <div class="w-1/5 flex items-center justify-center text-base-content">
-                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                    <i class="fa-solid fa-earth-asia"></i>
-                </span>
-            </div>
-            <!-- English -->
-            <div class="w-2/5 flex items-start">
-                <p class="text-md text-left">
-                    <span class="font-semibold inline-block w-full text-center flex">
-                        <span>Bridge to China</span>
-                        <button class="btn btn-square btn-xs" data-lg="en" data-index="3" onclick="modal_open(this)">
-                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                <g id="SVGRepo_iconCarrier"> 
-                                    <g fill="none" fill-rule="evenodd"> 
-                                        <path d="m0 0h32v32h-32z"></path> 
-                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
-                                    </g> 
-                                </g>
-                            </svg>
-                        </button>
-                    </span>
-                    <span class="text-sm inline-block w-full text-justify">A specialized curator and consultant, guiding your entry and growth within the vibrant young Chinese market</span>
-                </p>
-            </div>
-            <!-- Divider -->
-            <div class="w-[1px] bg-warning"></div>
-            <!-- Chinese -->
-            <div class="w-2/5 flex items-start">
-                <p class="text-md text-left">
-                    <span class="font-semibold inline-block w-full text-center">
-                        <span>中國市場橋樑</span>
-                        <button class="btn btn-square btn-xs" data-lg="cn" data-index="3" onclick="modal_open(this)">
-                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                <g id="SVGRepo_iconCarrier"> 
-                                    <g fill="none" fill-rule="evenodd"> 
-                                        <path d="m0 0h32v32h-32z"></path> 
-                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
-                                    </g> 
-                                </g>
-                            </svg>
-                        </button>
-                    </span>
-                    <span class="text-sm inline-block w-full text-justify">專業的策展人與顧問，引導您進軍並深耕活力十足的中國年輕消費市場</span>
-                </p>
-            </div>
-        </div>
-    `
-    const face_five_html = `
-        <div id="face_five" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-            <!-- Icon -->
-            <div class="w-1/5 flex items-center justify-center text-base-content">
-                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                    <i class="fa-solid fa-store"></i>
-                </span>
-            </div>
-            <!-- English -->
-            <div class="w-2/5 flex items-start">
-                <p class="text-md text-left">
-                    <span class="font-semibold inline-block w-full text-center">
-                        <span>Global Marketplace</span>
-                        <button class="btn btn-square btn-xs" data-lg="en" data-index="4" onclick="modal_open(this)">
-                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                <g id="SVGRepo_iconCarrier"> 
-                                    <g fill="none" fill-rule="evenodd"> 
-                                        <path d="m0 0h32v32h-32z"></path> 
-                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
-                                    </g> 
-                                </g>
-                            </svg>
-                        </button>
-                    </span>
-                    <span class="text-sm inline-block w-full text-justify">A premier online platform to showcase and market your original artworks and creations to a worldwide audience</span>
-                </p>
-            </div>
-            <!-- Divider -->
-            <div class="w-[1px] bg-warning"></div>
-            <!-- Chinese -->
-            <div class="w-2/5 flex items-start">
-                <p class="text-md text-left">
-                    <span class="font-semibold inline-block w-full text-center">
-                        <span>全球市場</span>
-                        <button class="btn btn-square btn-xs" data-lg="cn" data-index="4" onclick="modal_open(this)">
-                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                <g id="SVGRepo_iconCarrier"> 
-                                    <g fill="none" fill-rule="evenodd"> 
-                                        <path d="m0 0h32v32h-32z"></path> 
-                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
-                                    </g> 
-                                </g>
-                            </svg>
-                        </button>
-                    </span>
-                    <span class="text-sm inline-block w-full text-justify">一個讓您的原創藝術與創作邁向國際、向全球受眾展示與銷售的頂尖線上平台</span>
-                </p>
-            </div>
-        </div>
-    `
-    const face_six_html = `
-        <div id="face_six" class="flex w-full h-auto gap-4 items-stretch text-base-content">
-            <!-- Icon -->
-            <div class="w-1/5 flex items-center justify-center text-base-content">
-                <span class="aspect-square p-5 rounded-[50%] bg-base-300 text-6xl flex items-center justify-center">
-                    <i class="fa-solid fa-palette"></i>
-                </span>
-            </div>
-            <!-- English -->
-            <div class="w-2/5 flex items-start">
-                <p class="text-md text-left">
-                    <span class="font-semibold inline-block w-full text-center">
-                        <span>On-Demand Artist</span>
-                        <button class="btn btn-square btn-xs" data-lg="en" data-index="5" onclick="modal_open(this)">
-                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                <g id="SVGRepo_iconCarrier"> 
-                                    <g fill="none" fill-rule="evenodd"> 
-                                        <path d="m0 0h32v32h-32z"></path> 
-                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 2c-7.17970175 0-13 5.82029825-13 13 0 7.1797017 5.82029825 13 13 13 7.1797017 0 13-5.8202983 13-13 0-7.17970175-5.8202983-13-13-13zm0 7c.5522847 0 1 .44771525 1 1v4h4c.5522847 0 1 .4477153 1 1s-.4477153 1-1 1h-4v4c0 .5522847-.4477153 1-1 1s-1-.4477153-1-1v-4h-4c-.55228475 0-1-.4477153-1-1s.44771525-1 1-1h4v-4c0-.55228475.4477153-1 1-1z" fill="#66615e" fill-rule="nonzero"></path>
-                                    </g> 
-                                </g>
-                            </svg>
-                        </button>
-                    </span>
-                    <span class="text-sm inline-block w-full text-justify">A dedicated creator of custom artwork, transforming your specific concepts into unique visual realities</span>
-                </p>
-            </div>
-            <!-- Divider -->
-            <div class="w-[1px] bg-warning"></div>
-            <!-- Chinese -->
-            <div class="w-2/5 flex items-start">
-                <p class="text-md text-left">
-                    <span class="font-semibold inline-block w-full text-center">
-                        <span>您的定制藝術家</span>
-                        <button class="btn btn-square btn-xs" data-lg="cn" data-index="5" onclick="modal_open(this)">
-                            <svg viewBox="-3.2 -3.2 38.40 38.40" xmlns="http://www.w3.org/2000/svg" fill="#66615e">
-                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                                <g id="SVGRepo_iconCarrier"> 
-                                    <g fill="none" fill-rule="evenodd"> 
-                                        <path d="m0 0h32v32h-32z"></path> 
-                                        <path d="m15 0c8.2842712 0 15 6.71572875 15 15 0 3.7818764-1.3995847 7.2368622-3.7090554 9.8752589l4.6588029 4.660275c.3905243.3905243.3905243 1.0236893 0 1.4142136s-1.0236893.3905243-1.4142136 0l-4.660275-4.6588029c-2.6383967 2.3094707-6.0933825 3.7090554-9.8752589 3.7090554-8.28427125 0-15-6.7157288-15-15 0-8.28427125 6.71572875-15 15-15zm0 9c-.5522847 0-1 .44771525-1 1v4h-4c-.55228475 0-1 .4477153-1 1s.44771525 1 1 1h4v4c0 .5522847.4477153 1 1 1s1-.4477153 1-1v-4h4c.5522847 0 1-.4477153 1-1s-.4477153-1-1-1h-4v-4c0-.55228475-.4477153-1-1-1z" fill="#66615e"></path> 
-                                    </g> 
-                                </g>
-                            </svg>
-                        </button>
-                    </span>
-                    <span class="text-sm inline-block w-full text-justify">專業的按需藝術創作夥伴，將您的具體構思轉化為獨一無二的視覺作品</span>
-                </p>
-            </div>
-        </div>
-    `
+
+            <div class="hidden sm:block w-[1px] bg-warning/40 self-stretch select-none opacity-60"></div>
+            
+            <div class="w-full sm:w-[42%] flex flex-col justify-between gap-1 text-center sm:text-left min-w-0"
+             style="text-shadow: 0 0 10px rgba(255,255,255,1), 0 0 20px rgba(255,255,255,0.8), 0 0 30px rgba(255,255,255,0.6);">
+                <h3 class="text-[11px] sm:text-xs md:text-sm font-bold font-sans text-base-content tracking-wide leading-snug">
+                    <span>${cnTitle}</span>
+                    <button class="btn btn-square btn-xs rounded-md bg-base-200 border-base-300" data-lg="cn" data-index="${indexId}" onclick="modal_open(this)">
+                        <svg class="w-3 h-3 fill-base-content/60" viewBox="0 0 32 32"><path d="M15 0c8.284 0 15 6.716 15 15 0 3.782-1.4 7.237-3.709 9.875l4.659 4.66c.39.39.39 1.024 0 1.414s-1.024.39-1.414 0l-4.66-4.659C22.237 28.6 18.782 30 15 30 6.716 30 0 23.284 0 15 0 6.716 6.716 0 15 0zm0 9c-.552 0-1 .448-1 1v4h-4c-.552 0-1 .448-1 1s.448 1 1 1h4v4c0 .552.448 1 1 1s1-.448 1-1v-4h4c.552 0 1-.448 1-1s-.448-1-1-1h-4v-4c0-.552-.448-1-1-1z"/></svg>
+                    </button>
+                </h4>
+                <p class="text-[9px] md:text-[10px] text-base-content/70 font-semibold flex items-center justify-center sm:justify-start gap-1">${cnDesc}</p>
+            </div>`;
+    }
+
+    // Dynamic Context Array Generation Pools
+    const infoMap = [
+        generateFaceHtml("fa-regular fa-lightbulb", "Aesthetic Realization", "A Creative Guide from Spark to Touch.", "美學實踐夥伴", "從靈感微光到指尖溫度的創意引路人。", 0),
+        generateFaceHtml("fa-solid fa-laptop-code", "Digital Architect", "All-in-One Digital Portal Engineering.", "全方位數位建築師", "為您的獨特業務量身打造的一站式網站專家。", 1),
+        generateFaceHtml("fa-regular fa-handshake", "Affiliate Ecosystem", "Strategic High-Reach Publisher Networks.", "聯盟行銷夥伴", "營銷生態中的靈活盟友，共享品牌增長。", 2),
+        generateFaceHtml("fa-solid fa-earth-asia", "Bridge to China", "Market Curation and Cross-Border Consulting.", "中國市場橋樑", "專業的策展人與顧問，引導深耕新興消費市場。", 3),
+        generateFaceHtml("fa-solid fa-store", "Global Marketplace", "Showcase Original Artworks Internationally.", "全球市場殿堂", "讓您的原創設計跳脫地域限制，觸達全球藏家。", 4),
+        generateFaceHtml("fa-solid fa-palette", "Bespoke Artwork", "Transforming Mind Glimmers into Real Realities.", "您的定制藝術家", "親手裁切時光、調和色彩，封存專屬溫度。", 5)
+    ];    
 
     const collab_heading_one_cn = "賦予物件靈魂，讓生活成為一場視覺饗宴"
     const collab_description_one_cn = "在忙碌的現代節奏中，一件好的文創產品是心靈的棲息地。它不只是物件，更是故事的載體與品味的體現。我們深信設計應能觸動人心，讓平凡的每一天都顯得怦然心動。"
@@ -553,17 +347,6 @@
     const collab_b_c_head_six_en = "B2C Creative Practice: "
     const collab_b_c_desc_six_en = "Preserving the Warmth of Personal Memories."
     
-    const modal = document.getElementById("detailModal")
-
-    const infoMap = [
-        face_one_html, 
-        face_two_html,
-        face_three_html, 
-        face_four_html,
-        face_five_html, 
-        face_six_html
-    ];
-
     const collab_heading_cn_map = [collab_heading_one_cn, collab_heading_two_cn, collab_heading_three_cn, collab_heading_four_cn, collab_heading_five_cn, collab_heading_six_cn]
     const collab_description_cn_map = [collab_description_one_cn, collab_description_two_cn, collab_description_three_cn, collab_description_four_cn, collab_description_five_cn, collab_description_six_cn]
     const collab_b_b_head_cn_map = [collab_b_b_head_one_cn, collab_b_b_head_two_cn, collab_b_b_head_three_cn, collab_b_b_head_four_cn, collab_b_b_head_five_cn, collab_b_b_head_six_cn]
@@ -580,85 +363,84 @@
 
     const collab_img_map = ["/static/images/collab/elephant.svg", "/static/images/collab/tree.svg", "/static/images/collab/gaslight.svg", "/static/images/collab/lantern.svg", "/static/images/collab/milkyway.svg", "/static/images/collab/stars.svg"]
 
-
     function updateLayout() {
-        // A small timeout ensures the browser has calculated the parent's true size
         setTimeout(() => {
             const v = document.getElementById('cube-viewport');
             if (!v) return;
-            
-            // Use offsetWidth for the most accurate layout measurement
             const size = Math.min(v.offsetWidth, v.offsetHeight) * 0.38; 
             document.documentElement.style.setProperty('--cube-size', size + 'px');
         }, 50);
     }
-
-    function step(axis, val) {
-        document.getElementById("#initial_msg")?.remove()
+    window.step = function(axis, val) {
+        initial_state = false;
         pause();
         if(axis === 'x') rotX += val;
         else rotY += val;
         applyRotation();
-    }
+    };
 
-    function pause() {
+    window.pause = function() {
         autoX = 0; autoY = 0;
-        document.querySelectorAll('.auto').forEach(b => b.classList.remove('active'));
-    }
-
-    function reset() {
-        if (!document.getElementById("initial_msg")) {
-            const parent_div = document.querySelector("#info-overlay")
-            parent_div.innerHTML = ""
-            const new_div = document.createElement("div");
-            new_div.id = "#initial_msg";
-            new_div.innerHTML = initial_msg_html;
-            
-            parent_div.appendChild(new_div);
+        // 🌟 FIXED: Removes custom amber active states smoothly
+        document.querySelectorAll('.btn.auto').forEach(b => {
+            b.classList.remove('active', 'bg-amber-500', 'text-white', 'border-amber-600');
+        });
+    };
+    
+    window.reset = function() {
+        pause(); rotX = -25; rotY = 45; initial_state = true;
+        if (infoOverlay) {
+            infoOverlay.style.opacity = "1";
+            infoOverlay.innerHTML = `
+                <div id="initial_msg" class="flex flex-col sm:flex-row w-full h-auto gap-4 sm:gap-6 items-center sm:items-stretch text-base-content pointer-events-auto">
+                    ${initial_msg_html}
+                </div>`;
         }
-        pause(); rotX = -25; rotY = 45; applyRotation();
-    }
+        currentFaceId = null;
+        applyRotation();
+    };
 
     function applyRotation() {
-        const cube = document.getElementById('cube');
-        cube.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+        if (cube) {
+            cube.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+        }
         determineVisibleFace();
     }
 
-    // Part B Logic: Calculate which face is closest to camera
+    // Part B Logic: Calculate visible face orientation
     function determineVisibleFace() {
-        const info = document.getElementById('info-overlay');
+        if (!infoOverlay) return;
         
-        // At initial 45/45/-25, faces are equal. 
-        // We calculate dot product of face normals vs camera vector (0,0,1)
         const radX = rotX * Math.PI / 180;
         const radY = rotY * Math.PI / 180;
 
-        // Simplified visibility vectors based on rotation
         const faces = [
-            { id: 0, v: Math.cos(radX) * Math.cos(radY) },           // Front
-            { id: 1, v: -Math.cos(radX) * Math.cos(radY) },          // Back
-            { id: 2, v: Math.cos(radX) * Math.sin(radY) },           // Right
-            { id: 4, v: -Math.cos(radX) * Math.sin(radY) },          // Left
-            { id: 5, v: Math.sin(radX) },                            // Top
-            { id: 3, v: -Math.sin(radX) }                            // Bottom
+            { id: 0, v: Math.cos(radX) * Math.cos(radY) },   // Front
+            { id: 1, v: -Math.cos(radX) * Math.cos(radY) },  // Back
+            { id: 2, v: Math.cos(radX) * Math.sin(radY) },   // Right
+            { id: 4, v: -Math.cos(radX) * Math.sin(radY) },  // Left
+            { id: 5, v: Math.sin(radX) },                    // Top
+            { id: 3, v: -Math.sin(radX) }                    // Bottom
         ];
 
-        faces.sort((a, b) => b.v - a.v); //(a, b) => a - b : ascending order, vice versa; NaN : equal
-
+        // Sort descending to find the single highest visibility value index marker
+        faces.sort((a, b) => b.v - a.v);
         const newFaceId = faces[0].id;
 
-        // If the top two faces are very close in visibility, show nothing (Initial state)
-        if (Math.abs(faces[0].v - faces[1].v) < 0.1) {
-            if(!initial_state) info.style.opacity = "0";
-            currentFaceId = null; // Reset when in "between" state
-        } else {
-            // ONLY update the DOM if the face has actually changed
-            if (currentFaceId !== newFaceId) {
-                info.style.opacity = "1";
-                info.innerHTML = infoMap[newFaceId];
-                currentFaceId = newFaceId;
-            }
+        if (initial_state) {
+            // Keep welcome banner active on page initialization load pass
+            return;
+        }
+
+        // 🌟 FIX: Removed the threshold blank space catch condition entirely. 
+        // Content swaps instantly and maintains stable layout height parameters.
+        if (currentFaceId !== newFaceId) {
+            infoOverlay.style.opacity = "1";
+            infoOverlay.innerHTML = `
+                <div id="active_msg_container" class="flex flex-col sm:flex-row w-full h-auto gap-4 sm:gap-6 items-center sm:items-stretch text-base-content pointer-events-auto">
+                    ${infoMap[newFaceId]}
+                </div>`;
+            currentFaceId = newFaceId;
         }
     }
 
@@ -673,50 +455,69 @@
     }
 
     // Modal
-    function modal_open(el){
-            pause()
-            const idx = el.dataset.index
-            switch (el.dataset.lg) {
-                case "en":
-                    collab_heading.innerText = collab_heading_en_map[idx]
-                    collab_description.innerText = collab_description_en_map[idx]
-                    collab_b_b_head.innerText = collab_b_b_head_en_map[idx]
-                    collab_b_b_desc.innerText = collab_b_b_desc_en_map[idx]
-                    collab_b_c_head.innerText = collab_b_c_head_en_map[idx]
-                    collab_b_c_desc.innerText = collab_b_c_desc_en_map[idx]
-                    collab_svg.src = collab_img_map[idx]
-                    break;
-                case "cn":
-                    collab_heading.innerText = collab_heading_cn_map[idx]
-                    collab_description.innerText = collab_description_cn_map[idx]
-                    collab_b_b_head.innerText = collab_b_b_head_cn_map[idx]
-                    collab_b_b_desc.innerText = collab_b_b_desc_cn_map[idx]
-                    collab_b_c_head.innerText = collab_b_c_head_cn_map[idx]
-                    collab_b_c_desc.innerText = collab_b_c_desc_cn_map[idx]
-                    collab_svg.src = collab_img_map[idx]
-                    break
+    window.modal_open = function(el) {
+        pause();
+        const idx = el.dataset.index;
+        switch (el.dataset.lg) {
+            case "en":
+                collab_heading.innerText = collab_heading_en_map[idx];
+                collab_description.innerText = collab_description_en_map[idx];
+                collab_b_b_head.innerText = collab_b_b_head_en_map[idx];
+                collab_b_b_desc.innerText = collab_b_b_desc_en_map[idx];
+                collab_b_c_head.innerText = collab_b_c_head_en_map[idx];
+                collab_b_c_desc.innerText = collab_b_c_desc_en_map[idx];
+                collab_svg.src = collab_img_map[idx];
+                break;
+            case "cn":
+                collab_heading.innerText = collab_heading_cn_map[idx];
+                collab_description.innerText = collab_description_cn_map[idx];
+                collab_b_b_head.innerText = collab_b_b_head_cn_map[idx];
+                collab_b_b_desc.innerText = collab_b_b_desc_cn_map[idx];
+                collab_b_c_head.innerText = collab_b_c_head_cn_map[idx];
+                collab_b_c_desc.innerText = collab_b_c_desc_cn_map[idx];
+                collab_svg.src = collab_img_map[idx];
+                break;
             }
-            modal.showModal()
-    }
-
-
-    document.querySelectorAll('.auto').forEach(btn => {
-        btn.onclick = () => {
-            document.getElementById("initial_msg")?.remove()
-            const axis = btn.dataset.axis;
-            const val = parseFloat(btn.dataset.val);
-            pause();
-            if(axis === 'x') autoX = val; else autoY = val;
-            btn.classList.add('active');
-        };
+        if (modal) modal.showModal();
+    };
+    
+    // 🌟 SETUP INITIAL AUTOMATED ROTATION EVENTS PARING LOOP
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll('.btn.auto').forEach(btn => {
+            btn.onclick = function() {
+                document.getElementById("initial_msg")?.remove();
+                initial_state = false;
+                
+                const axis = this.dataset.axis;
+                const val = parseFloat(this.dataset.val);
+                
+                if (this.classList.contains('active')) {
+                    pause();
+                } else {
+                    pause();
+                    if(axis === 'x') autoX = val; else autoY = val;
+                    
+                    // 🌟 FIXED: Adds premium artisan amber/gold active states instantly
+                    this.classList.add('active', 'bg-amber-500', 'text-white', 'border-amber-600');
+                }
+            };
+        });
+        
+        updateLayout();
+        // Load initial pass overlay data strings
+        if (infoOverlay) {
+            infoOverlay.innerHTML = `
+                <div id="initial_msg" class="flex flex-col sm:flex-row w-full h-auto gap-4 sm:gap-6 items-center sm:items-stretch text-base-content pointer-events-auto">
+                    ${initial_msg_html}
+                </div>`;
+        }
     });
     
-    window.addEventListener('load', () => {
-        updateLayout();
-        determineVisibleFace();
-    });
+    // Dynamic recalculation hooks bind onto browser dimensions variations
     window.addEventListener('resize', updateLayout);
+    
+    // Fire up the continuous infinite requestAnimationFrame clock engine ticks loop
     animate();
-</script>   
-{% endblock %}
+</script>
 
+{% endblock %}

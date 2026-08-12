@@ -224,6 +224,7 @@ class Perk(models.Model):
     )
 
     code                        = models.CharField(max_length=50, unique=True)
+    is_member_exclusive         = models.BooleanField(default=False, help_text="If True, guests cannot apply this code during checkout.")
     description                 = models.TextField()
     discount_type               = models.CharField(max_length=20, choices=DISCOUNT_TYPE_CHOICES, default="percentage")
     discount_value              = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
@@ -344,6 +345,18 @@ class UserPerk(models.Model):
     # Optional: store a unique code if not using the global perk code
     unique_code = models.CharField(max_length=20, unique=True, null=True, blank=True)
 
+    # 🔒 THE LOCK LIFECYCLE MECHANICS
+    is_locked = models.BooleanField(default=False)
+    locked_at = models.DateTimeField(null=True, blank=True)
+    locked_by_session = models.CharField(max_length=255, null=True, blank=True)
+
+    def is_currently_locked(self):
+        """Checks if a lock is active and still within its valid 15-minute window."""
+        if not self.is_locked or not self.locked_at:
+            return False
+        # Automatic timeout lock releases after 15 minutes of inactivity
+        return timezone.now() < self.locked_at + timezone.timedelta(minutes=15)
+
     def __str__(self):
         if self.is_used:
             return f"{self.perk} - used; user_code: {self.unique_code}"
@@ -351,6 +364,9 @@ class UserPerk(models.Model):
             return f"{self.perk} - unused; user_code: {self.unique_code}"
 
     def save(self, *args, **kwargs):
+        if self.used_at is not None and not self.is_used:
+            self.is_used = True
+
         if not self.unique_code:
             self.unique_code = self.generate_numeric_code()
         super().save(*args, **kwargs)
@@ -361,8 +377,6 @@ class UserPerk(models.Model):
             raise Exception("Could not generate a unique perk code after 10 attempts.")
 
         # 🌟 Import local Python dependencies cleanly inside the execution scope
-        import random
-        import string
 
         # Use full string parameters instead of slicing strings at 3 characters
         prefix = str(self.perk.id).zfill(3)
@@ -425,7 +439,9 @@ class CustomerVoucher(models.Model):
     secure_pin                  = models.CharField(max_length=6, null=True, blank=True)
     pin_expiry                  = models.DateTimeField(null=True, blank=True)
     failed_pin_attempts         = models.PositiveSmallIntegerField(default=0)
-    is_locked                   = models.BooleanField(default=False)
+    is_locked                   = models.BooleanField(default=False)       
+    locked_at                   = models.DateTimeField(null=True, blank=True)
+    locked_by_session           = models.CharField(max_length=255, null=True, blank=True)
 
     expiry_date                 = models.DateTimeField(null=True, blank=True)
 

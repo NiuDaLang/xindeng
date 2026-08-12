@@ -1,20 +1,20 @@
-訂單取消申請處理中 ｜ Cancellation Processing Alert
+訂單取消申請處理中｜Cancellation Processing Alert
 
 我們已收到針對您訂單編號 [ #{{ order.order_number }} ] 的取消申請，系統正在為您安排後續處理程序。
 We have received an automated request to cancel your order reference #{{ order.order_number }}. Our administration desk has initialized the processing parameters.
 
 {% if refund_type == 'voucher' and claim_registration_url %}
 ============================================================
-🎁 REGISTER TO CLAIM FULL CREDIT ｜ 註冊領取全額購物金
+🎁 REGISTER TO CLAIM FULL CREDIT｜註冊領取全額購物金
 ============================================================
 You opted to receive a 100% full refund via store credit. We have pre-allocated your voucher! Please copy and paste the secure link below into your browser to complete registration. Upon registration, the full value will credit instantly to your wallet.
 
 您已選擇全額退回為購物金。我們已成功為您保留額度！請將下方安全連結複製並貼上至瀏覽器完成會員註冊，完成後該筆面值將自動全額匯入您的個人帳戶錢包中。
 
-安全領取連結 ｜ Claim Link:
+安全領取連結｜Claim Link:
 {{ claim_registration_url }}
 
-⚠️ 權益須知 ｜ Legal Terms:
+⚠️ 權益須知｜Legal Terms:
 This unclaimed voucher code carries a strict 1-year validity limit (365 days). If registration is not finalized within this period, this credit token will automatically lapse.
 此未領取的全額購物金設有嚴格的 1 年有效期限（365天）。若未在即日起 365 天內完成會員註冊與領取，該購物金面值將自動失效。
 ============================================================
@@ -24,7 +24,7 @@ You opted for a refund back to your original payment gateway. Please note that a
 {% endif %}
 
 ============================================================
-🛡️ SECURITY WARNING ｜ 安全提示
+🛡️ SECURITY WARNING｜安全提示
 ============================================================
 If this cancellation request was NOT initiated by you, please contact us immediately to halt the process:
 若此操作並非由您本人發起，請立刻前往客服中心或直接回信與我們聯繫：

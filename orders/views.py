@@ -3,7 +3,8 @@ from carts.models import ProformaInvoice
 from carts.forms import ProformaInvoiceForm
 from xindeng import settings
 from accounts.data import COUNTRY_CODE, CURRENCY_SYMBOL, INTEGER_CURRENCIES
-from accounts.models import CustomerVoucher
+from accounts.models import CustomerVoucher, Perk
+from accounts.evaluators import PerkEvaluator
 from .models import Payment, Order, OrderProduct, OrderVoucherUsage
 from django.db import transaction
 from django.http import FileResponse, Http404
@@ -89,8 +90,8 @@ def place_order(request, proforma_invoice_no):
         if request.method == "POST":
             action_method = request.POST.get("payment_method")
             if action_method == "BANK_TRANSFER":
-                # expiry_time = timezone.now() + timedelta(hours=2)
-                expiry_time = timezone.now() + timedelta(minutes=60)
+                expiry_time = timezone.now() + timedelta(hours=72)
+                # expiry_time = timezone.now() + timedelta(minutes=60)
                 # expiry_time = timezone.now() + timedelta(seconds=30)
 
                 # 1. Fetch the active cart using an explicit row lock
@@ -121,7 +122,6 @@ def place_order(request, proforma_invoice_no):
                 try:
                     with transaction.atomic():
                         invoice = ProformaInvoice.objects.select_for_update().get(pk=proforma_invoice.pk)
-
                         if invoice.is_ordered:
                             return redirect(f"/orders/order_complete/?order_number={proforma_invoice_no}&method=bank")
                             
@@ -147,7 +147,7 @@ def place_order(request, proforma_invoice_no):
                         # 🎯 ATOMIC COUPON MARK-OFF EXECUTION
                         offer_session = request.session.get("offer_applied", {})
                         offer_code = offer_session.get("offer_code")
-                        
+
                         if offer_code and request.user.is_authenticated:
                             try:
                                 # This will raise a ValidationError if coupon checks fail
@@ -302,10 +302,17 @@ def place_order(request, proforma_invoice_no):
                         }
                         response["HX-Location"] = json.dumps(location_payload)
                         return response
+
+                    # 💡 SECURE AUTHORIZATION: Whitelist this order number in the guest's session
+                    accessible = request.session.get("accessible_receipts", [])
+                    accessible.append(proforma_invoice_no)
+                    request.session["accessible_receipts"] = accessible
+                    request.session.modified = True
                         
                     return redirect(f"/orders/order_complete/?order_number={invoice.proforma_order_number}&method=bank")
 
                 except ValueError as stock_err:
+                    print("stock_err")
                     messages.error(request, str(stock_err))
                     return redirect(request.META.get('HTTP_REFERER', '/'))
                 
@@ -314,15 +321,16 @@ def place_order(request, proforma_invoice_no):
         # -------------------------------------------------------------
         context = {
             "cart_items": cart_items,
+            "cart_total_quantity": proforma_invoice.cart.get_items_count(),
             "proforma_invoice": proforma_invoice,
             "proforma_invoice_number": proforma_invoice.proforma_order_number,
             "foreign_currency_code": foreign_currency_code,
             "foreign_currency_symbol": CURRENCY_SYMBOL.get(foreign_currency_code, '$'),
             "locked_rate": proforma_invoice.locked_exchange_rate,
             "rate_expiry_timestamp": int(request.session.get("rate_expiry_time", 0)),
-            "page_title": f"Pay Order | 支付訂單號 {proforma_invoice_no}",
-            "main_title": "Place Order ｜ 支 付 訂 單",
-            "sub_title_1": "Complete Purchase ｜ 迎接寶貝",
+            "page_title": f"Pay Order｜支付訂單號 {proforma_invoice_no}",
+            "main_title": "Place Order｜支 付 訂 單",
+            "sub_title_1": "Complete Purchase｜迎接寶貝",
             "bread_crumb_1": "Home｜首頁",
             "bread_crumb_2": "Pay Now｜訂單支付",
             "bread_crumb_1_url": "/",
@@ -355,6 +363,21 @@ def order_complete(request):
     except ProformaInvoice.DoesNotExist:
         messages.info(request, "Order details not found or session expired.｜找不到該訂單明細，可能已被封存或重置。")
         return redirect("cart")
+
+    # ─────────────────────────────────────────────────────────────
+    # 🔒 AUTHENTICATION & ACCESS SANITATION GATEWAY
+    # ─────────────────────────────────────────────────────────────
+    # Check if the invoice is associated with a registered member account
+    if hasattr(proforma_invoice, 'user') and proforma_invoice.user:
+        if not request.user.is_authenticated or request.user != proforma_invoice.user:
+            messages.error(request, "Unauthorized access to this receipt.｜您無權查看此訂單明細。")
+            return redirect("home")
+    else:
+        # For Anonymous Guest Checkout: Verify against a temporary session whitelist
+        allowed_receipts = request.session.get("accessible_receipts", [])
+        if order_number not in allowed_receipts:
+            messages.error(request, "Receipt viewing window has expired.｜訂單查閱授權已過期。")
+            return redirect("home")
     
     order = None
     ordered_products = []
@@ -374,7 +397,7 @@ def order_complete(request):
     base_total_due = Decimal("0.00")
 
     if is_bank_transfer:
-        main_title = "Order Hold Confirmed ｜ 訂單保留中"
+        main_title = "Order Hold Confirmed｜訂單保留中"
         sub_title_1 = "Please complete transfer within 72 hours.｜請於72小時內完成付款以保留商品庫存。"
         
         # 🌟 THE EXPIRATION GUARD PASS
@@ -400,7 +423,7 @@ def order_complete(request):
 
             # Double check the order instance itself just in case statuses were updated by admin actions
             if order.order_status == 'Cancelled':
-                messages.warning(request, "This order hold has been cancelled.｜此訂單已被取消。")
+                messages.warning(request, "此訂單已被取消。｜This order hold has been cancelled.")
                 return redirect("cart")
                      
             db_products = OrderProduct.objects.filter(order=order)
@@ -437,8 +460,34 @@ def order_complete(request):
                     'formatted_subtotal': format_accounting_currency(prod.get_subtotal(), cny_symbol, False)
                 })
                 
+            # ─────────────────────────────────────────────────────────────
+            # 🔒 HARDENED PAYMENT TRANSACTION LOOKUP ENGINE
+            # ─────────────────────────────────────────────────────────────
             if transaction_id:
                 payment = Payment.objects.filter(payment_id=transaction_id).first()
+                
+            # 💡 FAIL-SAFE 1: If transaction_id was missing or the webhook was slow,
+            # lookup using the locked Proforma Invoice relationship (100% Reliable)
+            if not payment and proforma_invoice:
+                payment = Payment.objects.filter(invoice=proforma_invoice).first()
+                
+            # 💡 FAIL-SAFE 2: If it's still missing, lookup using the confirmed Order row
+            if not payment and order:
+                payment = Payment.objects.filter(order_id=order.order_number).first()
+                
+            # 💡 FAIL-SAFE 3: Memory-Mock object fallback. If the PayPal webhook is heavily 
+            # delayed, build a temporary mock object using invoice parameters so the 
+            # frontend template can still render the currency boxes cleanly without crashing!
+            if not payment:
+                print(f"⚠️ [Webhook Lag caught] Payment row missing for invoice {order_number}. Building secure runtime proxy fallback.")
+                from types import SimpleNamespace
+                payment = SimpleNamespace(
+                    currency=proforma_invoice.currency_code or "USD",
+                    amount_paid=proforma_invoice.total_due_foreign,
+                    status="Pending"
+                )
+
+            print("🚀 Final resolved payment object context parameter: ", payment)
             
             base_product_total = order.product_total
             base_shipping_cost = order.shipping_cost
@@ -478,14 +527,15 @@ def order_complete(request):
         "main_title": main_title, 
         "sub_title_1": sub_title_1, 
         "has_self_voucher": has_self_voucher,
-        "page_title": "Order Complete｜訂單完成",
-        "bread_crumb_1": "Home｜首頁",
-        "bread_crumb_2": "Order Complete｜訂單完成",
+        "page_title": "訂單完成｜Order Complete",
+        "bread_crumb_1": "首頁｜Home",
+        "bread_crumb_2": "訂單完成｜Order Complete",
         "bread_crumb_1_url": "/",
         "bread_crumb_2_url": request.path,
 
         "proforma_invoice": proforma_invoice, 
-        "order": order, 
+        "order": order,
+        "total_order_items_quantity": order.get_total_items_count(),
         "ordered_products": ordered_products,
         "transaction_id": transaction_id, 
         "payment": payment, 
@@ -527,7 +577,7 @@ def secure_file_download_gate(request, token_id):
     if token.is_expired:
         # Redirect back to their digital wallet or dashboard with a helpful error message
         from django.contrib import messages
-        messages.error(request, "該下載連結已過期，請聯絡客服。｜This download link has expired.")
+        messages.error(request, "This download link has expired.｜該下載連結已過期，請聯絡客服。")
         return redirect('dashboard', subpage='orders')
 
     # Resolve file system coordinates securely
@@ -766,9 +816,9 @@ def guest_order_verify(request):
             # 🌟 CORE LOOKUP INTERCEPT GATEWAY: If the order is dead, prepare an info modal trigger
             if order.order_status in ['Cancelled', 'Refunding', 'Refunded']:
                 status_mapping = {
-                    'Cancelled': 'Cancelled ｜ 訂單已取消',
-                    'Refunding': 'Refund Processing ｜ 退款處理中',
-                    'Refunded': 'Fully Refunded ｜ 退款已完成'
+                    'Cancelled': 'Cancelled｜訂單已取消',
+                    'Refunding': 'Refund Processing｜退款處理中',
+                    'Refunded': 'Fully Refunded｜退款已完成'
                 }
                 desc_mapping = {
                     'Cancelled': 'This purchase was cancelled. Our finance operations desk is organizing your repayment file.',

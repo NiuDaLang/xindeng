@@ -19,20 +19,19 @@
                 </div>
                 
                 <!-- Menu Dropdown Content -->
-                <!-- Fixed: Swapped out DaisyUI's '.dropdown-content' which was killing the absolute layout engine visibility -->
                 <ul tabindex="0"
-                    class="menu menu-sm bg-base-100 rounded-box z-50 w-[17rem] p-2 shadow hidden peer-checked:block pointer-events-auto absolute top-full left-0 mt-2 border border-base-200/50">
+                    class="menu menu-sm bg-base-100 rounded-box z-50 w-[17rem] p-2 shadow hidden peer-checked:block pointer-events-auto absolute top-full left-0 mt-2 border border-base-200/50 max-h-[calc(100vh-80px)] overflow-y-auto scrollbar-thin">
                     <li><a href="{% url 'about' %}" class="font-bold">About｜介紹</a></li>
                     <li>
                         <a href="{% url 'products' category_slug='physical' %}" class="text-primary font-bold">3D Goods｜三維寶貝</a>
                         <ul class="p-2">
                             {% for link in links %}
                                 {% if link.product_format == "physical" %}
-                                    <li class="text-xs">
-                                        <a href="{{ link.get_url }}" class="flex flex-col items-start p-2">
-                                            <span>{{ link.category_name }}</span>
-                                        </a>
-                                    </li>
+                                <li class="text-xs">
+                                    <a href="{{ link.get_url }}" class="flex flex-col items-start p-2">
+                                        <span>{{ link.category_name }}</span>
+                                    </a>
+                                </li>
                                 {% endif %}
                             {% endfor %}
                         </ul>
@@ -42,11 +41,11 @@
                         <ul class="p-2">
                             {% for link in links %}
                                 {% if link.product_format == "e-product" %}
-                                    <li class="text-xs">
-                                        <a href="{{ link.get_url }}" class="flex flex-col items-start p-2">
-                                            <span>{{ link.category_name }}</span>
-                                        </a>
-                                    </li>
+                                <li class="text-xs">
+                                    <a href="{{ link.get_url }}" class="flex flex-col items-start p-2">
+                                        <span>{{ link.category_name }}</span>
+                                    </a>
+                                </li>
                                 {% endif %}
                             {% endfor %}
                         </ul>
@@ -152,27 +151,38 @@
                 
                 <!-- Dropdown Menu Content Panel -->
                 <div tabindex="0" 
-                    class="card card-compact bg-base-100 rounded-box z-50 mt-2 w-[15rem] xs:w-[23rem] shadow left-1/2 -translate-x-1/2 max-h-[calc(100vh-300px)] overflow-y-auto hidden peer-checked:block pointer-events-auto absolute top-full border border-base-200/50">
-                    <div class="card-body px-2">
-                        <!-- list -->
+                    class="card card-compact bg-base-100 rounded-2xl z-50 mt-2 w-[16rem] xs:w-[24rem] shadow-xl left-1/2 -translate-x-1/2 hidden peer-checked:block pointer-events-auto absolute top-full border border-base-200/50 p-1">
+                    <div class="card-body p-3 flex flex-col max-h-[75vh]">
+                        
+                        <!-- List Partial Content Area -->
                         {% include 'store/partials/header_cart_list.html' %}
-                        <div class="divider -mb-2"></div>
-                        <!-- summary -->
-                        <div class="flex flex-col gap-1 text-xs xs:text-sm ">
-                            <span class="font-light flex justify-between">
-                                <b>Total {% if item_count > 1 %}Items{% else %}Item{% endif %}｜總件數: </b>
-                                <b id="cart_count" class="font-bold">{{ item_count }} {% if item_count > 1 %}items{% else %}item{% endif %}</b>
-                            </span>
-                            <span class="flex justify-between">
-                                <b>Sub-Total｜小計: </b>
-                                <b id="cart_sub_total" class="font-bold">CNY ¥ {{ header_cart_total }}</b>
-                            </span>
+                        
+                        <div class="divider my-1 opacity-50"></div>
+                        
+                        <!-- Summary Dashboard Data Rows -->
+                        <div class="flex flex-col gap-1.5 text-xs xs:text-sm font-sans px-1">
+                            <div class="flex justify-between items-center text-base-content/60 font-medium">
+                                <span>Total {% if item_count > 1 %}Items{% else %}Item{% endif %}｜總件數:</span>
+                                <span id="cart_count" class="font-mono font-bold text-base-content">{{ item_count }} {% if item_count > 1 %}items{% else %}item{% endif %}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-base-content/80 font-bold pt-0.5">
+                                <span>Sub-Total｜小計:</span>
+                                <!-- 🌟 Cohesive Price Layout Format -->
+                                <span id="cart_sub_total" class="font-mono text-primary text-sm xs:text-base">CNY ¥{{ header_cart_total }}</span>
+                            </div>
                         </div>
+                        
                         <div class="card-actions mt-3">
-                            <a href="{% url 'cart' %}" class="btn btn-primary btn-block font-light text-sm xs:text-[1.05rem]">View cart｜購物車</a>
+                            <a href="{% url 'cart' %}" class="btn btn-primary btn-sm rounded-xl btn-block font-medium tracking-wider text-xs xs:text-sm h-10">
+                                View Cart｜購物車 <i class="fa-solid fa-cart-shopping opacity-80 text-xs"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
+
+
+
+                
             </div>
 
             <!-- user -->
@@ -195,114 +205,58 @@
                     </div>
                     
                     <!-- Dropdown Menu Content -->
-                    <!-- Fixed: Stripped '.dropdown-content', anchored left-0 to expand cleanly rightward -->
                     <ul tabindex="0"
-                        class="menu menu-sm bg-base-100 rounded-box z-50 mt-2 w-[16rem] p-2 shadow right-0 absolute top-full hidden peer-checked:block pointer-events-auto border border-base-200/50">
+                        class="menu menu-sm bg-base-100 rounded-box z-50 mt-2 w-[16rem] p-2 shadow right-0 absolute top-full hidden peer-checked:block pointer-events-auto border border-base-200/50 max-h-[calc(100vh-80px)] overflow-y-auto scrollbar-thin">
                         <li>
-                            <a href="{% url 'dashboard' 'main' %}" 
-                                {% if request.resolver_match.url_name == 'dashboard' %}
-                                hx-get="{% url 'dashboard' 'main' %}" hx-target="#dashboard-content" hx-push-url="true"
-                                {% endif %}
-                            >
+                            <a href="{% url 'dashboard' 'main' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'main' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
                                 <i class="fa-solid fa-gauge"></i>Dashboard｜管理主頁
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'profile' %}" 
-                                {% if request.resolver_match.url_name == 'dashboard' %}
-                                hx-get="{% url 'dashboard' 'profile' %}" hx-target="#dashboard-content" hx-push-url="true"
-                                {% endif %}
-                            >
+                            <a href="{% url 'dashboard' 'profile' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'profile' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
                                 <i class="fa-solid fa-address-card"></i>Edit Profile｜會員檔案
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'addresses' %}" 
-                                {% if request.resolver_match.url_name == 'dashboard' %}
-                                hx-get="{% url 'dashboard' 'addresses' %}" hx-target="#dashboard-content" hx-push-url="true"
-                                {% endif %}
-                            >
+                            <a href="{% url 'dashboard' 'addresses' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'addresses' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
                                 <i class="fa-solid fa-truck"></i>Addresses｜地址簿
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'orders' %}" 
-                                {% if request.resolver_match.url_name == 'dashboard' %}
-                                hx-get="{% url 'dashboard' 'orders' %}" hx-target="#dashboard-content" hx-push-url="true"
-                                {% endif %}
-                            >
+                            <a href="{% url 'dashboard' 'orders' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'orders' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
                                 <i class="fa-solid fa-bag-shopping"></i>Orders｜購物紀錄
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'offers' %}" 
-                                {% if request.resolver_match.url_name == 'dashboard' %}
-                                hx-get="{% url 'dashboard' 'offers' %}" hx-target="#dashboard-content" hx-push-url="true"
-                                {% endif %}
-                            >
+                            <a href="{% url 'dashboard' 'offers' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'offers' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
                                 <i class="fa-solid fa-money-bill"></i>Offers｜福利活動
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'vouchers' %}" 
-                                {% if request.resolver_match.url_name == 'dashboard' %}
-                                hx-get="{% url 'dashboard' 'vouchers' %}" hx-target="#dashboard-content" hx-push-url="true"
-                                {% endif %}
-                            >
+                            <a href="{% url 'dashboard' 'vouchers' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'vouchers' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
                                 <i class="fa-solid fa-money-bill-1-wave"></i>Vouchers｜禮品券
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'wishlist' %}" 
-                                {% if request.resolver_match.url_name == 'dashboard' %}
-                                hx-get="{% url 'dashboard' 'wishlist' %}" hx-target="#dashboard-content" hx-push-url="true"
-                                {% endif %}
-                            >
+                            <a href="{% url 'dashboard' 'wishlist' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'wishlist' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
                                 <i class="fa-solid fa-rectangle-list"></i>Wishlist｜購物清單
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'favorites' %}" 
-                                {% if request.resolver_match.url_name == 'dashboard' %}
-                                hx-get="{% url 'dashboard' 'favorites' %}" hx-target="#dashboard-content" hx-push-url="true"
-                                {% endif %}
-                            >
+                            <a href="{% url 'dashboard' 'favorites' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'favorites' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
                                 <i class="fa-solid fa-star"></i>Favorites｜收藏
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'help' %}" 
-                                {% if request.resolver_match.url_name == 'dashboard' %}
-                                hx-get="{% url 'dashboard' 'help' %}" hx-target="#dashboard-content" hx-push-url="true" 
-                                class="flex"
-                                {% endif %}
-                            >
+                            <a href="{% url 'dashboard' 'help' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'help' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
                                 <div class="flex items-center gap-1">
                                     <i class="fa-solid fa-headset"></i>
                                     <span>Help｜客服熱線</span>
                                 </div>
-                                <div class="badge text-[10px] bg-primary text-primary-content flex items-center gap-1 py-2">
-                                    New
-                                    <i class="fa-solid fa-message"></i>
-                                    <!-- Fixed: Corrected 'lass' typo string to standard 'class' element handling -->
-                                    <span id="unread-count-header" 
-                                        hx-swap-oob="true" 
-                                        class="badge badge-xs badge-secondary text-primary-content font-bold">
-                                        {% if unread_count %}
-                                            <span>{{ unread_count }}</span>
-                                        {% else %}
-                                            <span>0</span>
-                                        {% endif %}
-                                    </span>
-                                </div>
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'threed' %}" 
-                                {% if request.resolver_match.url_name == 'dashboard' %}
-                                hx-get="{% url 'dashboard' 'threed' %}" hx-target="#dashboard-content" hx-push-url="true"
-                                {% endif %}
-                            >
+                            <a href="{% url 'dashboard' 'threed' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'threed' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
                                 <i class="fa-solid fa-cubes"></i>3D Scenes｜3D場景
                             </a>
                         </li>

@@ -86,7 +86,7 @@
                         </a>
                         {% if not forloop.last %}<div class="divider opacity-30 my-2"></div>{% endif %}
                         {% empty %}
-                        <div class="text-center py-12 text-xs opacity-50">暫無近期文章 ｜ No latest articles found.</div>
+                        <div class="text-center py-12 text-xs opacity-50">暫無近期文章｜No latest articles found.</div>
                         {% endfor %}
                     </div>
                     <div class="mt-6 pt-4 border-t border-base-200/40">
@@ -121,7 +121,7 @@
                         </a>
                         {% if not forloop.last %}<div class="divider opacity-30 my-2"></div>{% endif %}
                         {% empty %}
-                        <div class="text-center py-12 text-xs opacity-50">暫無隨筆文章 ｜ No journals found.</div>
+                        <div class="text-center py-12 text-xs opacity-50">暫無隨筆文章｜No journals found.</div>
                         {% endfor %}
                     </div>
                     <div class="mt-6 pt-4 border-t border-base-200/40">
@@ -156,7 +156,7 @@
                         </a>
                         {% if not forloop.last %}<div class="divider opacity-30 my-2"></div>{% endif %}
                         {% empty %}
-                        <div class="text-center py-12 text-xs opacity-50">暫無動態文章 ｜ No updates found.</div>
+                        <div class="text-center py-12 text-xs opacity-50">暫無動態文章｜No updates found.</div>
                         {% endfor %}
                     </div>
                     <div class="mt-6 pt-4 border-t border-base-200/40">
@@ -199,13 +199,13 @@
                 <svg xmlns="http://w3.org" class="h-4 w-4 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                Search Notes ｜ 搜尋筆記
+                Search Notes｜搜尋筆記
             </h3>
             
             <!-- Complete Search Input Form Pipeline Mapping -->
             <form action="{% url 'all_posts' %}" method="GET" class="flex gap-2 w-full items-center">
                 <label class="input input-bordered flex items-center gap-2 grow rounded-xl bg-base-50 h-10 text-xs focus-within:border-primary">
-                    <input type="search" name="q" class="grow font-sans font-light bg-transparent" placeholder="Search Post ｜ 搜索筆記" />
+                    <input type="search" name="q" class="grow font-sans font-light bg-transparent" placeholder="Search Post｜搜索筆記" />
                     <kbd class="kbd kbd-sm hidden sm:inline-flex opacity-40 select-none">⌘</kbd>
                     <kbd class="kbd kbd-sm hidden sm:inline-flex opacity-40 select-none">K</kbd>
                 </label>  

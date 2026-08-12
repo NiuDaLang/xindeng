@@ -94,8 +94,8 @@ class Product(models.Model):
     digital_fulfillment_type = models.CharField(
         max_length=15,
         choices=[
-            ('INSTANT', 'Instant Auto-Fulfillment ｜ 隨選即發'),
-            ('CUSTOM', 'Custom / Manual Processing ｜ 人工交付'),
+            ('INSTANT', 'Instant Auto-Fulfillment｜隨選即發'),
+            ('CUSTOM', 'Custom / Manual Processing｜人工交付'),
         ],
         default='INSTANT'
     )
@@ -179,7 +179,7 @@ class ProductVariation(models.Model):
         type_val = str(self.type.type_name).strip() if self.type else ""
 
         # 2. Establish a strict exclusion blacklist matrix map array
-        exclusion_blacklist = ["", "NONE", "N/A", "N/A｜不適用", "N/A ｜ 不適用"]
+        exclusion_blacklist = ["", "NONE", "N/A", "N/A｜不適用", "N/A｜不適用"]
 
         # 3. Surgically apply condition filters to wipe out matching string artifacts
         color_name = color_val if color_val not in exclusion_blacklist else ""
@@ -203,7 +203,7 @@ class ProductVariation(models.Model):
         type_val = str(self.type.type_name).strip() if self.type else ""
 
         # 2. Establish our comprehensive exclusion blacklist matrix
-        exclusion_blacklist = ["", "NONE", "N/A", "N/A｜不適用", "N/A ｜ 不適用"]
+        exclusion_blacklist = ["", "NONE", "N/A", "N/A｜不適用", "N/A｜不適用"]
 
         # 3. Filter the values against the blacklist
         color_name = color_val if color_val not in exclusion_blacklist else ""

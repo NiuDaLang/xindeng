@@ -117,13 +117,13 @@ def contact(request):
 
 def error_404(request, exception=None):
     """Custom 404 Not Found error page router view."""
-    return render(request, '404.html', {"page_title": "404 ｜ 頁面不存在"}, status=404)
+    return render(request, '404.html', {"page_title": "404｜頁面不存在"}, status=404)
 
 
 # Keep your 500 error handler exactly as it is (it only takes request)
 def error_500(request):
     """Custom 500 Internal Server Error page router view."""
-    return render(request, '500.html', {"page_title": "500 ｜ 系統錯誤"}, status=500)
+    return render(request, '500.html', {"page_title": "500｜系統錯誤"}, status=500)
 
 
 def search(request):

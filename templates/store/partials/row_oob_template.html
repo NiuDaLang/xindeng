@@ -1,0 +1,30 @@
+{% load humanize %}
+<tr id="{{ row_id }}" class="font-normal border-b border-base-100 {% if not show %}hidden{% endif %}" hx-swap-oob="true">
+    
+    <!-- 💡 Left Column: Handles layout-specific typography rules seamlessly -->
+    <td class="py-2 text-left text-[11px] min-[576px]:max-[767px]:text-[13px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[11px] leading-tight {% if row_id == 'offer_row' or row_id == 'voucher_apply_row' %}text-base-content/70{% else %}text-base-content/70{% endif %}">
+        {{ label_en }}<br><span class="text-[10px] text-base-content/40">{{ label_zh }}</span>
+    </td>
+    
+    <!-- 💡 Middle Column: Locks small, muted reference sizes across breakpoints -->
+    <td class="py-2 text-right font-mono text-[10px] min-[576px]:max-[767px]:text-[12px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[10px] tracking-tight pr-1 {% if row_id == 'offer_row' %}text-error/50{% elif row_id == 'voucher_apply_row' %}text-info/50{% else %}text-base-content/40{% endif %}">
+        <span id="{{ id_local }}">
+            {% if row_id == 'offer_row' or row_id == 'voucher_apply_row' %}¥ ({{ clean_amount|floatformat:2|intcomma }}){% else %}¥ {{ clean_amount|floatformat:2|intcomma }}{% endif %}
+        </span>
+    </td>
+    
+    <!-- 💡 Right Column: Applies distinct highlighted style tones based on Row ID -->
+    <td class="py-2 text-right font-mono text-xs min-[576px]:max-[767px]:text-[13.5px] min-[768px]:max-[960px]:text-[10px] min-[961px]:text-xs font-semibold 
+        {% if row_id == 'shipping_cost_row' %}text-success
+        {% elif row_id == 'offer_row' %}text-error
+        {% elif row_id == 'voucher_apply_row' %}text-info
+        {% else %}text-base-content/80{% endif %}">
+        <span id="{{ id_foreign }}">
+            {% if row_id == 'offer_row' or row_id == 'voucher_apply_row' %}
+                {{ symbol }} ({{ val_foreign }})
+            {% else %}
+                {{ symbol }} {{ val_foreign }}
+            {% endif %}
+        </span>
+    </td>
+</tr>

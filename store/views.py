@@ -124,7 +124,7 @@ def product(request, category_slug, product_slug):
                 v_stock = max(0, v_stock - in_cart_item.quantity)
         var.available_production_stock = v_stock
 
-    exclusion_blacklist = [None, "", "NONE", "N/A", "N/A｜不適用", "N/A ｜ 不適用"]
+    exclusion_blacklist = [None, "", "NONE", "N/A", "N/A｜不適用", "N/A｜不適用"]
     has_valid_colors, has_valid_sizes, has_valid_types = False, False, False
 
     for var in variations:
@@ -253,8 +253,8 @@ def secure_file_download_gate(request, token_id):
     # 🌟 TRACK LINK EXPIRATION MATRIX
     if token.is_expired:
         context = {
-            "page_title": "Link Expired ｜ 連結已失效",
-            "error_headline": "Download Link Expired ｜ 下載連結已失效",
+            "page_title": "Link Expired｜連結已失效",
+            "error_headline": "Download Link Expired｜下載連結已失效",
             "error_message": f"This secure link expired on {token.expires_at.strftime('%Y-%m-%d %H:%M')} (48-hour access window closed). Please contact customer support to request a new download pass.",
             "error_message_cn": f"此安全連結已於 {token.expires_at.strftime('%Y-%m-%d %H:%M')} 超時失效（48小時開放下載視窗已關閉）。請聯絡客服人員為您手動重置下載鏈接。"
         }

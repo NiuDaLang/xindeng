@@ -275,6 +275,11 @@ def login(request, user=None):
             # Django securely cycles the session token keys right here
             auth.login(request, user)
 
+            # 🔒 SANITATION ACTION: Clear applied pricing codes during login transitions
+            # This prevents guest code values from carrying over into authenticated user states
+            if "offer_applied" in request.session:
+                request.session.pop("offer_applied", None)
+                request.session.modified = True
             if saved_next_url:
                 request.session["next_url"] = saved_next_url
                 request.session.modified = True
@@ -1427,15 +1432,15 @@ def claim_voucher_routing_view(request, voucher_id):
     except (CustomerVoucher.DoesNotExist, ObjectDoesNotExist):
         # Render a premium, localized, user-friendly cancellation landing page instead of a hard 404 error!
         context = {
-            "page_title": "Voucher Unavailable ｜ 禮品券不可用",
-            "error_headline": "Voucher Cancelled or Unavailable ｜ 該禮品券已註銷或不存在",
+            "page_title": "Voucher Unavailable｜禮品券不可用",
+            "error_headline": "Voucher Cancelled or Unavailable｜該禮品券已註銷或不存在",
             "error_message": "This gift voucher link is no longer active. It may have been canceled due to a dynamic transaction reversal, order refund, or data administrative restructurings.",
             "error_message_cn": "此禮品券連結目前已失效。可能由於相關訂單辦理了退款退貨、轉帳超時手續關閉、或系統後台數據異動而導致此代金券被取消註銷。"
         }
         return render(request, "pages/voucher_cancelled_notice.html", context, status=404)
 
     if voucher.is_claimed:
-        messages.error(request, "此兌換券已被領取 ｜ This gift voucher has already been claimed.")
+        messages.error(request, "此兌換券已被領取｜This gift voucher has already been claimed.")
         return redirect('home')
 
     associated_order = Order.objects.filter(recipient_email=voucher.registered_email).order_by('-created_at').first()
@@ -1445,7 +1450,7 @@ def claim_voucher_routing_view(request, voucher_id):
     if request.method == "POST" and "submit_pin" in request.POST:
         # Enforce account gate authentication first
         if not request.user.is_authenticated:
-            messages.error(request, "請先登入帳戶以套用此代金券 ｜ Authentication required.")
+            messages.error(request, "請先登入帳戶以套用此代金券｜Authentication required.")
             return redirect('login')
 
         input_pin = request.POST.get("pin_code", "").strip()
@@ -1453,7 +1458,7 @@ def claim_voucher_routing_view(request, voucher_id):
         attempts = request.session.get(f"claim_attempts_{voucher.id}", 0)
 
         if not session_pin:
-            messages.error(request, "請先獲取驗證碼 ｜ Please request a verification PIN first.")
+            messages.error(request, "請先獲取驗證碼｜Please request a verification PIN first.")
             return redirect('claim_voucher_url', voucher_id=voucher.id)
 
         if input_pin != str(session_pin):
@@ -1471,7 +1476,7 @@ def claim_voucher_routing_view(request, voucher_id):
                 context = {"voucher": voucher, "lockout": True}
                 return render(request, "pages/claim_voucher.html", context)
 
-            messages.error(request, f"驗證碼不正確，您還剩餘 {3 - attempts} 次機會 ｜ Invalid PIN code.")
+            messages.error(request, f"驗證碼不正確，您還剩餘 {3 - attempts} 次機會｜Invalid PIN code.")
             return redirect('claim_voucher_url', voucher_id=voucher.id)
 
         # 🚀 ATOMIC EXECUTION SETTLEMENT PASS
@@ -1488,7 +1493,7 @@ def claim_voucher_routing_view(request, voucher_id):
             # Trigger 'SUCCESS' validation hook parameter to dashboard views
             return redirect('/accounts/dashboard/vouchers/?status=claimed_success')
         else:
-            messages.error(request, "領取失敗，該禮券可能已被使用 ｜ Claim processing exception.")
+            messages.error(request, "領取失敗，該禮券可能已被使用｜Claim processing exception.")
             return redirect('home')
 
     # ── STEP 2: HTMX/POST PIN DELIVERY SEQUENCE ──────────────────────
@@ -1511,10 +1516,10 @@ def claim_voucher_routing_view(request, voucher_id):
                 驗證碼已發送至您的郵箱 [{voucher.registered_email}]，請查收。
             </div>
             <div class="form-control">
-                <label class="label text-xs font-bold text-base-content/70">Enter 6-Digit PIN ｜ 請輸入6位數驗證碼</label>
+                <label class="label text-xs font-bold text-base-content/70">Enter 6-Digit PIN｜請輸入6位數驗證碼</label>
                 <input type="text" name="pin_code" maxlength="6" required class="input input-bordered text-center tracking-widest font-mono font-bold text-lg focus:outline-teal-600 focus:ring-0" placeholder="******" />
             </div>
-            <button type="submit" name="submit_pin" class="w-full btn btn-neutral text-white">Verify & Claim Wallet Balance ｜ 驗證並領取額度</button>
+            <button type="submit" name="submit_pin" class="w-full btn btn-neutral text-white">Verify & Claim Wallet Balance｜驗證並領取額度</button>
         </div>
         """
         return HttpResponse(response_html)
@@ -1524,6 +1529,6 @@ def claim_voucher_routing_view(request, voucher_id):
         "voucher": voucher,
         "gift_message": gift_message,
         "lockout": False,
-        "page_title": "Claim Your Voucher ｜ 領取您的電子禮卡"
+        "page_title": "Claim Your Voucher｜領取您的電子禮卡"
     }
     return render(request, "pages/claim_voucher.html", context)

@@ -1,6 +1,21 @@
 {% load humanize %}
 <!-- Main response (goes into #shipping-result-container safely) -->
-<div id="shipping-cost-display" class="my-4 alert alert-success shadow-sm flex flex-col justify-center items-center gap-2 animate-fade-in w-full">
-    <span>🚚 Estimated Shipping｜運費: </span>
-    <span id="shipping_cost_amount" class="font-semibold">CNY ¥ {{ shipping_cost }}</span>
+<div id="shipping-cost-display" 
+    class="my-4 alert alert-soft bg-base-100 border border-base-200/60 shadow-sm text-xs p-3.5 rounded-xl flex flex-col min-[480px]:flex-row justify-between items-start min-[480px]:items-center gap-3 min-[768px]:max-[900px]:gap-1 animate-fade-in w-full select-none font-sans">
+    
+    <!-- Left text element column layout anchor block -->
+    <div class="flex min-[768px]:max-[900px]:max-w-[6rem] items-center gap-2">
+        <span class="text-base-content/40 text-sm shrink-0">🚚</span>
+        <span class="text-[11px] text-base-content/70 font-medium leading-tight">
+            Estimated Shipping<br><span class="text-[10px] text-base-content/40">預估物流運費</span>
+        </span>
+    </div>
+
+    <!-- Right calculation payout metrics node block -->
+    <div class="min-[480px]:w-auto flex justify-end items-center gap-1.5 pt-2 min-[480px]:pt-0 border-t border-dashed border-base-200/60 min-[480px]:border-none">
+        <span id="shipping_cost_amount" class="font-mono text-xs font-bold text-success">
+            CNY ¥ {{ shipping_cost }}
+        </span>
+    </div>
+
 </div>

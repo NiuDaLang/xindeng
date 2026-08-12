@@ -1,11 +1,11 @@
-訂單取消與退款完成通知 ｜ Cancellation Complete & Refund Notice
+訂單取消與退款完成通知｜Cancellation Complete & Refund Notice
 
 您好，您的訂單編號 [ #{{ order.order_number }} ] 已完全處理完畢，訂單取消程序正式結案。
 The cancellation parameters for your order reference #{{ order.order_number }} have been processed completely.
 
 {% if is_offline_method %}
 ============================================================
-📋 ACTION REQUIRED: REPLY WITH REFUND DETAILS ｜ 請回覆退款帳戶資訊
+📋 ACTION REQUIRED: REPLY WITH REFUND DETAILS｜請回覆退款帳戶資訊
 ============================================================
 Because your order was settled offline via {{ payment.payment_method }}, our financial operations desk requires your transfer credentials. Please REPLY DIRECTLY to this email with your Account Name, Bank details, or Mobile Payment IDs.
 

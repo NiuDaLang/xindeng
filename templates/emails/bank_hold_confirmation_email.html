@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bank Transfer Instructions ｜ 銀行轉帳指引</title>
+        <title>Bank Transfer Instructions｜銀行轉帳指引</title>
         <link rel="preconnect" href="https://googleapis.com">
         <link rel="preconnect" href="https://gstatic.com" crossorigin>
         <link href="https://googleapis.com" rel="stylesheet">
@@ -23,7 +23,7 @@
                         <!-- Header -->
                         <tr>
                             <td class="header" style="background-color: #ffffff; padding: 10px 40px 30px 40px; text-align: center; color:#161616;">
-                                <span style="font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 5px;">Hṛdayadīpa (हृदयदीप) ｜ 心燈</span>
+                                <span style="font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 5px;">Hṛdayadīpa (हृदयदीप)｜心燈</span>
                                 <span style="font-size: 1rem; line-height: 1.4rem; display: block; opacity: 0.9; color: #555555;">
                                     Bank Transfer Instructions<br/>銀行轉帳與線下匯款指引
                                 </span>
@@ -42,9 +42,9 @@
                         <tr>
                             <td class="body" style="padding: 40px 40px 20px 40px; text-align: left; font-size: 0.9rem; line-height: 1.4rem; color: #333333;">
                                 {% if user.username %}
-                                    Dear <strong>{{ user.username }}</strong> ｜ 親愛的 <strong>{{ user.username }}</strong>，
+                                    Dear <strong>{{ user.username }}</strong>｜親愛的 <strong>{{ user.username }}</strong>，
                                 {% else %}
-                                    Dear <strong>{{ order.email }}</strong> ｜ 親愛的 <strong>{{ order.email }}</strong>，
+                                    Dear <strong>{{ order.email }}</strong>｜親愛的 <strong>{{ order.email }}</strong>，
                                 {% endif %}
                                 <br><br>
                                 Your inventory hold request has been successfully processed under order number: <strong style="color: #4b9aaa; font-size: 1rem;">{{ order.order_number }}</strong>.<br>
@@ -59,13 +59,13 @@
                                     <tr>
                                         <td style="padding: 25px; font-size: 0.85rem; line-height: 1.5rem; color: #444444;">
                                             <strong style="font-size: 0.95rem; color: #161616; display: block; border-bottom: 1px solid #cccccc; padding-bottom: 8px; margin-bottom: 12px;">
-                                                🏦 Remittance Details ｜ 銀行轉帳帳號資訊
+                                                🏦 Remittance Details｜銀行轉帳帳號資訊
                                             </strong>
-                                            <strong>Bank Name ｜ 開戶銀行:</strong> Bank of China (Mainland) / Tailored Bank Name<br>
-                                            <strong>Account Name ｜ 開戶名稱:</strong> Xindeng Corporate Entity Ltd.<br>
-                                            <strong>Account Number ｜ 銀行帳號:</strong> 6217 0000 0000 0000 000<br>
-                                            <strong>Swift Code ｜ 國際代碼:</strong> BKCHCNBJXXX<br>
-                                            <strong>Total Due ｜ 應付總額:</strong> <span style="font-size: 1.1rem; color: #d32f2f; font-weight: bold;">¥ {{ order.total_due }}</span> (or currency equivalent)<br>
+                                            <strong>Bank Name｜開戶銀行:</strong> Bank of China (Mainland) / Tailored Bank Name<br>
+                                            <strong>Account Name｜開戶名稱:</strong> Xindeng Corporate Entity Ltd.<br>
+                                            <strong>Account Number｜銀行帳號:</strong> 6217 0000 0000 0000 000<br>
+                                            <strong>Swift Code｜國際代碼:</strong> BKCHCNBJXXX<br>
+                                            <strong>Total Due｜應付總額:</strong> <span style="font-size: 1.1rem; color: #d32f2f; font-weight: bold;">¥ {{ order.total_due }}</span> (or currency equivalent)<br>
                                             <span style="font-size: 0.75rem; color: #777777; display: block; margin-top: 10px; line-height: 1.1rem;">
                                                 *Important: Please include your order number <strong>{{ order.order_number }}</strong> in the payment remark/memo context.<br>
                                                 *重要提示：請務必在匯款備註/附言中填寫您的訂單號碼 <strong>{{ order.order_number }}</strong>。
@@ -82,7 +82,7 @@
                                     <tr>
                                         <td style="padding: 20px; text-align: center;">
                                             <strong style="font-size: 0.9rem; color: #161616; display: block; margin-bottom: 12px; text-align: left;">
-                                                📱 Mobile Scan Options ｜ 行動支付掃碼（支付寶與微信）
+                                                📱 Mobile Scan Options｜行動支付掃碼（支付寶與微信）
                                             </strong>
                                             
                                             <!-- Inline Content-ID Attached Embedded Graphic Asset Reference -->

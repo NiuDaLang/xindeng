@@ -275,7 +275,7 @@ function updateFlashSaleCountdowns() {
         const distance = expiryDate - now;
         
         if (distance < 0) {
-            container.innerHTML = "<span class='text-error font-bold text-xs uppercase bg-error/10 p-2 rounded-lg border border-error/20 flex items-center justify-center gap-1'><i class='fa-solid fa-circle-exclamation'></i> Offer Expired ｜ 優惠已過期</span>";
+            container.innerHTML = "<span class='text-error font-bold text-xs uppercase bg-error/10 p-2 rounded-lg border border-error/20 flex items-center justify-center gap-1'><i class='fa-solid fa-circle-exclamation'></i> Offer Expired｜優惠已過期</span>";
             return;
         }
         
@@ -307,6 +307,7 @@ function updateFlashSaleCountdowns() {
 }
 
 function copyPerkCode(up_pk, btnElement) {
+    console.log("copy code", "up_pk: ", up_pk)
     if (!btnElement) return;
     const code_target = document.getElementById(`perk_code_${up_pk}`);
     if (!code_target) return;
@@ -314,7 +315,7 @@ function copyPerkCode(up_pk, btnElement) {
     const perk_code = code_target.innerText.trim();
     navigator.clipboard.writeText(perk_code).then(() => {
         const originalText = btnElement.innerHTML;
-        btnElement.innerText = "Copied! ｜ 已複製";
+        btnElement.innerText = "Copied!｜已複製";
         btnElement.classList.replace('btn-primary', 'btn-success');
         
         setTimeout(() => {
@@ -724,7 +725,7 @@ document.body.addEventListener('addressCreated', function() {
     if (typeof my_modal_1 !== 'undefined' && typeof my_modal_1.close === "function") my_modal_1.close();
     if (window.Swal) {
         Swal.fire({
-            title: 'Created! ｜ 添加成功', text: 'Address book has been added.',
+            title: 'Created!｜添加成功', text: 'Address book has been added.',
             icon: 'success', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false
         });
     }
@@ -741,7 +742,7 @@ document.body.addEventListener('addressSaved', function() {
 document.body.addEventListener('serviceUnavailable', function() {
     if (window.Swal) {
         Swal.fire({
-            title: 'Updated! ｜ 更新成功', text: 'Address book has been updated.',
+            title: 'Updated!｜更新成功', text: 'Address book has been updated.',
             icon: 'success', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false
         });
     }

@@ -29,7 +29,7 @@
                     {% for var in variations %}
                     <div id="var_option_{{ var.pk }}" 
                         class="flex flex-col items-center justify-center w-14 text-center tooltip tooltip-bottom tooltip-neutral font-sans text-[11px] {% if var.available_production_stock == 0 %}opacity-30{% endif %}" 
-                        data-tip="{% if var.available_production_stock == 0 %}[ 暫時缺貨 ｜ OUT OF STOCK ]{% else %}{{ var.get_sku }}{% endif %}">
+                        data-tip="{% if var.available_production_stock == 0 %}[ 暫時缺貨｜OUT OF STOCK ]{% else %}{{ var.get_sku }}{% endif %}">
                         
                         <label class="select-none relative block group rounded-xl {% if var.available_production_stock == 0 %}pointer-events-none cursor-not-allowed{% else %}cursor-pointer{% endif %}"
                             {% if var.available_production_stock > 0 %}
@@ -87,7 +87,7 @@
                 {% if is_resolved_sku %}
                     {% if resolved_stock > 0 %}
                         <div class="form-control w-full mb-4">
-                            <label class="label py-1 text-[11px] font-medium tracking-wide uppercase text-base-content/40 mb-1">Quantity ｜ 數量</label>
+                            <label class="label py-1 text-[11px] font-medium tracking-wide uppercase text-base-content/40 mb-1">Quantity｜數量</label>
                             <select name="quantity" id="checkout-quantity-selector" class="select select-bordered select-sm h-10 w-full bg-base-50 focus:border-primary focus:outline-none rounded-xl text-xs font-sans font-medium text-base-content/80">
                                 {% for idx in stock_loop_range %}
                                     <option value="{{ idx }}">{{ idx }}</option>
@@ -95,12 +95,12 @@
                             </select>
                         </div>
                         <button hx-post="{% url 'add_to_cart_htmx' %}" hx-include="#product-purchase-panel [name]" hx-target="#product-purchase-panel" hx-swap="outerHTML" type="button" class="w-full btn btn-primary rounded-xl tracking-widest text-xs font-medium transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.01] h-11 min-h-[2.75rem]">
-                            Add to Cart ｜ 加入購物車 &nbsp;<i class="fa-solid fa-cart-arrow-down opacity-80"></i>
+                            Add to Cart｜加入購物車 &nbsp;<i class="fa-solid fa-cart-arrow-down opacity-80"></i>
                         </button>
                     {% else %}
                         <div class="w-full p-4 text-center rounded-xl bg-error/5 text-error border border-error/20 text-xs font-semibold tracking-wide flex items-center justify-center gap-2">
                             <i class="fa-solid fa-circle-exclamation opacity-90"></i>
-                            <span>Out Of Stock ｜ 暫時缺貨</span>
+                            <span>Out Of Stock｜暫時缺貨</span>
                         </div>
                     {% endif %}
                 {% else %}

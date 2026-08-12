@@ -166,7 +166,7 @@
                             <h3 class="font-bold text-primary mb-2 flex items-center gap-1.5">
                                 <i class="fa-solid fa-globe"></i> 方案 A：境外外幣結匯 (USD/EUR)
                             </h3>
-                            <p class="leading-relaxed opacity-80">通過 Stripe / PayPal 进行即時國際卡片扣款。一旦網關回傳交易成功的 Webhook 令牌，系統會將 <code>is_ordered</code> 標記為 True，並將 <code>order_status</code> 變更為 <b>"Processing ｜ 處理中"</b>。</p>
+                            <p class="leading-relaxed opacity-80">通過 Stripe / PayPal 进行即時國際卡片扣款。一旦網關回傳交易成功的 Webhook 令牌，系統會將 <code>is_ordered</code> 標記為 True，並將 <code>order_status</code> 變更為 <b>"Processing｜處理中"</b>。</p>
                         </div>
                         
                         <!-- 路徑 B：境內人民幣 -->
@@ -174,7 +174,7 @@
                             <h3 class="font-bold text-neutral mb-2 flex items-center gap-1.5">
                                 <i class="fa-solid fa-building-columns"></i> 方案 B：境內人民幣線下匯款 (CNY)
                             </h3>
-                            <p class="leading-relaxed opacity-80">訂單初始狀態預設掛起為 <b>"Hold_Pending ｜ 待付款"</b>。系統會自動鎖定為期 72 小時的 <code>inventory_hold_expiry</code> 庫存保留期，等待財務進行人工對賬核銷。</p>
+                            <p class="leading-relaxed opacity-80">訂單初始狀態預設掛起為 <b>"Hold_Pending｜待付款"</b>。系統會自動鎖定為期 72 小時的 <code>inventory_hold_expiry</code> 庫存保留期，等待財務進行人工對賬核銷。</p>
                         </div>
                     </div>
                 </div>

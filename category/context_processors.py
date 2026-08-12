@@ -47,7 +47,7 @@ def menu_links(request):
 def cart_item_count(request):
     user = request.user if request.user.is_authenticated else None
     quantity = 0
-    cart_total_value = 0.00  # Internal temp variable
+    cart_total_value = '0.00'  # Internal temp variable
     cart_items = []
 
     try:
@@ -64,6 +64,7 @@ def cart_item_count(request):
             )
             quantity = cart.get_items_count()
             cart_total_value = cart.get_cart_total()
+
 
     except Exception as e:
         print(f"[Context Processor Exception] Global Cart Sync Failed: {str(e)}")

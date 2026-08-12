@@ -38,7 +38,7 @@
     <div class="grid grid-cols-1 md:grid-cols-8 gap-0 md:gap-8 lg:gap-12 items-start relative w-full">
         
         <!-- LEFT COLUMN: DISPLAY MEDIA CORE -->
-        <div class="col-span-1 md:col-span-5 order-1 space-y-4 sticky top-[65px] md:relative md:top-0 z-20 bg-base-100 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
+        <div class="col-span-1 md:col-span-5 order-1 space-y-4 sticky top-[65px] md:relative md:top-0 z-20 md:z-10 bg-base-100 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
             
             <!-- Product Images Display Module -->
             <div id="product_images" class="group">
@@ -84,7 +84,7 @@
 
             <!-- Share Matrix Utilities (Desktop) -->
             <div class="hidden md:flex flex-wrap items-center gap-4 pt-4 border-t border-base-200/60">
-                <span class="text-[11px] font-medium opacity-40 tracking-widest uppercase font-sans">分享藝術 ｜ Share :</span>
+                <span class="text-[11px] font-medium opacity-40 tracking-widest uppercase font-sans">分享藝術｜Share :</span>
                 <div class="flex items-center gap-3 text-base-content/60">
                     <button class="hover:text-primary hover:scale-105 transition-all p-1 cursor-pointer" data-sharer="x" data-title="{{ single_product.product_name }}" data-url="{{ absolute_url }}"><i class="fa-brands fa-square-x-twitter fa-lg"></i></button>
                     <button class="hover:text-primary hover:scale-105 transition-all p-1 cursor-pointer" data-sharer="facebook" data-url="{{ absolute_url }}"><i class="fa-brands fa-facebook fa-lg"></i></button>
@@ -95,11 +95,11 @@
         </div>
 
         <!-- RIGHT COLUMN: CONTROL PANEL INPUT MATRIX INTERFACE -->
-        <div class="col-span-1 md:col-span-3 order-2 mt-0 lg:pl-4 relative z-10">
+        <div class="col-span-1 md:col-span-3 order-2 mt-0 lg:pl-4 relative z-10 md:z-20">
             {% include 'store/partials/product_form.html' %}
             <!-- Share Matrix Utilities (Hidden on mobile stack layer to preserve screen space) -->
             <div class="flex md:hidden flex-wrap items-center gap-4 pt-4 border-t border-base-200/60">
-                <span class="text-[11px] font-medium opacity-40 tracking-widest uppercase font-sans">分享藝術 ｜ Share :</span>
+                <span class="text-[11px] font-medium opacity-40 tracking-widest uppercase font-sans">分享藝術｜Share :</span>
                 <div class="flex items-center gap-3 text-base-content/60">
                     <button class="hover:text-primary hover:scale-105 transition-all p-1 cursor-pointer" data-sharer="x" data-title="{{ single_product.product_name }}" data-url="{{ absolute_url }}"><i class="fa-brands fa-square-x-twitter fa-lg"></i></button>
                     <button class="hover:text-primary hover:scale-105 transition-all p-1 cursor-pointer" data-sharer="facebook" data-url="{{ absolute_url }}"><i class="fa-brands fa-facebook fa-lg"></i></button>

@@ -206,7 +206,7 @@ def send_bank_hold_confirmation_email_task(order_id):
         if getattr(order, 'email_sent', False):
             return f"Bank hold summary alert distribution sequence already logged for Order {order.order_number}"
 
-        mail_subject = f"Hṛdayadīpa (हृदयदीप) ｜ 心燈 - Bank Transfer Instructions ｜ 銀行轉帳指引 [#{order.order_number}]"
+        mail_subject = f"Hṛdayadīpa (हृदयदीप)｜心燈 - Bank Transfer Instructions｜銀行轉帳指引 [#{order.order_number}]"
         from_email = settings.DEFAULT_FROM_EMAIL
         to_email = [order.email.strip()]
 
@@ -282,7 +282,7 @@ def send_e_product_email_task(token_id):
         order = token.order_product.order
         product = token.order_product.product_variation.product
         
-        mail_subject = f"✨ Ready for Download: Your Digital Content ｜ 電子商品下載連結 [#{order.order_number}]"
+        mail_subject = f"✨ Ready for Download: Your Digital Content｜電子商品下載連結 [#{order.order_number}]"
         
         # Base site URL routing pass (Adjust variable based on your local vs live deployment keys)
         site_domain = getattr(settings, "SITE_DOMAIN", "http://localhost:8000")

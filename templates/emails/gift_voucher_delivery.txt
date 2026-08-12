@@ -1,4 +1,4 @@
-Hṛdayadīpa (हृदयदीप)｜心燈 - Gift Voucher Delivery ｜ 禮品券通知
+Hṛdayadīpa (हृदयदीप)｜心燈 - Gift Voucher Delivery｜禮品券通知
 
 Hello,
 
@@ -15,4 +15,4 @@ Please use this absolute tracking URL to claim this voucher balance securely int
 {{ registration_link }}
 
 Warmest regards,
-The Hṛdayadīpa ｜ 心燈 Team
+The Hṛdayadīpa｜心燈 Team

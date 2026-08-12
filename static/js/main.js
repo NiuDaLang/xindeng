@@ -497,20 +497,41 @@ const updateHeaderCartDetails = (items_count, items_total, cart_items) => {
     document.querySelector("#cart_sub_total").innerText = `CNY ${items_total}`
 
     const product_list_item_html = cart_items.map(item => `
-
-            <li class="flex hover:bg-base-200 transition-colors duration-300 ease-in-out rounded-2xl items-center mt-2">
-                <a href="${item.url}" class="flex flex-col flex-grow-0 items-start p-2">
-                    <span class="text-sm"><strong>${item.product}</strong></span>
-                    <span class="text-[0.65rem]">${item.product_variation}</span>
-                    <img src="${item.image_url}" alt="product image" class="rounded-e-4xl">
+            <li class="flex items-center justify-between bg-base-50/50 hover:bg-base-50 border border-base-200/30 rounded-xl p-1.5 transition-all duration-300 gap-2 group">
+                <a href="${item.url}" class="flex items-center gap-3 min-w-0 flex-1 select-none">
+                    <div class="w-10 h-10 xs:w-12 xs:h-12 rounded-lg overflow-hidden bg-base-200 border border-base-200/50 flex-shrink-0 relative">
+                        <img src="${item.image_url}" alt="product thumbnail" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <span class="text-xs font-bold text-base-content/80 group-hover:text-primary transition-colors truncate">
+                            ${item.product}
+                        </span>
+                        <span class="text-[9px] xs:text-[10px] font-mono text-base-content/40 tracking-tight truncate mt-0.5">
+                            SKU: ${item.product_variation}
+                        </span>
+                    </div>
                 </a>
-                <div class="h-full flex gap-1 items-center mr-2">
-                    <span class="">X</span>
-                    <span id="header_item_qty_${item.id}" class="flex-grow-1">${item.quantity }</span>
+                <div class="flex items-center gap-1 text-base-content/60 font-sans font-medium px-2 flex-shrink-0 text-right">
+                    <span class="text-[10px] opacity-40">✕</span>
+                    <span id="header_item_qty_${item.id}" class="text-xs font-mono font-bold text-base-content/80 bg-base-200/60 px-1.5 py-0.5 rounded-md min-w-[1.25rem] text-center">
+                        ${item.quantity }
+                    </span>
                 </div>
-            </li>
 
+            </li>
         `).join('')
+
+            // <li class="flex hover:bg-base-200 transition-colors duration-300 ease-in-out rounded-2xl items-center mt-2">
+                // <a href="${item.url}" class="flex flex-col flex-grow-0 items-start p-2">
+                    // <span class="text-sm"><strong>${item.product}</strong></span>
+                    // <span class="text-[0.65rem]">${item.product_variation}</span>
+                    // <img src="${item.image_url}" alt="product image" class="rounded-e-4xl">
+                // <a>
+                // <div class="h-full flex gap-1 items-center mr-2">
+                //     <span class="">X</span>
+                //     <span id="header_item_qty_${item.id}" class="flex-grow-1">${item.quantity }</span>
+                // </div>
+            // </li>
     console.log("[updateHeaderCartDetails] cart_items: ", cart_items)
 
     const cart_items_list = document.querySelector("#cart_items_list")
@@ -632,7 +653,7 @@ async function createOrder() {
                 // Fallback catch for alternate system errors
                 Swal.fire({
                     icon: 'error',
-                    title: 'Validation Error ｜ 驗證失敗',
+                    title: 'Validation Error｜驗證失敗',
                     text: error_data.error || 'An unexpected verification error occurred.',
                     confirmButtonText: 'OK',
                     confirmButtonColor: '#3085d6'
@@ -734,8 +755,8 @@ async function renderPayPalComponents(clientToken) {
                 
                 // 🔄 Visual Anchor: Show a non-dismissible loading block while our backend processes stock subtractions
                 Swal.fire({
-                    title: 'Processing Payment... ｜ 正在處理支付',
-                    text: 'Please do not close this window. ｜ 請勿關閉此頁面。',
+                    title: 'Processing Payment...｜正在處理支付',
+                    text: 'Please do not close this window.｜請勿關閉此頁面。',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading(); }
                 });
@@ -751,9 +772,9 @@ async function renderPayPalComponents(clientToken) {
                         // 🎯 SWAL Fallback for internal database error
                         Swal.fire({
                             icon: 'error',
-                            title: 'Order Sync Failed ｜ 訂單同步失敗',
+                            title: 'Order Sync Failed｜訂單同步失敗',
                             text: 'Database validation failed. Please check your network or contact support.',
-                            confirmButtonText: 'OK ｜ 確定',
+                            confirmButtonText: 'OK｜確定',
                             confirmButtonColor: '#3085d6'
                         });
                     }
@@ -762,9 +783,9 @@ async function renderPayPalComponents(clientToken) {
                     // 🎯 SWAL Fallback for pipeline capture connection exception
                     Swal.fire({
                         icon: 'error',
-                        title: 'Capture Error ｜ 捕獲交易失敗',
+                        title: 'Capture Error｜捕獲交易失敗',
                         text: 'Unable to communicate with payment settlement gateway.',
-                        confirmButtonText: 'Retry ｜ 重試',
+                        confirmButtonText: 'Retry｜重試',
                         confirmButtonColor: '#3085d6'
                     });
                 }
@@ -798,7 +819,7 @@ async function renderPayPalComponents(clientToken) {
                             <p class="text-xs text-base-content/70 mt-1">手續校驗失敗，可能由於信用卡受限或安全政策拦截。</p>
                         </div>
                     `,
-                    confirmButtonText: 'Try Alternative Method ｜ 更換支付方式',
+                    confirmButtonText: 'Try Alternative Method｜更換支付方式',
                     confirmButtonColor: '#3085d6'
                 });
             },
@@ -812,9 +833,9 @@ async function renderPayPalComponents(clientToken) {
             if (window.checkoutTimer && window.checkoutTimer.currencyExpired) {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Rates Lapsed ｜ 匯率過期',
+                    title: 'Rates Lapsed｜匯率過期',
                     text: 'Transaction halted. Please refresh to fetch current market parameters.',
-                    confirmButtonText: 'Refresh ｜ 刷新頁面',
+                    confirmButtonText: 'Refresh｜刷新頁面',
                     confirmButtonColor: '#d33'
                 }).then(() => {
                     window.location.reload();
@@ -1020,7 +1041,7 @@ document.body.addEventListener('showDapDisclaimer', (evt) => {
 //             title: payload.title,
 //             text: payload.text,
 //             icon: 'warning',
-//             confirmButtonText: '返回購物車 ｜ Return to Cart',
+//             confirmButtonText: '返回購物車｜Return to Cart',
 //             confirmButtonColor: '#3085d6',
 //             allowOutsideClick: false,
 //             allowEscapeKey: false
@@ -1492,14 +1513,14 @@ function triggerOrderCancellation(orderNumber, totalDue) {
     if (cashRemaining <= 0) {
         // 🌟 If paid entirely by voucher, skip choices and process instantly
         Swal.fire({
-            title: 'Cancel Order? ｜ 申請取消訂單？',
+            title: 'Cancel Order?｜申請取消訂單？',
             text: `This order was paid entirely using store credits. The full amount will be credited back as a voucher. / 此訂單為全額購物金支付，取消後面值將全額退回至您的虛擬禮品卡中。確定取消嗎？`,
             icon: 'info',
             showCancelButton: true,
             confirmButtonColor: '#4b9aaa',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Confirm ｜ 確定取消',
-            cancelButtonText: 'Keep ｜ 保持原狀'
+            confirmButtonText: 'Confirm｜確定取消',
+            cancelButtonText: 'Keep｜保持原狀'
         }).then((result) => {
             if (result.isConfirmed) {
                 window.location.href = `/orders/cancel-request/${orderNumber}/?refund_type=voucher`;
@@ -1511,24 +1532,24 @@ function triggerOrderCancellation(orderNumber, totalDue) {
     }
 
     Swal.fire({
-        title: 'Cancel Order? ｜ 申請取消訂單？',
+        title: 'Cancel Order?｜申請取消訂單？',
         text: `Select your preferred return avenue for order #${orderNumber}: / 請選擇您的取消與退款方式：`,
         icon: 'warning',
         input: 'radio',
         inputOptions: {
-            'voucher': '100% Full Refund via Store Voucher (Instant) ｜ 100% 全額儲值購物金（無行政費、即時到帳）',
-            'cash': 'Original Payment Avenue (Minus 3% Administration Fee) ｜ 退回原支付管道（須扣除 3% 行政手續費）'
+            'voucher': '100% Full Refund via Store Voucher (Instant)｜100% 全額儲值購物金（無行政費、即時到帳）',
+            'cash': 'Original Payment Avenue (Minus 3% Administration Fee)｜退回原支付管道（須扣除 3% 行政手續費）'
         },
         inputValidator: (value) => {
             if (!value) {
-                return 'You must choose a refund pathway! ｜ 您必須選擇一種退款方式！'
+                return 'You must choose a refund pathway!｜您必須選擇一種退款方式！'
             }
         },
         showCancelButton: true,
         confirmButtonColor: '#4b9aaa',
         cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Confirm Cancellation ｜ 確定取消',
-        cancelButtonText: 'No, Keep Order ｜ 保持原狀'
+        confirmButtonText: 'Confirm Cancellation｜確定取消',
+        cancelButtonText: 'No, Keep Order｜保持原狀'
     })
     .then((result) => {
         if (result.isConfirmed) {
@@ -1566,69 +1587,3 @@ window.toggleProvinceFields = toggleProvinceFields;
 window.openOrderDetailsModal = openOrderDetailsModal;
 window.closeOrderDetailsModal = closeOrderDetailsModal;
 window.triggerOrderCancellation = triggerOrderCancellation;
-
-// The SdkInitError: .start() expects a Promise. Received 'string' occurs 
-// because you are await-ing the createOrder() function before passing it to the PayPal session.
-// In the 2026 PayPal v6 SDK, paypalPaymentSession.start() requires a Promise reference 
-// so it can trigger the order creation inside the secure popup it just opened. 
-// By using await, you resolved the promise to a string (the ID) too early.
-
-// 1. Fix the setUpPayPalButton Logic
-// Remove the await from createOrder() and pass the promise directly.
-
-// paypalButton.addEventListener("click", async () => {
-//     // REMOVE 'await' here. You want the Promise object, not the ID string.
-//     const createOrderPromiseReference = createOrder(); 
-    
-//     console.log("Passing Promise to PayPal...");
-
-//     const presentationModesToTry = ["payment-handler", "popup", "modal"];
-
-//     for (const presentationMode of presentationModesToTry) {
-//       try {
-//         await paypalPaymentSession.start(
-//           { presentationMode },
-//           createOrderPromiseReference, // PayPal will await this internally
-//         );
-//         break;
-//       } catch (error) {
-//         if (error.isRecoverable) continue;
-//         throw error;
-//       }
-//     }
-// });
-
-// 2. Fix the createOrder Error Handling
-// Your createOrder function currently returns error in the catch block. 
-// This causes the promise to resolve with an error object rather than rejecting. 
-// This will confuse the PayPal SDK.
-// Update your createOrder catch block:
-
-// async function createOrder() {
-//     // ... existing logic ...
-//     try {
-//         const response = await fetch(...);
-//         // ... existing response.ok check ...
-//         const data = await response.json();
-//         return data.id; 
-//     } catch(error) {
-//         console.error("Failed to create order:", error);
-//         // CRITICAL: Use 'throw' so the promise is 'rejected'
-//         throw error; 
-//     }
-// }
-
-// 3. Check paymentSessionOptions (OnApprove)
-// In your onApprove function, you are using data.id. Depending on the exact v6 sub-version, the property name might be orderID or data.orderID.
-// If captureOrder fails after you fix the initialization, check the data object:
-
-// async onApprove(data) {
-//     console.log("Approval Data:", data);
-//     // Ensure you are passing the correct field (usually orderID or id)
-//     const orderData = await captureOrder({
-//         orderId: data.orderID || data.id, 
-//     });
-// }
-
-// Summary of the v6 Requirement:
-// The start() method is designed to prevent popup blockers. It needs the Promise so it can immediately open the window and then populate it with the Order ID once your server responds. By resolving it yourself first, you broke the "intent" chain required by the SDK.

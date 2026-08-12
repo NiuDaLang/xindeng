@@ -11,14 +11,14 @@
         <!-- Lockout Notice Component -->
         <fieldset class="fieldset bg-primary-content border-error/30 rounded-box w-full max-w-md border p-6 text-center space-y-4 shadow-xl">
             <div class="text-error"><i class="fa-solid fa-triangle-exclamation fa-3x"></i></div>
-            <h2 class="text-xl font-bold text-error">Security Lockout ｜ 賬戶安全鎖定</h2>
+            <h2 class="text-xl font-bold text-error">Security Lockout｜賬戶安全鎖定</h2>
             <p class="text-xs text-base-content/80 font-medium leading-relaxed">
                 驗證失敗次數過多。為保護財產安全，該兌換通路已關閉。<br/>
                 Too many failed validation attempts. Access has been locked.
             </p>
             <div class="border-t border-dashed border-base-300 my-2"></div>
             <p class="text-xs font-semibold">
-                請聯繫客服協助驗證 ｜ Assistance Label:<br/>
+                請聯繫客服協助驗證｜Assistance Label:<br/>
                 <a href="mailto:support@hrdayadipa.com" class="link link-primary font-mono">support@hrdayadipa.com</a>
             </p>
         </fieldset>
@@ -28,12 +28,12 @@
         <!-- Active Voucher Ledger Component -->
         <fieldset class="fieldset bg-primary-content border-base-300 rounded-box w-full max-w-md border p-6 shadow-xl animate-fade-in">
             <h1 class="text-2xl font-extrabold text-teal-600 text-center tracking-tight">
-                Gift Voucher For You ｜ 尊享禮品券
+                Gift Voucher For You｜尊享禮品券
             </h1>
             
             <!-- Price Card -->
             <div class="bg-base-100 border border-base-200 rounded-xl p-4 text-center my-3 shadow-inner">
-                <span class="text-[0.65rem] uppercase tracking-widest font-bold text-base-content/60">Face Value ｜ 禮券金額</span>
+                <span class="text-[0.65rem] uppercase tracking-widest font-bold text-base-content/60">Face Value｜禮券金額</span>
                 <div class="text-3xl font-black text-teal-600 font-mono mt-1">CNY ¥{{ voucher.value }}</div>
             </div>
 
@@ -46,12 +46,12 @@
             <!-- User Context Authentication Verification Component -->
             {% if request.user.is_authenticated %}
             <div class="bg-info/5 border border-info/20 p-3 rounded-lg text-xs space-y-1 my-3 text-base-content/80">
-                <p class="font-bold text-info-content"><i class="fa-solid fa-user-shield mr-1"></i> Account Check ｜ 賬戶校驗認證</p>
+                <p class="font-bold text-info-content"><i class="fa-solid fa-user-shield mr-1"></i> Account Check｜賬戶校驗認證</p>
                 <p>You are currently logged in as: <span class="font-mono font-bold text-teal-700">{{ request.user.email }}</span></p>
                 <p class="text-[0.65rem] text-base-content/60">If this is not the account you wish to credit, please switch accounts before generating your PIN.</p>
                 <div class="flex gap-4 mt-2 justify-end">
-                    <a href="{% url 'login' %}?next={{ request.path }}" class="link link-primary font-bold">Switch Account ｜ 切換帳號</a>
-                    <a href="{% url 'register' %}" class="link link-secondary font-bold">Register New ｜ 註冊新號</a>
+                    <a href="{% url 'login' %}?next={{ request.path }}" class="link link-primary font-bold">Switch Account｜切換帳號</a>
+                    <a href="{% url 'register' %}" class="link link-secondary font-bold">Register New｜註冊新號</a>
                 </div>
             </div>
 
@@ -68,7 +68,7 @@
                             hx-swap="none"
                             class="w-full btn btn-teal text-white mt-4"
                     >
-                        <i class="fa-solid fa-paper-plane"></i> Send Secure Verification PIN ｜ 發送安全驗證碼
+                        <i class="fa-solid fa-paper-plane"></i> Send Secure Verification PIN｜發送安全驗證碼
                     </button>
                 </div>
             </form>
@@ -80,8 +80,8 @@
                     請登入或建立帳戶以啟用此禮品券。<br/>
                     Please sign in or create an account to claim this wallet balance asset.
                 </p>
-                <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-neutral text-white btn-block">Sign In ｜ 登入帳戶</a>
-                <a href="{% url 'register' %}" class="btn btn-outline btn-block text-xs">Sign Up ｜ 建立全新帳號</a>
+                <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-neutral text-white btn-block">Sign In｜登入帳戶</a>
+                <a href="{% url 'register' %}" class="btn btn-outline btn-block text-xs">Sign Up｜建立全新帳號</a>
             </div>
             {% endif %}
 

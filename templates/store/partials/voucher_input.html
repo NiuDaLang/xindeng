@@ -1,18 +1,31 @@
 {% load humanize %}
-<form hx-post="{% url 'apply_voucher' %}" 
-      hx-swap="none"
-      class="flex gap-2"
->
-    {% csrf_token %}
-    <input type="number" 
-            name="voucher_amount" 
-            id="voucher_input_field"
-            min="0" step="0.01" 
-            max="{{ max_voucher_enterable|default_if_none:'0.00' }}" 
-            placeholder="Amount to use｜適用金額"
-            class="input input-bordered w-full"
-            {% if cash_voucher_balance == 0 %}disabled{% endif %}
-            required
-    >
-    <button type="submit" class="btn btn-secondary">Apply｜適用</button>
-</form>
+<div class="w-full space-y-1.5">
+    <form hx-post="{% url 'apply_voucher' %}" hx-swap="none" class="flex gap-2 w-full">
+        {% csrf_token %}
+        <div class="relative grow">
+            <input type="number"
+                name="voucher_amount"
+                id="voucher_input_field"
+                min="0" 
+                step="0.01"
+                max="{{ max_voucher_enterable|default_if_none:'0.00' }}"
+                style="font-size: clamp(0.675rem, 1vw + 0.1rem, 0.75rem);"
+                class="input input-bordered w-full font-sans text-xs focus:outline-none focus:border-primary px-3 h-9 min-h-0 placeholder:text-base-content/40 disabled:bg-base-200/50 disabled:border-base-200"
+                placeholder="Amount to use｜適用金額"
+                {% if cash_voucher_balance == 0 %}disabled{% endif %}
+                required>
+        </div>
+        <button type="submit" 
+                class="btn btn-secondary px-2 xxs:px-3 xs:px-4 md:max-[900px]:px-2 min-[901px]:px-4 h-9 min-h-0 text-[0.65rem] xxs:text-xs md:max-[900px]:text-[0.65rem] min-[901px]:text-xs font-semibold normal-case tracking-wide shrink-0 {% if cash_voucher_balance == 0 %}btn-disabled opacity-40{% endif %}">
+            Apply｜適用
+        </button>
+    </form>
+    <!-- 💡 PRODUCTION-READY BILINGUAL MICRO-NOTICE -->
+    <div class="pl-1 select-none pointer-events-none">
+        <p class="text-[9px] min-[360px]:text-[10px] leading-normal font-sans text-base-content/40 font-medium tracking-wide">
+            * Note: Vouchers are only applicable to non-voucher purposes (i.e. they cannot be used to purchase vouchers).
+            <br>
+            * 提示：現金券僅適用於非現金券類商品（即不可使用現金券購買新的現金券）。
+        </p>
+    </div>
+</div>

@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Customer Service Response ｜ 客服留言回覆</title>
+        <title>Customer Service Response｜客服留言回覆</title>
         <link rel="preconnect" href="https://googleapis.com">
         <link rel="preconnect" href="https://gstatic.com" crossorigin>
         <link href="https://googleapis.com/css2?family=Noto+Sans+TC:wght@100..900&display=swap" rel="stylesheet">
@@ -27,9 +27,9 @@
                         <tr>
                             <td class="body" style="padding: 40px 40px 20px 40px; text-align: left; font-size: 0.85rem; line-height: 1.35rem; color: #161616;">
                                 {% if user.username %}
-                                    Dear {{user.username}} ｜ 親愛的{{user.username}}
+                                    Dear {{user.username}}｜親愛的{{user.username}}
                                 {% else %}
-                                    Dear {{order.email}} ｜ 親愛的{{order.email}}
+                                    Dear {{order.email}}｜親愛的{{order.email}}
                                 {% endif %}
                                 <br><br>
                                 A member of our support team has left a new response regarding your order reference <strong>#{{ order.order_number }}</strong>:<br/>
@@ -58,7 +58,7 @@
                                     您隨時可以透過下方的安全連結查閱完整的諮詢與對話歷史紀錄：
                                 </p>
                                 <a href="{{ site_domain }}/contact/" style="display: inline-block; background-color: #4b9aaa; color: #ffffff; padding: 12px 25px; text-decoration: none; font-size: 0.8rem; font-weight: bold; border-radius: 6px; letter-spacing: 0.05em; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                    View Live Tracking Portal ｜ 前往進度查詢入口
+                                    View Live Tracking Portal｜前往進度查詢入口
                                 </a>
                             </td>
                         </tr>

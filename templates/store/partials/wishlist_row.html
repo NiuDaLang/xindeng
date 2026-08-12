@@ -1,142 +1,120 @@
 {% load humanize %}
 
-{% if wishlist %}
-    <h2 class="text-[1.25rem] mb-5">未來購物清單｜Wishlist</h2>
-    <div class="list bg-base-300 rounded-box shadow-md text-secondary">
-        {% for item in wishlist %}
-            <div id="wishlist_item_{{ item.pk }}" class="wishlist-item flex gap-3 p-3  flex-col flex-grow justify-center">
-                <!-- top -->
-                <div class="flex justify-between items-center mb-3">
-                    <!-- item-name -->
-                    <a id="wish_item_product_link_{{item.product_variation.id}}" href="{{ item.product_variation.product.get_url }}" class="list-col-grow">
-                        <div id="wish_item_product_name_{{item.product_variation.id}}" >{{ item.product_variation.product.product_name }}</div>
-                        <div class="text-xs uppercase font-semibold opacity-60">{{ item.sku }}</div>
-                    </a>
-                    <!-- item-quantity -->
-                    <div class="flex w-28 h-4/5 border-primary ">
-                        <div class="shadow rounded-3xl">
-                            <div class="flex items-center h-full p-5">
-                                {% if item.product_variation.stock > 1 %}
-                                <div class="stat-title text-success font-black">存貨｜Stock: {{ item.product_variation.stock }}件</div>
-                                {% elif item.product_variation.stock == 1 %}
-                                <div class="stat-title text-warning font-black">僅剩｜Last: 1件</div>
-                                {% elif item.product_variation.stock == 0 %}
-                                <div class="stat-title text-error font-black">缺貨｜Out of Stock</div>
+<div class="w-full mt-10 font-sans">
+    <!-- 🌟 SECTION HEADING: Unified style matching the main Cart title for brand consistency -->
+    <h2 class="text-sm min-[400px]:text-base md:text-[0.85rem] lg:text-base font-bold tracking-tight text-base-content/90 mb-3 select-none">
+        Wishlist｜</span>購物清單
+    </h2>
+
+    {% if wishlist %}
+        <div class="list bg-base-200/60 rounded-box shadow-md p-4 sm:p-5 space-y-4">
+            {% for item in wishlist %}
+            <div id="wishlist_item_card_{{ item.id }}" class="flex flex-col md:flex-row gap-3 p-3 sm:p-4 bg-base-100 border border-base-200/60 rounded-2xl relative min-w-0 w-full group transition-all duration-300 hover:shadow-sm">
+                
+                <!-- CORE DETAILS MATRIX AREA (3-Row Structure matching cart items) -->
+                <div class="flex flex-col flex-grow justify-center min-w-0 w-full space-y-4">
+                    
+                    <!-- ======================================================== -->
+                    <!-- 🌟 ROW 1: IDENTITY HEADER (Product Title & SKU) -->
+                    <!-- ======================================================== -->
+                    <div class="w-full pb-2 border-b border-base-200/50">
+                        <a href="{{ item.product_variation.product.get_url }}" class="block group max-w-full">
+                            <div class="text-xs sm:text-sm font-bold text-base-content/90 group-hover:text-primary transition-colors truncate max-w-full" title="{{ item.product_variation.product.product_name }}">
+                                {{ item.product_variation.product.product_name }}
+                            </div>
+                            <div class="text-[9px] sm:text-[10px] uppercase font-mono font-bold opacity-40 mt-0.5 tracking-wider truncate max-w-full">
+                                SKU: {{ item.product_variation.get_sku }}
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- ======================================================== -->
+                    <!-- 🌟 ROW 2: CORE WORKSPACE MODULE (Image & Specifications) -->
+                    <!-- ======================================================== -->
+                    <div class="flex flex-col sm:flex-row gap-4 items-start w-full">
+                        <!-- Art Media Thumbnail Frame -->
+                        <div class="w-20 h-20 sm:w-24 sm:h-24 aspect-square flex-shrink-0 rounded-xl overflow-hidden bg-base-200 border border-base-200/50 shadow-inner relative block">
+                            <a href="{{ item.product_variation.product.get_url }}">
+                                <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src="{{ item.product_variation.images.url }}" alt="Product Thumbnail" loading="lazy"/>
+                            </a>
+                        </div>
+                        
+                        <!-- Specifications Panel Column -->
+                        <div class="text-[11px] flex-1 text-base-content/60 leading-relaxed font-normal min-w-0 space-y-1">
+                            <div>
+                                <b>Format｜商品形式：&nbsp;</b>
+                                {% if item.product_variation.product.is_physical %}
+                                    <span class="text-base-content/80"><i class="fa-solid fa-box-open fa-sm opacity-70"></i>&nbsp;Physical Product｜實體商品</span>
+                                {% else %}
+                                    <span class="text-info font-medium"><i class="fa-solid fa-download fa-sm"></i>&nbsp;eProduct｜電子商品</span>
                                 {% endif %}
                             </div>
+                            <div><b>Size｜尺寸：&nbsp;</b><span class="font-mono text-base-content/80">{% if item.product_variation.size %}{{ item.product_variation.size.size_name }}{% else %}--{% endif %}</span></div>
+                            <div><b>Color｜顏色：&nbsp;</b><span class="text-base-content/80">{% if item.product_variation.color %}{{ item.product_variation.color.color_name }}{% else %}--{% endif %}</span></div>
+                            <div><b>Type｜款式：&nbsp;</b><span class="text-base-content/80">{% if item.product_variation.type %}{{ item.product_variation.type.type_name }}{% else %}--{% endif %}</span></div>
                         </div>
                     </div>
-                    <!-- item-unit_price -->
-                    <div class="text-right text-base-content pr-5">
-                        CNY {{item.product_variation.price|floatformat:2|intcomma}}
-                    </div>
-                </div>
-                <!-- bottom -->
-                <div class="flex gap-5">
-                    <!-- image -->
-                    <a href="{{ item.product_variation.product.get_url }}" class="md:size-38 aspect-square"><img class="w-full h-full rounded-box object-cover" src="{{item.product_variation.images.url}}"/></a>
 
-                    <div class="flex w-full">
-                        <!-- details -->
-                        <div class="text-[12px] w-3/5 pr-10">
-                            <div><b>發貨地：</b>中國</div>
-                            <div><b>顏色：</b>橙色</div>
-                            <div><b>尺寸/規格：</b>含2026日历最新版</div>
-                        </div>
-                        <!-- option buttons -->
-                        <div id="wishlist_item_options_{{item.pk}}" class="flex flex-wrap w-2/5 gap-3 content-center p-2">
-                            <div class="tooltip tooltip-primary text-md before:text-[10px]" data-tip="Move to cart｜轉入購物車">
-                                <button type="button"
-                                        class="btn btn-outline btn-primary"
-                                        hx-post="{% url 'add_wish_to_cart' item.pk %}"
-                                        hx-vals='{"variation_id": "{{ item.product_variation.id }}"}'
-                                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                                        hx-target="#wishlist_wrapper_ul"
-                                        hx-swap="innerHTML"
-                                        hx-trigger="confirmed"
-                                        onclick="confirmAction(
-                                            button=this,
-                                            title='Are you sure?｜您確定嗎？',
-                                            html=`This item will be moved to your cart!<br>此寶貝將被移到您的購物車中！`,
-                                            icon='warning',
-                                            show_cancel=true,
-                                            confirm_btn_color='#d33',
-                                            cancel_btn_color='#3085d6',
-                                            confirm_btn_text='Yes, move it!｜確定轉移！',
-                                            cancel_btn_text='Cancel｜取消',
-                                        )"
-                                >
-                                    <i class="fa-solid fa-cart-plus"></i>
-                                </button>
+                    <!-- ======================================================== -->
+                    <!-- 🌟 ROW 3: CONTROL BAR PIPELINE (Pricing & Action Utilities) -->
+                    <!-- ======================================================== -->
+                    <div class="flex flex-col min-[481px]:flex-row items-center justify-between gap-3 pt-3 border-t border-base-200/50 w-full text-xs">
+                        
+                        <!-- LEFT-CENTER: Price Stack (Unit Cost) -->
+                        <div class="flex flex-col text-left font-sans justify-center min-w-0 w-full min-[481px]:w-auto">
+                            <div class="unit_price text-primary font-mono font-bold text-xs sm:text-sm">
+                                ¥&nbsp;{{ item.product_variation.price|floatformat:2|intcomma }}
                             </div>
-                            <div class="tooltip tooltip-error text-md before:text-[10px]" data-tip="刪除該產品｜Delete">
-                                <button type="button" 
-                                        class="btn btn-outline btn-error"
-                                        hx-post="{% url 'delete_wishlist_item' item.pk %}"
-                                        hx-vals='{"variation_id": "{{ item.product_variation.id }}", "source": "cart"}'
-                                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                                        hx-target="#wishlist_wrapper_ul"
-                                        hx-trigger="confirmed"
-                                        hx-swap="innerHTML"
-                                        onclick="confirmAction(
-                                            button=this,
-                                            title='Are you sure?｜您確定嗎？',
-                                            html=`This item will be removed from your wishlist!<br>此寶貝將從您的購物清單中移除！`,
-                                            icon='warning',
-                                            show_cancel=true,
-                                            confirm_btn_color='#d33',
-                                            cancel_btn_color='#3085d6',
-                                            confirm_btn_text='Yes, remove it!｜確定移除！',
-                                            cancel_btn_text='Cancel｜取消',
-                                        )"
-                                >
-                                    <i class="w-full fa-solid fa-trash"></i>
-                                </button>
-                            </div>
-                            <div class="tooltip tooltip-success text-md before:text-[10px]" data-tip="分享｜Share">
-                                <button type="button"
-                                        class="btn btn-outline btn-success" 
-                                        data-title="Hṛdayadīpa (हृदयदीप) - {{ item.product_variation.product.product_name }}"
-                                        data-text="{{ item.product_variation.get_sku }}"
-                                        data-link="{{ request.build_absolute_uri }}"
-                                        hx-on:click="share_link(this.getAttribute('data-title'), this.getAttribute('data-text'), this.getAttribute('data-link'))"
-                                >
-                                    <i class="fa-solid fa-share-from-square"></i>
-                                </button>
-                            </div>
-
-                            {% if user.is_authenticated %}
-                            <div class="tooltip tooltip-secondary text-md before:text-[10px]" data-tip="收藏該產品｜Favorite">
-                                <button type="button"
-                                        class="btn btn-outline btn-secondary"
-                                        hx-post="{% url 'add_to_favorite' item.product_variation.pk %}"
-                                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                                        hx-swap="none"
-                                >                                
-                                    <i class="w-full fa-solid fa-bookmark"></i>
-                                </button>                                                   
+                            {% if item.product_variation.original_price and item.product_variation.original_price > item.product_variation.price %}
+                            <div class="text-error line-through text-[9px] font-mono opacity-60 leading-none mt-0.5">
+                                ¥&nbsp;{{ item.product_variation.original_price|floatformat:2|intcomma }}
                             </div>
                             {% endif %}
                         </div>
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-{% else %}
-    <!-- This ensures the UI cleans up when the last item is moved -->
-    <div class="flex flex-col items-center justify-center p-8 bg-base-200/50 rounded-box border border-dashed border-base-300 text-center my-6 select-none">
-        <div class="mb-3 text-primary opacity-60">
-            <i class="fa-regular fa-heart fa-2xl"></i>
-        </div>
-        <h3 class="text-sm font-semibold text-base-content/80 mb-1">
-            Store your wishes here while you explore...<br>
-            <span class="text-xs font-normal opacity-60">在探索我們的商品時，把您的心願收藏於此吧。</span>
-        </h3>
-        <p class="text-[11px] opacity-50 max-w-sm mt-1">
-            Save items you love here to keep track of your wishes. Take your time to discover something special.<br>
-            <span class="block mt-1">在這裡收藏您心儀的寶貝，記錄您的美好心願。慢慢選購，遇見專屬於您的驚喜。</span>
-        </p>
-    </div>
 
-{% endif %}
+                        <!-- RIGHT: Actions Container (Splits onto line 2 seamlessly below 480px width) -->
+                        <div id="wishlist_item_options_{{ item.pk }}" class="flex items-center justify-center min-[481px]:justify-end gap-1.5 sm:gap-2 flex-shrink-0 w-full min-[481px]:w-auto pt-2 min-[481px]:pt-0 border-t border-dashed border-base-200 min-[481px]:border-none">
+                            
+                            <!-- Action 1: Move Back to Cart -->
+                            <div class="tooltip tooltip-primary text-xs before:text-[9px]" data-tip="移回購物車｜Move to cart">
+                                <button type="button" class="btn btn-ghost btn-sm btn-circle text-base-content/40 hover:text-primary hover:bg-primary/10 transition-colors"
+                                        hx-post="{% url 'add_wish_to_cart' item.pk %}" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' hx-swap="none" hx-trigger="confirmed"
+                                        onclick="confirmAction(button=this, title='Move to Cart?｜移回購物車？', html='This item will be restored to your active cart!<br>此寶貝將被重置回購物車中！', icon='info', show_cancel=true, confirm_btn_color='#3085d6', cancel_btn_color='#d33', confirm_btn_text='Yes, move it!｜確定移回！', cancel_btn_text='Cancel｜取消')">
+                                    <i class="fa-solid fa-cart-arrow-down text-xs"></i>
+                                </button>
+                            </div>
+
+                            <!-- Action 2: Share Wishlist Item -->
+                            <div class="tooltip tooltip-success text-xs before:text-[9px]" data-tip="分享｜Share">
+                                <button type="button" class="btn btn-ghost btn-sm btn-circle text-base-content/40 hover:text-success hover:bg-success/10 transition-colors"
+                                        data-title="Wishlist Share - {{ item.product_variation.product.product_name }}" data-text="{{ item.product_variation.get_sku }}" data-link="{{ request.build_absolute_uri }}"
+                                        hx-on:click="share_link(this.getAttribute('data-title'), this.getAttribute('data-text'), this.getAttribute('data-link'))">
+                                    <i class="fa-solid fa-share-from-square text-xs"></i>
+                                </button>
+                            </div>
+
+                            <!-- Action 3: Absolute Wishlist Removal -->
+                            <div class="tooltip tooltip-error text-xs before:text-[9px]" data-tip="移出清單｜Remove">
+                                <button type="button" class="btn btn-ghost btn-sm btn-circle text-base-content/40 hover:text-error hover:bg-error/10 transition-colors"
+                                        hx-post="{% url 'delete_wishlist_item' item.pk %}" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' hx-swap="none" hx-trigger="confirmed"
+                                        onclick="confirmAction(button=this, title='Remove Item?｜確定移出？', html='This item will be permanently removed from your wishlist!<br>此寶貝將被永久移出清單！', icon='warning', show_cancel=true, confirm_btn_color='#d33', cancel_btn_color='#3085d6', confirm_btn_text='Yes, remove it!｜確定移除！', cancel_btn_text='Cancel｜取消')">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
+
+                        </div> <!-- End Actions Group -->
+                    </div> <!-- End Row 3 -->
+                    
+                </div> <!-- End Details Stack -->
+            </div> <!-- End Individual Card Component -->
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Compact, Elegant Empty Wishlist Card State -->
+        <div class="flex flex-col items-center justify-center text-center py-12 px-4 bg-base-100 border border-base-200 border-dashed rounded-2xl select-none w-full">
+            <span class="text-3xl mb-2 opacity-30">✨</span>
+            <p class="text-xs font-medium text-base-content/50">Your wishlist is empty</p>
+            <p class="text-[10px] text-base-content/30 mt-0.5">您的購物清單暫無寶貝</p>
+        </div>
+    {% endif %}
+</div>

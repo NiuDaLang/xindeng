@@ -1,6 +1,7 @@
 from .models import UserPerk
 from datetime import timedelta, date
 from django.utils import timezone
+from django.db.models import Q
 
 
 class PerkEvaluator:
@@ -8,8 +9,14 @@ class PerkEvaluator:
     def get_eligibility_status(user, perk):
         # 0. Global Usage Check
         if not perk.has_available_uses():
-            print("perk does NOT have available uses: ", perk.has_available_uses())
             return "OUT_OF_STOCK"
+
+        # Guest Gatekeeper Pass Check
+        if not user or not user.is_authenticated:
+            # If the perk requires authentication or member verification states, deny entry
+            if perk.is_member_exclusive or any(tok in perk.code.upper() for tok in ["NEW_MEMBER", "BIRTHDAY", "VIP"]):
+                return "REQUIRES_AUTHENTICATION"
+            return "VALID"
         
         # 1. Basic Perk Validity (Date/Usage)
         if not perk.is_active or not perk.is_within_validity_period():
@@ -30,9 +37,16 @@ class PerkEvaluator:
         # 🔒 MEMBER-ONLY LIFECYCLE TRACKERS (Only runs if user.is_authenticated)
         # -----------------------------------------------------------------
         # 2. Check if already used
-        if UserPerk.objects.filter(user=user, perk=perk, is_used=True).exists():
-            return "ALREADY_USED"
+        # if UserPerk.objects.filter(user=user, perk=perk, is_used=True).exists():
+        #     return "ALREADY_USED"
 
+        if UserPerk.objects.filter(
+            Q(is_used=True) | Q(used_at__isnull=False),
+            user=user, 
+            perk=perk
+        ).exists():
+            return "ALREADY_USED"
+        
         # 3. Type-Specific Logic
         code = perk.code.upper()
         

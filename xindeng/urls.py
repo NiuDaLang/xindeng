@@ -21,6 +21,7 @@ from . import views
 from django.conf.urls.static import static
 from django.conf import settings
 from django.conf.urls import handler404, handler500
+from django.http import HttpResponse
 
 # Map global system error loops directly to your root views namespace strings
 handler404 = 'xindeng.views.error_404'
@@ -63,6 +64,7 @@ urlpatterns = [
     # errors
     path("error/404/", views.error_404, name="error_404"),
     path("error/500/", views.error_500, name="error_500"),
+    path('.well-known/appspecific/com.chrome.devtools.json', lambda r: HttpResponse('{}', content_type='application/json')),
 
     path("test/", views.test, name="test")
 
