@@ -1,211 +1,115 @@
-<form 
-    {% if address_book_form.instance.id %}
-        id="update_address_form"
-        hx-post="{% url 'update_address' address_book_form.instance.id %}"
-        hx-on::after-request="if(event.detail.successful) { 
-            Swal.fire(
-                'Updated!', 
-                'Address updated.', 
-                'success'
-            ); 
-            my_modal_2.close(); 
-        }"
-    {% else %}
-        id="create_address_form"
-        hx-post="{% url 'create_address' %}"
-        hx-on::after-request="if(event.detail.successful) { 
-            Swal.fire(
-                'Created!', 
-                'Address created.', 
-                'success'
-            ); my_modal_1.close(); }"
-    {% endif %}
-    hx-target="#address-list-container" 
-    class="w-full text-center"
->
+<form {% if address_book_form.instance.id %}
+          id="update_address_form" hx-post="{% url 'update_address' address_book_form.instance.id %}"
+          hx-on::after-request="if(event.detail.successful) { Swal.fire('Updated!', 'Address updated.', 'success'); my_modal_2.close(); }"
+      {% else %}
+          id="create_address_form" hx-post="{% url 'create_address' %}"
+          hx-on::after-request="if(event.detail.successful) { Swal.fire('Created!', 'Address created.', 'success'); my_modal_1.close(); }"
+      {% endif %}
+      hx-target="#address-list-container" class="w-full text-left space-y-4 text-xs">
     {% csrf_token %}
-    <div class="w-full flex flex-col gap-2 py-5">
-        <div class="text-right px-1">
-            <!-- The Clear Button -->
-            <button type="button" 
-                {% if address_book_form.instance.id %}
-                    onclick="clearAddressBookForm('update_address_form')" 
-                {% else %}
-                    onclick="clearAddressBookForm('create_address_form')" 
-                {% endif %}
-                class="btn btn-ghost btn-xs text-error">
-                <i class="fa-solid fa-eraser"></i> Clear All｜清空所有
-            </button>
-        </div>
-        <!-- label -->
-        <label class="input input-border flex w-full items-center gap-2">
-            <i class="fa-solid fa-tag"></i>
-            {{ address_book_form.label }}
-        </label>
 
-        <!-- recipient first name -->
-        <label class="input input-border flex w-full items-center gap-2">
-            <i class="fa-solid fa-person"></i>
-                {{ address_book_form.recipient_first_name }}
-        </label>
-        {% if address_book_form.recipient_first_name.errors %}
-            <label class="label -mt-2">
-                <span class="w-full text-center text-xs text-error font-light">
-                    {{ address_book_form.recipient_first_name.errors.0 }}
-                </span>
-            </label>
-        {% endif %}
+    <div class="flex flex-col xs:flex-row items-center justify-between px-1 border-b border-base-200 pb-2">
+        <span class="text-[10px] font-mono tracking-wider uppercase text-base-content/40">Form Specifications｜表單填寫規範</span>
+        <button type="button" onclick="clearAddressBookForm('{% if address_book_form.instance.id %}update_address_form{% else %}create_address_form{% endif %}')" class="btn btn-ghost btn-xs text-error font-sans font-medium">
+            <i class="fa-solid fa-eraser"></i> Clear All｜清空
+        </button>
+    </div>
 
-        <!-- recipient last name -->
-        <label class="input input-border flex w-full items-center gap-2">
-            <i class="fa-solid fa-people-roof"></i> 
-            {{ address_book_form.recipient_last_name }}
-        </label>
-        {% if address_book_form.recipient_last_name.errors %}
-            <label class="label -mt-2">
-                <span class="w-full text-center text-xs text-error font-light">
-                    {{ address_book_form.recipient_last_name.errors.0 }}
-                </span>
-            </label>
-        {% endif %}
-        
-        <!-- mobile number -->
-        <div class="join">
-                {{ address_book_form.mobile_area }}
-            <div class="flex-grow">
-                <label class="w-full input join-item">
-                    <i class="fa-solid fa-mobile-screen-button"></i>
-                    {{ address_book_form.mobile_number }}
+    <div class="space-y-3.5 w-full">
+        <!-- Label Registry & Country Row -->
+        <div class="grid grid-cols-2 gap-3">
+            <div class="form-control w-full space-y-1">
+                <label class="input input-bordered flex items-center gap-2 rounded-xl h-10 border-base-200/80 focus-within:border-info/40">
+                    <i class="fa-solid fa-tag opacity-40"></i>{{ address_book_form.label }}
                 </label>
             </div>
-            {% if address_book_form.mobile_area.errors %}
-                <label class="label -mt-2">
-                    <span class="w-full text-center text-xs text-error font-light">
-                        {{ address_book_form.mobile_area.errors.0 }}
-                    </span>
+            <div class="form-control w-full space-y-1">
+                <label class="input input-bordered flex items-center gap-2 rounded-xl h-10 border-base-200/80 focus-within:border-info/40">
+                    <i class="fa-solid fa-globe opacity-40"></i>{{ address_book_form.country }}
                 </label>
-            {% endif %}
-            {% if address_book_form.mobile_number.errors %}
-                <label class="label -mt-2">
-                    <span class="w-full text-center text-xs text-error font-light">
-                        {{ address_book_form.mobile_number.errors.0 }}
-                    </span>
+            </div>
+        </div>
+
+        <!-- Recipient Verification Grids Split -->
+        <div class="grid grid-cols-2 gap-3">
+            <div class="form-control w-full space-y-1">
+                <label class="input input-bordered flex items-center gap-2 rounded-xl h-10 border-base-200/80 {% if address_book_form.recipient_first_name.errors %}border-error{% endif %}">
+                    <i class="fa-solid fa-user opacity-40"></i>{{ address_book_form.recipient_first_name }}
+                </label>
+                {% if address_book_form.recipient_first_name.errors %}<span class="text-[10px] text-error pl-1 block font-sans">{{ address_book_form.recipient_first_name.errors.0 }}</span>{% endif %}
+            </div>
+            <div class="form-control w-full space-y-1">
+                <label class="input input-bordered flex items-center gap-2 rounded-xl h-10 border-base-200/80 {% if address_book_form.recipient_last_name.errors %}border-error{% endif %}">
+                    <i class="fa-solid fa-users opacity-40"></i>{{ address_book_form.recipient_last_name }}
+                </label>
+                {% if address_book_form.recipient_last_name.errors %}<span class="text-[10px] text-error pl-1 block font-sans">{{ address_book_form.recipient_last_name.errors.0 }}</span>{% endif %}
+            </div>
+        </div>
+
+        <!-- Joint Interface Mobile Registries Tracker -->
+        <div class="form-control w-full space-y-1">
+            <div class="join w-full border border-base-200 rounded-xl overflow-hidden flex h-10 bg-base-100">
+                <div class="w-1/2 flex items-center border-r border-base-200/60 bg-base-200/20">{{ address_book_form.mobile_area }}</div>
+                <div class="w-1/2 flex items-center px-3 gap-2">
+                    <i class="fa-solid fa-mobile-screen-button opacity-40"></i>{{ address_book_form.mobile_number }}
+                </div>
+            </div>
+            {% if address_book_form.mobile_number.errors %}<span class="text-[10px] text-error pl-1 block font-sans">{{ address_book_form.mobile_number.errors.0 }}</span>{% endif %}
+        </div>
+
+        <!-- Core Google Autocomplete Primary Pipeline Input -->
+        <div class="form-control w-full space-y-1">
+            <label class="w-full input input-bordered flex items-center gap-2 rounded-xl h-10 border-base-200/80 {% if address_book_form.address_line_1.errors %}border-error{% endif %}">
+                <i class="fa-solid fa-map-location opacity-40"></i>{{ address_book_form.address_line_1 }}
+            </label>
+            {% if address_book_form.address_line_1.errors %}<span class="text-[10px] text-error pl-1 block font-sans">{{ address_book_form.address_line_1.errors.0 }}</span>{% endif %}
+        </div>
+
+        <div class="form-control w-full space-y-1">
+            <label class="w-full input input-bordered flex items-center gap-2 rounded-xl h-10 border-base-200/80">
+                <i class="fa-solid fa-map-location-dot opacity-40"></i>{{ address_book_form.address_line_2 }}
+            </label>
+        </div>
+
+        <!-- Regional Locality Framework Blocks -->
+        <div class="grid grid-cols-3 gap-1 xs:gap-3">
+            <div class="form-control w-full col-span-1">
+                <label class="input input-bordered flex items-center gap-2 rounded-xl h-10 border-base-200/80"><i class="fa-solid fa-tree-city opacity-40"></i>{{ address_book_form.city }}</label>
+            </div>
+            
+            <div class="form-control w-full col-span-1">
+                <!-- Standard Global Region Input -->
+                <label class="region_field_wrapper input input-bordered flex items-center gap-2 rounded-xl h-10 border-base-200/80 {% if address_book_form.country.value == 'CN' %}hidden{% endif %}">
+                    <i class="fa-solid fa-map opacity-40"></i>{{ address_book_form.state_province_region }}
+                </label>
+                <!-- Chinese Province Structural Target Dropdown Override -->
+                <label class="china_field_wrapper input input-bordered items-center gap-2 rounded-xl h-10 border-base-200/80 {% if address_book_form.country.value == 'CN' %}flex{% else %}hidden{% endif %}">
+                    <i class="fa-solid fa-map opacity-40"></i>{{ address_book_form.china_province }}
+                </label>
+            </div>
+            
+            <div class="form-control w-full col-span-1">
+                <label class="input input-bordered flex items-center gap-2 rounded-xl h-10 border-base-200/80"><i class="fa-solid fa-envelopes-bulk opacity-40"></i>{{ address_book_form.postal_code }}</label>
+            </div>
+        </div>
+
+        <!-- Default Allocation Interface Settings -->
+        <div class="flex items-center gap-2 pt-2 select-none">
+            {% if has_saved_addresses %}
+                {{ address_book_form.is_default }}
+                <label for="{{ address_book_form.is_default.id_for_label }}" class="text-[0.65rem] xs:text-[0.8rem] font-medium text-base-content/70">
+                    Your Default Address｜設為預設/默認地址
                 </label>
             {% endif %}
         </div>
-        
-        <!-- address_1 -->
-        <label class="input input-border flex w-full items-center gap-2">
-            <i class="fa-solid fa-map-location"></i>
-            {{ address_book_form.address_line_1 }}
-        </label>
-        {% if address_book_form.address_line_1.errors %}
-            <label class="label -mt-2">
-                <span class="w-full text-center text-xs text-error font-light">
-                    {{ address_book_form.address_line_1.errors.0 }}
-                </span>
-            </label>
-        {% endif %}
-        
-        <!-- address_2 -->
-        <label class="input input-border flex w-full items-center gap-2">
-            <i class="fa-solid fa-map-location-dot"></i>
-            {{ address_book_form.address_line_2 }}
-        </label>
-        {% if address_book_form.address_line_2.errors %}
-            <label class="label -mt-2">
-                <span class="w-full text-center text-xs text-error font-light">
-                    {{ address_book_form.address_line_2.errors.0 }}
-                </span>
-            </label>
-        {% endif %}
-        
-        <!-- city / suburb -->
-        <label class="input input-border flex w-full items-center gap-2">
-            <i class="fa-solid fa-tree-city"></i>
-            {{ address_book_form.city }}
-        </label>
-        {% if address_book_form.city.errors %}
-            <label class="label -mt-2">
-                <span class="w-full text-center text-xs text-error font-light">
-                    {{ address_book_form.city.errors.0 }}
-                </span>
-            </label>
-        {% endif %}
 
-        <!-- state -->
-        <label class="region_field_wrapper input input-border flex w-full items-center gap-2
-                 {% if address_book_form.country.value == 'CN' %}hidden{% endif %}">
-            <i class="fa-solid fa-map"></i>
-            {{ address_book_form.state_province_region }}
-        </label>
-        {% if address_book_form.state_province_region.errors %}
-            <label class="label -mt-2">
-                <span class="w-full text-center text-xs text-error font-light">
-                    {{ address_book_form.state_province_region.errors.0 }}
-                </span>
-            </label>
-        {% endif %}
-        
-
-        <!-- China province -->
-        <label class="china_field_wrapper input input-border w-full items-center gap-2 
-            {% if address_book_form.country.value == 'CN' %}flex{% else %}hidden{% endif %}
-            {% if address_book_form.china_province.errors %}border-error! ring-error!{% endif %}"> 
-            
-            <i class="fa-solid fa-map"></i>
-            
-            <!-- Add select-error here if you want the internal border red too -->
-            {{ address_book_form.china_province }}
-        </label>        
-        {% if address_book_form.china_province.errors %}
-            <label class="label -mt-2">
-                <span class="w-full text-center text-xs text-error font-light">
-                    {{ address_book_form.china_province.errors.0 }}
-                </span>
-            </label>
-        {% endif %}
-
-
-        <!-- country -->
-        <label class="input input-border flex w-full items-center gap-2">
-            <i class="fa-solid fa-globe"></i>
-            {{ address_book_form.country }}
-        </label>
-        {% if address_book_form.country.errors %}
-            <label class="label -mt-2">
-                <span class="w-full text-center text-xs text-error font-light">
-                    {{ address_book_form.country.errors.0 }}
-                </span>
-            </label>
-        {% endif %}
-
-        <!-- zip -->
-        <label class="input input-border flex w-full items-center gap-2">
-            <i class="fa-solid fa-envelopes-bulk"></i>
-            {{ address_book_form.postal_code }}
-        </label>
-        {% if address_book_form.postal_code.errors %}
-            <label class="label -mt-2">
-                <span class="w-full text-center text-xs text-error font-light">
-                    {{ address_book_form.postal_code.errors.0 }}
-                </span>
-            </label>
-        {% endif %}
-        
-        <!-- set as default -->
-        <div class="flex items-center gap-1 text-xs mt-1">
-            {{ address_book_form.is_default }}
-            <div class="text-sm">Your Default Address｜您的預設/默認地址</div>
-        </div>
-
-        {% for hidden in address_book_form.hidden_fields %}
-            {{ hidden }}
-        {% endfor %}
-        
+        {% for hidden in address_book_form.hidden_fields %}{{ hidden }}{% endfor %}
     </div>
-    
-    <div class="modal-action w-full">
-        <button class="btn mx-auto">{{submit_btn|safe}}</button>
+
+    <!-- Core Dynamic Submission Drawer Accent Block -->
+    <div class="pt-4 border-t border-base-200 flex justify-end">
+        <button type="submit" class="btn btn-primary btn-sm rounded-xl font-sans text-xs tracking-wide text-white px-6 shadow-sm">
+            {{ submit_btn|safe }}
+        </button>
     </div>
 </form>

@@ -1,3 +1,4 @@
+<!-- header.html -->
 {% block content %}
 {% load humanize %}
 <div class="relative glight_main">
@@ -188,9 +189,22 @@
             <!-- user -->
             {% if user.is_authenticated %}
                 <div class="flex items-center relative h-12 w-12 justify-center group">
-                    
+                
                     <!-- Invisible checkbox tracker layer -->
                     <input type="checkbox" id="user-avatar-menu-toggle" class="absolute inset-0 w-full h-full opacity-0 z-50 cursor-pointer peer" />
+
+                    <!-- ✅ ENVELOPE NOTIFICATION BADGE - appears when there are unread messages -->
+                    <div id="notification-envelope" 
+                        class="absolute -top-1 -right-1 z-20 hidden peer-checked:hidden">
+                        <div class="relative">
+                            <!-- Envelope icon with badge -->
+                            <div class="bg-error text-white rounded-full w-5 h-5 flex items-center justify-center shadow-lg ring-2 ring-white/80">
+                                <i class="fa-solid fa-envelope text-[10px]"></i>
+                            </div>
+                            <!-- Small pulse ring for attention -->
+                            <div class="absolute inset-0 rounded-full animate-ping bg-error/40 w-5 h-5"></div>
+                        </div>
+                    </div>
 
                     <!-- Username Flag -->
                     <div class="absolute z-10 text-[0.65rem] w-max max-w-[300px] whitespace-nowrap -bottom-1.5 left-1/2 -translate-x-1/2 select-none pointer-events-none peer-checked:opacity-40 transition-opacity">
@@ -198,7 +212,7 @@
                     </div>
                     
                     <!-- Avatar Button Frame -->
-                    <div class="btn btn-ghost btn-circle avatar pointer-events-none peer-checked:bg-base-200/60 transition-colors">
+                    <div class="btn btn-ghost btn-circle avatar pointer-events-none peer-checked:bg-base-200/60 transition-colors relative">
                         <div class="w-8 lg:w-10 rounded-full">
                             <img class="w-full" alt="User Picture" src="{% if request.user.profile %}{{ request.user.profile.profile_picture.url }} {% else %} /static/userprofile/default.png {% endif %}" />
                         </div>
@@ -206,57 +220,132 @@
                     
                     <!-- Dropdown Menu Content -->
                     <ul tabindex="0"
-                        class="menu menu-sm bg-base-100 rounded-box z-50 mt-2 w-[16rem] p-2 shadow right-0 absolute top-full hidden peer-checked:block pointer-events-auto border border-base-200/50 max-h-[calc(100vh-80px)] overflow-y-auto scrollbar-thin">
+                        class="menu menu-sm bg-base-100 rounded-box z-50 mt-2 w-[16rem] p-2 shadow -right-8 min-[400px]:right-0 absolute top-full hidden peer-checked:block pointer-events-auto border border-base-200/50 max-h-[calc(100vh-80px)] overflow-y-auto scrollbar-thin">
                         <li>
-                            <a href="{% url 'dashboard' 'main' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'main' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
+                            <a href="{% url 'dashboard' 'main' %}" {% if request.resolver_match.url_name == 'dashboard' %} 
+                               hx-get="{% url 'dashboard' 'main' %}" 
+                               hx-target="#dashboard-content" 
+                               hx-push-url="true" {% endif %}
+                               hx-on:click="updateActiveLink(this)"
+                               id="main_header"
+                               >
                                 <i class="fa-solid fa-gauge"></i>Dashboard｜管理主頁
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'profile' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'profile' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
+                            <a href="{% url 'dashboard' 'profile' %}" {% if request.resolver_match.url_name == 'dashboard' %} 
+                               hx-get="{% url 'dashboard' 'profile' %}" 
+                               hx-target="#dashboard-content" 
+                               hx-push-url="true" {% endif %}
+                               hx-on:click="updateActiveLink(this)"
+                               id="profile_header"
+                               >
                                 <i class="fa-solid fa-address-card"></i>Edit Profile｜會員檔案
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'addresses' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'addresses' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
+                            <a href="{% url 'dashboard' 'addresses' %}" {% if request.resolver_match.url_name == 'dashboard' %} 
+                               hx-get="{% url 'dashboard' 'addresses' %}" 
+                               hx-target="#dashboard-content" 
+                               hx-push-url="true" {% endif %}
+                               hx-on:click="updateActiveLink(this)"
+                               id="addresses_header"
+                               >
                                 <i class="fa-solid fa-truck"></i>Addresses｜地址簿
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'orders' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'orders' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
+                            <a href="{% url 'dashboard' 'orders' %}" {% if request.resolver_match.url_name == 'dashboard' %} 
+                               hx-get="{% url 'dashboard' 'orders' %}" 
+                               hx-target="#dashboard-content" 
+                               hx-push-url="true" {% endif %}
+                               hx-on:click="updateActiveLink(this)"
+                               id="orders_header"
+                               >
                                 <i class="fa-solid fa-bag-shopping"></i>Orders｜購物紀錄
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'offers' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'offers' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
+                            <a href="{% url 'dashboard' 'offers' %}" {% if request.resolver_match.url_name == 'dashboard' %} 
+                               hx-get="{% url 'dashboard' 'offers' %}" 
+                               hx-target="#dashboard-content" 
+                               hx-push-url="true" {% endif %}
+                               hx-on:click="updateActiveLink(this)"
+                               id="offers_header"
+                               >
                                 <i class="fa-solid fa-money-bill"></i>Offers｜福利活動
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'vouchers' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'vouchers' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
+                            <a href="{% url 'dashboard' 'vouchers' %}" {% if request.resolver_match.url_name == 'dashboard' %} 
+                               hx-get="{% url 'dashboard' 'vouchers' %}" 
+                               hx-target="#dashboard-content" 
+                               hx-push-url="true" {% endif %}
+                               hx-on:click="updateActiveLink(this)"
+                               id="vouchers_header"
+                               >
                                 <i class="fa-solid fa-money-bill-1-wave"></i>Vouchers｜禮品券
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'wishlist' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'wishlist' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
+                            <a href="{% url 'dashboard' 'wishlist' %}" {% if request.resolver_match.url_name == 'dashboard' %} 
+                               hx-get="{% url 'dashboard' 'wishlist' %}" 
+                               hx-target="#dashboard-content" 
+                               hx-push-url="true" {% endif %}
+                               hx-on:click="updateActiveLink(this)"
+                               id="wishlist_header"
+                               >
                                 <i class="fa-solid fa-rectangle-list"></i>Wishlist｜購物清單
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'favorites' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'favorites' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
+                            <a href="{% url 'dashboard' 'favorites' %}" {% if request.resolver_match.url_name == 'dashboard' %} 
+                               hx-get="{% url 'dashboard' 'favorites' %}" 
+                               hx-target="#dashboard-content"
+                               hx-push-url="true" {% endif %}
+                               hx-on:click="updateActiveLink(this)"
+                               id="favorites_header"
+                               >
                                 <i class="fa-solid fa-star"></i>Favorites｜收藏
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'help' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'help' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
+                            <a href="{% url 'dashboard' 'help' %}" {% if request.resolver_match.url_name == 'dashboard' %} 
+                               hx-get="{% url 'dashboard' 'help' %}" 
+                               hx-target="#dashboard-content" 
+                               hx-push-url="true" {% endif %}
+                               hx-on:click="updateActiveLink(this)"
+                               id="help_header"
+                               >
                                 <div class="flex items-center gap-1">
                                     <i class="fa-solid fa-headset"></i>
                                     <span>Help｜客服熱線</span>
                                 </div>
+
+                                <div class="badge text-[10px] bg-primary text-primary-content flex items-center gap-1 py-2">
+                                    New
+                                    <i class="fa-solid fa-message"></i>
+                                    <!-- Fixed: Corrected 'lass' typo string to standard 'class' element handling -->
+                                    <span id="unread-count-header" 
+                                        hx-swap-oob="true" 
+                                        class="badge badge-xs badge-secondary text-primary-content font-bold">
+                                        {% if unread_count %}
+                                            <span>{{ unread_count }}</span>
+                                        {% else %}
+                                            <span>0</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'dashboard' 'threed' %}" {% if request.resolver_match.url_name == 'dashboard' %} hx-get="{% url 'dashboard' 'threed' %}" hx-target="#dashboard-content" hx-push-url="true" {% endif %}>
+                            <a href="{% url 'dashboard' 'threed' %}" {% if request.resolver_match.url_name == 'dashboard' %} 
+                               hx-get="{% url 'dashboard' 'threed' %}" 
+                               hx-target="#dashboard-content" 
+                               hx-push-url="true" {% endif %}
+                               hx-on:click="updateActiveLink(this)"
+                               id="threed_header"
+                               >
                                 <i class="fa-solid fa-cubes"></i>3D Scenes｜3D場景
                             </a>
                         </li>

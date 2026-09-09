@@ -18,6 +18,12 @@ from reviews.views import check_user_has_purchased_product
 from reviews.models import Comment
 from django.contrib.contenttypes.models import ContentType
 from accounts.models import UserProfile
+from django.shortcuts import redirect
+from pathlib import Path
+from django.utils import timezone
+from django.contrib import messages
+from django.db import transaction
+from orders.models import OrderProduct
 
 
 # Create your views here.
@@ -246,25 +252,41 @@ def secure_file_download_gate(request, token_id):
     """
     Time-Locked Data Stream Matrix:
     Validates token expirations and streams raw binary safely from the local secure disk structure.
+    Also flags digital assets as claimed to block subsequent customer order cancellations.
     """
     # Look up the token, ensuring it belongs explicitly to the logged-in customer profile
     token = get_object_or_404(DigitalDownloadToken, id=token_id, user=request.user)
 
-    # 🌟 TRACK LINK EXPIRATION MATRIX
-    if token.is_expired:
-        context = {
-            "page_title": "Link Expired｜連結已失效",
-            "error_headline": "Download Link Expired｜下載連結已失效",
-            "error_message": f"This secure link expired on {token.expires_at.strftime('%Y-%m-%d %H:%M')} (48-hour access window closed). Please contact customer support to request a new download pass.",
-            "error_message_cn": f"此安全連結已於 {token.expires_at.strftime('%Y-%m-%d %H:%M')} 超時失效（48小時開放下載視窗已關閉）。請聯絡客服人員為您手動重置下載鏈接。"
-        }
+    # 🌟 CORE ADJUSTMENT: COMPREHENSIVE LINK INTEGRITY CHECK
+    # Test if the link is dead, separating typical 7-day timeouts from administrative deactivations
+    if token.is_expired or not token.is_active:
+        # Check if the deactivation was explicitly caused by an administrative order cancellation
+        is_revoked_by_cancellation = (not token.is_active) or (token.order_product.order.order_status == 'Cancelled')
+        
+        if is_revoked_by_cancellation:
+            context = {
+                "page_title": "Access Revoked ｜ 存取權限已取消",
+                "error_headline": "Download Access Revoked ｜ 下載權限已撤銷",
+                "error_message": "This secure download link has been deactivated because the associated order was cancelled or refunded. Future access is permanently restricted.",
+                "error_message_cn": "此安全下載連結已失效，原因為其關聯之訂單已辦理取消或退款手續。該檔案之線上存取權限已永久終止。",
+                "is_cancelled_or_revoked": True
+            }
+        else:
+            # Fallback standard 7-day payment window expiration message
+            context = {
+                "page_title": "Link Expired ｜ 連結已失效",
+                "error_headline": "Download Link Expired ｜ 下載連結已失效",
+                "error_message": f"This secure link expired on {token.expires_at.strftime('%Y-%m-%d %H:%M')} (7-day access window closed). Please contact customer support to request a new download pass.",
+                "error_message_cn": f"此安全連結已於 {token.expires_at.strftime('%Y-%m-%d %H:%M')} 超時失效（7天開放下載視窗已關閉）。請聯絡客服人員為您手動重置下載連結。",
+                "is_cancelled_or_revoked": False
+            }
         return render(request, "store/digital_download_error.html", context, status=403)
 
     order_product = token.order_product
     variation = order_product.product_variation
-    
+
     # Verify that a valid path string is registered inside your model row instance
-    if not variation.digital_file_path:
+    if not variation or not variation.digital_file_path:
         raise Http404("Digital file resource target is not registered in this variation system.")
 
     # 🌟 SECURE COORDINATES PATH RESOLUTION
@@ -279,10 +301,19 @@ def secure_file_download_gate(request, token_id):
     if not os.path.exists(absolute_file_path) or os.path.isdir(absolute_file_path):
         raise Http404("The requested file asset could not be found on this disk node.")
 
-    # Track download metrics (Friendly option: allow multiple downloads within the 48 hours)
-    # To strictly allow a single click only, toggle token.is_active = False here and run token.save()
+    # DIGITAL ASSET UNIFIED CLAIM LOCK ENGINE
+    if not order_product.is_claimed:
+        try:
+            with transaction.atomic():
+                order_product = OrderProduct.objects.select_for_update().get(id=order_product.id)
+                order_product.is_claimed = True
+                order_product.claim_timestamp = timezone.now()
+                order_product.save(update_fields=['is_claimed', 'claim_timestamp', 'updated_at'])
+        except Exception as e:
+            messages.error(request, f"Claim status locking transaction failed: {str(e)}")
+            return redirect('dashboard', subpage='main')
 
-    # Stream the file safely to the browser
+    # Stream the file safely to the browser as a binary tracking response chunk
     response = FileResponse(open(absolute_file_path, 'rb'), as_attachment=True)
     
     # Auto-detect Content-Type parameters cleanly (PDF, EPUB, ZIP, etc.)

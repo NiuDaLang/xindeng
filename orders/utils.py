@@ -20,7 +20,7 @@ from django.db.models import F
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image, Spacer, PageBreak
 from reportlab.platypus.flowables import HRFlowable
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -264,7 +264,7 @@ def generate_order_confirmation_pdf(order_id):
     else:
         # Fall back to your multi-currency names matching earlier ledger setups
         # If order doesn't store a currency name string, default safely to CNY or your cookies currency
-        currency_code = getattr(order, 'currency', 'CNY') or 'CNY'
+        currency_code = getattr(order, 'currency_code', 'CNY') or 'CNY'
         amount_to_format = order.total_due
 
     # Execute string formatting matching your integer currency array constraints
@@ -273,7 +273,7 @@ def generate_order_confirmation_pdf(order_id):
 
     payment_2_data = [[
         [Paragraph("Payment Currency｜付款貨幣", styles['LabelXS']), Paragraph(f"<b>{currency_code if currency_code else '&nbsp;'}</b>", styles['BodyTextCustom'])],
-        [Paragraph("Payment Amount｜支付金額", styles['LabelXS']), Paragraph(f"<b>{currency_code} {currency_symbol}{payment_amount}</b>", styles['BodyTextCustom'])]    
+        [Paragraph("Payment Amount｜支付金額", styles['LabelXS']), Paragraph(f"<b>{currency_symbol}{payment_amount}</b>", styles['BodyTextCustom'])]    
     ]]
     payment_2_table = Table(payment_2_data, colWidths=[87*mm, 87*mm])
     payment_2_table.hAlign = "LEFT"
@@ -326,13 +326,18 @@ def generate_order_confirmation_pdf(order_id):
                     else "No, do NOT include invoice with delivery.｜不，不要將帳單一起配送。"
 
     shipping_6_data = [[
-        [Paragraph("Include invoice?｜附上帳單?", styles['LabelXS']), Paragraph(f"<b>{send_invoice}</b>", styles['BodyTextCustom'])],
+        [Paragraph("Include invoice?｜附上帳單?", styles['LabelXS']), 
+            Paragraph(f"<b>{send_invoice}</b>", styles['BodyTextCustom'])],
     ]]
     shipping_6_table = Table(shipping_6_data, colWidths=[174*mm])
     shipping_6_table.hAlign = "LEFT"
 
+    shipping_manifest_elements = [shipping_1_table, shipping_2_table, shipping_3_table, 
+                                  shipping_4_table, shipping_5_table, shipping_6_table]
+
     # details tables style formatting
-    detail_tables = [name_table, contact_table, payment_1_table, payment_2_table, shipping_1_table, shipping_2_table, shipping_3_table, shipping_4_table, shipping_5_table, shipping_6_table]
+    detail_tables = [name_table, contact_table, payment_1_table, payment_2_table]
+   
     for table in detail_tables:
         table.setStyle(TableStyle([
             ('LINEBELOW', (0, 0), (-1, -1), 0.5, colors.lightgrey),
@@ -519,6 +524,7 @@ def generate_order_confirmation_pdf(order_id):
     footer_html_p = Paragraph(footer_html, footer_mixed_style)
 
     # Append all compiled components sequentially over to ReportLab structural array pipelines
+
     elements.extend([
         header_table, Spacer(1, 5*mm),
         title_table, Spacer(1, 5*mm),
@@ -529,8 +535,24 @@ def generate_order_confirmation_pdf(order_id):
         name_table, contact_table, Spacer(1, 6*mm),
         Paragraph("Payment Parameters｜支付參數", styles['SectionHeading']),
         payment_1_table, payment_2_table, Spacer(1, 6*mm),
-        Paragraph("Shipping Manifest｜物流詳情", styles['SectionHeading']),
-        shipping_1_table, shipping_2_table, shipping_3_table, shipping_4_table, shipping_5_table, shipping_6_table, Spacer(1, 10*mm),
+    ])
+
+    if order.state_province_region != "Digital":
+        elements.extend([
+            Paragraph("Shipping Manifest｜物流詳情", styles['SectionHeading'])
+        ])
+        elements.extend(shipping_manifest_elements)
+        elements.extend([
+            Spacer(1, 10*mm)
+        ])
+
+    else:
+        elements.extend([
+            PageBreak()
+        ])
+    
+    # Resume pushing the remainder of your item rows and ledgers
+    elements.extend([
         Paragraph("Ordered Items｜訂購明細", styles['SectionHeading']),
         p_table, Spacer(1, 6*mm),
         Paragraph("Financial Summary｜財務總結", styles['SectionHeading']),

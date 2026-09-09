@@ -33,6 +33,40 @@
     </script>
 
     {% vite_hmr_client %}
+
+    <script>
+        // Handle Vite HMR WebSocket errors from bfcache
+        if (window.__vite_plugin_react_runtime__) {
+            const originalHMR = window.__vite_plugin_react_runtime__.hmr;
+            if (originalHMR) {
+                // Monkey patch the HMR WebSocket to handle bfcache gracefully
+                const originalSend = originalHMR.send;
+                originalHMR.send = function(payload) {
+                    try {
+                        // Check if WebSocket is still connected
+                        if (this.ws && this.ws.readyState === WebSocket.CLOSED) {
+                            console.debug('🔇 HMR WebSocket closed, skipping send');
+                            return;
+                        }
+                        return originalSend.call(this, payload);
+                    } catch (e) {
+                        console.debug('🔇 HMR send error suppressed:', e.message);
+                    }
+                };
+            }
+        }
+
+        // Silence Vite's WebSocket connection errors
+        window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('WebSocket') && 
+                e.message.includes('Back-Forward Cache')) {
+                e.preventDefault();
+                e.stopPropagation();
+                return true;
+            }
+        }, true);
+    </script>
+    
     {% render_block "meta" %}
     <script src="{% static 'admin/js/vendor/jquery/jquery.min.js' %}"></script>
     <script src="{% static 'admin/js/jquery.init.js' %}"></script>

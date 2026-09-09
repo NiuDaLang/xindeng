@@ -1,179 +1,202 @@
 <title>{{ page_title }}</title>
-<div id="dashboard_offers" class="subpage">
-    <!-- hero -->
-    <div class="dashboard_hero relative w-full min-h-[19rem] overflow-hidden shadow-xl border rounded-2xl border-gray-400 mb-6 p-6 flex flex-col md:grid md:grid-cols-12 items-center justify-between gap-6">
-        <!-- COLUMN 1: SEASONAL SOLAR TIMELINE LOGIC GATE (Grid Span: 4) -->
-        <div class="z-10 w-full md:col-span-4 flex flex-col items-center justify-center space-y-3 p-2 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-            {% if solar_term %}
-                <div class="solar-timeline flex items-center justify-center gap-4 select-none">
-                    <!-- Active Solar Term State -->
-                    <div class="flex flex-col text-center">
-                        <span id="solar_term" class="text-2xl font-black tracking-wide">{{ solar_term }}</span>
-                        <span id="solar_term_en" class="text-[11px] uppercase tracking-wider font-mono opacity-80 mt-0.5">{{ solar_term_en }}</span>
-                    </div>
-                    
-                    {% if next_solar_term %}
-                    <!-- Restored Your Previous Custom Arrow Layout Wrapper -->
-                    <div class="solar-arrow-container">
-                        <div class="solar-arrow"></div>
-                    </div>
+{% load static %}
+{% load humanize %}
 
-                    <!-- Approaching Solar Term State -->
-                    <div class="flex flex-col text-center">
-                        <span id="next_solar_term" class="text-2xl font-black tracking-wide opacity-90">{{ next_solar_term }}</span>
-                        <span id="next_solar_term_en" class="text-[11px] uppercase tracking-wider font-mono opacity-70 mt-0.5">{{ next_solar_term_en }}</span>
-                    </div>
-                    {% endif %}
+<div id="dashboard_offers" class="subpage w-full animate-fade-in space-y-6">
+    <!-- ================================================================
+         🎨 FIRST ROW: PERSISTENT STANDARD REGISTRY HERO
+         ================================================================ -->
+    {% include 'accounts/partials/standard_horizontal_hero.html' %}
+
+    <!-- ================================================================
+         🎨 SECOND ROW: COMMERCE DISPATCH OFFERS ARCHITECTURE
+         ================================================================ -->
+    <div class="w-full space-y-4">
+        <h3 class="text-xs sm:text-sm font-bold tracking-widest font-serif text-base-content/80 uppercase border-b border-base-200 pb-2 flex items-center gap-2 select-none">
+            <i class="fa-solid fa-fire text-primary animate-pulse"></i> Available registries & Perks｜特惠活動明細
+        </h3>
+
+        {% if not eligible_perks %}
+            <!-- EMPTY REGISTRY ENVELOPE -->
+            <div class="card bg-base-100 border border-dashed border-base-300 rounded-2xl p-10 text-center flex flex-col items-center justify-center space-y-3">
+                <div class="w-12 h-12 rounded-full bg-base-200 flex items-center justify-center text-base-content/40">
+                    <i class="fa-solid fa-ticket-simple text-lg"></i>
                 </div>
-            {% endif %}
-            
-            <!-- Real-time Text Date Output -->
-            <div id="dynamic-date" hx-preserve="true" class="text-[11px] font-mono font-bold tracking-widest bg-black/20 px-3 py-1 rounded-full border border-white/10 uppercase"></div>
-        </div>
-        
-        <!-- COLUMN 2: DYNAMIC BILINGUAL TITLES (Grid Span: 4) -->
-        <!-- 🌟 THE CENTERING FIX: Swapped md:text-left for md:text-center to balance headers perfectly -->
-        <div class="z-10 w-full text-center md:text-center md:col-span-4 space-y-1.5 self-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-            <h2 class="text-xl font-bold text-white uppercase tracking-wider font-sans opacity-90">Curated Accords</h2>
-            <h3 class="text-3xl font-black text-white tracking-normal font-sans">臻選禮遇</h3>
-            <span class="text-[0.65rem] uppercase tracking-[0.2em] text-teal-300 font-mono font-bold block text-center"><em>Timeless treasures, awaiting the perfect moment.</em><br>歲月藏珍，静候佳期。</span>
-        </div>
-
-        <!-- COLUMN 3: PROTECTED ANALOG CLOCK MOUNT (Grid Span: 4) -->
-        <!-- 🌟 THE CENTERING FIX: Swapped md:justify-end for md:justify-center to center the clock dial axis -->
-        <div class="z-10 w-full md:col-span-4 flex items-center justify-center md:justify-center pr-0 select-none">
-            <div class="w-[200px] h-[200px] relative flex items-center justify-center flex-shrink-0">
-                {% include 'accounts/partials/clock_analog.html' %}
+                <div class="space-y-1">
+                    <p class="text-xs font-bold text-base-content/75 font-serif">No Active Perks Found</p>
+                    <p class="text-[11px] text-base-content/40 font-sans">Check back later during seasonal shifts to unlock exclusive promotional voucher vouchers.</p>
+                </div>
             </div>
-        </div>
+        {% else %}
+            <!-- UNIFIED GRID PLATFORM MATRIX -->
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full items-start mt-6">
+                {% for up in eligible_perks %}
+                    <!-- MASTER TICKET CONTAINER WIREFRAME WITH PALE BLURRY BLUE OUTLINES -->
+                    <div class="card bg-base-100/40 border-2 border-info/20 shadow-sm rounded-[24px] p-1 xxs:p-3 sm:p-6 transition-all duration-300 hover:shadow-md flex flex-col justify-between gap-0 relative overflow-hidden group">
+                        <!-- 🎟️ START ADAPTIVE COUPON WRAPPER CORE -->
+                        <!-- Flips layout dynamically: flex-row (Desktop landscape) | max-md:flex-col (Mobile portrait) -->
+                        <div class="coupon aspect-[2/1.2] xxs:aspect-2/1 mx-auto my-5"
+                            style="--dynamic-bg: url('{{ up.perk.featured_image.url }}'); --watermark: '{{ up.perk.code }}';">
 
-        <!-- BACKGROUND VISUAL IMAGE ASSET COVER (z-0 sits safely beneath input/output contents) -->
-        <img src="/media/hero/red_leaves.jpeg" alt="Background" class="absolute left-0 top-0 w-full h-full object-cover z-0 rounded-2xl">
-        <div class="absolute inset-0 bg-black/15 z-0 pointer-events-none"></div> <!-- Soft overlay maximizes textual readability profiles -->
+                            <!-- A. THE SIDE/TOP ACCENT ANCHOR STRIP -->
+                            <div class="coupon_left xs:w-1/5 bg-neutral-900/70 backdrop-blur-xs flex items-center justify-center p-3 text-center shrink-0 min-h-[3.5rem] w-[15%] max-md:border-b md:border-r-2 md:border-dashed border-black/20">
+                                <div class="-rotate-90 white-space-nowrap font-serif font-black tracking-widest text-[7px] xxs:text-[10px] sm:text-[11px] md::text-[12px] uppercase text-amber-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                                    {{ up.perk.code }}
+                                </div>
+                            </div>
+
+                            <!-- B. THE MAIN TEXT/IMAGE WORKSPACE PLATFORM -->
+                            <div class="coupon_center items-center flex-1 bg-black/40 backdrop-blur-xs p-1 xs:p-4 sm:p-5 flex flex-col justify-between text-center relative overflow-hidden">
+                                <div class="space-y-1.5 z-10">
+                                    <!-- Token Badge Tag Heading -->
+                                    <div class="inline-flex items-center gap-1.5 bg-black/60 border border-white/10 px-2.5 py-0.5 rounded-full text-amber-300 text-[10px] font-mono tracking-wider mx-auto">
+                                        <i class="fa-solid fa-ticket text-[9px]"></i> {{ up.perk.chinese_disc_rate|default:"優惠券" }}
+                                    </div>
+                                    <!-- Primary Dynamic Quantities Output -->
+                                    <div class="text-[1rem]/[1rem] xs:text-2xl sm:text-3xl xl:text-[1.25rem] font-black text-white font-sans tracking-tight uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                                        {% if up.perk.discount_type == "fixed_amount" %}
+                                            <span class="text-[0.6rem] xs:text-[0.8rem] sm:text-[1rem] xl:text-[0.7rem]">cny </span>
+                                            <span>¥</span> 
+                                        {% endif %}
+                                            <span>{{ up.perk.discount_value|floatformat:"-2" }}</span>
+                                        {% if up.perk.discount_type == "percentage" %}
+                                            <span>%</span>
+                                        {% endif %} 
+                                            <span>&nbsp;OFF</span>
+                                    </div>
+                                </div>
+
+                                <!-- BILINGUAL DESCRIPTIONS DRAWER WITH TEXT-LIMIT TRUNCATION OVERFLOW SECURITY -->
+                                <div class="my-0 xs:my-2 z-10 px-2">
+                                    <!-- Chinese Traditional Character Sub-header -->
+                                    <span class="text-[9px] sm:text-xs font-sans font-semibold tracking-wide text-white block truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
+                                        {{ up.perk.desc_cn }}
+                                    </span>
+                                    <!-- English Description Track: Locked via CSS bounds to completely eliminate overflow bleeding -->
+                                    <span class="text-[7px] sm:text-[10px] font-sans font-light tracking-normal text-white/75 block line-clamp-2 leading-tight max-w-[280px] mx-auto drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" 
+                                          title="{{ up.perk.desc_en }}">
+                                        {{ up.perk.desc_en }}
+                                    </span>
+                                </div>
+
+                                <div class="flex flex-col sm:flex-row xl:flex-col text-[7px] xs:text-[8px] md:text-[10px] xl:text-[8px] font-mono tracking-widest text-white/60 uppercase z-10 pt-1">
+                                    <span>Valid Through: </span>
+                                    <span class="font-bold text-white">{{ up.formatted_personalized_expiry }}</span>
+                                </div>
+                            </div>
+
+                            <!-- C. THE SECURE MASKING GEOMETRY BARCODE MATRIX STRIP -->
+                            <div class="coupon_right items-center xs:items-end w-1/4 xs:w-[120px] flex flex-col">
+                                <div class="-rotate-90 text-center -ml-[14px] xs:-ml-[20px]">
+                                    <!-- The Barcode Visual -->
+                                    <div class="libre-barcode-128-regular text-[0.7rem] xxs:text-[0.8rem] xs:text-2xl -mb-2 tracking-widest">
+                                        {{ up.unique_code|stringformat:"s" }}
+                                    </div>
+                                    <!-- The Readable Text for User Entry -->
+                                    <div class="text-center text-[0.4rem]/[0.55rem] xs:text-[0.5rem]/[0.6rem] sm:text-[0.65rem]/[0.7rem] tracking-tight">
+                                        Enter at Checkout<br>結帳時請輸入 <span id="perk_code_{{ up.pk }}" class="font-black text-[0.45rem] xs:text-[0.55rem] sm:text-xs">{{ up.unique_code|stringformat:"s" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <!-- 🎟️ END ADAPTIVE COUPON WRAPPER CORE -->
+                        <!-- ACTION CONTROL FOOTING TRAY -->
+                        <div class="w-full flex flex-col md:flex-row xl:flex-col items-center justify-center gap-2 md:gap-8 xl:gap-2 bg-base-200/40 border border-info/10 rounded-xl p-3.5 z-10 mt-1">
+                            
+                            <!-- Column A: Asynchronous Copy Action Control Button -->
+                            <button class="btn btn-primary btn-sm rounded-xl font-sans text-[0.55rem] xxs:text-xs tracking-wide text-white px-4 shadow-sm transition-all hover:scale-[1.02]" 
+                                    onclick="window.copyPerkCode({{ up.pk }}, this)">
+                                <i class="fa-solid fa-copy"></i> Copy Code｜複製優惠碼
+                            </button>
+
+                            <!-- Column B: Chrono Countdown Layout Matrix Interface -->
+                            <div class="flex items-center gap-2 xl:gap-4 justify-center md:justify-end xl:justify-center">
+                                {% if up.personalized_expiry %}
+                                    <div class="text-right max-md:text-center leading-none flex flex-col justify-center">
+                                        <span class="text-[7px] xs:text-[9px] uppercase font-mono tracking-wider text-base-content/40 block">Time Remaining</span>
+                                        <span class="text-[8px] xs:text-[10px] font-sans font-bold text-amber-500 mt-0.5">優惠截止倒數</span>
+                                    </div>
+                                    
+                                    <!-- CHRONO DURATION COUNTER REGISTRY MESH -->
+                                    <div class="grid grid-flow-col gap-1 xxs:gap-2 md:gap-5 xl:gap-2 text-center auto-cols-max" 
+                                        id="countdown-{{ up.perk.id }}" 
+                                        data-expiry="{{ up.personalized_expiry|date:'c' }}">
+                                        
+                                        <!-- DAYS -->
+                                        <div class="flex flex-col">
+                                            <div class="flex">
+                                                <!-- tens -->
+                                                <div id="flip_day_tens" class="flip-score-card text-white text-[10px] xxs:text-[12px] md:text-[14px] font-mono bg-neutral" data-prev="">
+                                                    <div class="top"></div>
+                                                    <div class="bottom"></div>
+                                                </div>
+                                                <!-- ones -->
+                                                <div id="flip_day_ones" class="flip-score-card text-white text-[10px] xxs:text-[12px] md:text-[14px] font-mono bg-neutral" data-prev="">
+                                                    <div class="top"></div>
+                                                    <div class="bottom"></div>
+                                                </div>
+                                            </div>
+                                            <span class="text-[8px] text-base-content/40 uppercase font-sans mt-0.5">D｜日</span>
+                                        </div>
+                                        <!-- HOURS -->
+                                        <div class="flex flex-col">
+                                            <div class="flex">
+                                                <!-- tens -->
+                                                <div id="flip_hour_tens" class="flip-score-card text-white text-[10px] xxs:text-[12px] md:text-[14px] font-mono bg-neutral" data-prev="">
+                                                    <div class="top"></div>
+                                                    <div class="bottom"></div>
+                                                </div>
+                                                <!-- ones -->
+                                                <div id="flip_hour_ones" class="flip-score-card text-white text-[10px] xxs:text-[12px] md:text-[14px] font-mono bg-neutral" data-prev="">
+                                                    <div class="top"></div>
+                                                    <div class="bottom"></div>
+                                                </div>
+                                            </div>
+                                            <span class="text-[8px] text-base-content/40 uppercase font-sans mt-0.5">H｜時</span>
+                                        </div>
+                                        <!-- MINUTES -->
+                                        <div class="flex flex-col">
+                                            <div class="flex">
+                                                <!-- tens -->
+                                                <div id="flip_min_tens" class="flip-score-card text-white text-[10px] xxs:text-[12px] md:text-[14px] font-mono bg-neutral" data-prev="">
+                                                    <div class="top"></div>
+                                                    <div class="bottom"></div>
+                                                </div>
+                                                <!-- ones -->
+                                                <div id="flip_min_ones" class="flip-score-card text-white text-[10px] xxs:text-[12px] md:text-[14px] font-mono bg-neutral" data-prev="">
+                                                    <div class="top"></div>
+                                                    <div class="bottom"></div>
+                                                </div>
+                                            </div>
+                                            <span class="text-[8px] text-base-content/40 uppercase font-sans mt-0.5">M｜分</span>
+                                        </div>                   
+                                        <!-- SECONDS -->
+                                        <div class="flex flex-col">
+                                            <div class="flex">
+                                                <!-- tens -->
+                                                <div id="flip_sec_tens" class="flip-score-card text-white text-[10px] xxs:text-[12px] md:text-[14px] font-mono bg-neutral" data-prev="">
+                                                    <div class="top"></div>
+                                                    <div class="bottom"></div>
+                                                </div>
+                                                <!-- ones -->
+                                                <div id="flip_sec_ones" class="flip-score-card text-white text-[10px] xxs:text-[12px] md:text-[14px] font-mono bg-neutral" data-prev="">
+                                                    <div class="top"></div>
+                                                    <div class="bottom"></div>
+                                                </div>
+                                            </div>
+                                            <span class="text-[8px] text-base-content/40 uppercase font-sans mt-0.5">S｜秒</span>
+                                        </div>
+
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
     </div>
-
-    <!-- list of available offers -->
-    <ul class="mt-10 p-5 grid grid-cols-2 bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] rounded-box inset-shadow-sm mb-20 text-secondary gap-5">
-        {% for up in eligible_perks %}
-        <li class="flex flex-col">
-            <!-- coupon -->
-            <div class="coupon w-1/2 m-5"
-                style="--dynamic-bg: url('{{ up.perk.featured_image.url }}'); --watermark: '{{ up.perk.code }}';">
-                <div class="left text-center">
-                    <div class="text-shadow-lg text-shadow-white">
-                        <span class="text-[0.55rem]">{{ up.perk.desc_en }}</span>
-                        <br/>
-                        <span class="text-[0.75rem]">{{ up.perk.desc_cn }}</span>
-                    </div>
-                </div>
-                <div class="center">
-                    <div>
-                        <h2>{{up.perk.chinese_disc_rate}} <i class="fa-solid fa-ticket"></i>優惠券</h2>
-                        <h3 class="font-semibold text-shadow-lg text-shadow-white">{{ up.perk.discount_value|floatformat:"-2" }}{% if up.perk.discount_type == "percentage" %}%{% endif %} OFF</h3>
-                        <div class="p-1 text-secondary-content text-shadow-2xs text-shadow-primary">
-                            <b class="text-xs">{{ up.perk.formatted_expiry }}</b>
-                            {% if up.perk.max_uses < 5 %}
-                                <span class="block text-white text-[0.65rem]">
-                                    Only｜僅剩<span class="text-2xl font-black">&nbsp;{{ up.perk.remaining_uses }}&nbsp;</span>left｜張!
-                                </span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="right flex flex-col">
-                    <div class="-rotate-90 text-center">
-                        <!-- The Barcode Visual -->
-                        <div class="libre-barcode-128-regular text-2xl -mb-2 tracking-widest">
-                            {{ up.unique_code|stringformat:"s" }}
-                        </div>
-                        <!-- The Readable Text for User Entry -->
-                        <div class="text-center text-[0.75rem]/[0.9rem] tracking-tight">
-                            Enter at Checkout<br>結帳時請輸入 <span id="perk_code_{{ up.pk }}" class="font-black text-sm">{{ up.unique_code|stringformat:"s" }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- copy code button -->
-            <div class="px-[2rem]">
-                <button class="w-full btn btn-primary text-white join-item" onclick="copyPerkCode({{up.pk}}, this)">
-                    Copy Code｜複製優惠碼
-                </button>
-            </div>
-            <!-- countdown -->
-            <div class="h-auto flex items-center justify-center p-3 w-full">
-                {% if up.personalized_expiry %}
-                <div class="mr-5 text-sm text-amber-300 font-bold tracking-widest">Ends in<br>優惠截止倒數</div>
-                <div class="grid grid-flow-col gap-5 text-center auto-cols-max" 
-                     id="countdown-{{ up.perk.id }}" 
-                     data-expiry="{{ up.personalized_expiry|date:'c' }}">
-                    <!-- DAYS -->
-                    <div class="flex flex-col">
-                        <div class="flex">
-                            <!-- tens -->
-                            <div id="flip_day_tens" class="flip-score-card" data-prev="">
-                                <div class="top"></div>
-                                <div class="bottom"></div>
-                            </div>
-                            <!-- ones -->
-                            <div id="flip_day_ones" class="flip-score-card" data-prev="">
-                                <div class="top"></div>
-                                <div class="bottom"></div>
-                            </div>
-                        </div>
-                        <div class="text-[0.55rem] text-white">days｜日</div>
-                    </div>
-                    <!-- HOURS -->
-                    <div class="flex flex-col">
-                        <div class="flex">
-                            <!-- tens -->
-                            <div id="flip_hour_tens" class="flip-score-card" data-prev="">
-                                <div class="top"></div>
-                                <div class="bottom"></div>
-                            </div>
-                            <!-- ones -->
-                            <div id="flip_hour_ones" class="flip-score-card" data-prev="">
-                                <div class="top"></div>
-                                <div class="bottom"></div>
-                            </div>
-                        </div>
-                        <div class="text-[0.55rem] text-white">hours｜時</div>
-                    </div>
-                    <!-- MINUTES -->
-                    <div class="flex flex-col">
-                        <div class="flex">
-                            <!-- tens -->
-                            <div id="flip_min_tens" class="flip-score-card" data-prev="">
-                                <div class="top"></div>
-                                <div class="bottom"></div>
-                            </div>
-                            <!-- ones -->
-                            <div id="flip_min_ones" class="flip-score-card" data-prev="">
-                                <div class="top"></div>
-                                <div class="bottom"></div>
-                            </div>
-                        </div>
-                        <div class="text-[0.55rem] text-white">minutes｜分</div>
-                    </div>                   
-                    <!-- SECONDS -->
-                    <div class="flex flex-col">
-                        <div class="flex">
-                            <!-- tens -->
-                            <div id="flip_sec_tens" class="flip-score-card" data-prev="">
-                                <div class="top"></div>
-                                <div class="bottom"></div>
-                            </div>
-                            <!-- ones -->
-                            <div id="flip_sec_ones" class="flip-score-card" data-prev="">
-                                <div class="top"></div>
-                                <div class="bottom"></div>
-                            </div>
-                        </div>
-                        <div class="text-[0.55rem] text-white">seconds｜秒</div>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </li>
-        {% endfor %}           
-    </ul>
-</div>
+</div>                        

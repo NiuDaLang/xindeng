@@ -4,6 +4,7 @@ from accounts.data import DESTINATIONS_GLOBAL, INTEGER_CURRENCIES
 from accounts.models import Address, CustomerVoucher, Perk, CustomerVoucher, UserPerk
 from .models import ShippingCharge, CartItem
 from store.models import ProductVariation
+from carts.models import ProformaInvoice
 import json
 from django.shortcuts import render
 from django.contrib.humanize.templatetags.humanize import intcomma
@@ -442,20 +443,20 @@ def get_row_oob(row_id, label_en, label_zh, id_local, id_foreign, amount=0.00, a
     return render_to_string('store/partials/row_oob_template.html', context).strip().replace("\n", "")
 
 
-
-def get_cash_voucher_balance(request):
-    """Calculates true unallocated voucher funds remaining in a user's wallet."""
-
+def get_cash_voucher_detailed_balance(request):
+    """
+    Calculates true unallocated voucher funds remaining in a user's wallet,
+    safely subtracting both active session locks and pending bank transfer holds.
+    """
     if not request.user.is_authenticated:
-        return Decimal('0.00')
+        return {"true_available_balance": Decimal('0.00'), "total_wallet_funds": Decimal('0.00'), "pending_holds_total": Decimal('0.00')}
 
     # 💡 FIX: Safely read the session key string. If it doesn't exist yet, 
     # fall back to an empty string to prevent recursive database row writes.
     current_session_key = request.session.session_key or ""
     fifteen_minutes_ago = timezone.now() - timezone.timedelta(minutes=15)
 
-    # A voucher row is considered available if it is completely unlocked, OR
-    # if the lock has expired (>15 mins), OR if it was locked by this exact browser session.
+    # 1. Calculate the raw pool of available vouchers in their wallet
     available_vouchers = CustomerVoucher.objects.filter(
         owner=request.user,
         is_used=False,
@@ -465,14 +466,46 @@ def get_cash_voucher_balance(request):
         Q(locked_at__lt=fifteen_minutes_ago) |
         Q(locked_by_session=current_session_key)
     )
+    total_wallet_funds = available_vouchers.aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
 
-    return available_vouchers.aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
+    # 2. 🔒 THE DOUBLE-SPEND SHIELD: Look for any unpaid bank transfer holds
+    # that are still within their active 72-hour expiration window
+    pending_holds_total = ProformaInvoice.objects.filter(
+        user=request.user,
+        is_ordered=True,
+        payment_method="BANK_TRANSFER",
+        inventory_hold_expiry__gt=timezone.now(),
+        order_settled=False, # Enforce this flag on your proforma or order links
+        voucher_applied__gt=0
+    ).aggregate(total_allocated=Sum('voucher_applied'))['total_allocated'] or Decimal('0.00')
+
+    # 3. True available balance is total funds minus pending commitments
+    true_available_balance = total_wallet_funds - pending_holds_total
+
+    return {
+        "true_available_balance": max(true_available_balance, Decimal('0.00')), 
+        "total_wallet_funds": total_wallet_funds, 
+        "pending_holds_total": pending_holds_total
+    }
+
+
+def get_cash_voucher_balance(request):
+    """Fallback wrapper returning a pristine Decimal to keep old global views 100% safe."""
+    return get_cash_voucher_detailed_balance(request)["true_available_balance"]
+
+
+def get_total_wallet_funds(request):
+    return get_cash_voucher_detailed_balance(request)["total_wallet_funds"]
+
+
+def get_cash_voucher_pending_holds_total(request):
+    return get_cash_voucher_detailed_balance(request)["pending_holds_total"]
 
 
 def update_applied_voucher(request, cart):
     if not cart or cart.get_items_count() == 0:
         return ""
-    
+
     voucher_applied = Decimal(str(request.session.get("applied_voucher", {}).get("applied_voucher_amount", 0)).replace(",", ""))
     voucher_balance = get_cash_voucher_balance(request)
     new_total_payable, new_total_payable_foreign = get_grand_total_before_voucher(request, cart)

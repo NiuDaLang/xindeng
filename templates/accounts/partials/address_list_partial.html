@@ -1,93 +1,83 @@
 {% for address in user_addresses %}
-<div class="col-span-1 card" id="address-{{ address.pk }}">
-    <div class="card-body bg-base-300 rounded-2xl relative flex-grow-0 shadow-sm">
-        <div class="flex items-center gap-1 absolute top-[1rem] right-[2rem] ">
-            {% if address.is_default %}
-                <span class="badge badge-xs badge-warning">Default｜默認</span>
-            {% endif %}
-
-            {% if address.label == "home" %}
-                <i class="fa-solid fa-house-user" style="color: rgb(177, 151, 252);"></i>
-            {% endif %}
-
-            {% if address.label == "work" %}
-                <i class="fa-solid fa-building-user" style="color: rgb(116, 192, 252);"></i>
-            {% endif %}
-
-            {% if address.label == "school" %}
-                <i class="fa-solid fa-school" style="color: rgb(99, 230, 190);"></i>
-            {% endif %}
-        </div>
-        <!-- address details -->
-        <div class="collapse collapse-arrow join-item">
-            <input type="checkbox"/>
-            <div class="collapse-title pb-[8px] font-semibold">
-                <ul class="flex flex-col gap-2 text-xs">
-                    <li>
-                        <i class="fa-solid fa-person-arrow-down-to-line"></i>
-                        <span class="font-bold">&nbsp;&nbsp;{% if address.recipient_first_name %}{{ address.recipient_first_name }},{% endif %}</span>
-                        <span class="font-bold">&nbsp;{% if address.recipient_last_name %}{{ address.recipient_last_name }}{% endif %}</span>
-                    </li>
-                    <li class="opacity-100">
-                        <i class="fa-solid fa-map-location-dot"></i>
-                        <span>&nbsp;&nbsp;{% if address.address_line_1 %}{{ address.address_line_1 }}{% endif %}</span>
-                    </li>
-                </ul>
+<div class="card bg-base-100 border-2 {% if address.is_default %}border-info/40 bg-info/5 shadow-md shadow-info/5{% else %}border-info/20 shadow-sm{% endif %} rounded-2xl transition-all duration-300 hover:shadow-md relative overflow-hidden flex flex-col justify-between group h-full min-h-[11rem]" id="address-{{ address.pk }}">
+    
+    <!-- Top Meta Information Workspace -->
+    <div class="p-5 space-y-3 flex-1">
+        <div class="flex items-start justify-between gap-4">
+            <div class="space-y-0.5">
+                <span class="text-xs font-bold text-base-content/85 tracking-wide block font-serif">
+                    {{ address.recipient_first_name|default:"" }} {{ address.recipient_last_name|default:"" }}
+                </span>
+                {% if address.mobile_number %}
+                    <span class="text-[10px] font-mono opacity-50 block">
+                        ({{ address.mobile_area|default:"+886" }}) {{ address.mobile_number }}
+                    </span>
+                {% endif %}
             </div>
-            <div class="collapse-content text-sm my-0">
-                <ul class="flex flex-col gap-2 text-xs ">
-                    <li>
-                        <i class="fa-solid fa-map-location"></i>
-                        <span>&nbsp;&nbsp;{% if address.address_line_2 %}{{ address.address_line_2 }}{% endif %}</span>
-                    </li>
-                    <li>
-                        <i class="fa-solid fa-tree-city"></i>
-                        <span>&nbsp;&nbsp;{% if address.city %}{{ address.city }}{% endif %}</span>
-                    </li>
-                    <li>
-                        <i class="fa-solid fa-map"></i>
-                        <span>&nbsp;&nbsp;{% if address.state_province_region %}{{ address.state_province_region }}{% endif %}</span>
-                    </li>
-                    <li>
-                        <i class="fa-solid fa-globe"></i>
-                        <span>&nbsp;&nbsp;{% if address.country %}{{ address.country }}{% endif %}</span>
-                    </li>
-                    <li>
-                        <i class="fa-solid fa-envelopes-bulk"></i>
-                        <span>&nbsp;&nbsp;{% if address.postal_code %}{{ address.postal_code }}{% endif %}</span>
-                    </li>
-                    <li>
-                        <i class="fa-solid fa-mobile-screen-button"></i>
-                        <span>
-                            &nbsp;&nbsp;{% if address.mobile_area %}{{ address.mobile_area }}{% endif %}
-                            &nbsp;{% if address.mobile_number %}{{ address.mobile_number }}{% endif %}</span>
-                    </li>
-                </ul>
+
+            <!-- Visual Anchors and Label Badges -->
+            <div class="flex items-center gap-1.5 select-none">
+                {% if address.is_default %}
+                    <span class="badge badge-info text-white font-sans text-[9px] font-bold tracking-wider px-2 py-1 rounded-md border-0">DEFAULT</span>
+                {% endif %}
+                {% if address.label == "home" %}<i class="fa-solid fa-house-user text-xs text-primary/70"></i>
+                {% elif address.label == "work" %}<i class="fa-solid fa-building-user text-xs text-info/70"></i>
+                {% elif address.label == "school" %}<i class="fa-solid fa-school text-xs text-success/70"></i>{% endif %}
             </div>
         </div>
-        <!-- Buttons -->
-        <div class="flex gap-3">
-            <!-- submit button -->
-            <button 
-                class="w-1/2 btn btn-info"
-                hx-get="{% url 'edit_address' address.pk %}"
-                hx-target="#modal_content_area"
-                hx-trigger="click"
-                onclick="my_modal_2.showModal(), setTimeout(() => initRegionLogic('update_address_form'), 100)"
-            >
-                Update｜更&nbsp;改
-            </button>
-            <!-- delete button -->
-            <button 
-                class="w-1/2 btn btn-outline btn-error"
-                hx-post="{% url 'delete_address' address.pk %}"
-                hx-target="#address-list-container"
-                hx-trigger="confirmed"
-                onclick="confirmDelete(this)"
-            >
-                Delete｜刪&nbsp;除
-            </button>
+
+        <!-- Curated Text Architecture Block -->
+        <div class="text-[11px] text-base-content/70 font-sans space-y-1 leading-normal border-t border-info/10 pt-2.5">
+            <p class="font-medium text-base-content/90">{{ address.address_line_1 }}</p>
+            {% if address.address_line_2 %}<p>{{ address.address_line_2 }}</p>{% endif %}
+            <p>{{ address.city }}{% if address.state_province_region %}, {{ address.state_province_region }}{% endif %}{% if address.postal_code %} ({{ address.postal_code }}){% endif %}</p>
+            <p class="text-[9px] font-mono tracking-widest text-base-content/40 uppercase pt-0.5">
+                {{ address.get_country_display|default:address.country }}
+            </p>
         </div>
+    </div>
+
+    <!-- Action Overlay Footer Strip -->
+    <div class="px-3 xs:px-5 py-3 bg-base-200/40 border-t border-info/10 flex items-center justify-end gap-1 xs:gap-3 shrink-0 opacity-90 group-hover:opacity-100 transition-opacity">
+        {% if not address.is_default %}
+            <button hx-post="{% url 'set_default_address' address.pk %}"
+                    hx-target="#address-list-container"
+                    class="cursor-pointer text-[8px] xs:text-[10px] text-primary hover:text-success/80 flex items-center gap-1 font-sans font-medium transition-all">
+                <i class="fa-solid fa-square-check text-[9px]"></i>
+                Set Default
+                <span class="inline xl:hidden">｜</span>
+                <br class="hidden xl:inline">
+                設為默認
+            </button>
+            <div class="w-px h-3 bg-base-300"></div>
+        {% endif %}
+        
+            <button hx-get="{% url 'edit_address' address.pk %}"
+                    hx-target="#modal_content_area"
+                    hx-trigger="click"
+                    onclick="my_modal_2.showModal(); setTimeout(() => initRegionLogic('update_address_form'), 100)"
+                    class="cursor-pointer text-[8px] xs:text-[10px] text-base-content/60 hover:text-info flex items-center gap-1 font-sans transition-colors">
+                <i class="fa-solid fa-pen text-[9px]"></i>
+                Edit
+                <span class="inline xl:hidden">｜</span>
+                <br class="hidden xl:inline">
+                編輯
+            </button>
+        
+        {% if not address.is_default %}
+            <div class="w-px h-3 bg-base-300"></div>
+            <button hx-post="{% url 'delete_address' address.pk %}"
+                    hx-target="#address-list-container"
+                    hx-trigger="confirmed"
+                    onclick="window.confirmDelete(this)"
+                    class="cursor-pointer text-[8px] xs:text-[10px] text-error hover:text-error/80 flex items-center gap-1 font-sans transition-colors">
+                <i class="fa-solid fa-trash-can text-[9px]"></i>
+                Delete
+                <span class="inline xl:hidden">｜</span>
+                <br class="hidden xl:inline">
+                刪除
+            </button>
+        {% endif %}
     </div>
 </div>
 {% endfor %}

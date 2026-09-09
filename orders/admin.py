@@ -9,6 +9,7 @@ from django.db import transaction
 from django.utils import timezone
 from .tasks import send_order_confirmation_email_task, send_gift_voucher_email_task, send_e_product_email_task, send_inquiry_notification_email_task, send_cancellation_completion_email_task
 from django.urls import reverse
+import decimal
 
 
 @admin.register(Payment)
@@ -177,7 +178,7 @@ def confirm_bank_payment_admin_action(modeladmin, request, queryset):
                         prod.save(update_fields=['is_dispatched'])
 
                     elif getattr(variation.product, 'is_digital', False) and getattr(variation.product, 'digital_fulfillment_type', 'INSTANT') == 'INSTANT':
-                        expiration_time = timezone.now() + timedelta(hours=48)
+                        expiration_time = timezone.now() + timedelta(hours=168)
                         download_token = DigitalDownloadToken.objects.create(
                             user=order_locked.user,
                             order_product=prod,
@@ -255,53 +256,53 @@ class OrderAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         """
-        🚀 STAFF COMPLETION HOOK INTERCEPT
-        Surgically monitors order_status changes inside Django Admin. If an order transitions
-        to a completed cancellation state, it appends the logs and queues client notification emails.
+        🚀 ZERO-CALCULATION STAFF COMPLETION HOOK INTERCEPT
+        Reads frozen snapshot database columns from the order instance to guarantee 
+        absolute ledger data alignment across automated and manual paths.
         """
         if change and 'order_status' in form.changed_data:
-            # Check if the staff member is moving the order into an absolute dead/complete state
+            # Check if the staff member is moving an order into an absolute dead/complete state
             if obj.order_status in ['Refunded', 'Cancelled']:
                 timestamp_str = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
-                current_notes = obj.delivery_note or ""
                 
-                # 1. Annex text entries surgically onto the baseline text field string matrix without wiping history
-                new_alert = f"\n\n[System Alert - {timestamp_str}]: Cancellation lifecycle complete. Financial reimbursement finalized by store administration staff. / 更改提示：訂單取消與退款手續已由管理人員核值完畢，此交易正式結案。"
-                obj.delivery_note = current_notes + new_alert
+                # Append audit logs seamlessly without touching old delivery note arrays
+                obj.delivery_note = f"{obj.delivery_note or ''}\n\n[Staff Settlement - {timestamp_str}]: Manual refund reconciliation completed. Cancellation mail sent from saved snapshot markers."
                 
-                # 2. Automatically sync and lock down the attached Payment instance state
                 if obj.payment:
-                    payment_record = obj.payment
-                    payment_record.status = 'Refunded'
-                    payment_record.save(update_fields=['status', 'updated_at'])
+                    obj.payment.status = 'Refunded'
+                    obj.payment.save(update_fields=['status', 'updated_at'])
 
-                # 3. 🎯 CELERY ASYNC NOTIFICATION ENGINE DISPATCH
-                # Queues up the background completion template compiler pass
-                send_cancellation_completion_email_task.delay(obj.id)
-                
-        # Commit layout structural parameters safely down to database engines
+                # 🌟 Read from the snapshot data directly to enforce single source of truth rules
+                # Safe conversion fallbacks provide additional runtime insurance blocks
+                refund_type_str = str(obj.refund_type or 'CASH').lower()
+                user_type_str = str(obj.user_classification or 'MEMBER').lower()
+                net_payout_total = obj.total_due - (obj.total_cancellation_fee_applied or 0)
+
+                # Execute the Celery completion task safely using the committed parameters
+                # This guarantees that the final email contains the exact data processed on checkout
+                connection = transaction.get_connection()
+                if connection.in_atomic_block:
+                    transaction.on_commit(lambda: send_cancellation_completion_email_task.delay(
+                        order_id=obj.id,
+                        refund_type=refund_type_str,
+                        user_type=user_type_str,
+                        voucher_id_str=obj.refund_voucher_id_str,
+                        net_amount_str=f"{net_payout_total:.2f}"
+                    ))
+                else:
+                    send_cancellation_completion_email_task.delay(
+                        order_id=obj.id,
+                        refund_type=refund_type_str,
+                        user_type=user_type_str,
+                        voucher_id_str=obj.refund_voucher_id_str,
+                        net_amount_str=f"{net_payout_total:.2f}"
+                    )
+
+        # Execute parent class database save routing cleanly
         super().save_model(request, obj, form, change)
-
-
 
 
 @admin.register(OrderProduct)
 class OrderProductAdmin(admin.ModelAdmin):
     list_display = ["order", "user", "product_variation", "quantity", "is_dispatched", "created_at",]
     search_fields = ["order", "user", "created_at",]
-
-
-# [2026-06-16 06:26:19,267: INFO/MainProcess] Task tasks.send_bank_hold_confirmation_email_task[90ffbd9e-7942-4a60-a6cb-7d648500204c] received
-# [2026-06-16 06:26:19,268: INFO/MainProcess] Task tasks.check_and_expire_hold[66ad3dbe-360f-42a1-8e1a-239d32704dee] received
-# [2026-06-16 06:26:55,628: INFO/ForkPoolWorker-16] Task tasks.send_bank_hold_confirmation_email_task[90ffbd9e-7942-4a60-a6cb-7d648500204c] succeeded in 36.36064520799846s: 'Remittance roadmap notification dispatched successfully to email@example.xx'
-# [2026-06-16 06:27:19,374: INFO/MainProcess] Task tasks.send_order_confirmation_email_task[270ab3d7-140c-4856-abbe-f05ecf94c129] received
-# [2026-06-16 06:27:19,378: INFO/ForkPoolWorker-16] Task tasks.send_order_confirmation_email_task[270ab3d7-140c-4856-abbe-f05ecf94c129] succeeded in 0.0029711070001212647s: 'Email already processed for Order XX-6TRA9N'
-
-
-# [2026-06-16 06:41:49,360: INFO/MainProcess] Task tasks.send_bank_hold_confirmation_email_task[f9f08136-2e98-442c-9f00-a866cd2cba23] received
-# [2026-06-16 06:41:49,362: INFO/MainProcess] Task tasks.check_and_expire_hold[793ecd09-4144-494a-b132-3085e39e84b2] received
-# [2026-06-16 06:42:44,850: INFO/ForkPoolWorker-16] Task tasks.send_bank_hold_confirmation_email_task[f9f08136-2e98-442c-9f00-a866cd2cba23] succeeded in 55.48898117000135s: 'Remittance roadmap notification dispatched successfully to email@example.xx'
-# [2026-06-16 06:45:39,096: INFO/MainProcess] Task tasks.send_gift_voucher_email_task[86d49ddf-9ddc-4578-87a1-3ae2aec9662b] received
-# [2026-06-16 06:45:39,097: INFO/MainProcess] Task tasks.send_order_confirmation_email_task[f1377d94-fcfb-495f-80f3-de3d79839204] received
-# [2026-06-16 06:45:39,116: INFO/ForkPoolWorker-17] Task tasks.send_order_confirmation_email_task[f1377d94-fcfb-495f-80f3-de3d79839204] succeeded in 0.017487401999460417s: 'Email already processed for Order XX-6TDA9N'
-# [2026-06-16 06:45:43,462: INFO/ForkPoolWorker-16] Task tasks.send_gift_voucher_email_task[86d49ddf-9ddc-4578-87a1-3ae2aec9662b] succeeded in 4.365249200998733s: 'Gift voucher tracking notification completed for ID: 1e0ac0ff-a327-4bcc-b078-544ae2d00487'

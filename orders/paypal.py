@@ -374,7 +374,7 @@ def capture_paypal_order(request):
                             "locked_exchange_rate": proforma_order.locked_exchange_rate,
                             "currency_code": proforma_order.currency_code,
                             "is_ordered": False,
-                            "order_status": "New"
+                            "order_status": "Processing"
                         }
                     )
 
@@ -427,7 +427,7 @@ def capture_paypal_order(request):
                     order.payment = payment
                     order.is_ordered = True
                     order.ordered_at = timezone.now()
-                    order.order_status = "Processing" if payment.status == "Completed" else "New"
+                    order.update_fulfillment_status()
                     order.save() 
 
                     created_vouchers = []
@@ -435,6 +435,8 @@ def capture_paypal_order(request):
                     # Relocate items securely over to structural OrderProduct tables
                     for item in cart_items:
                         variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
+                        
+                        # Create the OrderProduct line history row accurately tracking customer intents
                         order_prod = OrderProduct.objects.create(
                             order=order, 
                             payment=payment, 
@@ -445,8 +447,13 @@ def capture_paypal_order(request):
                             product_price=variation.price,
                             ordered=True
                         )
-                        variation.stock -= item.quantity
-                        variation.save()
+
+                        is_instant_eproduct = variation.product.is_digital and variation.product.digital_fulfillment_type == 'INSTANT' and not variation.product.is_voucher
+
+                        # 🌟 EXCLUDE DEDUCTION: Stock changes skip infinite e-products entirely
+                        if not is_instant_eproduct:
+                            variation.stock -= item.quantity
+                            variation.save(update_fields=['stock'])
 
                         # 🎯 ATOMIC CASH VOUCHER GENERATION ENGINE
                         if variation.product.is_voucher:
@@ -478,7 +485,7 @@ def capture_paypal_order(request):
 
                         elif getattr(variation.product, 'is_digital', False) and getattr(variation.product, 'digital_fulfillment_type', 'INSTANT') == 'INSTANT':
                             # 1. Generate a cryptographically secure token valid for exactly 48 hours
-                            expiration_time = timezone.now() + timedelta(hours=48)
+                            expiration_time = timezone.now() + timedelta(hours=168)
                             download_token = DigitalDownloadToken.objects.create(
                                 user=order.user,
                                 order_product=order_prod,
@@ -552,188 +559,6 @@ def capture_paypal_order(request):
     except Exception as e:
         logger.exception(f"💥 Capture Processing Exception: {str(e)}")
         return JsonResponse({"error": "Internal database synchronization error"}, status=500)
-
-
-@require_POST
-def paypal_order_success(request):
-    """Secondary customer-side validation webhook backup sync script mapper."""
-    user = request.user if request.user.is_authenticated else None
-    invoice_id = request.GET.get("invoice_id")
-    exchange_rate = request.GET.get("exchange_rate")
-    
-    try:
-        body = json.loads(request.body)
-        purchase_unit = body["purchase_units"][0]
-        capture_object = purchase_unit["payments"]["captures"][0]
-        
-        transaction_id = capture_object["id"]
-        fx_amount = Decimal(str(capture_object["amount"]["value"]))
-        fx_currency = str(capture_object["amount"]["currency_code"]).upper().strip()
-
-        # 🌟 LOCKING CONTEXT BOUNDARY: Idempotency safety mechanism check
-        if Order.objects.filter(order_number=invoice_id, is_ordered=True).exists():
-            return JsonResponse({"order_number": invoice_id, "transaction_id": transaction_id}, status=200)
-
-        with transaction.atomic():
-            proforma_invoice = ProformaInvoice.objects.select_for_update().get(proforma_order_number=invoice_id, is_ordered=False)
-            
-            # Resolve or auto-instantiate the permanent Order record mapping
-            order, order_created = Order.objects.select_for_update().get_or_create(
-                order_number=invoice_id,
-                defaults={
-                    "user": proforma_invoice.user,
-                    "email": proforma_invoice.email,
-                    "recipient_first_name": proforma_invoice.recipient_first_name,
-                    "recipient_last_name": proforma_invoice.recipient_last_name,
-                    "recipient_mobile_area": proforma_invoice.recipient_mobile_area,
-                    "recipient_mobile_number": proforma_invoice.recipient_mobile_number,
-                    "recipient_email": proforma_invoice.recipient_email,
-                    "gift_message": proforma_invoice.gift_message,
-                    "address_line_1": proforma_invoice.address_line_1,
-                    "address_line_2": proforma_invoice.address_line_2,
-                    "city": proforma_invoice.city,
-                    "state_province_region": proforma_invoice.state_province_region,
-                    "country": proforma_invoice.country,
-                    "postal_code": proforma_invoice.postal_code,
-                    "delivery_note": proforma_invoice.delivery_note,
-                    "do_not_send_invoice": proforma_invoice.do_not_send_invoice,
-                    "product_total": proforma_invoice.cart_total,
-                    "shipping_cost": proforma_invoice.shipping_cost,
-                    "discount": proforma_invoice.discount,
-                    "tax": proforma_invoice.tax,
-                    "voucher_applied": proforma_invoice.voucher_applied,
-                    "total_due": proforma_invoice.total_due,
-                    "product_total_foreign": proforma_invoice.cart_total_foreign,
-                    "shipping_cost_foreign": proforma_invoice.shipping_cost_amount_foreign,
-                    "discount_foreign": proforma_invoice.discount_amount_foreign,
-                    "tax_foreign": proforma_invoice.tax_amount_foreign,
-                    "voucher_applied_foreign": proforma_invoice.applied_voucher_amount_foreign,
-                    "total_due_foreign": proforma_invoice.total_due_foreign,
-                    "locked_exchange_rate": proforma_invoice.locked_exchange_rate,
-                    "currency_code": proforma_invoice.currency_code,
-                    "is_ordered": False,
-                    "order_status": "New"
-                }
-            )
-            
-            payment = Payment.objects.create(
-                user=user, 
-                invoice=proforma_invoice, 
-                order_id=body["id"],
-                payment_id=transaction_id, 
-                payer_id=body["payer"]["payer_id"], 
-                payment_method="PayPal",
-                amount_paid=fx_amount, 
-                currency=fx_currency, 
-                exchange_rate=Decimal(str(exchange_rate)),
-                cny_equivalent=order.total_due,
-                status="Completed" if capture_object["status"] == "COMPLETED" else "Pending"
-            )
-
-            order.payment = payment
-            order.is_ordered = True
-            order.ordered_at = timezone.now()
-            order.order_status = "Processing" if payment.status == "Completed" else "New"
-            order.save()
-
-            cart_items = CartItem.objects.filter(cart=proforma_invoice.cart, is_active=True)
-            for item in cart_items:
-                order_prod, order_prod_created = OrderProduct.objects.create(
-                    order=order, 
-                    payment=payment, 
-                    user=user,
-                    product=item.product_variation.product, 
-                    product_variation=item.product_variation,
-                    quantity=item.quantity, 
-                    product_price=item.product_variation.price, 
-                    ordered=True
-                )
-
-                # Mutate physical database variation tables inventory numbers
-                variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
-                variation.stock -= item.quantity
-                variation.save()
-
-                # Provision voucher units securely inside the fallback hook loop
-                if variation.product.is_voucher:
-                    buyer_email = proforma_invoice.email.strip().lower()
-                    recipient_email = (proforma_invoice.recipient_email or "").strip().lower()
-                    is_gift = recipient_email and recipient_email != buyer_email
-
-                    for _ in range(item.quantity):
-                        voucher = CustomerVoucher.objects.create(
-                            value=variation.price,
-                            balance=variation.price,
-                            purchaser_email=proforma_invoice.email,
-                            owner=None if is_gift else user,
-                            registered_email=proforma_invoice.recipient_email if is_gift else proforma_invoice.email,
-                            is_claimed=False if is_gift else True,
-                            claimed_date=None if is_gift else timezone.now(),
-                        )                        
-                        if is_gift:
-                            reg_link = voucher.generate_registration_link(request)
-                            transaction.on_commit(
-                                lambda v_id=voucher.id, link=reg_link: send_gift_voucher_email_task.delay(v_id, link)
-                            )
-
-                    order_prod.is_dispatched = True
-                    order_prod.save(update_fields=['is_dispatched'])
-
-                elif getattr(variation.product, 'is_digital', False) and getattr(variation.product, 'digital_fulfillment_type', 'INSTANT') == 'INSTANT':
-                    # 1. Generate a cryptographically secure token valid for exactly 48 hours
-                    expiration_time = timezone.now() + timedelta(hours=48)
-                    download_token = DigitalDownloadToken.objects.create(
-                        user=order.user,
-                        order_product=order_prod,
-                        expires_at=expiration_time
-                    )
-                    
-                    # 2. Trigger the asynchronous background email delivery via Celery task queue
-                    transaction.on_commit(
-                        lambda token_id=download_token.id: send_e_product_email_task.delay(str(token_id))
-                    )
-
-                    order_prod.is_dispatched = True
-                    order_prod.save(update_fields=['is_dispatched'])
-
-            # After handling individual lines, automatically evaluate if order needs an upgraded order status!
-            order.update_fulfillment_status() # Covered in Step 4 below
-            order.save(update_fields=['order_status'])
-            
-            # =============================================================
-            # 📉 8. SYSTEM CLEANUP (OPTIMISED ORDER OF OPERATIONS)
-            # =============================================================
-            proforma_invoice.is_ordered = True  # 🌟 LOCK: Invalidate proforma checkouts globally!
-            active_cart = proforma_invoice.cart
-
-            if active_cart:
-                # 1. Clear out the database item metrics entirely
-                active_cart.cartitem_set.all().delete()
-                
-                # 2. Drop the temporary snapshot cache parameters row cleanly
-                CheckoutInfo.objects.filter(cart=active_cart).delete()
-                
-            # 3. Sever relationship link only after wipes execute safely on disk
-            proforma_invoice.cart = None
-            proforma_invoice.save()
-
-        # 🌟 INDENTATION MAP ALIGNMENT: 
-        # Steps 9, 10, and your returns execute safely within the root view try context
-        # -----------------------------------------------------------------------------
-        # 9. Clear active session checkout data catalogs
-        for key in ["applied_voucher", "offer_applied", "shipping_data", "active_proforma_id"]:
-            request.session.pop(key, None)
-        request.session.modified = True
-
-        transaction.on_commit(lambda: send_order_confirmation_email_task.delay(order.order_number))
-        return JsonResponse({"order_number": order.order_number, "transaction_id": transaction_id}, status=200)
-        
-    except (Order.DoesNotExist, ProformaInvoice.DoesNotExist):
-        return JsonResponse({"error": "Order target invalid or already fully processed"}, status=400)
-    except Exception as e:
-        print(f"💥 Success Callback Pipeline Exception: {str(e)}")
-        return JsonResponse({"error": "Internal ledger execution exception"}, status=500)
-
 
 
 # def paypal_order_failure(request, order_id=None):

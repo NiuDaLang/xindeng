@@ -1,38 +1,108 @@
+<!-- dashboard.html -->
 {% extends 'base.html' %}
 {% load static %}
+
 {% block content %}
-    <!-- BANNER -->
-    <div class="relative mt-[65px] lg:mt-[86px] w-full">
-        {% include 'includes/banner.html' %}
+<div class="max-w-[1380px] mx-auto drawer lg:drawer-open min-h-screen mt-[65px] lg:mt-[86px]">
+    <div hx-get="{% url 'dashboard' subpage %}"
+     hx-trigger="refreshDashboardCounters from:body"
+     hx-target="#dashboard-content"
+     hx-swap="innerHTML"
+     class="hidden">
     </div>
 
-    <!-- CONTENTS -->
-    <div class="flex w-full">
-        <!-- sidebar -->
-        <aside id="dashboard_sidebar" class="2xl:w-1/3 2xl:max-w-[500px] md:w-[25%] lg:max-w-[300px] md:max-w-[192px]">
-            {% include 'includes/dashboard_sidebar.html' %}
-        </aside>
-        <!-- main contents -->
-        <main id="dashboard-content" class="bg-neutral-content flex-1 border-info border-4 p-10">
-            {% include subpage_template %}
-        </main>
+    <input id="dashboard-drawer" type="checkbox" class="drawer-toggle" />
 
-        <!-- move_to_cart_from_(wishlist, favorites) 【MODAL】-->
-        <dialog id="my_modal_3" class="modal">
-            <div class="modal-box relative">
-                <h3 class="w-full text-center mt-5 font-bold">Move to Cart｜轉入購物車</h3>
-                <div class="form_wrapper relative w-full flex flex-col modal-action pb-[2rem] px-[3rem] mt-0">
-                    <!-- form -->
-                    <div id="change_qty_wrapper" class="w-full"></div>
-                    <!-- close button -->
-                    <form method="dialog">
-                        <button class="btn btn-sm btn-circle btn-ghost absolute -right-[5px] -top-[50px]">✕</button>
-                    </form>
-                </div>
-            </div>
-        </dialog>        
+    <!-- MAIN DISPLAY SUBCOMPONENT LAYER -->
+    <div class="drawer-content flex flex-col h-[calc(100vh-65px)] lg:h-auto bg-base-50/20 min-w-0 relative">
+        <!-- DYNAMIC RESPONSIVE BANNER COMPONENT -->
+        <div id="dashboard-banner-viewport" class="w-full relative z-30 shadow-sm bg-base-300 flex-shrink-0">
+        {% include 'includes/banner.html' %}
+        </div>
+        <!-- CENTRAL WORKSPACE CONTAINER -->
+        <main id="dashboard-content" class="dashboard-custom-viewport flex-1 p-4 sm:p-6 md:p-8 lg:p-6 xl:p-10 min-w-0 overflow-y-auto overflow-x-hidden">
+        {% include 'includes/alerts.html' %}
+        {% include subpage_template %}
+        </main>
+        <style>
+            /* Existing scrollbar styles for dashboard-custom-viewport */
+            .dashboard-custom-viewport::-webkit-scrollbar {
+                width: 6px;
+            }
+            
+            .dashboard-custom-viewport::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.05);
+                border-radius: 9999px;
+            }
+            
+            .dashboard-custom-viewport::-webkit-scrollbar-thumb {
+                background: #0284c7;
+                border-radius: 9999px;
+                transition: background 0.2s ease-in-out;
+            }
+            
+            .dashboard-custom-viewport::-webkit-scrollbar-thumb:hover {
+                background: #0369a1;
+            }
+
+            @supports (scrollbar-width: thin) {
+                .dashboard-custom-viewport {
+                    scrollbar-width: thin;
+                    scrollbar-color: #0284c7 transparent;
+                }
+            }
+            
+            /* Hide outer scrollbar when on chat page */
+            .dashboard-custom-viewport:has(#dashboard_help) {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            
+            .dashboard-custom-viewport:has(#dashboard_help)::-webkit-scrollbar {
+                display: none;
+            }
+        </style>
+    </div>
+
+    <!-- RESPONSIVE NAVIGATION DRAWER ACCENT OVERLAY -->
+    <div class="drawer-side z-40">
+        <label for="dashboard-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+        <!-- SIDEBAR MASTER TRACK MODULE -->
+        <aside id="dashboard_sidebar" class="w-[min(83%, w-60)] lg:w-60 mt-[64px] lg:mt-0 min-h-full bg-base-100 border-r border-base-200/60 flex flex-col">
+        {% include 'includes/dashboard_sidebar.html' %}
+        </aside>
     </div>
 </div>
+
+<!-- ================================================================
+     🛡️ DIALOG ENGINE LAYER: MOVE TO CART QUANTITY TRACKER MODAL
+     ================================================================ -->
+<dialog id="my_modal_3" class="modal bg-neutral-900/40 backdrop-blur-sm z-50">
+    <div class="modal-box rounded-2xl border-2 border-info/30 shadow-xl bg-base-100 max-w-md p-6 relative overflow-visible">
+        
+        <!-- Native Dialog Close Button: Anchored comfortably inside the modal context rim -->
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-4 top-4 text-base-content/40 hover:text-base-content transition-colors focus:outline-none focus:ring-0">✕</button>
+        </form>
+        
+        <!-- Header Text Block Alignment Architecture -->
+        <div class="border-b border-base-200 pb-3 select-none text-center sm:text-left">
+            <h3 class="font-serif font-black text-sm tracking-wider text-base-content/80 flex items-center justify-center sm:justify-start gap-2">
+                <i class="fa-solid fa-cart-arrow-down text-primary"></i> Move to Cart ｜ 轉入購物車
+            </h3>
+            <p class="text-[10px] font-sans text-base-content/40 mt-0.5 leading-none">
+                Adjust quantity variables before committing your selection to dispatch lines.
+            </p>
+        </div>
+        
+        <!-- Asynchronous Content Form Injector Area Workspace -->
+        <div class="form_wrapper relative w-full flex flex-col pt-4">
+            <!-- HTMX dynamic content replacement node targeting quantity adjustments -->
+            <div id="change_qty_wrapper" class="w-full text-xs"></div>
+        </div>
+        
+    </div>
+</dialog>
 
 <script>
 /** 
@@ -57,8 +127,6 @@ function renderLocalAnalogClockMetrics() {
     const m = now.getMinutes();
     const h = now.getHours();
 
-    // 🌟 THE SOLUTION MATH: Restrict rotational metrics strictly within a 360-degree modular circle
-    // Includes fractional additions (ms/s) to enable completely fluid hand tracking movement animations!
     const secondDegrees = ((s + ms / 1000) / 60) * 360;
     const minuteDegrees = ((m + s / 60) / 60) * 360;
     const hourDegrees = (((h % 12) + m / 60) / 12) * 360;
@@ -77,21 +145,16 @@ function initializeAnalogClockLayout() {
     const clockSection = document.getElementById("persistent-analog-clock");
     if (!clockSection) return;
 
-    // Clear numbers out of indicators to keep the face minimalist
     const indicators = clockSection.querySelectorAll(".clock__indicator");
     indicators.forEach(indicator => {
         indicator.innerText = ""; 
     });
 
-    // 🌟 HIGH-PRECISION TIMESTAMP CAPTURE [STEM Calculative Problem Solving]
     const now = new Date();
     const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
-    // Extract exact milliseconds passed since midnight for sub-second precision
     const totalSecondsToday = (now - midnight) / 1000;
 
-    // 🌟 THE TRUE CHRONOLOGICAL DELAY FORMULA:
-    // Extract the exact remainder for each hand's animation duration timeline and multiply by -1
     const secondDelay = (totalSecondsToday % 60) * -1;
     const minuteDelay = (totalSecondsToday % 3600) * -1;
     const hourDelay = (totalSecondsToday % 43200) * -1;
@@ -100,12 +163,9 @@ function initializeAnalogClockLayout() {
     const minuteHand = clockSection.querySelector(".clock__minute");
     const hourHand = clockSection.querySelector(".clock__hour");
 
-    // Inject your perfectly proportioned negative animation delays --> negative delay == forward!
     if (secondHand) secondHand.style.animationDelay = `${secondDelay}s`;
     if (minuteHand) minuteHand.style.animationDelay = `${minuteDelay}s`;
     if (hourHand)   hourHand.style.animationDelay = `${hourDelay}s`;
-
-    // console.log("⏰ Analog Clock Hands Axis Perfectly Centred & Synchronised.");
 }
 
 // Disable the default/'' option of dropdown select tags
@@ -147,19 +207,6 @@ function updateClock() {
 }
 
 
-// Update sidebar active visual borders
-function updateActiveLink(element) {
-    if (!element) return;
-    const items = document.querySelectorAll('.dashboard-item');
-    items.forEach(li => li.classList.remove("is-active"));
-
-    const parentLi = element.closest("li");
-    if (parentLi) {
-        parentLi.classList.add("is-active");
-    }
-}
-
-
 /** 
  * Block 2: Zodiac Profile Extraction
  */
@@ -168,18 +215,18 @@ function getZodiacSign(month, day) {
     const months = {Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11};
     const month_num = months[month];
     const zodiacSigns = [
-        {sign: "摩羯座 | Capricorn", startMonth: 11, startDay: 22, endMonth: 0, endDay: 19 },
-        {sign: "水瓶座 | Aquarius", startMonth: 0, startDay: 20, endMonth: 1, endDay: 18 },
-        {sign: "雙魚座 | Pisces", startMonth: 1, startDay: 19, endMonth: 2, endDay: 20 },
-        {sign: "牡羊座 | Aries", startMonth: 2, startDay: 21, endMonth: 3, endDay: 19 },
-        {sign: "金牛座 | Taurus", startMonth: 3, startDay: 20, endMonth: 4, endDay: 20 },
-        {sign: "雙子座 | Gemini", startMonth: 4, startDay: 21, endMonth: 5, endDay: 20 },
-        {sign: "巨蟹座 | Cancer", startMonth: 5, startDay: 21, endMonth: 6, endDay: 22 },
-        {sign: "獅子座 | Leo", startMonth: 6, startDay: 23, endMonth: 7, endDay: 22 },
-        {sign: "處女座 | Virgo", startMonth: 7, startDay: 23, endMonth: 8, endDay: 22 },
-        {sign: "天秤座 | Libra", startMonth: 8, startDay: 23, endMonth: 9, endDay: 22 },
-        {sign: "天蠍座 | Scorpio", startMonth: 9, startDay: 23, endMonth: 10, endDay: 21 },
-        {sign: "射手座 | Sagittarius", startMonth: 10, startDay: 22, endMonth: 11, endDay: 21 },
+        {sign: "摩羯座｜Capricorn", startMonth: 11, startDay: 22, endMonth: 0, endDay: 19 },
+        {sign: "水瓶座｜Aquarius", startMonth: 0, startDay: 20, endMonth: 1, endDay: 18 },
+        {sign: "雙魚座｜Pisces", startMonth: 1, startDay: 19, endMonth: 2, endDay: 20 },
+        {sign: "牡羊座｜Aries", startMonth: 2, startDay: 21, endMonth: 3, endDay: 19 },
+        {sign: "金牛座｜Taurus", startMonth: 3, startDay: 20, endMonth: 4, endDay: 20 },
+        {sign: "雙子座｜Gemini", startMonth: 4, startDay: 21, endMonth: 5, endDay: 20 },
+        {sign: "巨蟹座｜Cancer", startMonth: 5, startDay: 21, endMonth: 6, endDay: 22 },
+        {sign: "獅子座｜Leo", startMonth: 6, startDay: 23, endMonth: 7, endDay: 22 },
+        {sign: "處女座｜Virgo", startMonth: 7, startDay: 23, endMonth: 8, endDay: 22 },
+        {sign: "天秤座｜Libra", startMonth: 8, startDay: 23, endMonth: 9, endDay: 22 },
+        {sign: "天蠍座｜Scorpio", startMonth: 9, startDay: 23, endMonth: 10, endDay: 21 },
+        {sign: "射手座｜Sagittarius", startMonth: 10, startDay: 22, endMonth: 11, endDay: 21 },
     ];
 
     for (const zodiac of zodiacSigns) {
@@ -205,7 +252,6 @@ function processZodiacExtraction() {
         }
     }
 }
-
 
 /** 
  * Block 3: Offers Flip-Countdown & Clipboard
@@ -307,7 +353,6 @@ function updateFlashSaleCountdowns() {
 }
 
 function copyPerkCode(up_pk, btnElement) {
-    console.log("copy code", "up_pk: ", up_pk)
     if (!btnElement) return;
     const code_target = document.getElementById(`perk_code_${up_pk}`);
     if (!code_target) return;
@@ -351,32 +396,40 @@ function confirmDelete(button) {
 }
 
 // Clear and reset Address Book forms safely inside modals or subpages
-
 function clearAddressBookForm(form_id) {
     const form = document.getElementById(form_id);
     if (!form) {
         console.warn(`Form target ID "${form_id}" not found in current DOM context.`);
         return;
     }
-
+    
     // 1. Physically reset all standard text, hidden, and email input tags
     const inputs = form.querySelectorAll('input[type="text"], input[type="hidden"], input[type="email"], textarea');
     inputs.forEach(input => {
-        // Clear value parameters completely
         input.value = '';
-        
-        // Remove red border error rings from DaisyUI input labels if present
         const wrapper = input.closest('.input-border') || input.closest('label.input') || input.closest('.join');
         if (wrapper) {
             wrapper.classList.remove('border-error', 'ring-error!', 'input-error');
         }
     });
 
+    // 🌟 SURGICAL FIX FOR GOOGLE AUTOCOMPLETE FLICKER/RESIDUAL CACHE WIPE
+    const mainAddressField = form.querySelector('#id_address_line_1');
+    if (mainAddressField) {
+        mainAddressField.value = ''; // Force empty string directly over Google cache
+        mainAddressField.blur();      // Drop focus to break any ongoing autocomplete calculations
+        
+        // Remove DaisyUI error highlights specifically for this field if they exist
+        const addressWrapper = mainAddressField.closest('label.input') || mainAddressField.closest('.form-control');
+        if (addressWrapper) {
+            addressWrapper.classList.remove('border-error', 'input-error');
+        }
+    }
+
     // 2. Reset Country and China Province Select dropdown indexes back to default top choices
     const selects = form.querySelectorAll('select');
     selects.forEach(select => {
         select.selectedIndex = 0;
-        
         // Clean error indicator wrappers from select nodes
         const wrapper = select.closest('.input-border') || select.closest('label.input') || select.closest('.join');
         if (wrapper) {
@@ -389,7 +442,7 @@ function clearAddressBookForm(form_id) {
         errDiv.innerHTML = '';
         errDiv.classList.add('hidden');
     });
-    
+
     // Remove any native next-sibling Django text nodes injected by form.errors
     form.querySelectorAll('.label').forEach(label => {
         if (label.classList.contains('text-error') || label.nextElementSibling?.classList.contains('text-error')) {
@@ -409,17 +462,36 @@ function clearAddressBookForm(form_id) {
     }
 }
 
+// Close manual layout form
+function closeAddressForm(form_id) {
+    if (typeof clearAddressBookForm === "function") clearAddressBookForm(form_id);
+}
 
 // Open Create New Address Form
 function openEmptyAddressForm(form_id) {
     if (typeof clearAddressBookForm === "function") clearAddressBookForm(form_id);
-    if (typeof preAutoComplete === "function") preAutoComplete();
-    if (typeof initAutoComplete === "function") initAutoComplete(form_id);
-}
-
-// Close manual layout form
-function closeAddressForm(form_id) {
-    if (typeof clearAddressBookForm === "function") clearAddressBookForm(form_id);
+    
+    // 🌟 THE CONDITIONAL RE-EVALUATION: Scan the DOM directly for saved cards
+    const addressContainer = document.getElementById("address-list-container");
+    const defaultWrapper = document.querySelector('#' + form_id + ' .pt-2.select-none');
+    
+    if (addressContainer && defaultWrapper) {
+        // Count how many address card components are currently mounted on screen
+        const savedCardsCount = addressContainer.querySelectorAll(".card").length;
+        
+        if (savedCardsCount > 0) {
+            // Surgically insert the default checkbox if addresses exist on record
+            defaultWrapper.innerHTML = `
+                <input type="checkbox" name="is_default" id="id_is_default" class="checkbox checkbox-xs checkbox-primary focus:outline-none focus:ring-0">
+                <label for="id_is_default" class="text-[0.65rem] xs:text-[0.8rem] font-medium text-base-content/70">
+                    Your Default Address｜設為預設/默認地址
+                </label>
+            `;
+        } else {
+            // Ensure it stays completely wiped clean if there are no cards on record yet
+            defaultWrapper.innerHTML = '';
+        }
+    }
 }
 
 // clear address (in dashboard/profile)
@@ -467,9 +539,14 @@ function clearAddressForm() {
 }
 
 // initAutoComplete for address form upon arrival on the subpage content
+// FIXED: Check if address input exists before initializing
 function initAddressAutoCompleteByPage(subpage) {
+    // ✅ CRITICAL FIX: Exit early if no address input exists on this page
     const addressInput = document.getElementById('id_address_line_1');
-    if (!addressInput) return;
+    if (!addressInput) {
+        console.log('No address input found on this page, skipping autocomplete init');
+        return;
+    }
     
     if (subpage === 'dashboard_profile') {
         const value = addressInput.value || "";
@@ -489,6 +566,10 @@ function initAddressAutoCompleteByPage(subpage) {
             if (typeof initRegionLogic === "function") initRegionLogic('create_address_form');
             if (typeof toggleProvinceFields === "function") toggleProvinceFields(addressInput.form);
         }
+    } else {
+        // ✅ For other subpages, do nothing - no address autocomplete needed
+        console.log(`Subpage "${subpage}" doesn't need address autocomplete`);
+        return;
     }
 }
 
@@ -500,6 +581,7 @@ function initAddressAutoCompleteByPage(subpage) {
 function updateCounterDisplay() {
     const counter = document.getElementById("search-counter");
     if (!counter) return;
+    
     const hits = document.querySelectorAll('.search-hit');
     const total = hits.length;
     
@@ -507,23 +589,39 @@ function updateCounterDisplay() {
         counter.innerText = "0 / 0";
         window.currentMatchIndex = -1;
     } else {
+        // Ensure currentMatchIndex is valid
+        if (window.currentMatchIndex < 0 || window.currentMatchIndex >= total) {
+            window.currentMatchIndex = 0;
+        }
         counter.innerText = `${window.currentMatchIndex + 1} / ${total}`;
     }
 }
 
 function toggleSearch(show) {
-    const searchInput = document.querySelector('input[name="q"]');
+    const searchInput = document.getElementById('chat_search_input');
     const container = document.getElementById("search-input-container");
     const trigger = document.getElementById("search-trigger");
+    
     if (!searchInput) return;
 
     if (!show) {
+        console.log("Clearing search");
         searchInput.value = '';
         searchInput.blur();
         if (container) container.classList.add('d-none');
         if (trigger) trigger.classList.remove('d-none');
-        updateChatInputState(); 
-        htmx.trigger(searchInput, 'keyup');
+        
+        // Use ChatManager to clear search
+        if (window.ChatManager && typeof window.ChatManager.clearSearch === 'function') {
+            window.ChatManager.clearSearch();
+        } else if (window.ChatManager && typeof window.ChatManager.renderMessages === 'function') {
+            // Fallback: just reload messages
+            window.ChatManager.renderMessages(window.ChatManager.messages);
+        }
+        
+        if (typeof updateChatInputState === 'function') {
+            updateChatInputState();
+        }
     } else {
         if (container) container.classList.remove('d-none');
         if (trigger) trigger.classList.add('d-none');
@@ -549,6 +647,13 @@ function updateChatInputState() {
 }
 
 function navigateSearch(direction) {
+    // Use ChatManager's navigateSearch if available
+    if (window.ChatManager && typeof window.ChatManager.navigateSearch === 'function') {
+        window.ChatManager.navigateSearch(direction);
+        return;
+    }
+    
+    // Fallback to original implementation
     const hits = document.querySelectorAll('.search-hit');
     if (hits.length === 0) return;
 
@@ -565,10 +670,18 @@ function navigateSearch(direction) {
     updateCounterDisplay();
 }
 
-function setActiveMember(memberId, clickedElement) {
-    const receiverInput = document.getElementById('receiver_id_input');
-    if (receiverInput) receiverInput.value = memberId;
 
+
+function setActiveMember(memberId, clickedElement) {
+    console.log(`Setting active member: ${memberId}`);
+    
+    const receiverInput = document.getElementById('receiver_id_input');
+    if (receiverInput) {
+        receiverInput.value = memberId;
+        console.log(`Receiver ID set to: ${memberId}`);
+    }
+
+    // Update button styles
     document.querySelectorAll('.member-filter-btn').forEach(btn => {
         btn.classList.remove('btn-primary', 'text-white');
         btn.classList.add('bg-white', 'text-black');
@@ -578,6 +691,26 @@ function setActiveMember(memberId, clickedElement) {
         clickedElement.classList.remove('bg-white', 'text-black');
         clickedElement.classList.add('btn-primary', 'text-white');
     }
+    
+    // Enable chat input
+    if (typeof enableChatInput === 'function') {
+        enableChatInput();
+    }
+    
+    // Clear any existing search
+    const searchInput = document.getElementById('chat_search_input');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    
+    // Reset search counter
+    window.currentMatchIndex = -1;
+    if (typeof updateCounterDisplay === 'function') {
+        updateCounterDisplay();
+    }
+    
+    // Note: The session is set server-side in filter_message_by_member view
+    // No need for a separate fetch request
 }
 
 
@@ -587,15 +720,34 @@ function setActiveMember(memberId, clickedElement) {
 
 function terminateActiveWebSocket() {
     if (window.solarWebSocketInstance) {
-        window.solarWebSocketInstance.onmessage = null;
-        window.solarWebSocketInstance.close();
+        // ✅ Only close if the connection is actually open or connecting
+        const ws = window.solarWebSocketInstance;
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+            ws.onmessage = null;
+            ws.onclose = null;  // ✅ Prevent onclose from firing
+            ws.onerror = null;  // ✅ Prevent onerror from firing
+            ws.close();
+        }
         window.solarWebSocketInstance = null;
         console.log("🔌 Solar Term WebSocket Connection Terminated Cleanly.");
     }
 }
 
 function initializeSolarWebSocket() {
-    terminateActiveWebSocket(); // Protect Daphne pool depletion leaks
+    // ✅ Check if already connecting or open
+    if (window.solarWebSocketInstance && 
+        (window.solarWebSocketInstance.readyState === WebSocket.OPEN || 
+         window.solarWebSocketInstance.readyState === WebSocket.CONNECTING)) {
+        console.log("Solar WebSocket already active or connecting, skipping initialization");
+        return;
+    }
+    
+    if (document.visibilityState === 'hidden') {
+        console.log("Page is hidden (bfcache), deferring WebSocket connection...");
+        return;
+    }
+
+    terminateActiveWebSocket(); // Clean up any stale connection
     
     const termDisplay = document.getElementById('solar_term');
     const termDisplayEn = document.getElementById('solar_term_en');
@@ -609,22 +761,85 @@ function initializeSolarWebSocket() {
     const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
     const solarUrl = wsProtocol + window.location.host + '/ws/solar/';
     
-    window.solarWebSocketInstance = new WebSocket(solarUrl);
+    try {
+        const ws = new WebSocket(solarUrl);
+        window.solarWebSocketInstance = ws;
 
-    window.solarWebSocketInstance.onmessage = function(e) {
-        const data = JSON.parse(e.data);
+        ws.onopen = function() {
+            console.log("✅ Solar WebSocket connected successfully");
+        };
+
+        ws.onmessage = function(e) {
+            try {
+                const data = JSON.parse(e.data);
+                if (data.term && data.term !== currentTerm) {
+                    currentTerm = data.term;
+                    if (termDisplay) termDisplay.innerText = data.term;
+                    if (termDisplayEn) termDisplayEn.innerText = data.term_en;
+                    if (nextTermDisplay && data.next_term) nextTermDisplay.innerText = data.next_term;
+                    if (nextTermDisplayEn && data.next_term_en) nextTermDisplayEn.innerText = data.next_term_en;
+                    console.log(`☯️ Solar Shift Notification Captured: ${data.term} is now active.`);
+                }
+            } catch (err) {
+                console.warn('Error parsing WebSocket message:', err);
+            }
+        };
         
-        // 🌟 REALTIME RE-ALIGNMENT: Force updates into UI text channels seamlessly
-        if (data.term && data.term !== currentTerm) {
-            currentTerm = data.term;
-            if (termDisplay) termDisplay.innerText = data.term;
-            if (termDisplayEn) termDisplayEn.innerText = data.term_en;
-            if (nextTermDisplay && data.next_term) nextTermDisplay.innerText = data.next_term;
-            if (nextTermDisplayEn && data.next_term_en) nextTermDisplayEn.innerText = data.next_term_en;
-            console.log(`☯️ Solar Shift Notification Captured: ${data.term} is now active.`);
-        }
-    };
+        ws.onclose = function(e) {
+            console.log('Solar WebSocket closed:', e.code, e.reason);
+            // ✅ Only reconnect if not intentionally closed (code 1000 is normal closure)
+            if (e.code !== 1000 && e.code !== 1001) {
+                console.log('Attempting to reconnect Solar WebSocket...');
+                // ✅ Clear the instance before reconnecting
+                if (window.solarWebSocketInstance === ws) {
+                    window.solarWebSocketInstance = null;
+                }
+                setTimeout(initializeSolarWebSocket, 3000);
+            } else {
+                // Clean up if closed normally
+                if (window.solarWebSocketInstance === ws) {
+                    window.solarWebSocketInstance = null;
+                }
+            }
+        };
+
+        ws.onerror = function(e) {
+            console.warn('Solar WebSocket error:', e);
+            // Don't reconnect here - onclose will handle it
+            // Just log the error and let onclose handle the retry
+        };
+        
+    } catch(error) {
+        console.warn('Solar WebSocket initialization error:', error);
+        window.solarWebSocketInstance = null;
+        setTimeout(initializeSolarWebSocket, 3000);
+    }
 }
+
+// ✅ Safe way to ensure WebSocket is cleaned up
+function safeTerminateWebSocket() {
+    const ws = window.solarWebSocketInstance;
+    if (ws) {
+        // Remove all event listeners to prevent callbacks during cleanup
+        ws.onopen = null;
+        ws.onmessage = null;
+        ws.onclose = null;
+        ws.onerror = null;
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+            try {
+                ws.close(1000, "Normal closure");
+            } catch (e) {
+                // Ignore close errors
+            }
+        }
+        window.solarWebSocketInstance = null;
+        console.log("🔌 Solar Term WebSocket Connection Terminated Cleanly.");
+    }
+}
+
+// Replace terminateActiveWebSocket with the safe version
+// Or just alias it for backward compatibility
+terminateActiveWebSocket = safeTerminateWebSocket;
 
 
 /** 
@@ -633,149 +848,314 @@ function initializeSolarWebSocket() {
 // 🔀 CORE HTMX BOUNDARY LIFECYCLE CONTROLLERS
 document.body.addEventListener('htmx:beforeLeave', () => {
     stopCountdown();
-    terminateActiveWebSocket();
+
+    // ✅ Clear clock interval instantly to prevent Vite profiling collisions
     if (window.dashboardClockInterval) {
         clearInterval(window.dashboardClockInterval);
         window.dashboardClockInterval = null;
     }
+
+    // ✅ Only terminate if it's safe
+    if (window.solarWebSocketInstance) {
+        const ws = window.solarWebSocketInstance;
+        ws.onclose = null; 
+        ws.onerror = null;
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+            ws.close(1000, "Navigating away");
+        }
+        window.solarWebSocketInstance = null;
+    }
+});
+
+// ✅ Add htmx:afterProcessNode to handle WebSocket reconnection after HTMX swaps
+document.body.addEventListener('htmx:afterProcessNode', function(evt) {
+    // If the element contains a solar_term, reinitialize WebSocket
+    if (evt.detail.elt.querySelector('#solar_term')) {
+        // Check if the WebSocket is not already active
+        if (!window.solarWebSocketInstance || window.solarWebSocketInstance.readyState !== WebSocket.OPEN) {
+            setTimeout(initializeSolarWebSocket, 100);
+        }
+    }
 });
 
 // document.addEventListener("htmx:beforeSwap", stopCountdown)
-document.body.addEventListener("htmx:beforeSwap", stopCountdown);
+document.body.addEventListener("htmx:beforeSwap", (evt) => {
+    stopCountdown();
+    // Stop analog ticking animations during mutations to guard 'startTime' references
+    const clockContainer = document.getElementById("persistent-analog-clock");
+    if (clockContainer) {
+        const hands = clockContainer.querySelectorAll(".clock__second, .clock__minute, .clock__hour");
+        hands.forEach(hand => hand.style.transform = 'none');
+    }
+});
+
 
 document.body.addEventListener('htmx:afterSwap', (evt) => {
-    if (!evt.detail || !evt.detail.target) return;
-    if (evt.detail.target.classList.contains('unread-count-badge')) return;
-
-    const target = evt.detail.target;
-
-    if (target.id === 'dashboard-content') {
-        if (document.getElementById('persistent-analog-clock')) {
-            initializeAnalogClockLayout();
-        }
-        const subpageEl = target.querySelector('.subpage');
-        if (!subpageEl) return;
-        
-        const subpage = subpageEl.id;
-        disableDefaultOptions(target);
-
-        if (document.getElementById('dynamic-clock') || document.getElementById('dynamic-date')) {
-            updateClock();
-            if (!window.dashboardClockInterval) {
-                window.dashboardClockInterval = setInterval(updateClock, 1000);
-            }
-        }
-
-        if (document.getElementById('solar_term')) {
-            initializeSolarWebSocket();
-        }
-
-        processZodiacExtraction();
-
-        if (subpage === 'dashboard_profile') {
-            setTimeout(() => initAddressAutoCompleteByPage('dashboard_profile'), 20);
-        } else if (subpage === 'dashboard_addresses') {
-            initAddressAutoCompleteByPage('dashboard_addresses');
-        } else if (subpage === 'dashboard_offers') {
-            startCountdown();
-        }
-
-    } else if (target.id === "modal_content_area") {
-        const form = target.querySelector('form');
-        if (form) {
-            const address_input = form.querySelector('#id_address_line_1');
-            if (address_input) {
-                address_input.addEventListener('input', function() {
-                    if (this.value.trim() === "") {
-                        if (typeof preAutoComplete === "function") preAutoComplete();
-                        if (typeof initAutoComplete === "function") initAutoComplete(form.id);
-                    }
-                });
-            }
-            if (typeof initRegionLogic === "function") initRegionLogic(form.id); 
-            if (typeof toggleProvinceFields === "function") toggleProvinceFields(form);
-        }
-    } else if (target.id === "chat_message_list") {
-        window.currentMatchIndex = -1;
-        updateCounterDisplay();
-        updateChatInputState();  
-
-        const searchInput = document.querySelector('input[name="q"]');
-        if (searchInput && searchInput.value.trim() !== "") {
-            navigateSearch(1);
-        }
+    // Prevent overlapping lifecycle swaps on the exact same element container
+    if (evt.detail.target.dataset.swapping === 'true') {
+        return;
     }
+    evt.detail.target.dataset.swapping = 'true';
+
+    requestAnimationFrame(() => {
+        if (!evt.detail || !evt.detail.target) {
+            setTimeout(() => {
+                if (evt.detail.target) delete evt.detail.target.dataset.swapping;
+            }, 100);
+            return;
+        }
+
+        if (evt.detail.target.classList.contains('unread-count-badge')) {
+            setTimeout(() => {
+                if (evt.detail.target) delete evt.detail.target.dataset.swapping;
+            }, 100);
+            return;
+        }
+
+        const target = evt.detail.target;
+
+        // ============================================================
+        // 1. MASTER WORKSPACE ROUTING BLOCK (Full page alterations)
+        // ============================================================
+        if (target.id === 'dashboard-content') {
+            // Close mobile side drawer overlay instantly
+            const drawerToggle = document.getElementById('dashboard-drawer');
+            if (drawerToggle && drawerToggle.checked) {
+                drawerToggle.checked = false;
+            }
+            
+            // Re-render structural ticks on vanilla analog frame clock if available
+            if (document.getElementById('persistent-analog-clock')) {
+                initializeAnalogClockLayout();
+            }
+
+            const subpageEl = target.querySelector('.subpage');
+            if (!subpageEl) {
+                setTimeout(() => {
+                    if (evt.detail.target) delete evt.detail.target.dataset.swapping;
+                }, 100);
+                return;
+            }
+
+            const subpage = subpageEl.id;
+            disableDefaultOptions(target);
+
+            // Sync structural running global timestamp metrics
+            if (document.getElementById('dynamic-clock') && document.getElementById('dynamic-date')) {
+                updateClock();
+                if (!window.dashboardClockInterval) {
+                    window.dashboardClockInterval = setInterval(updateClock, 1000);
+                }
+            }
+
+            if (document.getElementById('solar_term')) {
+                initializeSolarWebSocket();
+            }
+
+            processZodiacExtraction();
+
+            // Run profile-specific configurations safely
+            if (subpage === 'dashboard_profile') {
+                if (!window._profileInitDone) {
+                    window._profileInitDone = true;
+                    setTimeout(() => {
+                        const form = document.getElementById('profile_form');
+                        if (form && document.getElementById('id_address_line_1')) {
+                            initAddressAutoCompleteByPage('dashboard_profile');
+                        }
+                        setTimeout(() => { window._profileInitDone = false; }, 1000);
+                    }, 50);
+                }
+            } else if (subpage === 'dashboard_addresses') {
+                if (!window._addressInitDone) {
+                    window._addressInitDone = true;
+                    setTimeout(() => {
+                        const form = document.getElementById('create_address_form') || document.getElementById('update_address_form');
+                        if (form && document.getElementById('id_address_line_1')) {
+                            initAddressAutoCompleteByPage('dashboard_addresses');
+                        }
+                        setTimeout(() => { window._addressInitDone = false; }, 1000);
+                    }, 50);
+                }
+            } else if (subpage === 'dashboard_offers') {
+                startCountdown();
+            }
+        } 
+        
+        // ============================================================
+        // 2. MODAL AREA WORKSPACE INJECTIONS
+        // ============================================================
+        else if (target.id === "modal_content_area") {
+            const form = target.querySelector('form');
+            if (form) {
+                const address_input = form.querySelector('#id_address_line_1');
+                if (address_input) {
+                    address_input.addEventListener('input', function() {
+                        if (this.value.trim() === "") {
+                            if (typeof preAutoComplete === "function") preAutoComplete();
+                            if (typeof initAutoComplete === "function") initAutoComplete(form.id);
+                        }
+                    });
+                }
+                if (typeof initRegionLogic === "function") initRegionLogic(form.id); 
+                if (typeof toggleProvinceFields === "function") toggleProvinceFields(form);
+            }
+        } 
+        
+        // ============================================================
+        // 3. 🌟 FIXED: CHAT WORKSPACE & SEARCH INJECTIONS (Bypasses parent nested loop bugs)
+        // ============================================================
+        else if (target.id === "chat_message_list") {
+            window.currentMatchIndex = -1;
+            
+            // Safe function checks to avoid uncaught script reference errors
+            if (typeof updateCounterDisplay === 'function') updateCounterDisplay();
+            if (typeof updateChatInputState === 'function') updateChatInputState();
+            
+            // Smoothly snap full "load-all" window wrapper directly down to anchor frame
+            setTimeout(() => {
+                const divider = document.getElementById('unread-separator');
+                if (divider) {
+                    divider.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    target.scrollTop = target.scrollHeight;
+                }
+            }, 50);
+        }
+
+        // Wipe clean our custom dataset swapping block registry flag safely
+        setTimeout(() => {
+            if (evt.detail.target) {
+                delete evt.detail.target.dataset.swapping;
+            }
+        }, 120);
+    });
 });
 
 
 // 🌟 THE NET OOB FIX: Intercept and validate targets BEFORE HTMX attempts a swap crash!
 document.body.addEventListener('htmx:oobBeforeSwap', (evt) => {
-    const targetId = evt.detail.elt.id;
-    const activeTargetNode = document.getElementById(targetId);
-    
-    if (!activeTargetNode) {
-        console.warn(`⚠️ HTMX OOB Target Guard: Element #${targetId} is missing from the active DOM namespace. Aborting swap to prevent console crashes.`);
-        evt.preventDefault(); // Surgically block the individual OOB swap without halting your main page load!
+    const targetId = evt.detail.elt?.id;
+    if (targetId) {
+        const activeTargetNode = document.getElementById(targetId);
+        if (!activeTargetNode) {
+            console.warn(`⚠️ HTMX OOB Target Guard: Element #${targetId} is missing from the active DOM namespace. Aborting swap.`);
+            evt.preventDefault();
+        }
     }
 });
 
-
 // *** Alert & Event Bridges ***
 document.body.addEventListener('addressCreated', function() {
-    if (typeof my_modal_1 !== 'undefined' && typeof my_modal_1.close === "function") my_modal_1.close();
+    if (typeof my_modal_1 !== 'undefined' && typeof my_modal_1.close === "function") {
+        my_modal_1.close();
+    }
     if (window.Swal) {
         Swal.fire({
-            title: 'Created!｜添加成功', text: 'Address book has been added.',
-            icon: 'success', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false
+            title: 'Created!｜已添加',
+            html: `
+                <div class="text-center font-sans text-sm">
+                    <p class="font-medium text-base-content">New address has been added to your address book.</p>
+                    <p class="text-xs text-base-content/60 mt-1">新地址已成功添加至您的通訊簿。</p>
+                </div>
+            `,
+            icon: 'success',
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false,
+            customClass: {
+                popup: 'rounded-2xl shadow-lg border border-success/20'
+            }
         });
     }
 });
 
-document.body.addEventListener('addressSaved', function() {
+document.body.addEventListener('addressSaved', function(evt) {
     const mainContent = document.getElementById('dashboard-content');
     if (mainContent) {
         mainContent.setAttribute('tabindex', '-1');
         mainContent.focus();
+    }
+    
+    if (evt.detail && evt.detail.closeModal) {
+        const modal = document.getElementById(evt.detail.closeModal);
+        if (modal && typeof modal.close === 'function') {
+            modal.close();
+        }
     }
 });
 
 document.body.addEventListener('serviceUnavailable', function() {
     if (window.Swal) {
         Swal.fire({
-            title: 'Updated!｜更新成功', text: 'Address book has been updated.',
-            icon: 'success', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false
+            title: 'Error｜錯誤',
+            html: `
+                <div class="text-center font-sans text-sm">
+                    <p class="font-medium text-error">Service is currently unavailable. Please try again later.</p>
+                    <p class="text-xs text-base-content/60 mt-1">服務目前暫不可用。請稍後再試。</p>
+                </div>
+            `,
+            icon: 'error',
+            toast: true,
+            position: 'top-end',
+            timer: 4000,
+            showConfirmButton: false,
+            customClass: {
+                popup: 'rounded-2xl shadow-lg border border-error/20'
+            }
         });
     }
 });
 
-document.body.addEventListener('htmx:beforeRequest', (event) => {
-    if (event.detail.elt.closest('dialog')) {
+// HTMX Lifecycle Events
+document.body.addEventListener('htmx:beforeRequest', (evt) => {
+    if (evt.detail.elt.closest('dialog')) {
+        if (document.activeElement && typeof document.activeElement.blur === "function") {
+            document.activeElement.blur();
+        }
+    }
+    if (evt.detail.target.id === 'chat_message_list') {
+        // Don't clear the existing content - just show overlay
+        const overlay = document.getElementById('chat-loading-overlay');
+        if (overlay) {
+            overlay.classList.remove('hidden');
+            overlay.style.opacity = '1';
+        }
+    }
+});
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.target.id === 'chat_message_list') {
+        const overlay = document.getElementById('chat-loading-overlay');
+        if (overlay) {
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 200);
+        }
+    }
+});
+document.body.addEventListener('htmx:afterOnLoad', (evt) => {
+    if (evt.detail.target.closest('dialog')) {
         if (document.activeElement && typeof document.activeElement.blur === "function") {
             document.activeElement.blur();
         }
     }
 });
 
-document.body.addEventListener('htmx:afterOnLoad', (event) => {
-    if (event.detail.target.closest('dialog')) {
-        if (document.activeElement && typeof document.activeElement.blur === "function") {
-            document.activeElement.blur();
-        }
-    }
-});
-
-document.body.addEventListener('updateBanner', function(evt) {
-    const bannerLink = document.querySelector("#banner-breadcrumb-link");
+document.body.addEventListener('updateBannerSubTitle', function(evt) {
+    const bannerLink = document.querySelector("#banner_sub_title_2");
     if (bannerLink) {
-        bannerLink.innerText = evt.detail.title;
-        bannerLink.href = evt.detail.url;
+        bannerLink.innerText = evt.detail.sub_title_2;
     }
 });
 
 document.body.addEventListener('change', function(e) {
     if (e.target.name === 'country') {
         const form = e.target.closest('form');
-        if (form && typeof toggleProvinceFields === "function") toggleProvinceFields(form);
+        if (form && typeof toggleProvinceFields === "function") {
+            toggleProvinceFields(form);
+        }
     }
 });
 
@@ -795,7 +1175,7 @@ document.body.addEventListener('input', function(e) {
         if (field.name === 'country' && typeof toggleProvinceFields === "function") {
             toggleProvinceFields(field.closest('form'));
         }
-    }   
+    }
 });
 
 document.body.addEventListener('closeModal', function(evt) {
@@ -803,7 +1183,9 @@ document.body.addEventListener('closeModal', function(evt) {
     const modal = document.getElementById(modalId);
     if (modal) {
         const form = modal.querySelector('form');
-        if (form && typeof clearAddressBookForm === "function") clearAddressBookForm(form.id);
+        if (form && typeof clearAddressBookForm === "function") {
+            clearAddressBookForm(form.id);
+        }
         modal.close();
     }
 });
@@ -811,12 +1193,14 @@ document.body.addEventListener('closeModal', function(evt) {
 // Hard Page Mount Entry Point
 document.addEventListener("DOMContentLoaded", () => {
     disableDefaultOptions();
-    processZodiacExtraction()
+    processZodiacExtraction();
+    
     const subpage_wrapper = document.getElementById('dashboard-content');
     if (subpage_wrapper) {
         const subpageEl = subpage_wrapper.querySelector('.subpage');
         if (subpageEl) {
             const subpage = subpageEl.id;
+            // ✅ Only initialize address autocomplete for profile and addresses pages
             if (subpage === 'dashboard_profile' || subpage === 'dashboard_addresses') {
                 initAddressAutoCompleteByPage(subpage);
             } else if (subpage === 'dashboard_offers') {
@@ -828,7 +1212,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById('navbar')) htmx.process(document.querySelector('#navbar'));
     if (document.getElementById('dashboard_sidebar')) htmx.process(document.querySelector('#dashboard_sidebar'));
 
-    const searchInput = document.querySelector('input[name="q"]');
+    const searchInput = document.querySelector('input[name="q"]'); /* help */
     if (searchInput) {
         searchInput.addEventListener('input', updateChatInputState);
         searchInput.addEventListener('focus', updateChatInputState);
@@ -842,10 +1226,15 @@ document.addEventListener("DOMContentLoaded", () => {
     
     if (document.getElementById('dynamic-clock') || document.getElementById('dynamic-date')) {
         updateClock();
-        window.dashboardClockInterval = setInterval(updateClock, 1000);
+        if (!window.dashboardClockInterval) {
+            window.dashboardClockInterval = setInterval(updateClock, 1000);
+        }
     }
+
+    // ✅ Use the enhanced solar websocket initialization
     if (document.getElementById('solar_term')) {
-        initializeSolarWebSocket();
+        // Small delay to ensure DOM is fully ready
+        setTimeout(initializeSolarWebSocket, 100);
     }
     
     // Runs once on sidebar loading - stays static irrespective of subpage shifts
@@ -860,7 +1249,202 @@ document.addEventListener("DOMContentLoaded", () => {
             if (zodiacTarget) zodiacTarget.textContent = zodiacSign;
         }
     }
+
+    // Add click handler for help links
+    const helpLinks = [
+        document.getElementById('help_link'),
+        document.getElementById('help_header'),
+    ];
+    
+    helpLinks.forEach(link => {
+        if (link) {
+            link.addEventListener('click', function() {
+                // Call clearUnreadBadges after a short delay
+                // (allows HTMX to load the help page first)
+                setTimeout(() => {
+                    if (window.ChatManager && typeof window.ChatManager.clearUnreadBadges === 'function') {
+                        window.ChatManager.clearUnreadBadges();
+                    }
+                }, 300);
+            });
+        }
+    });
+
+
 });
+
+// Handle address deletion success
+document.body.addEventListener('addressDeleted', function() {
+    if (window.Swal) {
+        Swal.fire({
+            title: 'Deleted!｜已刪除',
+            html: `
+                <div class="text-center font-sans text-sm">
+                    <p class="font-medium text-base-content">Address has been removed from your address book.</p>
+                    <p class="text-xs text-base-content/60 mt-1">地址已從您的通訊簿中成功移除。</p>
+                </div>
+            `,
+            icon: 'success',
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false,
+            customClass: {
+                popup: 'rounded-2xl shadow-lg border border-success/20'
+            }
+        });
+    }
+});
+
+// Handle address default set success
+document.body.addEventListener('addressDefaultSet', function() {
+    if (window.Swal) {
+        Swal.fire({
+            title: 'Updated!｜已更新',
+            html: `
+                <div class="text-center font-sans text-sm">
+                    <p class="font-medium text-base-content">Default address has been updated successfully.</p>
+                    <p class="text-xs text-base-content/60 mt-1">默認地址已成功更新。</p>
+                </div>
+            `,
+            icon: 'success',
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false,
+            customClass: {
+                popup: 'rounded-2xl shadow-lg border border-success/20'
+            }
+        });
+    }
+});
+
+// Handle address update success
+document.body.addEventListener('addressUpdated', function() {
+    if (window.Swal) {
+        Swal.fire({
+            title: 'Updated!｜已更新',
+            html: `
+                <div class="text-center font-sans text-sm">
+                    <p class="font-medium text-base-content">Address has been updated successfully.</p>
+                    <p class="text-xs text-base-content/60 mt-1">地址已成功更新。</p>
+                </div>
+            `,
+            icon: 'success',
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false,
+            customClass: {
+                popup: 'rounded-2xl shadow-lg border border-success/20'
+            }
+        });
+    }
+});
+
+// Add this to your "Block 7: High-Security HTMX Lifecycle Orchestration" section
+// or after your initializeSolarWebSocket function
+
+// ================================================================
+// 🔄 BACK-FORWARD CACHE (bfcache) HANDLING
+// ================================================================
+
+// ✅ Handle page restore from bfcache
+window.addEventListener('pageshow', function(event) {
+    // Check if the page was loaded from bfcache
+    if (event.persisted) {
+        console.log('Page restored from bfcache - reinitializing connections...');
+        
+        // ✅ Clear any stale connection
+        if (window.solarWebSocketInstance) {
+            const ws = window.solarWebSocketInstance;
+            if (ws.readyState === WebSocket.CONNECTING) {
+                // If it's still connecting, just set to null and let it reconnect
+                window.solarWebSocketInstance = null;
+            }
+        }
+
+        // Re-initialize Solar WebSocket
+        if (document.getElementById('solar_term')) {
+            setTimeout(initializeSolarWebSocket, 200);
+        }
+        
+        // Re-initialize clock if it exists
+        if (document.getElementById('persistent-analog-clock')) {
+            setTimeout(initializeAnalogClockLayout, 100);
+        }
+        
+        // Re-initialize clock interval if needed
+        if (document.getElementById('dynamic-clock') || document.getElementById('dynamic-date')) {
+            if (window.dashboardClockInterval) {
+                clearInterval(window.dashboardClockInterval);
+                window.dashboardClockInterval = null;
+            }
+            setTimeout(() => {
+                updateClock();
+                window.dashboardClockInterval = setInterval(updateClock, 1000);
+            }, 100);
+        }
+        
+        // Re-start countdown if on offers page
+        if (document.querySelector('#dashboard_offers')) {
+            setTimeout(startCountdown, 100);
+        }
+    }
+});
+
+// ✅ Handle page visibility changes (tab switching)
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+        // Page became visible again - check WebSocket health
+        if (document.getElementById('solar_term') && !window.solarWebSocketInstance) {
+            console.log('Page became visible - reconnecting WebSocket...');
+            setTimeout(initializeSolarWebSocket, 100);
+        }
+        
+        // Refresh clock if needed
+        if (document.getElementById('dynamic-clock') || document.getElementById('dynamic-date')) {
+            if (!window.dashboardClockInterval) {
+                setTimeout(() => {
+                    updateClock();
+                    window.dashboardClockInterval = setInterval(updateClock, 1000);
+                }, 100);
+            }
+        }
+    }
+});
+
+// ✅ Handle beforeunload to clean up connections
+window.addEventListener('beforeunload', function() {
+    // Properly close WebSockets before navigation
+    terminateActiveWebSocket();
+    stopCountdown();
+    if (window.dashboardClockInterval) {
+        clearInterval(window.dashboardClockInterval);
+        window.dashboardClockInterval = null;
+    }
+});
+
+// Add this to your main dashboard.html script (near the top utilities)
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Expose to window
+window.getCookie = getCookie;
+
 
 // Expose targets cleanly to inline nodes
 window.setActiveMember = setActiveMember;
@@ -871,9 +1455,9 @@ window.closeAddressForm = closeAddressForm;
 window.toggleSearch = toggleSearch;
 window.navigateSearch = navigateSearch;
 
+window.terminateActiveWebSocket = terminateActiveWebSocket;
+window.stopCountdown = stopCountdown;
+
 
 </script>
 {% endblock %}
-
-
-

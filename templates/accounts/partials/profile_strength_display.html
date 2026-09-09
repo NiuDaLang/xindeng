@@ -1,20 +1,29 @@
-<div id="profile_strength" hx-swap-oob="true">
-    <div class="flex flex-col items-center gap-2 p-4 rounded-xl">
-        <div class="radial-progress text-white" 
-                style="--value:{{ user.profile.get_completion_percentage }}; --size:4rem; --thickness: 8px;" 
-                role="progressbar">
-            {{ user.profile.get_completion_percentage }}%
+<div id="profile_strength" hx-swap-oob="true" class="p-4 border-b border-base-200/60 bg-base-50/50">
+    <div class="flex items-center gap-4 px-2 py-1">
+        <div class="radial-progress-gold text-primary bg-base-100 border-4 border-base-200/30 shadow-inner flex-shrink-0"
+             style="--value:{{ user.profile.get_completion_percentage }}; --size:3.5rem; --thickness: 5px;" 
+             role="progressbar">
+          <span class="text-xs font-sans font-bold text-base-content/80">{{ user.profile.get_completion_percentage }}%</span>
         </div>
-        <div class="text-center">
-            <span class="text-sm font-bold block text-white">Profile Strength</span>
-            <span class="text-sm font-normal block text-white">檔案填寫進度</span>
-            {% if user.profile.get_completion_percentage < 100 %}
-                <a href="{% url 'dashboard' 'profile' %}" class="btn btn-xs btn-outline btn-info mt-2 py-5">
-                    Fill in details to unlock perks!<br>填寫檔案解鎖更多優惠！
-                </a>
-            {% else %}
-                <span class="text-success text-xs/4">🎉 Fully Personalized!<br>檔案齊全🎉</span>
-            {% endif %}
+
+        <div class="flex-1 min-w-0">
+          <span class="text-xs font-bold text-base-content block tracking-wide">Profile Strength</span>
+          <span class="text-[10px] text-base-content/40 block mt-0.5 font-sans">檔案填寫進度</span>
+          {% if user.profile.get_completion_percentage < 100 %}
+            <a href="{% url 'dashboard' 'profile' %}" 
+               hx-get="{% url 'dashboard' 'profile' %}"
+               hx-target="#dashboard-content"
+               hx-push-url="true"
+               hx-on:click="updateActiveLink(this)"
+               id="complete_profile"
+               class="text-[10px] text-primary hover:underline block font-sans mt-1 font-medium">
+                Complete profile to unlock perks! ⚡
+                <br>
+                <span class="text-[9px] opacity-60">完善個人資料以解鎖更多福利！</span>
+            </a>
+          {% else %}
+            <span class="text-success text-[10px] font-sans font-medium block mt-1">🎉 Fully Personalized!<br>檔案齊全🎉</span>
+          {% endif %}
         </div>
     </div>
 </div>

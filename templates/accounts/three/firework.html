@@ -23,12 +23,19 @@
 </div>
 
 <style>
-    .lil-gui.lil-auto-place {
-        /* top: 4.1rem !important; */
-        top: 86px;
-        right: 0 !important;
-        z-index: 5 !important;
-    }
+ .lil-gui.lil-auto-place {
+     top: 86px;
+     right: 0 !important;
+     z-index: 5 !important;
+ }
+ .firework_gl {
+     cursor: pointer;
+     transition: cursor 0.1s ease;
+ }
+ /* 🌟 THE FIX: Changes pointer to a crosshair precisely while clicking down */
+ .firework_gl:active {
+     cursor: wait; /* Options: 'crosshair', 'cell', 'wait', or 'grabbing' */
+ }    
 </style>
 
 <!-- 🎯 LOADING MANAGEMENT ENGINE BRIDGE -->

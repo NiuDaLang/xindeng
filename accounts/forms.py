@@ -108,7 +108,7 @@ class UserForm(forms.ModelForm):
             "autocomplete": "off",
         })
         self.fields["username"].widget.attrs.update({
-            "class": "grow w-full",
+            "class": "w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-xs font-sans p-0",
             "placeholder": "Username｜用戶名",
             "hx-get": "/accounts/check-username/",
             "hx-trigger": "keyup changed delay:500ms, blur",
@@ -116,19 +116,22 @@ class UserForm(forms.ModelForm):
             "hx-sync": "closest form:abort",
         })
         self.fields["email"].widget.attrs.update({
-            "class": "grow w-full",
+            "class": "w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-xs font-mono p-0",
             "placeholder": "Email｜郵箱",
             "readonly": True,
         })
         self.fields["mobile_area"].widget.attrs.update({
-            "class": "select rounded-l-[0.5rem] w-[6rem] validator",
-        })
+            "class": "select join-item w-full h-full focus:outline-none bg-base-50/50 border-0 border-r border-base-200 text-xs font-mono text-base-content/70 px-3",
+        })        
         self.fields["mobile_number"].widget.attrs.update({
-            "class": "grow w-full",
-            "placeholder": "123456789",
-        })
+            "class": "input join-item w-full h-full text-xs text-base-content font-mono px-4 focus:outline-none border-0 bg-transparent",
+            "placeholder": "12345678",
+        })        
+        # self.fields["receive_newsletter"].widget.attrs.update({
+        #     "class": "checkbox checkbox-xs checkbox-accent ml-[4px]",
+        # })
         self.fields["receive_newsletter"].widget.attrs.update({
-            "class": "checkbox checkbox-xs checkbox-accent ml-[4px]",
+            "class": "checkbox checkbox-xs checkbox-accent focus:outline-none focus:ring-0 transition-transform active:scale-95",
         })
 
     def clean(self):
@@ -181,6 +184,13 @@ class UserProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        select_fields = ["gender", "blood_type", "color"]
+
+        for field_name in select_fields:
+            self.fields[field_name].widget.attrs.update({
+                "class": "w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-xs font-serif p-0 cursor-pointer text-base-content/80 select-clean h-full",
+            })
+
         for field in ["dob", "gender", "blood_type", "color"]:
             self.fields[field].required = False
 
@@ -194,18 +204,18 @@ class UserProfileForm(forms.ModelForm):
         self.fields['dob'].widget.attrs.update({
             "type": "date",
             "max": today_str,
-            "class": "grow w-full",
+            "class": "w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-xs font-sans p-0",
             "placeholder": "Date of Birth｜生日",
         })
-        self.fields["gender"].widget.attrs.update({
-            "class": "select w-full",
-        })
-        self.fields["blood_type"].widget.attrs.update({
-            "class": "select w-full",
-        })
-        self.fields["color"].widget.attrs.update({
-            "class": "select w-full",
-        })
+        # self.fields["gender"].widget.attrs.update({
+        #     "class": "select w-full",
+        # })
+        # self.fields["blood_type"].widget.attrs.update({
+        #     "class": "select w-full",
+        # })
+        # self.fields["color"].widget.attrs.update({
+        #     "class": "select w-full",
+        # })
 
 
 class AddressForm(forms.ModelForm):
@@ -250,6 +260,15 @@ class AddressForm(forms.ModelForm):
         self.fields["latitude"].required = False
         self.fields["longitude"].required = False
 
+        address_fields = [
+            'address_line_1', 'address_line_2', 'city', 
+            'state_province_region', 'postal_code'
+        ]
+        for field_name in address_fields:
+            self.fields[field_name].widget.attrs.update({
+                "class": "w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-xs font-sans p-0",
+            })
+
         for field_name in ["state_province_region", "china_province", "country"]:
             self.fields[field_name].required = False
             self.fields[field_name].widget.attrs.pop('required', None)
@@ -262,19 +281,19 @@ class AddressForm(forms.ModelForm):
             "class": "checkbox checkbox-xs checkbox-accent ml-[4px]",
         })
         self.fields["address_line_1"].widget.attrs.update({
-            "class": "grow w-full relative",
+            # "class": "grow w-full relative",
             "placeholder": "Address_1｜地址_1",
         })
         self.fields["address_line_2"].widget.attrs.update({
-            "class": "grow w-full",
+            # "class": "grow w-full",
             "placeholder": "Address_2｜地址_2",
         })
         self.fields['city'].widget.attrs.update({
-            "class": "grow w-full",
+            # "class": "grow w-full",
             "placeholder": "City｜城市",
         })
         self.fields['state_province_region'].widget.attrs.update({
-            "class": "grow w-full",
+            # "class": "grow w-full",
             "placeholder": "State｜州/縣",
         })
         self.fields['china_province'].widget.attrs.update({
@@ -286,7 +305,7 @@ class AddressForm(forms.ModelForm):
             "placeholder": "Country/Region｜國家·地區",
         })
         self.fields['postal_code'].widget.attrs.update({
-            "class": "grow w-full",
+            # "class": "grow w-full",
             "placeholder": "Zip｜郵編",
         })      
 
@@ -329,7 +348,7 @@ class AddressBookForm(AddressForm):
         fields = (
             'label', 'is_default', 'recipient_first_name', 'recipient_last_name',
             'mobile_area', 'mobile_number', 'address_line_1', 'address_line_2',
-            'city', 'state_province_region', 'postal_code', 'country',
+            'city', 'state_province_region', 'china_province', 'postal_code', 'country',
             'google_place_id', 'latitude', 'longitude', 'is_verified_by_google',
         )
 
@@ -352,19 +371,31 @@ class AddressBookForm(AddressForm):
         self.fields["mobile_area"].required = True
         self.fields["mobile_number"].required = True
 
+        self.fields["label"].widget.attrs.update({
+            "class": "grow w-full text-[0.8rem] focus:outline-none focus:ring-0",
+        })
+        self.fields["country"].widget.attrs.update({
+            "class": "grow w-full text-[0.8rem] focus:outline-none focus:ring-0",
+        })
+        self.fields["state_province_region"].widget.attrs.update({
+            "class": "grow w-full text-[0.8rem] focus:outline-none focus:ring-0",
+        })
+        self.fields["china_province"].widget.attrs.update({
+            "class": "grow w-full text-[0.8rem] focus:outline-none focus:ring-0",
+        })
         self.fields["recipient_first_name"].widget.attrs.update({
-            "class": "grow w-full",
-            "placeholder": "Recipient First Name｜收件人名字",
+            "class": "grow w-full text-[0.8rem]",
+            "placeholder": "First Name｜收件人名字",
         })
         self.fields["recipient_last_name"].widget.attrs.update({
-            "class": "grow w-full",
-            "placeholder": "Recipient Last Name｜收件人姓氏",
+            "class": "grow w-full text-[0.8rem]",
+            "placeholder": "Last Name｜收件人姓氏",
         })
         self.fields["mobile_area"].widget.attrs.update({
-            "class": "select rounded-l-[0.5rem] w-[6rem] focus:outline-none",
+            "class": "select rounded-l-[0.5rem] w-full text-[0.8rem] focus:outline-none",
         })
         self.fields["mobile_number"].widget.attrs.update({
-            "class": "grow w-full",
+            "class": "grow w-full text-[0.8rem] focus:outline-none focus:ring-0",
             "placeholder": "Mobile Number｜手機號碼",
         })
 

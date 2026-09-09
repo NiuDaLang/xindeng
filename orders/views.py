@@ -15,26 +15,33 @@ from datetime import timedelta
 from django.contrib.humanize.templatetags.humanize import intcomma
 from decimal import Decimal
 from accounts.models import UserProfile, Address
-from store.models import ProductVariation
+from store.models import ProductVariation, DigitalDownloadToken
 from django.http import HttpResponse
 from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_http_methods
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
-from .tasks import send_bank_hold_cancelled_email_task, send_inquiry_notification_email_task, send_cancellation_initiation_email_task
+from .tasks import send_inquiry_notification_email_task, send_cancellation_initiation_email_task, send_gift_receiver_revocation_email_task, send_cancellation_completion_email_task
 from store.models import DigitalDownloadToken
 from pathlib import Path
 from carts.models import Cart
 from carts.views import _cart_id
 from django.contrib.auth import get_user_model
 from .models import OrderInquiry
+from django.http import JsonResponse
+from django.urls import reverse
+from carts.models import CartItem, CheckoutInfo
+from .tasks import send_gift_voucher_email_task, send_e_product_email_task, send_order_confirmation_email_task
 
 import json
 import decimal
+import logging
 
 # Import your explicit celery tasks directly
 from .tasks import check_and_expire_hold, send_bank_hold_confirmation_email_task
+
+logger = logging.getLogger(__name__)
 
 
 def place_order(request, proforma_invoice_no):
@@ -219,7 +226,7 @@ def place_order(request, proforma_invoice_no):
                                 "is_ordered": False,
                                 "ordered_at": None,
                                 "inventory_hold_expiry": expiry_time,
-                                "order_status": "New"
+                                "order_status": "Hold_Pending"
                             }
                         )
 
@@ -235,12 +242,24 @@ def place_order(request, proforma_invoice_no):
                         for item in cart_items:
                             variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
                             
-                            # Perform structural stock clearance check
-                            if variation.stock < item.quantity:
-                                raise ValueError(f"商品 [{variation}] 庫存不足")
+                            # 🌟 CORE CONDITION: Determine if this is an instant digital product (excluding vouchers)
+                            is_instant_eproduct = variation.product.is_digital and variation.product.digital_fulfillment_type == 'INSTANT' and not variation.product.is_voucher
 
-                            # Deduct warehouse stock
-                            variation.stock -= item.quantity
+                            if is_instant_eproduct:
+                                # Enforce business rules: Limit infinite digital products to a single quantity unit per order
+                                if item.quantity > 1:
+                                    raise ValueError(f"數位產品 [{variation.product.product_name}] 單筆訂單限購 1 件")
+                                # Ensure infinite products are always marked as available without crashing stock counters
+                                if not variation.is_available:
+                                    raise ValueError(f"數位產品 [{variation.product.product_name}] 目前已下架不可選購")
+                            else:
+                                # ── PHYSICAL & VOUCHER VALIDATION AND DEDUCTION ──────────────────
+                                if variation.stock < item.quantity:
+                                    raise ValueError(f"商品 [{variation}] 庫存不足")
+                                
+                                # Deduct physical/voucher warehouse stock
+                                variation.stock -= item.quantity
+                                
                             variation.save()
                             
                             # Save line item snapshot record attached to Order
@@ -508,7 +527,7 @@ def order_complete(request):
     has_self_voucher = False
 
     if order:
-        has_self_voucher = order.orderproduct_set.filter(
+        has_self_voucher = order.items.filter(
             product_variation__product__is_voucher=True
         ).exists() and (not order.recipient_email or order.recipient_email.strip().lower() == order.email.strip().lower())
         
@@ -566,137 +585,208 @@ def order_complete(request):
 
 
 @login_required(login_url='login')
-def secure_file_download_gate(request, token_id):
-    """
-    Time-Locked Data Stream Matrix:
-    Authenticates tokens, prevents direct hotlinking, and streams files 
-    privately from secure local disk storage.
-    """
-    token = get_object_or_404(DigitalDownloadToken, id=token_id, user=request.user)
-
-    if token.is_expired:
-        # Redirect back to their digital wallet or dashboard with a helpful error message
-        from django.contrib import messages
-        messages.error(request, "This download link has expired.｜該下載連結已過期，請聯絡客服。")
-        return redirect('dashboard', subpage='orders')
-
-    # Resolve file system coordinates securely
-    variation = token.variation
-    if not variation.digital_file_path:
-        raise Http404("Asset target record missing.")
-
-    # Secure root vault assignment path
-    vault_base_path = Path(settings.BASE_DIR) / 'private_digital_vault'
-    target_file = (vault_base_path / variation.digital_file_path).resolve()
-
-    # Security Guard Pass: Prevent directory traversal exploits
-    if not target_file.is_file() or not target_file.startswith(str(vault_base_path)):
-        raise Http404("File execution lookup failed.")
-
-    # 🚀 SECURELY STREAM FILE BINARY DIRECTLY TO THEIR BROWSER
-    # 'as_attachment=True' forces the browser to download the file instead of viewing it inline
-    response = FileResponse(open(target_file, 'rb'), as_attachment=True, filename=target_file.name)
-    
-    # Optional: Set token to inactive after use to enforce a single-download rule,
-    # though leaving it active for the full 48 hours is much friendlier for your customers!
-    return response
-
-
-# @login_required
-# @require_POST
-# def cancel_order(request, order_id):
-#     """
-#     Allows a user to manually cancel their active bank hold order early.
-#     Replenishes inventory, releases the proforma invoice, and updates HTML via HTMX.
-#     """
-#     try:
-#         with transaction.atomic():
-#             # Restrict lookup to the authenticated user and ensure it's still an active hold
-#             order = Order.objects.select_for_update().get(id=order_id, user=request.user, is_ordered=False)
-            
-#             if order.order_status == 'Cancelled':
-#                 return HttpResponse("Order already cancelled.", status=400)
-
-#             # 1. Replenish database stock values back onto ProductVariations
-#             order_items = OrderProduct.objects.filter(order=order)
-#             for item in order_items:
-#                 if item.product_variation:
-#                     variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
-#                     variation.stock += item.quantity
-#                     variation.save()
-
-#             # 2. Revert Coupon/Voucher rules if applicable
-#             if order.voucher_applied > 0:
-#                 CustomerVoucher.objects.create(
-#                     value=order.voucher_applied,
-#                     balance=order.voucher_applied,
-#                     owner=order.user,
-#                     purchaser_email=order.email or "user-cancellation@domain.com",
-#                     registered_email=order.user.email,
-#                     is_claimed=True,
-#                     claimed_date=timezone.now(),
-#                     is_used=False
-#                 )
-
-#             # 3. Change status states
-#             order.order_status = 'Cancelled'
-#             order.save(update_fields=['order_status'])
-            
-#             # Unlock original Proforma Invoice profile
-#             ProformaInvoice.objects.filter(proforma_order_number=order.order_number).update(is_ordered=False)
-
-#         # Return a completely blank response to cause HTMX to swap out/remove the cancelled card element
-#         return HttpResponse("", status=200)
-
-#     except Order.DoesNotExist:
-#         return HttpResponse("Order target invalid or processing state locked.", status=404)
-
-@login_required
 @require_POST
-def cancel_order(request, order_id):
-    """Allows members to manually release a pending hold on their dashboard early via HTMX."""
+def complete_zero_due_voucher_order(request):
+    proforma_invoice_number = request.GET.get("invoice")
+    created_vouchers = []
+    
     try:
         with transaction.atomic():
-            order = Order.objects.select_for_update().get(id=order_id, user=request.user, is_ordered=False)
+            # 1. Pessimistic row-lock capture on active ProformaInvoice context
+            proforma_order = ProformaInvoice.objects.select_for_update().get(
+                proforma_order_number=proforma_invoice_number, 
+                user=request.user, 
+                is_ordered=False
+            )
             
-            if order.order_status == 'Cancelled':
-                return HttpResponse("Order already cancelled.", status=400)
+            if proforma_order.total_due > 0:
+                return JsonResponse({"error": "Gateway capture required for pending balances."}, status=400)
+            
+            active_cart = proforma_order.cart
+            cart_items = CartItem.objects.filter(cart=active_cart, is_active=True)
+            
+            # 2. 🎯 FINAL LAST-SECOND RACE CONDITION PROTECTION BLOCK
+            for item in cart_items:
+                variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
+                if variation.stock < item.quantity:
+                    raise ValueError(f"Race condition stock failure caught for {variation}")
 
-            # 1. Replenish database inventory pools
-            order_items = OrderProduct.objects.filter(order=order)
-            for item in order_items:
-                if item.product_variation:
-                    variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
-                    variation.stock += item.quantity
+            # 3. Process voucher deductions instantly if applied to cart session (Page 2 Mismatch Fix)
+            voucher_session = request.session.get("applied_voucher", {})
+            voucher_to_spend = Decimal(str(voucher_session.get("applied_voucher_amount", "0")))
+            
+            # Failsafe check: If session cache failed or cleared early, read directly from proforma
+            if voucher_to_spend == 0 and proforma_order.voucher_applied > 0:
+                voucher_to_spend = proforma_order.voucher_applied
+
+            voucher_changes = []
+            if voucher_to_spend > 0:
+                # 🌟 THIS IS THE CRITICAL LINE THAT DECRIMENTS YOUR WALLET LEDGERS ATOMICALLY
+                voucher_changes = execute_atomic_voucher_deduction(request.user, voucher_to_spend)
+
+            # 4. Safely get or create the order on the fly (Matching PayPal layout defaults)
+            order, order_created = Order.objects.select_for_update().get_or_create(
+                order_number=proforma_invoice_number,
+                defaults={
+                    "user": proforma_order.user,
+                    "email": proforma_order.email,
+                    "recipient_first_name": proforma_order.recipient_first_name,
+                    "recipient_last_name": proforma_order.recipient_last_name,
+                    "recipient_mobile_area": proforma_order.recipient_mobile_area,
+                    "recipient_mobile_number": proforma_order.recipient_mobile_number,
+                    "recipient_email": proforma_order.recipient_email,
+                    "gift_message": proforma_order.gift_message,
+                    "address_line_1": proforma_order.address_line_1,
+                    "address_line_2": proforma_order.address_line_2,
+                    "city": proforma_order.city,
+                    "state_province_region": proforma_order.state_province_region,
+                    "country": proforma_order.country,
+                    "postal_code": proforma_order.postal_code,
+                    "delivery_note": proforma_order.delivery_note,
+                    "do_not_send_invoice": proforma_order.do_not_send_invoice,
+                    "product_total": proforma_order.cart_total,
+                    "shipping_cost": proforma_order.shipping_cost,
+                    "discount": proforma_order.discount,
+                    "tax": proforma_order.tax,
+                    "voucher_applied": proforma_order.voucher_applied,
+                    "total_due": Decimal("0.00"),
+                    "product_total_foreign": proforma_order.cart_total_foreign,
+                    "shipping_cost_foreign": proforma_order.shipping_cost_amount_foreign,
+                    "discount_foreign": proforma_order.discount_amount_foreign,
+                    "tax_foreign": proforma_order.tax_amount_foreign,
+                    "voucher_applied_foreign": proforma_order.applied_voucher_amount_foreign,
+                    "total_due_foreign": Decimal("0.00"),
+                    "locked_exchange_rate": proforma_order.locked_exchange_rate,
+                    "currency_code": proforma_order.currency_code,
+                    "is_ordered": False,
+                    "order_status": "Processing"
+                }
+            )
+            
+            order.recipient_email = proforma_order.recipient_email
+            order.gift_message = proforma_order.gift_message
+
+            # 5. 🎯 LOG DEDUCTION ENTRIES FOR POTENTIAL CANCELLATION REFUNDS
+            for change in voucher_changes:
+                OrderVoucherUsage.objects.create(
+                    order=order,
+                    voucher=change['voucher_instance'],
+                    amount_deducted=change['amount']
+                )
+
+            # Create permanent local Payment ledger record
+            transaction_id = f"VUCH_SETTLED_{order.order_number}_{int(timezone.now().timestamp())}"
+            payment = Payment.objects.create(
+                user=request.user,
+                invoice=proforma_order,
+                order_id=f"VUCH_{order.order_number}",
+                payment_id=transaction_id,
+                payment_method='Voucher Balance',
+                amount_paid=proforma_order.voucher_applied,
+                currency=proforma_order.currency_code.upper().strip(),
+                exchange_rate=proforma_order.locked_exchange_rate,
+                cny_equivalent=proforma_order.voucher_applied,
+                status="Completed"
+            )
+            
+            order.payment = payment
+            order.is_ordered = True
+            order.ordered_at = timezone.now()
+            order.save()
+
+            # Relocate items securely over to structural OrderProduct tables
+            for item in cart_items:
+                variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
+                order_prod = OrderProduct.objects.create(
+                    order=order,
+                    payment=payment,
+                    user=request.user,
+                    product=variation.product,
+                    product_variation=variation,
+                    quantity=item.quantity,
+                    product_price=variation.price,
+                    ordered=True
+                )
+                
+                is_instant_eproduct = variation.product.is_digital and variation.product.digital_fulfillment_type == 'INSTANT' and not variation.product.is_voucher
+                if not is_instant_eproduct:
+                    variation.stock -= item.quantity
                     variation.save(update_fields=['stock'])
+                
+                # E-Voucher Product Asset Management Generation Pipelines
+                if variation.product.is_voucher:
+                    buyer_email = proforma_order.email.strip().lower()
+                    recipient_email = (proforma_order.recipient_email or "").strip().lower()
+                    is_gift = recipient_email and recipient_email != buyer_email
+                    for _ in range(item.quantity):
+                        voucher = CustomerVoucher.objects.create(
+                            value=variation.price,
+                            balance=variation.price,
+                            purchaser_email=proforma_order.email,
+                            owner=None if is_gift else request.user,
+                            registered_email=proforma_order.recipient_email if is_gift else proforma_order.email,
+                            is_claimed=False if is_gift else True,
+                            claimed_date=None if is_gift else timezone.now(),
+                            is_used=False
+                        )
+                        if is_gift:
+                            reg_link = request.build_absolute_uri(reverse('claim_voucher_url', args=[str(voucher.id)]))
+                            transaction.on_commit(lambda v_id=voucher.id, link=reg_link: send_gift_voucher_email_task.delay(v_id, link))
+                        created_vouchers.append(voucher)
+                    order_prod.is_dispatched = True
+                    order_prod.save(update_fields=['is_dispatched'])
+                
+                # Infinite Instant Digital Assets download token generation loops
+                elif getattr(variation.product, 'is_digital', False) and getattr(variation.product, 'digital_fulfillment_type', 'INSTANT') == 'INSTANT':
+                    expiration_time = timezone.now() + timedelta(hours=168)
+                    download_token = DigitalDownloadToken.objects.create(
+                        user=order.user,
+                        order_product=order_prod,
+                        expires_at=expiration_time
+                    )
+                    transaction.on_commit(lambda token_id=download_token.id: send_e_product_email_task.delay(str(token_id)))
+                    order_prod.is_dispatched = True
+                    order_prod.save(update_fields=['is_dispatched'])
 
-            # 2. Reverse voucher split allocations cleanly to their original rows
-            if order.voucher_applied > 0:
-                usages = OrderVoucherUsage.objects.filter(order=order)
-                for usage in usages:
-                    voucher = CustomerVoucher.objects.select_for_update().get(id=usage.voucher.id)
-                    voucher.balance += usage.amount_deducted
-                    if voucher.is_used:
-                        voucher.is_used = False
-                        voucher.used_date = None
-                    voucher.save(update_fields=['balance', 'is_used', 'used_date'])
-
-            reverse_perk_usage_at_cancellation(order)
-
-            # 4. Apply state cancellation transitions
-            order.order_status = 'Cancelled'
+            # After handling individual lines, automatically evaluate final status
+            order.update_fulfillment_status()
             order.save(update_fields=['order_status'])
+            
+            proforma_order.is_ordered = True
+            if active_cart:
+                active_cart.cartitem_set.all().delete()
+                CheckoutInfo.objects.filter(cart=active_cart).delete()
+            proforma_order.cart = None
+            proforma_order.save()
 
-            ProformaInvoice.objects.filter(proforma_order_number=order.order_number).update(is_ordered=False)
+            # Clear completed configuration caches from user session matrix
+            for session_key in ["applied_voucher", "offer_applied", "shipping_data", "active_proforma_id"]:
+                request.session.pop(session_key, None)
+                
+            accessible = request.session.get("accessible_receipts", [])
+            if proforma_invoice_number not in accessible:
+                accessible.append(proforma_invoice_number)
+            request.session["accessible_receipts"] = accessible
+            request.session.save()
 
-        # 4. Trigger alert email outside the database lock
-        transaction.on_commit(lambda: send_bank_hold_cancelled_email_task.delay(order.id))
-        return HttpResponse("", status=200) # Returns empty string to clear HTMX row entry
+            # 🚀 MASTER SUCCESS SIGNAL: Trigger asynchronous confirmation receipt email
+            transaction.on_commit(lambda: send_order_confirmation_email_task.delay(order.order_number))
+            
+            return JsonResponse({"status": "SUCCESS", "transaction_id": payment.payment_id, "order_number": proforma_invoice_number}, status=200)
 
-    except Order.DoesNotExist:
-        return HttpResponse("Order invalid or locked.", status=404)
+    except ValueError as stock_err:
+        logger.critical(f"⚠ VOUCHER CHECKOUT STOCK EXCEPTION: Invoice {proforma_invoice_number}. Error: {str(stock_err)}")
+        return JsonResponse({
+            "status": "STOCK_CONFLICT",
+            "error": "Payment verified via voucher balances, but an item ran out of stock. Customer service will resolve your balances shortly.",
+            "order_number": proforma_invoice_number,
+            "transaction_id": f"ERR_{proforma_invoice_number}"
+        }, status=200)
+    except Exception as e:
+        logger.exception(f"💥 Voucher Settlement Fatal Exception Trace: {str(e)}")
+        return JsonResponse({"error": "Internal database serialization error"}, status=500)
 
-
+    
 # def order_confirmation_pdf(request, order_id): # to be deleted later
 #     order = Order.objects.get(order_number=order_id, is_ordered=True)
 #     proforma_invoice = ProformaInvoice.objects.get(proforma_order_number=order_id)
@@ -900,166 +990,407 @@ def guest_order_verify(request):
     return render(request, "orders/guest_order_detail.html", context)
 
 
+# def is_order_eligible_for_online_cancellation(order):
+#     """
+#     Item-Level Deep Validation Engine.
+#     Excludes any orders with discounts applied from automatic online cancellation.
+#     """
+#     # 🌟 NEW CONDITION: DISCOUNT SHIELD GATE
+#     # Blocks orders with promotional discounts from self-service cancellation
+#     if hasattr(order, 'discount') and order.discount > 0:
+#         return False, "Orders with promotional offers applied require manual processing. Please contact support. / 包含特惠折抵的訂單無法線上自動取消，請洽客服人員。"
+
+#     now = timezone.now()
+    
+#     # Pre-fetch items with their product relations to optimize database queries
+#     order_items = order.items.select_related('product').all()
+    
+#     if not order_items.exists():
+#         return False, "This order contains no items. / 訂單內無商品紀錄。"
+
+#     for item in order_items:
+#         product = item.product
+        
+#         # 🌟 CONDITION 1: PHYSICAL PRODUCT AUDIT
+#         if product.is_physical:
+#             # If even a single physical item has been shipped by the warehouse, block automatic cancellation
+#             if item.is_dispatched:
+#                 return False, f"Physical item '{product.product_name}' has been dispatched. Please contact support. / 實體商品已發貨，請聯絡客服。"
+        
+#         # 🌟 CONDITION 2: INSTANT E-PRODUCT AUDIT (Excluding Vouchers)
+#         elif product.is_digital and product.digital_fulfillment_type == 'INSTANT' and not product.is_voucher:
+#             # Block 1: Check if the secure link has already been clicked/downloaded
+#             if item.is_claimed:
+#                 return False, f"Digital item '{product.product_name}' has already been claimed. / 數位產品已下載領取，無法取消。"
+            
+#             # Block 2: Enforce the 7-day payment window expiration limit
+#             if (now - order.created_at).days > 7:
+#                 return False, "The 7-day digital download cancellation window has expired. / 已超過 7 天數位產品鑑賞期限制。"
+        
+#         # 🌟 CONDITION 3: VOUCHER GIFT PRODUCT AUDIT
+#         elif product.is_voucher:
+#             # Vouchers are paid in cash and don't affect structural physical fulfillment eligibility,
+#             # but we protect the system by blocking the cancellation if the voucher has already been claimed/used. [INDEX]
+#             if item.is_partially_used:
+#                 return False, "Gift credit voucher has been partially consumed or claimed. / 禮品券已被核銷使用，無法取消。"
+
+#     return True, "Eligible"
+
+
 def process_order_cancellation(request, order_number):
     """
-    🔒 UNIVERSAL LIFECYCLE CANCELLATION ENGINE
-    Secures cancellation permissions across both authenticated members and verified guest sessions,
-    evaluates dispatch compliance states, atomically restocks inventory, dynamically generates 
-    reimbursement vouchers for used credits, and routes the order state to 'Refunding'.
+    Multi-Tier Billing Reconciliation & Dispatch Engine.
+    Manages complex split-payment returns, currency checking, and multi-route email queuing.
+    [Part 1 of 5: Security Clearance & Validation Handshakes]
     """
-    # 1. Fetch the target transaction safely
+
+    # 🌟 Direct lookup by token alone to protect casual guest routing visibility
     order = get_object_or_404(Order, order_number=order_number)
-    
-    # 2. DUAL-AUTHORIZATION GATEKEEPER PASS
+    refund_type = request.GET.get('refund_type', 'cash')
+
+    # =========================================================================
+    # 🔒 BILINGUAL DUAL-AUTHORIZATION GATEKEEPER PASS (Section C-b)
+    # =========================================================================
     is_authorized = False
-    
-    # Context A: Request is initiated by a logged-in member who owns the transaction record
     if request.user.is_authenticated:
         if order.user == request.user:
             is_authorized = True
-            
-    # Context B: Request is initiated by an unauthenticated guest user verified by session keys
     else:
+        # Fallback check against anonymous verified session keys stored during tracking lookup
         session_order_num = request.session.get('verified_guest_order')
         session_email = request.session.get('verified_guest_email')
         if session_order_num == order.order_number and session_email and session_email.lower() == order.email.lower():
             is_authorized = True
 
-    # Access Denied Fallback Guard
+    # 🌟 FIXED: Intercept mismatched validation handshakes for fetch pipelines immediately
     if not is_authorized:
-        raise PermissionDenied("Unauthorized cancellation vector attempt. / 安全攔截：您無權取消此訂單。")
+        if request.headers.get('Content-Type') == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                "status": "UNAUTHORIZED", 
+                "error": "Verification required. Session credentials invalid. / 驗證失效，請重新登入。"
+            }, status=403)
+        
+        # Fallback security track for standard structural HTML link redirects
+        messages.error(request, "Verification required. Session credentials invalid. / 驗證失效，請提供正確的下單信箱。")
+        return redirect('home')
 
-    # 3. MARKET-STANDARD COMPLIANCE EVALUATION
-    # Block automated cancellations if the warehouse has already logged outbound items
-    has_dispatched_items = order.orderproduct_set.filter(is_dispatched=True).exists()
-    
-    # Block automated cancellations if the order contains instantly fulfilled digital items/vouchers
-    has_immutable_digital = order.orderproduct_set.filter(
-        product_variation__product__is_voucher=True
-    ).exists() or order.orderproduct_set.filter(
-        product_variation__product__is_digital=True,
-        product_variation__product__digital_fulfillment_type='INSTANT'
-    ).exists()
+    # =========================================================================
+    # 📝 EXECUTE SYSTEM ELIGIBILITY AUDIT & FEE HARVEST (Section C-c / C-d)
+    # =========================================================================
+    # Calls the unified tuple generator built inside your order model instance
+    is_eligible, total_cancellation_fee, audit_message = order.evaluate_cancellation_details()
+    if not is_eligible:
+        if request.headers.get('Content-Type') == 'application/json':
+            return JsonResponse({"status": "INELIGIBLE", "error": audit_message}, status=400)
+        messages.error(request, audit_message)
+        return redirect('dashboard', subpage='orders') if request.user.is_authenticated else redirect('contact')
 
-    if order.order_status in ['Delivered', 'Cancelled', 'All_Dispatched', 'Partly_Dispatched', 'Refunding', 'Refunded'] or has_dispatched_items or has_immutable_digital:
-        messages.error(request, "This order contains items that cannot be modified automatically. Please contact support. / 此訂單內含已發貨或不可取消之商品，請聯絡客服協助。")
-        if request.user.is_authenticated:
-            return redirect('dashboard_orders')
-        return redirect('guest_order_verify')
-    
-    paid_entirely_by_voucher = (order.total_due <= 0 and order.voucher_applied > 0)
-    refund_type = 'voucher' if paid_entirely_by_voucher else request.GET.get('refund_type', 'cash')
+    # Enforce hard model constraints: Full voucher check completely overrides choices
+    paid_entirely_by_voucher = (order.voucher_applied >= order.total_due)
+    if paid_entirely_by_voucher:
+        refund_type = 'voucher'
+
     user_is_member = order.user is not None
 
-    # 4. ATOMIC EXECUTION, STOCK ADJUSTMENT & VOUCHER CREDIT REIMBURSEMENT
+    # =========================================================================
+    # ⚡ BEGIN ATOMIC DATABASE TRANSACTION MATRIX (Section C-e)
+    # =========================================================================
     try:
         with transaction.atomic():
-            # Shift state engine directly to Refunding queue line matrix parameters
+            # Re-fetch for update to prevent racing transaction conditions across execution threads
+            order = Order.objects.select_for_update().get(id=order.id)
+            
+            # Update order tracking milestones cleanly before committing down to accounting splits
             order.order_status = 'Refunding'
             order.updated_at = timezone.now()
-            
-             # 📦 1. Restock physical inventory item variations
-            for item in order.orderproduct_set.all():
+
+            # 📦 Restock physical inventory item variations safely (Section C-e)
+            for item in order.items.all():
                 if item.product_variation:
                     variation = item.product_variation
-                    variation.stock += item.quantity
-                    variation.save(update_fields=['stock'])
-                    print(f"📦 INVENTORY RESTOCK SUCCESS: Returned {item.quantity} units to SKU {variation.get_sku()}｜庫存補貨成功：已將 {item.quantity} 件商品退回至 SKU {variation.get_sku()}")
+                    
+                    is_instant_eproduct = (
+                        item.product.is_digital and 
+                        item.product.digital_fulfillment_type == 'INSTANT' and 
+                        not item.product.is_voucher
+                    )
+                    
+                    # ── # C-e Override Rule: Infinite assets / Token Revocation Engine ──────────────────
+                    if is_instant_eproduct:
+                        # Locate and securely deactivate all generated secure download link passes
+                        active_tokens = DigitalDownloadToken.objects.filter(order_product=item, is_active=True)
+                        if active_tokens.exists():
+                            active_tokens.update(is_active=False)
+                    else:
+                        # Physical and voucher stock levels increment back safely
+                        variation.stock += item.quantity
+                        variation.save(update_fields=['stock'])
 
-            # 🎫 PIPELINE (ii): Auto-reimburse Applied Vouchers back to member profile credit vaults
+            # Initialize accounting pools and conversion parameters (CNY base)
+            voucher_refund_pool = order.voucher_applied
+            cash_refund_pool = order.total_due - order.voucher_applied
+            exchange_rate = order.locked_exchange_rate if hasattr(order, 'locked_exchange_rate') else decimal.Decimal('1.0000')
+            currency = order.currency_code if order.currency_code else "HKD"
+            
             voucher_refund_log = ""
             reimbursement_voucher = None
+            is_gift_voucher_revocation_required = False
 
-            # ─────────────────────────────────────────────────────────
-            # 🏢 PATHWAY A: THE 100% FULL VOUCHER PURCHASE EDGE CASE
-            # ─────────────────────────────────────────────────────────
-            if paid_entirely_by_voucher:
-                refund_value = order.voucher_applied
-                
-                # If they were a guest when buying a voucher but are a member now, link it
-                reimbursement_voucher = CustomerVoucher.objects.create(
-                    value=refund_value,
-                    balance=refund_value,
-                    purchaser_email=order.email,
-                    registered_email=order.user.email.lower() if user_is_member else None,
-                    owner=order.user if user_is_member else None,
-                    is_claimed=True if user_is_member else False,
-                    claimed_date=timezone.now() if user_is_member else None,
-                    is_used=False
-                )
-                voucher_refund_log = f" [100% Voucher Refund]: This transaction was paid entirely via store credits. Generated a 100% full replacement voucher of CNY {refund_value} (Token ID: {reimbursement_voucher.id}).｜[100% 抵用券退款]：本次交易全額使用商店信用額度支付。已產生面額為 CNY {refund_value} 的 100% 全額替換抵用券（憑證 ID：{reimbursement_voucher.id}）。"
-                print(f"✨ 100% VOUCHER LIFECYCLE REVERTED: Token {reimbursement_voucher.id} restored with CNY {refund_value}")
+            # =========================================================================
+            # 💳 PATHWAY A: STORE VOUCHER CREDIT REIMBURSEMENT MATRIX (Section C-f-Voucher)
+            # =========================================================================
+            if refund_type == 'voucher':
+                print("voucher refund")
+                net_voucher_refund_cny = max(decimal.Decimal('0.00'), order.total_due - total_cancellation_fee)
 
-            # ─────────────────────────────────────────────────────────
-            # 💳 PATHWAY B: MIXED OR PURE CASH PURCHASES
-            # ─────────────────────────────────────────────────────────
-            else:
-                # 🎫 Step 1: Always mandatory refund for any spent voucher portion first
-                if user_is_member and order.voucher_applied and order.voucher_applied > 0:
-                    spent_voucher_amount = order.voucher_applied
-                    original_credit_voucher = CustomerVoucher.objects.create(
-                        value=spent_voucher_amount,
-                        balance=spent_voucher_amount,
-                        purchaser_email=order.user.email,
-                        registered_email=order.user.email.lower(),
-                        owner=order.user,
-                        is_claimed=True,
-                        claimed_date=timezone.now(),
-                        is_used=False
-                    )
-                    voucher_refund_log += f" [Original Credit Restored]: Reimbursed original spent credit portion of CNY {spent_voucher_amount} straight to member account wallet (Token ID: {original_credit_voucher.id}).｜[原額度已退回]：已將原先使用的 {spent_voucher_amount} 元額度直接退回至會員帳戶錢包（憑證 ID：{original_credit_voucher.id}）。"
-
-                # ⚙️ Step 2: Handle the remaining out-of-pocket 'total_due' balance
-                if refund_type == 'voucher':
-                    # Return 100% of the cash remainder as a second voucher with zero fees
-                    refund_value = order.total_due
+                # 🌟 THE FIX: Identify whether the order was fully paid using store credits upfront
+                if paid_entirely_by_voucher:
+                    print('100pct by voucher logic patch engaged')
+                    # Use the actual amount subtracted during checkout as your baseline credit pool
+                    net_voucher_refund_cny = max(decimal.Decimal('0.00'), order.voucher_applied - total_cancellation_fee)
+                else:
+                    # Standard fallback for standard or mixed split-payment accounts
+                    net_voucher_refund_cny = max(decimal.Decimal('0.00'), order.total_due - total_cancellation_fee)
                     
+                print("net_voucher_refund_cny: ", net_voucher_refund_cny)
+        
+                if paid_entirely_by_voucher:
+                    print('100pct by voucher')
+                    # Case C-g-i: 100% Paid with store credit balance
                     reimbursement_voucher = CustomerVoucher.objects.create(
-                        value=refund_value,
-                        balance=refund_value,
+                        value=net_voucher_refund_cny,
+                        balance=net_voucher_refund_cny,
                         purchaser_email=order.email,
                         registered_email=order.email.lower() if user_is_member else None,
                         owner=order.user if user_is_member else None,
                         is_claimed=True if user_is_member else False,
-                        claimed_date=timezone.now() if user_is_member else None,
-                        is_used=False
+                        is_used=False,
+                        # 🌟 FIXED: Force instant wallet validation by bypassing default lock flags
+                        is_locked=False,
+                        locked_at=None,
+                        locked_by_session=None
+                    )
+                    voucher_refund_log = f" [100% Voucher Refund]: Restored face value of CNY {net_voucher_refund_cny:.2f} directly to member account."
+
+                elif voucher_refund_pool > 0 and cash_refund_pool > 0:
+                    # Case C-g-ii: Mixed Split Payment arrays
+                    # Step 1: Return the original spent voucher portion first after subtracting item fee metrics
+                    fee_deduction_remainder = total_cancellation_fee
+                    if voucher_refund_pool >= fee_deduction_remainder:
+                        net_voucher_return = voucher_refund_pool - fee_deduction_remainder
+                        fee_deduction_remainder = decimal.Decimal('0.00')
+                    else:
+                        fee_deduction_remainder -= voucher_refund_pool
+                        net_voucher_return = decimal.Decimal('0.00')
+
+                    # Step 2: Convert the cash remainder into a new credit voucher balance row
+                    net_cash_converted_to_voucher = max(decimal.Decimal('0.00'), cash_refund_pool - fee_deduction_remainder)
+                    total_combined_voucher_return = net_voucher_return + net_cash_converted_to_voucher
+
+                    reimbursement_voucher = CustomerVoucher.objects.create(
+                        value=total_combined_voucher_return,
+                        balance=total_combined_voucher_return,
+                        purchaser_email=order.email,
+                        registered_email=order.email.lower() if user_is_member else None,
+                        owner=order.user if user_is_member else None,
+                        is_claimed=True if user_is_member else False,
+                        is_used=False,
+                        is_locked=False,
+                        locked_at=None,
+                        locked_by_session=None
+                    )
+                    voucher_refund_log = f" [Split-to-Voucher]: Returned total combined credit value of CNY {total_combined_voucher_return:.2f}."
+
+                else:
+                    # Case C-g-iii: 100% Cash-to-Voucher Conversion Funnel (Both members and guests)
+                    reimbursement_voucher = CustomerVoucher.objects.create(
+                        value=net_voucher_refund_cny,
+                        balance=net_voucher_refund_cny,
+                        purchaser_email=order.email,
+                        registered_email=order.email.lower() if user_is_member else None,
+                        owner=order.user if user_is_member else None,
+                        is_claimed=True if user_is_member else False,
+                        is_used=False,
+                        is_locked=False,
+                        locked_at=None,
+                        locked_by_session=None
                     )
                     
                     if user_is_member:
-                        voucher_refund_log += f" [Remaining Balance]: Reimbursed 100% full remaining cash balance of CNY {refund_value} directly to account wallet ID {reimbursement_voucher.id}.｜[剩餘餘額]：將剩餘的全部現金餘額（人民幣 {refund_value}）全額退還至帳戶錢包 ID {reimbursement_voucher.id}。"
+                        voucher_refund_log = f" [Cash-to-Voucher Member]: Converted net cash portion into CNY {net_voucher_refund_cny:.2f} voucher."
                     else:
-                        # Explicitly calculate and display the exact date parameters inside your database logs
-                        expiry_date_str = reimbursement_voucher.expiry_date.strftime('%Y-%m-%d')
-                        voucher_refund_log += f" [Remaining Balance]: Generated unclaimed guest voucher ID {reimbursement_voucher.id} for full remaining balance of CNY {refund_value}. Expiry set to: {expiry_date_str}.｜[剩餘餘額]：針對 CNY {refund_value} 的全部剩餘餘額，產生了未領取的訪客憑證 ID {reimbursement_voucher.id}。有效期限設定為：{expiry_date_str}。"
+                        voucher_refund_log = f" [Cash-to-Voucher Guest]: Dispatched unclaimed conversion card voucher ID {reimbursement_voucher.id}."
 
+                # Case C-g-iv: Track gift voucher cancellations for 3rd-party transfers
+                # 🌟 FIXED: Implemented a robust null-safe guard evaluation pass
+                # This safely handles cases where recipient_email or order.email evaluates to None
+                buyer_email_clean = (order.email or "").strip().lower()
+                recipient_email_clean = (order.recipient_email or "").strip().lower()
+
+                # Case C-g-iv: Track gift voucher cancellations for 3rd-party transfers safely
+                # If recipient_email exists and is distinct from the buyer, flag it for revocation
+                if recipient_email_clean and buyer_email_clean != recipient_email_clean:
+                    is_gift_voucher_revocation_required = True
                 else:
-                    # Deduct the 3% admin handling fee exclusively from the cash portion
-                    fee_rate = decimal.Decimal('0.03')
-                    net_cash_refund = order.total_due * (decimal.Decimal('1.0') - fee_rate)
-                    voucher_refund_log += f" [Remaining Balance]: Processed cancellation net of a 3% administration handling fee deduction applied to the remaining gateway balance portion. Estimated payout return total: CNY {net_cash_refund:.2f}.｜[剩餘餘額]：已處理退款，並從支付網關的剩餘餘額中扣除了 3% 的行政手續費。預計退款總金額：CNY {net_cash_refund:.2f}。"
+                    is_gift_voucher_revocation_required = False                    
+
+            # =========================================================================
+            # 💳 PATHWAY B: ORIGINAL PATHWAY CASH RETOUR MATRIX (Section C-f-Cash)
+            # =========================================================================
+            else:
+                # Step 1: Always restore any spent voucher points back to members automatically (Section C-h-i)
+                fee_balance_to_deduct = total_cancellation_fee
+                if voucher_refund_pool > 0:
+                    if voucher_refund_pool >= fee_balance_to_deduct:
+                        net_voucher_restored = voucher_refund_pool - fee_balance_to_deduct
+                        fee_balance_to_deduct = decimal.Decimal('0.00')
+                    else:
+                        fee_balance_to_deduct -= voucher_refund_pool
+                        net_voucher_restored = decimal.Decimal('0.00')
+                    
+                    if net_voucher_restored > 0:
+                        reimbursement_voucher = CustomerVoucher.objects.create(
+                            value=net_voucher_restored,
+                            balance=net_voucher_restored,
+                            purchaser_email=order.email,
+                            registered_email=order.email.lower(),
+                            owner=order.user,
+                            is_claimed=True,
+                            is_used=False,
+                            is_locked=False,
+                            locked_at=None,
+                            locked_by_session=None                            
+                        )
+                        voucher_refund_log += f" [Voucher Restored]: Returned CNY {net_voucher_restored:.2f} straight to member account wallet."
+
+                # Step 2: Compute net out-of-pocket cash returns with 5% admin fee factored in (Section C-h-b)
+                net_cash_pool_cny = max(decimal.Decimal('0.00'), cash_refund_pool - fee_balance_to_deduct)
+                
+                if net_cash_pool_cny > 0:
+                    # Formula: (Cash remainder - cancellation fee remainder) * 95% net payout ratio
+                    admin_fee_rate = decimal.Decimal('0.05')
+                    net_cash_refund_base = net_cash_pool_cny * (decimal.Decimal('1.00') - admin_fee_rate)
+                    
+                    # Convert values accurately into active checkout denominations
+                    net_cash_refund_foreign = net_cash_refund_base * exchange_rate
+                    
+                    # Execute explicit regional integer currency rounding logic rules
+                    if currency.upper() in INTEGER_CURRENCIES:
+                        net_cash_refund_foreign = net_cash_refund_foreign.quantize(decimal.Decimal('1'), rounding=decimal.ROUND_HALF_UP)
+                        display_format = f"{net_cash_refund_foreign:.0f}"
+                    else:
+                        display_format = f"{net_cash_refund_foreign:.2f}"
+                        
+                    voucher_refund_log += f" [Cash Return Pool]: Configured path via {currency} {display_format}."
+                else:
+                    display_format = "0.00"
+                    voucher_refund_log += f" [Cash Overrun]: Cancellation fee exceeded cash pool. Retained in full."
+
+            # =========================================================================
+            # 💾 COMMIT BALANCES TO PERMANENT INSTANCE FIELDS (Section C-f-Snapshot)
+            # =========================================================================
+            order.refund_type = refund_type.upper()
+            order.user_classification = 'MEMBER' if user_is_member else 'GUEST'
+            order.is_online_gateway = order.payment.payment_method in ['PayPal', 'Stripe'] if order.payment else True
+            order.total_cancellation_fee_applied = total_cancellation_fee
+            order.restored_voucher_pool_amount = voucher_refund_pool
+            order.is_self_service_cancelled = True
+
+            # 🌟 FIXED: THE DOUBLE-SPEND SHIELD RE-ALIGNMENT PATCH
+            # Locate the originating ProformaInvoice row using the matching unique order number
+            try:
+                originating_proforma = ProformaInvoice.objects.select_for_update().get(
+                    proforma_order_number=order.order_number
+                )
+                # Break the double-spend hold validation loops by flipping the settlement indicator flags
+                originating_proforma.order_settled = True # Or flip is_ordered = False depending on your model choices layout
+                originating_proforma.save(update_fields=['order_settled'])
+                print(f"🔒 [Double-Spend Shield Cleared]: Settled Proforma hold reference tracking flags for Invoice #{order.order_number}")
+            except ProformaInvoice.DoesNotExist:
+                # If it was an instant PayPal checkout, no offline bank Proforma hold exists to clear
+                pass
+
+            if refund_type == 'voucher':
+                order.net_cash_payout_amount_foreign = decimal.Decimal('0.00')
+                print("order.net_cash_payout_amount_foreign: ", order.net_cash_payout_amount_foreign)
+            else:
+                order.net_cash_payout_amount_foreign = decimal.Decimal(display_format)
+
+            # Bind newly issued voucher UUID records cleanly if available
+            voucher_id_str = str(reimbursement_voucher.id) if reimbursement_voucher else None
+            order.refund_voucher_id_str = voucher_id_str
+            print("voucher_id_str: ", voucher_id_str)
 
             # Save the system alerts safely down to the logs
             timestamp_str = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
-            current_notes = order.delivery_note or ""
-            order.delivery_note = f"{current_notes}\n\n[System Alert - {timestamp_str}]: Order cancelled by purchaser. Refund Method chosen: {refund_type.upper()}.{voucher_refund_log}｜[系統提示 - {timestamp_str}]：訂單已被買家取消。選擇的退款方式：{refund_type.upper()}。 {voucher_refund_log}"
-            order.save(update_fields=['order_status', 'delivery_note', 'updated_at'])
+            order.order_status = 'Cancelled'
+            order.delivery_note = f"{order.delivery_note or ''}\n\n[System Alert - {timestamp_str}]: Order cancelled via Web. Saved cancellation metrics successfully."
+            
+            # Atomic update of fields ensures maximum concurrent safety across execution pools
+            order.save(update_fields=[
+                'order_status', 'delivery_note', 'updated_at', 'refund_type',
+                'user_classification', 'is_online_gateway', 'total_cancellation_fee_applied',
+                'restored_voucher_pool_amount', 'net_cash_payout_amount_foreign',
+                'refund_voucher_id_str', 'is_self_service_cancelled'
+            ])
 
-        # 🎯 4. Trigger Celery Task to process emails
-        # Pass the primary reimbursement voucher token if it needs to be claimed via a registration link
-        voucher_id_str = str(reimbursement_voucher.id) if (refund_type == 'voucher' and reimbursement_voucher) else None
-        send_cancellation_initiation_email_task.delay(order.id, refund_type, voucher_id_str)
+        # =========================================================================
+        # 🎯 POST-COMMIT PARALLEL CELERY TASK ROUTING LINES (Section B / Email Versions)
+        # =========================================================================
+        voucher_id_str = str(reimbursement_voucher.id) if reimbursement_voucher else None
+        is_online_gateway = order.payment.payment_method in ['PayPal', 'Stripe'] if order.payment else True
+
+        # Pathway 1: Trigger Gift Voucher Revocation Notice to 3rd Party (g-iv)
+        if is_gift_voucher_revocation_required:
+            transaction.on_commit(lambda: send_gift_receiver_revocation_email_task.delay(
+                order_id=order.id,
+                recipient_email=order.recipient_email,
+                revoked_tokens_log_str=str(order.order_number)
+            ))
+
+        # Pathway 2: Route Finalize workflows (g-i-ii / g-ii-ii / g-iii-i / g-iii-ii)
+        if order.refund_type == 'VOUCHER':
+            transaction.on_commit(lambda: send_cancellation_completion_email_task.delay(
+                order_id=order.id,
+                refund_type='voucher',
+                user_type=order.user_classification.lower(),
+                voucher_id_str=order.refund_voucher_id_str,
+                net_amount_str=f"{order.total_due - order.total_cancellation_fee_applied:.2f}"
+            ))
+            messages.success(request, "Cancellation completed successfully! Your credit voucher has been generated. / 訂單取消已完成！全額購物金已簽發。")
+
+        # Pathway 3: Route Initialize workflows (h-i-ii / h-ii-ii)
+        else:
+            transaction.on_commit(lambda: send_cancellation_initiation_email_task.delay(
+                order_id=order.id,
+                refund_type='cash',
+                user_type=order.user_classification.lower(),
+                is_online_gateway=order.is_online_gateway,
+                currency_code=currency,
+                net_cash_payout_str=f"{order.net_cash_payout_amount_foreign:.2f}" if currency.upper() not in ["JPY", "KRW", "TWD", "VND", "CLP"] else f"{order.net_cash_payout_amount_foreign:.0f}"
+            ))
+            messages.success(request, f"Order #{order.order_number} cancellation request received. / 訂單取消與退款申請已成功受理。")
+
+        if request.headers.get('Content-Type') == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            response = JsonResponse({
+                "status": "SUCCESS",
+                "message": f"Order #{order.order_number} cancellation completed successfully. Face values restored."
+            }, status=200)
+            
+            # Failsafe Over-The-Air signal dispatch
+            response['HX-Trigger'] = json.dumps({"refreshDashboardCounters": True})
+            return response 
 
         messages.success(request, f"Order #{order.order_number} cancellation request received. / 訂單取消與退款申請已成功受理。")
+        return redirect('dashboard', subpage='orders') if request.user.is_authenticated else redirect('home')
 
-    except Exception as cancel_err:
-        print(f"❌ Transaction cancellation catastrophic rollback: {str(cancel_err)}")
-        messages.error(request, "An internal error occurred during processing. Please try again. / 處理中發生系統異常，請稍後再試。")
-
-    # 5. CONTEXT-AWARE SMART REDIRECT ENDPOINT ROUTER
-    if request.user.is_authenticated:
-        return redirect('dashboard', subpage='orders')
-    return redirect('guest_order_verify')
-
+    except Exception as e:
+        logger.exception(f"💥 Cancellation Processing Exception: {str(e)}")
+        if request.headers.get('Content-Type') == 'application/json':
+            return JsonResponse({"status": "SERVER_ERROR", "error": str(e)}, status=500)
+            
+        messages.error(request, f"系統因核心業務邏輯異常已安全撤回交易: {str(e)}")
+        return redirect('dashboard', subpage='orders') if request.user.is_authenticated else redirect('home')
 
 
 # Can you write the cancellation complete function that can be operated from the database by admin staff? 
@@ -1069,3 +1400,4 @@ def process_order_cancellation(request, order_number):
 
 # Also, I think I need to send emails in (i) cancellation process begins, triggered by the cancel button activation, 
 # and (ii) cancellation completes. For (a), I will
+

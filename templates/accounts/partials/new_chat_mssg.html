@@ -1,50 +1,47 @@
+<!-- new_chat_mssg.html -->
 {% load chat_extras %}
 {% if new_message %}
-<div id="new_message-{{ new_message.id }}" 
-        class="chat 
-        {% if new_message.sender == request.user %}chat-end{% else %}chat-start{% endif %}
-        {% if new_message.is_match %}search-match{% endif %}"
->
-    <!-- avatar -->
-    <div class="chat-image avatar">
-        <div class="w-10 h-10 rounded-full">
-            <img
-                alt="admin avatar"
-                src="{{ new_message.sender.profile.profile_picture.url }}"
-                class="w-full f-full"
-            />
+<div id="msg-{{ new_message.id }}" 
+     class="message-row {% if new_message.sender == request.user %}message-own{% else %}message-other{% endif %}">
+    
+    {% if new_message.sender != request.user %}
+    <div class="message-avatar">
+        <img src="{{ new_message.sender.profile.profile_picture.url }}" 
+             alt="{{ new_message.sender.username }}"
+             loading="lazy"
+             decoding="async">
+    </div>
+    {% endif %}
+    
+    <div class="message-content">
+        <div class="message-meta">
+            <span class="message-sender">{{ new_message.sender.username }}</span>
+            <span class="message-time">{{ new_message.timestamp|date:"H:i" }}</span>
+        </div>
+        
+        <div class="message-bubble">
+            {% if new_message.highlighted_text %}
+                {{ new_message.highlighted_text|safe }}
+            {% else %}
+                {{ new_message.content|format_chat }}
+            {% endif %}
+            
+            {% if new_message.image %}
+                <img src="{{ new_message.image.url }}" 
+                     class="message-image" 
+                     alt="chat message image"
+                     loading="lazy"
+                     decoding="async">
+            {% endif %}
         </div>
     </div>
-    <!-- content -->
-    <div class="chat-header">
-        <!-- name -->
-        <div>{{ new_message.sender.username }}</div>
-        <time class="text-xs opacity-50">{{ new_message.timestamp|date:"Y-m-d H:i:s" }}</time>
-    </div>
-    <div class="chat-bubble">
-        <!-- text -->
-        {% if new_message.highlighted_text %}
-            {{ new_message.highlighted_text|format_chat }}
-        {% else %}
-            {{ new_message.content|format_chat }}
-        {% endif %}
-        <!-- image -->
-        {% if new_message.image %}
-            <img src="{{ new_message.image.url}}" alt="chat message image">
-        {% endif %}
-    </div>
-    {% if request.user == new_message.sender %}
-    <div class="chat-footer opacity-50">
-        {% if request.user == admin %}
-            <span>sent to: {{ new_message.receiver.username }}｜</span> <!-- Changed msg to new_message -->
-        {% endif %}
-        <span>
-            {% if new_message.is_read %}
-                read｜已閱
-            {% else %}
-                unread｜未閱
-            {% endif %}
-        </span>
+    
+    {% if new_message.sender == request.user %}
+    <div class="message-avatar">
+        <img src="{{ new_message.sender.profile.profile_picture.url }}" 
+             alt="{{ new_message.sender.username }}"
+             loading="lazy"
+             decoding="async">
     </div>
     {% endif %}
 </div>

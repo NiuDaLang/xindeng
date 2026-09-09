@@ -1,0 +1,85 @@
+<!-- templates/emails/cancellation_completion_email.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    .ledger-box { border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; background-color: #f9fafb; margin: 20px 0; }
+    .action-btn { display: inline-block; padding: 12px 24px; font-size: 13px; font-weight: bold; color: #ffffff !important; background-color: #4b9aaa; border-radius: 8px; text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em; margin: 16px 0; font-family: sans-serif; }
+    .caveat-box { background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 14px; margin: 16px 0; font-size: 12px; color: #78350f; font-family: sans-serif; }
+  </style>
+</head>
+<body style="font-family: 'Georgia', serif; color: #1f2937; line-height: 1.6; background-color: #ffffff; padding: 20px;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 10px;">
+    
+    <!-- Premium Editorial Header Grid -->
+    <h2 style="color: #4b9aaa; font-family: 'Georgia', serif; font-size: 20px; tracking: 0.05em; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; font-weight: normal;">
+      Refund Settlement Confirmed｜兌換餘額簽發完成
+    </h2>
+    
+    <p style="font-size: 14px; margin-top: 20px;">Dear Reader / 您好,</p>
+    
+    <p style="font-size: 13px; color: #4b5563;">
+      We have successfully finalized the cancellation processing parameters for order <strong style="color: #1f2937;">#{{ order.order_number }}</strong>. As requested, your remaining out-of-pocket values have been securely returned as an electronic store voucher credit token.
+    </p>
+
+    <!-- 📊 Financial Balance Certificate Presentation Layer Grid -->
+    <div class="ledger-box">
+      <div style="font-size: 11px; text-transform: uppercase; tracking: 0.1em; color: #9ca3af; margin-bottom: 8px;">Refund Certificate Ledger｜結算清單</div>
+      <table style="width: 100%; font-size: 13px; font-family: sans-serif; border-collapse: collapse;">
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 6px 0; color: #6b7280;">Original Invoice Amount｜訂單面額:</td>
+          <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #1f2937;">CNY ¥{{ order.total_due }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 6px 0; color: #6b7280;">Issued Store Credit Total｜簽發購物金總額:</td>
+          <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #4b9aaa;">CNY ¥{{ net_amount_str }}</td>
+        </tr>
+        {% if short_voucher_id %}
+        <tr>
+          <td style="padding: 6px 0; color: #6b7280;">Voucher Reference｜購物金憑證編號:</td>
+          <td style="padding: 6px 0; text-align: right; font-family: monospace; font-weight: bold; color: #1f2937;">#{{ short_voucher_id }}</td>
+        </tr>
+        {% endif %}
+      </table>
+    </div>
+
+    <!-- 🌟 DYNAMIC PROFILE TYPE CONTENT INTERCEPT CONTROLLER -->
+    {% if user_type == 'member' %}
+      <!-- Case g-i-ii / g-ii-ii / g-iii-i: Registered Account Path -->
+      <p style="font-size: 13px; color: #4b5563;">
+        The compiled balance has been applied directly to your profile database vault wallet. The face value is immediately active with zero handling overhead fees and available to apply during your next checkout loop session.
+        <br><span style="font-size: 12px; opacity: 0.8; display: block; margin-top: 6px; font-family: sans-serif;">提示：上述購物金額度已直接匯入您的會員個人帳戶錢包。此面值即刻生效，在下次結算時可直接折抵，完全免收任何行政手續費。</span>
+      </p>
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="{{ site_domain }}/accounts/dashboard/vouchers/" class="action-btn">View My Wallet｜進入帳戶錢包</a>
+      </div>
+    {% else %}
+      <!-- Case g-iii-ii: Guest User Conversion Funnel Path -->
+      <div class="caveat-box">
+        <strong>Funnel Account Registration Caveat｜訪客轉換重要提示:</strong>
+        <br style="margin-bottom: 4px;">
+        To activate and apply this electronic store credit voucher, platform regulatory terms require you to possess a registered user account using your original transaction email address (<span style="font-family: monospace; font-weight: bold;">{{ order.email }}</span>).
+        <br><span style="opacity: 0.9; display: block; margin-top: 6px;">為安全啟用並消費此筆返還之購物金，依系統合規標準，您需要使用下單時填寫的信箱完成新會員註冊，以將該額度永久掛載至您的錢包中。</span>
+      </div>
+      <p style="font-size: 13px; color: #4b5563;">
+        Please click the high-security activation bridge link below to finalize your password parameters and claim your balance certificate. This registration pass will remain active for 365 days.
+      </p>
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="{{ claim_link }}" class="action-btn">Register & Claim Balance｜註冊並領取額度</a>
+      </div>
+    {% endif %}
+
+    <p style="font-size: 13px; color: #9ca3af; margin-top: 32px; font-family: sans-serif; border-top: 1px solid #f3f4f6; padding-top: 12px;">
+      Thank you for your patience during our fiscal audit routine loops.
+      <br><span style="font-size: 11px; opacity: 0.8; display: block; margin-top: 2px;">感謝您在我們進行財務審核期間的耐心配合。</span>
+    </p>
+
+    <!-- Footer Signature Component -->
+    <div style="margin-top: 24px; font-size: 12px; color: #9ca3af; font-family: sans-serif;">
+      Hṛdayadīpa｜心燈 Team
+    </div>
+
+  </div>
+</body>
+</html>

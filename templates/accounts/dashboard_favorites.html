@@ -1,38 +1,28 @@
+<!-- dashboard_favorites.html -->
 {% load humanize %}
 <title>{{ page_title }}</title>
 
-<div id="dashboard_favorites" class="subpage">
-    <!-- hero -->
-    <div class="dashboard_hero w-full min-h-72 rounded-2xl text-white relative flex justify-center items-center">
-        <!-- season & date -->
-        <div class="flex flex-col z-10 p-5">
-            {% if solar_term %}
-                <div class="solar-timeline">
-                    <div class="flex flex-col">
-                        <span id="solar_term" class="text-4xl">{{ solar_term }}</span>
-                        <span id="solar_term_en" class="text-[16px]">{{ solar_term_en }}</span>
-                    </div>
-                    {% if next_solar_term %}
-                    <div class="solar-arrow-container">
-                        <div class="solar-arrow"></div>
-                    </div>
-                    <div class="flex flex-col">
-                        <span id="next_solar_term" class="text-4xl">{{ next_solar_term }}</span>
-                        <span id="next_solar_term_en" class="text-[16px]">{{ next_solar_term_en }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-            {% endif %}
-            <span id="dynamic-date" hx-preserve="true" class="text-sm text-center"></span>
+<div id="dashboard_favorites" class="subpage w-full animate-fade-in space-y-6">
+    <!-- ================================================================
+         🎨 FIRST ROW: PERSISTENT STANDARD REGISTRY HERO
+         ================================================================ -->
+    {% include 'accounts/partials/standard_horizontal_hero.html' %}
+
+    <!-- ================================================================
+         🎨 SECOND ROW: CURATED FAVORITES CATALOG VIEWPORT
+         ================================================================ -->
+    <div class="w-full space-y-4">
+        <h3 class="text-xs sm:text-sm font-bold tracking-widest font-serif text-base-content/80 uppercase border-b border-base-200 pb-2 flex items-center gap-2 select-none">
+            <i class="fa-solid fa-star text-amber-500 animate-pulse"></i>
+            <div class="flex flex-wrap">
+                <span>My Bookmarked Favorites</span>
+                <span>｜收藏清單明細</span>
+            </div>
+        </h3>
+
+        <!-- ASYNCHRONOUS TARGET HOOK RE-RENDER BLOCK -->
+        <div id="favorites_wrapper" class="w-full mt-4">
+            {% include 'accounts/partials/favorites_list.html' with favorites=favorites %}
         </div>
-        <!-- clock -->
-        {% include 'accounts/partials/clock_analog.html' %}
-        <!-- bg img -->
-        <img src="/media/hero/red_leaves.jpeg" alt="" class="absolute left-0 top-0 w-full h-full rounded-4xl object-cover">
-    </div>
-    <!-- favorites collection -->
-    <div id="favorites_wrapper">
-        {% include 'accounts/partials/favorites_list.html' with favorites=favorites %}
     </div>
 </div>
-

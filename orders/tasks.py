@@ -6,8 +6,8 @@ from celery.signals import worker_ready
 from django.core.cache import cache
 from django.conf import settings
 from django.template.loader import render_to_string
-from emails.utils import send_order_confirmation_email, send_gift_voucher_email, send_secure_voucher_pin_email, send_cancellation_initiation_email, send_cancellation_finalized_email
-from .utils import generate_order_confirmation_pdf
+from emails.utils import send_order_confirmation_email, send_gift_voucher_email, send_secure_voucher_pin_email, send_cancellation_initiation_email, send_gift_voucher_revocation_email, send_cancellation_completion_email
+from .utils import generate_order_confirmation_pdf, reverse_perk_usage_at_cancellation
 from orders.models import Order, OrderInquiry
 from django.db import transaction
 from carts.models import ProformaInvoice
@@ -23,6 +23,7 @@ from email.mime.image import MIMEImage
 import os
 import traceback
 from carts.models import Cart
+from django.core.exceptions import ObjectDoesNotExist
 
 
 logger = logging.getLogger(__name__)
@@ -103,6 +104,32 @@ def send_secure_voucher_pin_email_task(voucher_id, pin_code):
         return f"Failed to execute secure PIN transmission task for ID {voucher_id}. Error: {str(e)}"
 
 
+@shared_task(bind=True, name="tasks.send_gift_receiver_revocation_email_task")
+def send_gift_receiver_revocation_email_task(self, order_id, recipient_email, revoked_tokens_log_str, **kwargs):
+    """
+    Asynchronous Celery Task Core for Voucher Revocations (Case g-iv).
+    Queries the master order and triggers the email layout engine to notify
+    3rd-party gift receivers that their credit voucher has been cancelled.
+    """    
+    
+    logger.info(f"🚀 Initialising gift voucher cancellation email loop for Order ID: {order_id}")
+    
+    try:
+        # Execute the main transactional email compilation sequence safely
+        result = send_gift_voucher_revocation_email(order_id, recipient_email)
+        return f"✅ Voucher revocation email successfully dispatched to: {recipient_email}"
+        
+    except ObjectDoesNotExist as odne:
+        error_msg = f"❌ Revocation task aborted: Order matching ID {order_id} could not be found. Error: {str(odne)}"
+        logger.error(error_msg)
+        return error_msg
+        
+    except Exception as e:
+        error_msg = f"💥 Critical exception during voucher revocation email routing: {str(e)}"
+        logger.error(error_msg)
+        raise self.retry(exc=e, countdown=60, max_retries=3) # Safe retry engine on SMTP delivery drops
+
+
 @shared_task(name="tasks.check_and_expire_hold")
 def check_and_expire_hold(order_id):
     """
@@ -110,54 +137,54 @@ def check_and_expire_hold(order_id):
     Evaluates an unpaid manual bank-transfer hold exactly at its expiration time.
     Restores inventory pools, purges orphaned cart items, and refunds voucher points on failure.
     """
-    print("check_and_expire_hold()!!!!!")
+    logger.info(f"⏳ Executing automated 72-hour bank transfer expiry check for Order ID: {order_id}")
+
     try:
         with transaction.atomic():
+            # Apply pessimistic row locking to prevent racing payment conditions
             order = Order.objects.select_for_update().get(id=order_id)
-            print(f"order: {order}")
-            if order.is_ordered or order.order_status in ['Cancelled', 'Completed', 'Shipped', 'Processing']:
-                return f"Verification skipped. Order {order.order_number} is actively settled."
 
-            payment_confirmed = Payment.objects.filter(invoice__proforma_order_number=order.order_number, status='Completed').exists()
-            print("payment_confirmed: ", payment_confirmed)
+            # If the order is already settled or managed, exit the clean-up engine early
+            if order.is_ordered or order.order_status in ['Cancelled', 'Delivered', 'Partly_Dispatched', 'All_Dispatched', 'Processing']:
+                return f"Verification skipped. Order #{order.order_number} is actively settled."
+
+            # Query if a valid payment instance was verified inside your invoicing models
+            payment_confirmed = Payment.objects.filter(
+                invoice__proforma_order_number=order.order_number, 
+                status='Completed'
+            ).exists()
+
             if not payment_confirmed:
-                print("payment not confirmed")
-                # ── STEP A: RESTORE HELDF INVENTORY POOLS ─────────────────────────
+                logger.warning(f"🛑 Payment not confirmed for Order #{order.order_number}. Commencing rollback sequence.")
+
+                # ── STEP A: RESTORE HELD INVENTORY POOLS ─────────────────────────
                 order_items = OrderProduct.objects.filter(order=order)
                 for item in order_items:
                     if item.product_variation:
+                        # Row-lock the specific variation to prevent race conditions during restocking
                         variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
-                        variation.stock += item.quantity
-                        variation.save(update_fields=['stock'])
+                        
+                        is_instant_eproduct = (
+                            variation.product.is_digital and 
+                            variation.product.digital_fulfillment_type == 'INSTANT' and 
+                            not variation.product.is_voucher
+                        )
+                        
+                        # Only restock items that consumed physical warehouse footprint slots
+                        if not is_instant_eproduct:
+                            variation.stock += item.quantity
+                            variation.save(update_fields=['stock'])
 
                 # ── STEP B: SURGICAL GHOST CART PURGE ─────────────────────────────
                 try:
-                    # 1. Fetch your baseline proforma log record row matching this order string text
-                    proforma = ProformaInvoice.objects.filter(proforma_order_number=order.order_number).first()
-                    print('proforma lookup result: ', proforma)
-                    
-                    # 🌟 THE FINAL FIX: Drop the crashing 'target_hold_cart_id' line entirely!
-                    # We execute the native string lookup directly against our Cart database table index:
+                    # Clear out the un-purchased hold cart from the checkout session
                     historical_cart = Cart.objects.filter(cart_id__contains=f"_hold_{order.order_number}").first()
-                    print("Historical Cart lookup by string match token: ", historical_cart)
-
                     if historical_cart:
-                        print("🌟 Identity validation pass: Commencing historical cart purge sequence.")
-                        
-                        # Clear out all individual CartItem lines bound to this historical hold basket
                         CartItem.objects.filter(cart=historical_cart).delete()
-                        print(f"🗑️ AUTOMATED CLEANUP: Wiped ghost items from expired Cart ID {historical_cart.id}")
-                        
-                        # Safely delete the historical Cart row container itself to optimize database footprint
                         historical_cart.delete()
-                        print("🎯 Target Cart row deleted from database cleanly.")
-                    else:
-                        print("⚠️ No matching hold cart row was found for this order signature.")
-
+                        logger.info(f"🗑 Automated Cleanup: Purged ghost hold items for Order #{order.order_number}")
                 except Exception as cleanup_err:
-                    # This catches any syntax or reference faults inside the block
-                    print(f"❌ CRITICAL TASK BLINK EXCEPTION: {str(cleanup_err)}")
-                    traceback.print_exc() # Prints the exact line-by-line python crash log to your console!
+                    logger.error(f"❌ Minor exception during ghost cart purge: {str(cleanup_err)}")
 
                 # ── STEP C: PINPOINT VOUCHER BALANCE REVERSALS ───────────────────
                 if order.voucher_applied > 0:
@@ -169,30 +196,62 @@ def check_and_expire_hold(order_id):
                             voucher.is_used = False
                             voucher.used_date = None
                         voucher.save(update_fields=['balance', 'is_used', 'used_date'])
+                    logger.info(f"✨ Restored store credit voucher fields for Order #{order.order_number}")
 
-                # ── STEP D: TRANSACTION DATA STATE CLOSEOUT ──────────────────────
+                # ── STEP D: CONNECTED PROMOTIONAL COUPON PERK REVERSAL ───────────
+                try:
+                    perk_rollback_message = reverse_perk_usage_at_cancellation(order)
+                    logger.info(f"🎁 Promo Perk Engine: {perk_rollback_message}")
+                except Exception as perk_err:
+                    logger.error(f"❌ Failed to execute coupon perk rollback: {str(perk_err)}")
+
+                # ── STEP E: TRANSACTION DATA STATE CLOSEOUT ──────────────────────
                 order.order_status = 'Cancelled'
                 order.save(update_fields=['order_status'])
-
-                # 🌟 THE SECURITY LOCK: Keep is_ordered=True locked down inside your proforma database row!
-                # This explicitly invalidates this token, blocking checkout bypass loops from loading.
+                
+                # Invalidate the checkout token inside the proforma invoice to block bypass loops
                 ProformaInvoice.objects.filter(proforma_order_number=order.order_number).update(is_ordered=True)
-            
-                # Queue your background cancellation notification mailer safely outside the core lock loop
+                
+                # Queue the background bank transfer cancellation notification email safely
+                from .tasks import send_bank_hold_cancelled_email_task 
                 transaction.on_commit(lambda: send_bank_hold_cancelled_email_task.delay(order.id))
+                
                 return f"Hold window closed. Cancelled expired Order Hold #{order.order_number} successfully."
-            
+
             else:
-                # Late-clearing payment found inside the validation window: Settle order cleanly
-                order.is_ordered = True
-                order.ordered_at = timezone.now()
-                order.order_status = 'Processing'
-                order.save(update_fields=['is_ordered', 'ordered_at', 'order_status'])
-                OrderProduct.objects.filter(order=order).update
-                return f"Payment verification cleared in flight window for order {order.order_number}."
+                # =========================================================================
+                # 🌟 核心修復：靈活適應人工核銷狀態機 (CONTEXT-AWARE STATUS PRESERVATION)
+                # =========================================================================
+                # The payment WAS confirmed! We must solidify record states safely.
+                update_fields_list = []
+
+                if not order.is_ordered:
+                    order.is_ordered = True
+                    update_fields_list.append('is_ordered')
+                    
+                    # Only assign the ordered_at timestamp if it was never stamped by a view or staff member
+                    if not order.ordered_at:
+                        order.ordered_at = timezone.now()
+                        update_fields_list.append('ordered_at')
+
+                # ⚠️ FIX: If staff already advanced the fulfillment status (e.g. Partly_Dispatched),
+                # NEVER force it backward to 'Processing'. Preserve their active fulfillment tracking state!
+                if order.order_status not in ['Processing', 'Partly_Dispatched', 'All_Dispatched', 'Delivered']:
+                    order.order_status = 'Processing'
+                    update_fields_list.append('order_status')
+
+                if update_fields_list:
+                    order.save(update_fields=update_fields_list)
+                    logger.info(f"✅ In-Flight Save: Secured payment flags for Order #{order.order_number} on fields: {update_fields_list}")
+                
+                return f"Payment verification cleared in flight window for order {order.order_number}. Active tracking state preserved."
 
     except Order.DoesNotExist:
-        return f"Identity tracking vector parameter {order_id} missing."
+        return f"Identity tracking vector parameter {order_id} missing on system logs."
+    except Exception as fatal_err:
+        logger.error(f"❌ CRITICAL TASK BLINK EXCEPTION: {str(fatal_err)}")
+        traceback.print_exc()
+        raise fatal_err
 
 
 @shared_task(name="tasks.send_bank_hold_confirmation_email_task")
@@ -341,26 +400,86 @@ def send_inquiry_notification_email_task(inquiry_id):
         return f"Inquiry record tracker ID {inquiry_id} not found."
 
 
-@shared_task(name="tasks.send_cancellation_initiation_email_task")
-def send_cancellation_initiation_email_task(order_id):
-    """Dispatches real-time security warnings when a user initiates a cancellation request."""
-    try:
-        order = Order.objects.get(id=order_id)
-        send_cancellation_initiation_email(order.order_number)
-        return f"🔒 Safety cancellation warning email dispatched down to customer: {order.email}"
-    except Order.DoesNotExist:
-        return f"Order entity tracker record ID {order_id} missing on system mount logs."
+# @shared_task(name="tasks.send_cancellation_initiation_email_task")
+# def send_cancellation_initiation_email_task(order_id, *args, **kwargs):
+#     """Safely handles single or multiple variables without breaking execution chains."""
+#     try:
+#         order = Order.objects.get(id=order_id)
+#         send_cancellation_initiation_email(order.order_number, **kwargs)
+#         return f"🔒 Safety warning sent down to customer: {order.email}"
+#     except Order.DoesNotExist:
+#         return f"Order record tracker ID {order_id} missing on system."
 
 
-@shared_task(name="tasks.send_cancellation_completion_email_task")
-def send_cancellation_completion_email_task(order_id):
-    """Processes final closure statements notifying clients that funds have been processed."""
+# @shared_task(name="tasks.send_cancellation_completion_email_task")
+# def send_cancellation_completion_email_task(order_id, *args, **kwargs):
+#     """Processes final closure statements notifying clients that funds have been processed."""
+#     try:
+#         order = Order.objects.get(id=order_id)
+#         send_cancellation_finalized_email(order.order_number, **kwargs)
+#         return f"✉️ Final statement notice sent to user: {order.email}"
+#     except Order.DoesNotExist:
+#         return f"Order record tracker ID {order_id} missing on system."
+
+
+@shared_task(bind=True, name="tasks.send_cancellation_initiation_email_task")
+def send_cancellation_initiation_email_task(self, order_id, refund_type, user_type, is_online_gateway, currency_code, net_cash_payout_str, **kwargs):
+    """
+    Asynchronous Celery Task Core for Cash/Gateway Refund Initiation.
+    Separates heavy mail construction layers from HTTP runtime execution threads.
+    """
+    
+    logger.info(f"🚀 Initializing cash refund initiation task for Order ID: {order_id} ({user_type})")
+    
     try:
-        order = Order.objects.get(id=order_id)
-        send_cancellation_finalized_email(order.order_number)
-        return f"✉️ Finalized completion notification dispatched down to user: {order.email}"
-    except Order.DoesNotExist:
-        return f"Order entity tracker record ID {order_id} missing on system mount logs."
+        # Feed the captured payload metrics cleanly into the email compiler
+        result = send_cancellation_initiation_email(
+            order_id=order_id,
+            user_type=user_type,
+            is_online_gateway=is_online_gateway,
+            currency_code=currency_code,
+            net_cash_payout_str=net_cash_payout_str
+        )
+        return f"✅ Cancellation initiation alert successfully dispatched for Order ID: {order_id}"
+        
+    except ObjectDoesNotExist as odne:
+        error_msg = f"❌ Task Aborted: Order registry node matching ID {order_id} missing on database records. Error: {str(odne)}"
+        logger.error(error_msg)
+        return error_msg
+        
+    except Exception as e:
+        error_msg = f"💥 Transient exception caught during initiation email assembly: {str(e)}"
+        logger.error(error_msg)
+        # Automated incremental retry buffer block to defend against gateway lag spikes
+        raise self.retry(exc=e, countdown=60, max_retries=3)
+
+
+@shared_task(bind=True, name="tasks.send_cancellation_completion_email_task")
+def send_cancellation_completion_email_task(self, order_id, refund_type, user_type, voucher_id_str, net_amount_str, **kwargs):
+    """
+    Asynchronous Celery Task Core for Voucher Refund Finalization.
+    Fires smoothly outside the main web worker thread to deliver the final balance certificates.
+    """
+    
+    logger.info(f"🚀 Initializing cancellation completion email worker for Order ID: {order_id} ({user_type})")
+    
+    try:
+        # Pass variables cleanly into our email rendering compilation loop
+        result = send_cancellation_completion_email(order_id, user_type, voucher_id_str, net_amount_str)
+        return f"✅ Cancellation completion certificate successfully sent for Order ID: {order_id}"
+        
+    except ObjectDoesNotExist as odne:
+        error_msg = f"❌ Task Aborted: Order registry node matching ID {order_id} cannot be found. Error: {str(odne)}"
+        logger.error(error_msg)
+        return error_msg
+        
+    except Exception as e:
+        error_msg = f"💥 Transient error during completion email generation loop: {str(e)}"
+        logger.error(error_msg)
+        # Safe incremental retry block to defend against gateway server lag spikes
+        raise self.retry(exc=e, countdown=60, max_retries=3)
+
+
 
 # For scheduled tasks to work, you must run two separate processes simultaneously: 
 # 1. The Worker: Executes the tasks.

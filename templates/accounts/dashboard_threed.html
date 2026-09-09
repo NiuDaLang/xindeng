@@ -1,76 +1,148 @@
+<!-- dashboard_threed.html -->
 <title>{{ page_title }}</title>
 
-<div id="dashboard_threed" class="subpage">
-    <!-- hero -->
-    <div class="dashboard_hero relative w-full min-h-[19rem] overflow-hidden shadow-xl border rounded-2xl border-gray-400 mb-6 p-6 flex flex-col md:grid md:grid-cols-12 items-center justify-between gap-6">
-        <!-- COLUMN 1: SEASONAL SOLAR TIMELINE LOGIC GATE (Grid Span: 4) -->
-        <div class="z-10 w-full md:col-span-4 flex flex-col items-center justify-center space-y-3 p-2 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-            {% if solar_term %}
-                <div class="solar-timeline flex items-center justify-center gap-4 select-none">
-                    <!-- Active Solar Term State -->
-                    <div class="flex flex-col text-center">
-                        <span id="solar_term" class="text-2xl font-black tracking-wide">{{ solar_term }}</span>
-                        <span id="solar_term_en" class="text-[11px] uppercase tracking-wider font-mono opacity-80 mt-0.5">{{ solar_term_en }}</span>
-                    </div>
-                    
-                    {% if next_solar_term %}
-                    <!-- Restored Your Previous Custom Arrow Layout Wrapper -->
-                    <div class="solar-arrow-container">
-                        <div class="solar-arrow"></div>
-                    </div>
+<!-- ✅ No hidden elements needed - sidebar already has threed_link -->
+<div id="dashboard_threed" class="subpage flex flex-col gap-6 animate-fade-in w-full text-neutral font-sans select-none">
+  <!-- 
+  ================================================================
+   🎨 FIRST ROW: PERSISTENT STANDARD REGISTRY HERO
+  ================================================================ 
+  -->
+  {% include 'accounts/partials/standard_horizontal_hero.html' %}
 
-                    <!-- Approaching Solar Term State -->
-                    <div class="flex flex-col text-center">
-                        <span id="next_solar_term" class="text-2xl font-black tracking-wide opacity-90">{{ next_solar_term }}</span>
-                        <span id="next_solar_term_en" class="text-[11px] uppercase tracking-wider font-mono opacity-70 mt-0.5">{{ next_solar_term_en }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-            {% endif %}
-            
-            <!-- Real-time Text Date Output -->
-            <div id="dynamic-date" hx-preserve="true" class="text-[11px] font-mono font-bold tracking-widest bg-black/20 px-3 py-1 rounded-full border border-white/10 uppercase"></div>
-        </div>
-        
-        <!-- COLUMN 2: DYNAMIC BILINGUAL TITLES (Grid Span: 4) -->
-        <!-- 🌟 THE CENTERING FIX: Swapped md:text-left for md:text-center to balance headers perfectly -->
-        <div class="z-10 w-full text-center md:text-center md:col-span-4 space-y-1.5 self-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-            <h2 class="text-xl font-bold text-white uppercase tracking-wider font-sans opacity-90">3D Experiences</h2>
-            <h3 class="text-3xl font-black text-white tracking-normal font-sans">3D體驗場景</h3>
-            <span class="text-[0.65rem] uppercase tracking-[0.2em] text-teal-300 font-mono font-bold block text-center">Empty Yourself｜放空自我</span>
-        </div>
+  <!-- 
+  ================================================================
+   🎨 SECOND ROW: CURATED 3D IMMERSIVE PLATFORMS MESH
+  ================================================================ 
+  -->
+  <div class="w-full space-y-4">
+    <h3 class="text-xs sm:text-sm font-bold tracking-widest font-serif text-base-content/80 uppercase border-b border-base-200 pb-2 flex items-center gap-2 select-none">
+      <i class="fa-solid fa-cubes text-info animate-pulse"></i>
+      <div class="flex flex-wrap">
+        <span>Collector's Immersive 3D Spaces</span>
+        <span>｜藏家專屬立體展廳</span>
+      </div>
+    </h3>
 
-        <!-- COLUMN 3: PROTECTED ANALOG CLOCK MOUNT (Grid Span: 4) -->
-        <!-- 🌟 THE CENTERING FIX: Swapped md:justify-end for md:justify-center to center the clock dial axis -->
-        <div class="z-10 w-full md:col-span-4 flex items-center justify-center md:justify-center pr-0 select-none">
-            <div class="w-[200px] h-[200px] relative flex items-center justify-center flex-shrink-0">
-                {% include 'accounts/partials/clock_analog.html' %}
-            </div>
-        </div>
-
-        <!-- BACKGROUND VISUAL IMAGE ASSET COVER (z-0 sits safely beneath input/output contents) -->
-        <img src="/media/hero/red_leaves.jpeg" alt="Background" class="absolute left-0 top-0 w-full h-full object-cover z-0 rounded-2xl">
-        <div class="absolute inset-0 bg-black/15 z-0 pointer-events-none"></div> <!-- Soft overlay maximizes textual readability profiles -->
-    </div>
-    
     <!-- scene collections -->
-    <div class="grid grid-cols-2 gap-4 my-5">
-        <!-- 煙花 -->
-        <div class="card bg-base-100 w-full shadow-sm">
-            <figure class="px-10 pt-10">
-                <img
-                src="/static/three/firework/hanabi_demo.gif"
-                alt="Firework Thumbnail Gif"
-                class="rounded-xl" />
-            </figure>
-            <div class="card-body items-center text-center">
-                <h2 class="card-title">Symphony of Embers｜瞬華流景</h2>
-                <p>An immersive 3D canvas capturing the fleeting, brilliant dance of light.</p>
-                <p>沉浸式 3D 光影畫布，捕捉夜空中轉瞬即逝的璀璨絕色。</p>
-                <div class="card-actions">
-                <a href="{% url 'firework' %}" class="btn btn-primary">Ignite the Night｜點燃煙花</a>
-                </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full items-start my-2">
+      
+      <!-- CARD 1: SYMPHONY OF EMBERS (Original Firework Scene) -->
+      <div class="card bg-base-100/40 border-2 border-info/20 shadow-sm rounded-2xl transition-all duration-300 hover:shadow-md relative overflow-hidden flex flex-col justify-between group h-full">
+        <!-- PRODUCT VISUAL COVER ASSET RAMP -->
+        <figure class="relative aspect-video w-full overflow-hidden border-b border-base-200 bg-neutral/10 shrink-0">
+          <a href="{% url 'firework' %}" class="w-full h-full block relative group/link">
+            <img 
+              src="/static/three/firework/hanabi_demo.gif" 
+              alt="Firework Thumbnail Gif" 
+              class="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover/link:scale-105" />
+            <div class="absolute inset-0 bg-neutral-950/0 transition-colors duration-300 group-hover/link:bg-neutral-950/20 cursor-pointer z-10"></div>
+            <i class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 fa-solid fa-expand fa-lg opacity-0 scale-95 transition-all duration-300 group-hover/link:opacity-100 group-hover/link:scale-100 text-white z-20 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]"></i>
+          </a>
+          <!-- TOP LEFT VISUAL CHIP BADGES -->
+          <div class="absolute top-3 left-3 z-20 flex flex-wrap gap-1 select-none pointer-events-none">
+            <span class="badge badge-primary badge-xs font-sans text-[9px] font-bold px-1.5 py-1 rounded shadow-sm border-0">Interactive</span>
+            <span class="badge badge-error badge-xs font-sans text-[9px] font-bold px-1.5 py-1 rounded shadow-sm border-0">人气！</span>
+          </div>
+        </figure>
+
+        <!-- LOWER CORE INFRASTRUCTURE CONTENT AREA -->
+        <div class="flex-1 p-5 flex flex-col justify-between gap-4 font-sans text-xs">
+          <div class="space-y-2">
+            <div class="flex items-start gap-2">
+              <i class="fa-solid fa-wand-magic-sparkles text-primary/50 text-[11px] mt-1 shrink-0"></i>
+              <div class="space-y-0.5 min-w-0 flex-1">
+                <span class="font-serif font-black text-sm tracking-wide text-base-content/90 block whitespace-normal break-words leading-tight">Symphony of Embers｜瞬華流景</span>
+                <span class="text-[10px] font-mono tracking-wider opacity-40 uppercase block">Engine: Three.js / Particle WebGL</span>
+              </div>
             </div>
+            <p class="text-[11px] font-sans font-light text-base-content/60 leading-relaxed">
+              An immersive 3D canvas capturing the fleeting, brilliant dance of light in the nighttime vault. Full micro-parameter physics controller included.
+              <span class="block mt-1 font-medium text-[10px] text-base-content/50">沉浸式 3D 光影畫布，捕捉夜空中轉瞬即逝的璀璨絕色。支持微觀粒子物理參數實時調控。</span>
+            </p>
+          </div>
+
+          <!-- TRAY FOOTING DATA ELEMENTS MATRIX -->
+          <div class="border-t border-info/10 pt-3 flex items-center justify-between gap-4 select-none shrink-0">
+            <!-- ✅ Added hx-on:click for sidebar state preservation -->
+            <a href="{% url 'firework' %}" 
+               hx-on:click="updateActiveLink(this)"
+               id="threed_label"
+               class="btn btn-xs btn-primary font-bold w-full rounded-lg h-8 min-h-0 shadow-sm transition-all duration-200">
+              Ignite the Night｜點燃煙花
+            </a>
+          </div>
         </div>
+      </div>
+
+      <!-- CARD 2: MOCK SCENE A (Zen Sanctuary) -->
+      <div class="card bg-base-100/40 border-2 border-info/20 shadow-sm rounded-2xl transition-all duration-300 hover:shadow-md relative overflow-hidden flex flex-col justify-between group h-full">
+        <figure class="relative aspect-video w-full overflow-hidden border-b border-base-200 bg-neutral/10 shrink-0">
+          <a href="#" class="w-full h-full block relative group/link">
+            <img 
+              src="https://placehold.co/600x400" 
+              alt="Zen Sanctuary Thumbnail" 
+              class="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover/link:scale-105"
+              onerror="this.src='https://placehold.co/600x400'" />
+            <div class="absolute inset-0 bg-neutral-950/0 transition-colors duration-300 group-hover/link:bg-neutral-950/20 cursor-pointer z-10"></div>
+            <i class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 fa-solid fa-door-open fa-lg opacity-0 scale-95 transition-all duration-300 group-hover/link:opacity-100 group-hover/link:scale-100 text-white z-20 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]"></i>
+          </a>
+          <div class="absolute top-3 left-3 z-20 flex flex-wrap gap-1 select-none pointer-events-none">
+            <span class="badge badge-accent badge-xs font-sans text-[9px] font-bold px-1.5 py-1 rounded shadow-sm border-0">Environment</span>
+            <span class="badge badge-outline border-base-300 bg-black/20 text-white text-[9px] font-bold px-1.5 py-1 rounded shadow-sm">Locked</span>
+          </div>
+        </figure>
+
+        <div class="flex-1 p-5 flex flex-col justify-between gap-4 font-sans text-xs">
+          <div class="space-y-2">
+            <div class="flex items-start gap-2">
+              <i class="fa-solid fa-mountain text-primary/50 text-[11px] mt-1 shrink-0"></i>
+              <div class="space-y-0.5 min-w-0 flex-1">
+                <span class="font-serif font-black text-sm tracking-wide text-base-content/90 block whitespace-normal break-words leading-tight">Whispering Zen Chamber｜靜水幽居</span>
+                <span class="text-[10px] font-mono tracking-wider opacity-40 uppercase block">Engine: Spline 3D / WebXR Ready</span>
+              </div>
+            </div>
+            <p class="text-[11px] font-sans font-light text-base-content/60 leading-relaxed">
+              Step into a digital spatial architectural retreat featuring real-time seasonal ambient shadow changes, custom-tuned physics soundscapes, and VR asset interaction.
+              <span class="block mt-1 font-medium text-[10px] text-base-content/50">步入虛擬空間建築庭院。具備即時光影季節交替、定制化物理聲學環境，並全面兼容 VR 設備。</span>
+            </p>
+          </div>
+
+          <div class="border-t border-info/10 pt-3 flex items-center justify-between gap-4 select-none shrink-0">
+            <button disabled class="btn btn-xs btn-neutral border border-base-300 font-bold w-full rounded-lg h-8 min-h-0 shadow-sm cursor-not-allowed opacity-50">
+              <i class="fa-solid fa-lock mr-1 text-[10px]"></i>VIP Level 2 Exclusive｜解鎖二級藏家
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ CARD 3: Additional placeholder for future scenes -->
+      <div class="card bg-base-100/40 border-2 border-info/20 shadow-sm rounded-2xl transition-all duration-300 hover:shadow-md relative overflow-hidden flex flex-col justify-between group h-full opacity-60">
+        <figure class="relative aspect-video w-full overflow-hidden border-b border-base-200 bg-neutral/20 shrink-0">
+          <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-base-200/50 to-base-300/30">
+            <div class="text-center select-none">
+              <i class="fa-solid fa-plus-circle text-4xl text-base-content/20"></i>
+              <p class="text-[10px] font-mono text-base-content/30 mt-2">Coming Soon｜敬請期待</p>
+            </div>
+          </div>
+        </figure>
+        <div class="flex-1 p-5 flex flex-col justify-between gap-4 font-sans text-xs">
+          <div class="space-y-2">
+            <div class="flex items-start gap-2">
+              <i class="fa-solid fa-cube text-base-content/20 text-[11px] mt-1 shrink-0"></i>
+              <div class="space-y-0.5 min-w-0 flex-1">
+                <span class="font-serif font-black text-sm tracking-wide text-base-content/40 block whitespace-normal break-words leading-tight">Future Scene｜未來展廳</span>
+                <span class="text-[10px] font-mono tracking-wider opacity-20 uppercase block">More immersive experiences loading...</span>
+              </div>
+            </div>
+            <p class="text-[11px] font-sans font-light text-base-content/30 leading-relaxed">
+              New 3D environments are being curated. Check back soon for more spatial journeys.
+              <span class="block mt-1 font-medium text-[10px] text-base-content/30">全新的 3D 沉浸式場景正在策展中，敬請期待更多空間旅程。</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
     </div>
+  </div>
 </div>

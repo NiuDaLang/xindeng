@@ -483,6 +483,16 @@ def cart(request):
     is_history_navigation = request.headers.get("HX-History-Restore-Request") == "true"
 
     # ─────────────────────────────────────────────────────────────
+    # 🧹 GLOBAL SESSION WORKSPACE CLEANUP SCRIPT
+    # ─────────────────────────────────────────────────────────────
+    # This runs unconditionally on every single GET landing pass of the Cart view,
+    # ensuring incomplete or ghost checkout snapshots are wiped instantly.
+    if 'cached_checkout_form_data' in request.session:
+        del request.session['cached_checkout_form_data']
+        request.session.modified = True
+        print("🧹 [Session Sanitation] Stale cached_checkout_form_data successfully purged upon Cart initialization.")
+
+    # ─────────────────────────────────────────────────────────────
     # CASE A: DELIBERATE FRESH LANDING (Forward navigation)
     # ─────────────────────────────────────────────────────────────
     if not is_history_navigation:
@@ -696,6 +706,7 @@ def calculate_shipping(request):
         return response
     # else:
     cart_items = CartItem.objects.filter(cart=cart, is_active=True)
+    print("cart: cart_items -- ", cart_items)
     physical_items = cart_items.filter(product_variation__product__is_physical=True)   
     raw_shipping_cost = calculate_shipping_cost(request, physical_items, available_services)
     formatted_shipping_cost = intcomma(f"{raw_shipping_cost:.2f}")
@@ -1214,6 +1225,7 @@ def update_cart_item_qty(request, item_id):
     broadcast_cart_change(request)
     return response
 
+
 @login_required(login_url="login")
 @require_POST
 def add_wish_to_cart(request, wish_id):
@@ -1349,7 +1361,7 @@ def add_wish_to_cart(request, wish_id):
             triggers.update(costs_triggers)
         if oob_updates:
             final_oob_fragments.extend(oob_updates)    
-        
+
     else:
         # update costs_calculations
         # addresses = Address.objects.filter(profile__user=user) if user else Address.objects.none()
@@ -1419,6 +1431,7 @@ def add_wish_to_cart(request, wish_id):
         response['HX-Trigger'] = json.dumps(triggers)
 
     return response
+
 
 @require_POST
 def delete_cart_item(request, item_id):
@@ -1520,7 +1533,7 @@ def delete_cart_item(request, item_id):
         has_e_items = updated_cart_items.filter(product_variation__product__is_physical=False, product_variation__product__is_voucher=False).exists()
         has_cash_voucher_items = updated_cart_items.filter(product_variation__product__is_voucher=True).exists()
         cash_voucher_balance = get_cash_voucher_balance(request) if user is not None else 0
-        
+
         total_payable, total_payable_foreign = get_grand_total_before_voucher(request, cart)
         max_voucher_enterable = min(cash_voucher_balance, total_payable)
         
@@ -1671,7 +1684,7 @@ def add_to_wishlist(request, item_id):
         has_e_items = updated_cart_items.filter(product_variation__product__is_physical=False, product_variation__product__is_voucher=False).exists()
         has_cash_voucher_items = updated_cart_items.filter(product_variation__product__is_voucher=True).exists()
         cash_voucher_balance = get_cash_voucher_balance(request) if user is not None else 0
-        
+
         total_payable, total_payable_foreign = get_grand_total_before_voucher(request, cart)
         max_voucher_enterable = min(cash_voucher_balance, total_payable)
         
@@ -1784,6 +1797,16 @@ def delete_wishlist_item(request, wish_id):
 
     elif source == "cart":
         response_html = render_to_string('store/partials/wishlist_row.html', context, request=request)
+
+        # 🔒 THE EMPTY STATE SHIELD: If the last item was just deleted, 
+        # intercept and wrap the template with a targeted out-of-band swap selector.
+        if not updated_wishlist.exists():
+            print(f"🧹 Wishlist is now empty for user {user}. Injecting OOB empty canvas reset.")
+            response_html = f"""
+                <div id="wishlist_wrapper_ul" hx-swap-oob="true" class="wishlist_wrapper flex flex-col divide-y divide-base-200/50 w-full">
+                    {response_html}
+                </div>
+            """.strip()
 
 
     broadcast_cart_change(request)
@@ -1944,7 +1967,7 @@ def checkout(request):
         display_mode = "VOUCHER_ONLY"
     else:
         display_mode = "EPRODUCT_ONLY"
-    
+
     checkout_info, _ = CheckoutInfo.objects.update_or_create(
         cart=cart,
         defaults={
@@ -2008,6 +2031,7 @@ def checkout(request):
     # 2. POST ORDER SUBMISSION PIPELINE
     # -------------------------------------------------------------
     if request.method == "POST":
+        print("POST REQUEST")
         post_data = request.POST.copy()
         
         if display_mode in ["EPRODUCT_ONLY", "VOUCHER_ONLY"]:
@@ -2033,6 +2057,7 @@ def checkout(request):
                 'address_line_2': proforma_invoice_form.cleaned_data.get('address_line_2', ''),
                 'city': proforma_invoice_form.cleaned_data.get('city', ''),
                 'state_province_region': proforma_invoice_form.cleaned_data.get('state_province_region', ''),
+                'country': proforma_invoice_form.cleaned_data.get('country', ''),
                 'postal_code': proforma_invoice_form.cleaned_data.get('postal_code', ''),
                 'recipient_email': proforma_invoice_form.cleaned_data.get('recipient_email', ''),
                 'gift_message': proforma_invoice_form.cleaned_data.get('gift_message', ''),
@@ -2040,6 +2065,26 @@ def checkout(request):
                 'do_not_send_invoice': proforma_invoice_form.cleaned_data.get('do_not_send_invoice', False),
             }
             current_session_key = request.session.session_key or _cart_id(request)
+            applied_voucher_str = voucher_data.get("applied_voucher_amount", "0.00")
+            target_voucher_lock = Decimal(str(applied_voucher_str).replace(",", ""))
+
+            if user.is_authenticated and target_voucher_lock > 0:
+                true_allowed_balance = get_cash_voucher_balance(request)
+
+                if target_voucher_lock > true_allowed_balance:
+                    # 🛑 BLOCK FRAUD: The user is trying to double-spend funds held by a pending order!
+                    if request.headers.get("HX-Request"):
+                        response = HttpResponse(status=200)
+                        response["HX-Trigger"] = json.dumps({
+                            "errorMsg": {
+                                "title": "Insufficient Funds｜現金券餘額不足",
+                                "html": "Your remaining voucher balance is currently allocated to an unpaid pending order hold.<br>您的現金券餘額目前已分配至另一筆待付款的保留訂單中，無法重複折抵。",
+                                "redirect_url": "/carts/cart"
+                            }
+                        })
+                        return response
+                    messages.error(request, "Voucher funds are allocated to another pending order.｜您的現金券金額已分配至另一筆待付款的保留訂單。")
+                    return redirect("cart")
 
             request.session['cached_checkout_form_data'] = form_payload_cache
             request.session.modified = True
@@ -2235,7 +2280,7 @@ def checkout(request):
                     "applied_voucher_amount_foreign": checkout_info.applied_voucher_amount_foreign,
                     "total_due_foreign": checkout_info.total_due_foreign,
                     "locked_exchange_rate": checkout_info.locked_exchange_rate,
-                    "currency_code": request.session.get('foreign_currency_code', 'HKD'),
+                    "currency_code": request.COOKIES.get('user_currency', 'HKD'),
                 }
 
                 if proforma_invoice:
@@ -2343,6 +2388,10 @@ def checkout(request):
                 print(f"   👉 Field [{field}]: {error_list}")
             print("==================================================\n")
 
+            if 'cached_checkout_form_data' in request.session:
+                del request.session['cached_checkout_form_data']
+                request.session.modified = True
+
             error_promoted = False
             for field, error_list in proforma_invoice_form.errors.items():
                 for error in error_list:
@@ -2359,13 +2408,58 @@ def checkout(request):
     # -------------------------------------------------------------
     # 3. GET INITIAL VIEW SETUP LIFECYCLE
     # -------------------------------------------------------------
-    else:
+    elif request.method == "GET":
+        print("GET REQUEST")
         cached_data = request.session.get('cached_checkout_form_data', None)
+        # cached_data:  {
+        #     'email': 'gogocfa@yahoo.co.jp', 
+        #     'recipient_first_name': None, 
+        #     'recipient_last_name': None, 
+        #     'recipient_mobile_area': '', 
+        #     'recipient_mobile_number': None, 
+        #     'address_line_1': None, 
+        #     'address_line_2': None, 
+        #     'city': None, 
+        #     'state_province_region': '', 
+        #     'postal_code': None, 
+        #     'recipient_email': None, 
+        #     'gift_message': '', 
+        #     'delivery_note': '', 
+        #     'do_not_send_invoice': False
+        # }
         
         if cached_data:
+            # ─────────────────────────────────────────────────────────────
+            # 🔍 THE ADDRESS DRIFT DETECTION GATE
+            # ─────────────────────────────────────────────────────────────
+            # If an address instance exists, cross-reference its key tracking values 
+            # against the cached session dictionary to verify accuracy.
+            if address:
+                # Safely normalize values to handle None vs. empty string comparisons
+                drift_detected = (
+                    (cached_data.get('address_line_1') or '').strip() != (address.address_line_1 or '').strip() or
+                    (cached_data.get('address_line_2') or '').strip() != (address.address_line_2 or '').strip() or
+                    (cached_data.get('city') or '').strip() != (address.city or '').strip() or
+                    (cached_data.get('state_province_region') or '').strip() != (state or '').strip() or
+                    (cached_data.get('country') or '').strip() != (country or '').strip()
+                )
+                
+                if drift_detected:
+                    print("♻️ [Address Drift Caught] User amended their destination profile in Cart. Purging stale form cache.")
+                    # Wipe out the old cached data so the fallback initial_data block triggers automatically
+                    cached_data = None
+                    request.session.pop('cached_checkout_form_data', None)
+                    request.session.modified = True
+
+        # ─────────────────────────────────────────────────────────────
+        # FORM INITIALIZATION & RENDERING CONTROLLERS
+        # ─────────────────────────────────────────────────────────────
+        # If cache is valid and matching, use it. Otherwise, populate fresh from DB!
+        if cached_data:
+            print("✅ [Form Loader] Utilizing verified matching session cached_data.")
             proforma_invoice_form = ProformaInvoiceForm(initial=cached_data, display_mode=display_mode)
-            print("🔄 SESSION RESTORATION PASS: Re-hydrated input fields out of secure memory storage.")
         else:
+            print("📦 [Form Loader] Cache missing or cleared. Initializing fresh initial_data from primary Address model.")
             initial_data = {
                 "email": user.email if user.is_authenticated else None,
                 "recipient_first_name": address.recipient_first_name if address else None,
@@ -2384,6 +2478,7 @@ def checkout(request):
                 "is_verified_by_google": True if address else False,            
             }
             proforma_invoice_form = ProformaInvoiceForm(initial=initial_data, display_mode=display_mode)
+            print("initial_data: ", initial_data)
 
     # 💡 FALL-THROUGH SAFETY POINT: If the POST form fails validation,
     # execution skips the "else:" block below and moves straight to widget attributes styling and rendering.

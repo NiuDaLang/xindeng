@@ -418,6 +418,25 @@ class UserPerk(models.Model):
     
         return self.perk.valid_to
 
+    @property
+    def formatted_personalized_expiry(self):
+        """
+        Returns a cleanly formatted string of the user's personalized expiry date.
+        Ensures absolute structural symmetry with static perk expiration metrics.
+        """
+        expiry_date = self.personalized_expiry # Invokes your complex custom date-joins or birthday calculations
+        
+        if expiry_date:
+            # Check if it returned an aware datetime or raw date object, then string-format
+            # %-m and %-d remove leading zeros (e.g., 2026-03-31) perfectly matching your style
+            try:
+                return f'Expiry｜有效至 {expiry_date.strftime("%Y-%-m-%-d")}'
+            except AttributeError:
+                # Fallback wrapper if it returned a standard datetime.date object instead of datetime
+                return f'Expiry｜有效至 {expiry_date.strftime("%Y-%m-%d")}'
+                
+        return "No Expiry｜不限時"
+
 
 class CustomerVoucher(models.Model):
     id                          = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -469,9 +488,10 @@ class CustomerVoucher(models.Model):
         🚀 Lifespan Controller: Automatically calculates and sets a 1-year 
         expiry date for unclaimed guest vouchers when they are first generated.
         """
-        if not self.pk and not self.is_claimed and not self.expiry_date:
-            # Market Standard: Enforce a strict 365-day claim window limit
+        if not self.pk and not self.expiry_date:
+            from datetime import timedelta
             self.expiry_date = timezone.now() + timedelta(days=365)
+
         super().save(*args, **kwargs)
 
     def is_expired(self):

@@ -73,6 +73,9 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google', # Google specific
 ]
 
+if DEBUG:
+    INSTALLED_APPS.append('dev_commands')
+
 SITE_ID = 1 # Matches the ID in the Django Admin 'Sites' section
 
 AUTHENTICATION_BACKENDS = [

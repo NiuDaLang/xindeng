@@ -1,105 +1,90 @@
 <title>{{ page_title }}</title>
+{% load static %}
+{% load humanize %}
 
-<div id="dashboard_addresses" class="subpage">
-    <!-- hero -->
-    <div class="dashboard_hero relative w-full min-h-[19rem] overflow-hidden shadow-xl border rounded-2xl border-gray-400 mb-6 p-6 flex flex-col md:grid md:grid-cols-12 items-center justify-between gap-6">
-        <!-- COLUMN 1: SEASONAL SOLAR TIMELINE LOGIC GATE (Grid Span: 4) -->
-        <div class="z-10 w-full md:col-span-4 flex flex-col items-center justify-center space-y-3 p-2 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-            {% if solar_term %}
-                <div class="solar-timeline flex items-center justify-center gap-4 select-none">
-                    <!-- Active Solar Term State -->
-                    <div class="flex flex-col text-center">
-                        <span id="solar_term" class="text-2xl font-black tracking-wide">{{ solar_term }}</span>
-                        <span id="solar_term_en" class="text-[11px] uppercase tracking-wider font-mono opacity-80 mt-0.5">{{ solar_term_en }}</span>
-                    </div>
-                    
-                    {% if next_solar_term %}
-                    <!-- Restored Your Previous Custom Arrow Layout Wrapper -->
-                    <div class="solar-arrow-container">
-                        <div class="solar-arrow"></div>
-                    </div>
-
-                    <!-- Approaching Solar Term State -->
-                    <div class="flex flex-col text-center">
-                        <span id="next_solar_term" class="text-2xl font-black tracking-wide opacity-90">{{ next_solar_term }}</span>
-                        <span id="next_solar_term_en" class="text-[11px] uppercase tracking-wider font-mono opacity-70 mt-0.5">{{ next_solar_term_en }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-            {% endif %}
-            
-            <!-- Real-time Text Date Output -->
-            <div id="dynamic-date" hx-preserve="true" class="text-[11px] font-mono font-bold tracking-widest bg-black/20 px-3 py-1 rounded-full border border-white/10 uppercase"></div>
-        </div>
-        
-        <!-- COLUMN 2: DYNAMIC BILINGUAL TITLES (Grid Span: 4) -->
-        <!-- 🌟 THE CENTERING FIX: Swapped md:text-left for md:text-center to balance headers perfectly -->
-        <div class="z-10 w-full text-center md:text-center md:col-span-4 space-y-1.5 self-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-            <h2 class="text-xl font-bold text-white uppercase tracking-wider font-sans opacity-90">Address Book</h2>
-            <h3 class="text-3xl font-black text-white tracking-normal font-sans">地址簿</h3>
-            <span class="text-[0.65rem] uppercase tracking-[0.2em] text-teal-300 font-mono font-bold block text-center"><em>Your curated sanctuaries</em><br>居安有方，落筆生根。</span>
+<div id="dashboard_addresses" class="subpage w-full animate-fade-in space-y-6">
+    <!-- ================================================================
+         🎨 FIRST ROW: SEASONAL HERO & CLOCK INTEGRATION WIDGET
+         ================================================================ -->
+    {% include 'accounts/partials/standard_horizontal_hero.html' %}
+    <!-- ================================================================
+         🎨 SECOND ROW: ADDRESS DIRECTORY MESH GRID
+         ================================================================ -->
+    <div class="w-full space-y-4">
+        <div class="flex items-center justify-between border-b border-base-200 pb-2 select-none">
+            <h3 class="text-xs sm:text-sm font-bold tracking-widest font-serif text-base-content/80 uppercase flex items-center gap-2">
+                <i class="fa-solid fa-map-location-dot text-primary"></i> Shipping Registries Directory｜地址簿明細
+            </h3>
         </div>
 
-        <!-- COLUMN 3: PROTECTED ANALOG CLOCK MOUNT (Grid Span: 4) -->
-        <!-- 🌟 THE CENTERING FIX: Swapped md:justify-end for md:justify-center to center the clock dial axis -->
-        <div class="z-10 w-full md:col-span-4 flex items-center justify-center md:justify-center pr-0 select-none">
-            <div class="w-[200px] h-[200px] relative flex items-center justify-center flex-shrink-0">
-                {% include 'accounts/partials/clock_analog.html' %}
-            </div>
-        </div>
-
-        <!-- BACKGROUND VISUAL IMAGE ASSET COVER (z-0 sits safely beneath input/output contents) -->
-        <img src="/media/hero/red_leaves.jpeg" alt="Background" class="absolute left-0 top-0 w-full h-full object-cover z-0 rounded-2xl">
-        <div class="absolute inset-0 bg-black/15 z-0 pointer-events-none"></div> <!-- Soft overlay maximizes textual readability profiles -->
-    </div>
-    
-    <!-- addresses -->
-    <div class="flex gap-4 my-5">
-        <div id="address-list-container" class="w-full grid grid-cols-2 justify-between gap-[4%] gap-y-6">
+        <!-- RE-RENDERABLE DATA LIST PACK CONTAINER -->
+        <div id="address-list-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full items-start">
             {% include 'accounts/partials/address_list_partial.html' %}
         </div>
-    </div>
-    
-    <!-- add new button -->
-    <div class="relative card w-full min-h-[5rem] justify-center items-center ">
-        <button 
-            class="absolute botttom-3 m-auto btn btn-square w-[3rem] h-[3rem]"
-            onclick="this.blur(); my_modal_1.showModal(); openEmptyAddressForm('create_address_form');"
-        >
-            <i class="fa-solid fa-circle-plus fa-2xl"></i>
-        </button>
-
-    </div>
-
-    <!-- add new 【MODAL】-->
-    <dialog id="my_modal_1" class="modal">
-        <div class="modal-box relative">
-            <h3 class="w-full text-center mt-5 font-bold">Add New Address｜添加新地址</h3>
-            <div class="form_wrapper relative w-full flex flex-col modal-action pb-[2rem] px-[3rem] mt-0">
-                <!-- form -->
-                <div id="create_address_modal_content_area" class="w-full">
-                    {% include 'accounts/partials/address_form.html' %}
-                </div>
-                <!-- close button -->
-                <form method="dialog">
-                    <button class="btn btn-sm btn-circle btn-ghost absolute -right-[5px] -top-[50px]" onclick="closeAddressForm('create_address_form')">✕</button>
-                </form>
-            </div>
+        
+        <!-- ADD REGISTRY QUICK ACTION FLOATER -->
+        <div class="relative card w-full min-h-[5rem] justify-center items-center pt-4">
+            <button class="btn btn-primary btn-circle w-[3.5rem] h-[3.5rem] shadow-lg shadow-primary/20 transition-all hover:scale-105"
+                    onclick="this.blur(); window.openEmptyAddressForm('create_address_form'); my_modal_1.showModal();">
+                <i class="fa-solid fa-plus text-xl text-white"></i>
+            </button>
         </div>
-    </dialog>
-
-    <!-- update 【MODAL】-->
-    <dialog id="my_modal_2" class="modal">
-        <div class="modal-box relative">
-            <h3 class="w-full text-center mt-5 font-bold">Update Address｜更新地址</h3>
-            <div class="form_wrapper relative w-full flex flex-col modal-action pb-[2rem] px-[3rem] mt-0">
-                <!-- form -->
-                <div id="modal_content_area" class="w-full"></div>
-                <!-- close button -->
-                <form method="dialog">
-                    <button class="btn btn-sm btn-circle btn-ghost absolute -right-[5px] -top-[50px]" onclick="closeAddressForm('update_address_form')">✕</button>
-                </form>
-            </div>
-        </div>
-    </dialog>
+    </div>
 </div>
+
+<!-- ================================================================
+     🛡️ DIALOG FRAMEWORKS (MODAL STRUCTURE MANAGEMENT)
+     ================================================================ -->
+<dialog id="my_modal_1" class="modal bg-neutral-900/40 backdrop-blur-sm z-50">
+    <div class="modal-box rounded-2xl border border-info/20 shadow-xl bg-base-100 max-w-lg p-3 xs:p-6 relative">
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-4 top-4 text-base-content/40" onclick="window.closeAddressForm('create_address_form'); my_modal_1.close()">✕</button>
+        <h3 class="font-serif font-bold text-sm tracking-wider text-base-content/80 border-b border-base-200 pb-2">Add New Address｜添加新地址</h3>
+        <div id="create_address_modal_content_area" class="w-full pt-4">
+            {% include 'accounts/partials/address_form.html' %}
+        </div>
+    </div>
+</dialog>
+
+<dialog id="my_modal_2" class="modal bg-neutral-900/40 backdrop-blur-sm z-50">
+    <div class="modal-box rounded-2xl border border-info/20 shadow-xl bg-base-100 max-w-lg p-3 xs:p-6 relative">
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-4 top-4 text-base-content/40" onclick="window.closeAddressForm('update_address_form'); my_modal_2.close()">✕</button>
+        <h3 class="font-serif font-bold text-sm tracking-wider text-base-content/80 border-b border-base-200 pb-2">Update Address｜更新地址</h3>
+        <div id="modal_content_area" class="w-full pt-4"></div>
+    </div>
+</dialog>
+
+<!-- =========================================================================
+     ⚙️ HIGH-SECURITY FLICKER PROTECTION & INTERACTIVE LOGIC HARDENING
+     ========================================================================= -->
+<script>
+  (function() {
+      console.log("⚙️ Profile Autocomplete Debounce Protection Engine Engaged.");
+      const formElement = document.getElementById("profile_form");
+      if (!formElement) return;
+
+      // 🌟 STEP 3 DEBOUNCE SOLUTION ENFORCED
+      // Wraps inputs inside a 250ms timer window. This prevents your script from 
+      // aggressively querying Google API modules on every micro keystroke, 
+      // permanently ending the focus-trap grey screen flicker exception.
+      let verificationDebounceTimeout;
+      const targetAddressField = document.getElementById("id_address_line_1");
+
+      if (targetAddressField) {
+          targetAddressField.addEventListener("input", () => {
+              clearTimeout(verificationDebounceTimeout);
+              verificationDebounceTimeout = setTimeout(() => {
+                  // If autocomplete loops are registered globally, fire them cleanly 
+                  // only when the customer stops typing
+                  if (typeof window.updatePayButtonState === "function") {
+                      window.updatePayButtonState();
+                  }
+              }, 250); 
+          });
+      }
+
+      // Automatically re-mount and tick analog clock indicators inside the active viewport [INDEX]
+      if (typeof initializeAnalogClockLayout === "function") {
+          initializeAnalogClockLayout();
+      }
+  })();
+</script>

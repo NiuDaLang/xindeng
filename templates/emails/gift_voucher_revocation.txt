@@ -1,0 +1,25 @@
+<!-- templates/emails/gift_voucher_revocation.txt -->
+Hṛdayadīpa (हृदयदीप)｜心燈 - Gift Voucher Cancellation Notice｜電子禮品卡註銷通知
+
+Hello / 您好,
+
+We are writing to inform you that the electronic store credit voucher gifted to you by {{ order.email }} has been deactivated because the associated purchase transaction was cancelled and refunded by the original buyer.
+
+[🛑 VOUCHER CANCELLED｜禮品卡已註銷失效]
+--------------------------------------------------
+Token Reference｜憑證編號: #{{ short_ids_str }}
+--------------------------------------------------
+
+The security PIN and claim link associated with this store credit token are no longer active. If you have not claimed or bound this token balance to a registered profile wallet, the credit has been permanently voided by our system.
+此商店代金券之驗證碼與兌換連結目前已被系統安全註銷。如您先前未將其核銷綁定至您的註冊會員錢包，該筆額度已正式作廢。
+
+{% if order.gift_message %}
+Original Gift Message｜原祝詞內容:
+"{{ order.gift_message }}"
+{% endif %}
+
+If you believe this cancellation occurred in error, please reach out directly to the original sender to arrange a replacement.
+如您認為此狀態變更為誤操作，請聯絡原送禮人以重新安排發送。
+
+Warmest regards,
+The Hṛdayadīpa｜心燈 Team

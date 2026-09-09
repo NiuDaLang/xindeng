@@ -279,6 +279,8 @@ class ProformaInvoice(models.Model):
 
     # status
     is_ordered              = models.BooleanField(default=False)
+    order_settled           = models.BooleanField(default=False, help_text="Flips to True once bank/offline payment clears, converting holds to final sales.")
+
     created_at              = models.DateTimeField(auto_now_add=True)
     updated_at              = models.DateTimeField(auto_now=True)
 

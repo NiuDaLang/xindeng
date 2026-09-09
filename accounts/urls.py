@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 from . import views
 
 
@@ -23,6 +23,7 @@ urlpatterns = [
     path("update_address/<pk>/", views.update_address, name="update_address"),
     path("create_address/", views.create_address, name="create_address"),
     path("delete_address/<pk>/", views.delete_address, name="delete_address"),
+    path("set_default_address/<pk>/", views.set_default_address, name="set_default_address"),
 
     # dashboard - wishlist & favorites
     path("check_stock/<int:variation_id>/", views.check_stock, name="check_stock"),
@@ -33,15 +34,27 @@ urlpatterns = [
     path("delete_favorite_item/<int:item_id>/", views.delete_favorite_item, name="delete_favorite_item"),
 
     # dashboard - help
-    path("send_message/", views.send_message, name="send_message"),
-    path("refresh_chat/", views.refresh_chat, name="refresh_chat"),
-    path("filter_message_by_member/<int:member_id>", views.filter_message_by_member, name="filter_message_by_member"),
-    path("mark_read/<int:msg_id>", views.mark_read, name="mark_read"),
-    path("load_earlier_messages/", views.load_earlier_messages, name="load_earlier_messages"),
-    path("get_unread_count/", views.get_unread_count, name="get_unread_count"),
-    path("get_unread_count/<int:sender_id>", views.get_unread_count, name="get_unread_count"),
+    path('api/conversation/<int:member_id>/', views.api_conversation, name='api_conversation'),
+    path('api/search_messages/', views.api_search_messages, name='api_search_messages'),
+    path('api/send_message/', views.send_message, name='api_send_message'),
+    path('api/my_conversation/', views.api_my_conversation, name='api_my_conversation'),
+    path('api/mark_all_read/', views.api_mark_all_read, name='api_mark_all_read'),
+    path('api/get_all_unread_counts/', views.api_get_all_unread_counts, name='api_get_all_unread_counts'),
 
+    # Unread count (used by HTMX badges)
+    path('get_unread_count/', views.get_unread_count, name='get_unread_count'),
+    path('get_unread_count/<int:sender_id>/', views.get_unread_count, name='get_unread_count_member'),
+    
+    # Mark as read
+    path('mark_read/<int:msg_id>', views.mark_read, name='mark_read'),
+
+
+
+    # dashboard - threed
     path("dashboard/threed/firework", views.firework, name="firework"),
 
     path("vouchers/claim/<str:voucher_id>/", views.claim_voucher_routing_view, name="claim_voucher_url"),
+
+
+
 ] 

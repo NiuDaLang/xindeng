@@ -1,280 +1,476 @@
 <title>{{ page_title }}</title>
 
-<div id="dashboard_profile" class="subpage">
-    <!-- hero -->
-    <div class="dashboard_hero relative w-full min-h-[19rem] overflow-hidden shadow-xl border rounded-2xl border-gray-400 mb-6 p-6 flex flex-col md:grid md:grid-cols-12 items-center justify-between gap-6">
-        <!-- COLUMN 1: SEASONAL SOLAR TIMELINE LOGIC GATE (Grid Span: 4) -->
-        <div class="z-10 w-full md:col-span-4 flex flex-col items-center justify-center space-y-3 p-2 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-            {% if solar_term %}
-                <div class="solar-timeline flex items-center justify-center gap-4 select-none">
-                    <!-- Active Solar Term State -->
-                    <div class="flex flex-col text-center">
-                        <span id="solar_term" class="text-2xl font-black tracking-wide">{{ solar_term }}</span>
-                        <span id="solar_term_en" class="text-[11px] uppercase tracking-wider font-mono opacity-80 mt-0.5">{{ solar_term_en }}</span>
-                    </div>
-                    
-                    {% if next_solar_term %}
-                    <!-- Restored Your Previous Custom Arrow Layout Wrapper -->
-                    <div class="solar-arrow-container">
-                        <div class="solar-arrow"></div>
-                    </div>
+{% load static %}
+{% load humanize %}
 
-                    <!-- Approaching Solar Term State -->
-                    <div class="flex flex-col text-center">
-                        <span id="next_solar_term" class="text-2xl font-black tracking-wide opacity-90">{{ next_solar_term }}</span>
-                        <span id="next_solar_term_en" class="text-[11px] uppercase tracking-wider font-mono opacity-70 mt-0.5">{{ next_solar_term_en }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-            {% endif %}
-            
-            <!-- Real-time Text Date Output -->
-            <div id="dynamic-date" hx-preserve="true" class="text-[11px] font-mono font-bold tracking-widest bg-black/20 px-3 py-1 rounded-full border border-white/10 uppercase"></div>
+<div id="dashboard_profile" class="subpage w-full animate-fade-in space-y-6">
+  
+  <!-- =========================================================================
+       📝 MASTER EDITORIAL PROFILE CONTROL FORM SUBMISSION CHANNEL (ROOT ELEMENT)
+       ========================================================================= -->
+  <!-- Form root is elevated here to encapsulate the Avatar upload element, contact inputs, and actions -->
+  <form id="profile_form" method="POST" action="." enctype="multipart/form-data" class="space-y-6 w-full">
+    {% csrf_token %}
+
+    <!-- =========================================================================
+         🎨 FIRST ROW: ASYMMETRICAL RESPONSIVE HEADER DOCK
+         ========================================================================= -->
+    <!-- Mobile: flex-col-reverse centers Calendar card on top. Desktop: lg:grid-cols-3. -->
+    <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch flex-col-reverse lg:flex-row">
+      
+      <!-- 🎛️ LEFT LANE: INTERACTIVE USER AVATAR FIELDSET (1 Column on Desktop) -->
+      <div class="card bg-base-100 border-2 border-info/30 shadow-sm rounded-2xl p-5 sm:p-6 flex flex-col items-center justify-center text-center space-y-4 order-2 lg:order-1">
+        <div class="avatar placeholder flex-shrink-0 w-24 h-24 sm:w-28 sm:h-28 mx-auto">
+          <div class="w-full h-full aspect-square rounded-full ring-4 ring-info/20 ring-offset-base-100 ring-offset-2 overflow-hidden bg-base-200">
+            <img class="w-full h-full object-cover" 
+                 src="{% if user_profile.profile_picture %}{{ user_profile.profile_picture.url }}{% else %}/static/userprofile/default.png{% endif %}" 
+                 alt="Profile Picture" />
+          </div>
         </div>
         
-        <!-- COLUMN 2: DYNAMIC BILINGUAL TITLES (Grid Span: 4) -->
-        <!-- 🌟 THE CENTERING FIX: Swapped md:text-left for md:text-center to balance headers perfectly -->
-        <div class="z-10 w-full text-center md:text-center md:col-span-4 space-y-1.5 self-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-            <h2 class="text-xl font-bold text-white uppercase tracking-wider font-sans opacity-90">Member Profile</h2>
-            <h3 class="text-3xl font-black text-white tracking-normal font-sans">會員檔案</h3>
-            <span class="text-[0.65rem] uppercase tracking-[0.2em] text-teal-300 font-mono font-bold block text-center"><em>The Original You</em><br>本真的你</span>
-        </div>
-
-        <!-- COLUMN 3: PROTECTED ANALOG CLOCK MOUNT (Grid Span: 4) -->
-        <!-- 🌟 THE CENTERING FIX: Swapped md:justify-end for md:justify-center to center the clock dial axis -->
-        <div class="z-10 w-full md:col-span-4 flex items-center justify-center md:justify-center pr-0 select-none">
-            <div class="w-[200px] h-[200px] relative flex items-center justify-center flex-shrink-0">
-                {% include 'accounts/partials/clock_analog.html' %}
+        <!-- Integrated Fieldset Component Wrapper Mapping to form specifications natively -->
+        <div class="w-full border-t border-dashed border-info/20 pt-4 text-xs space-y-2">
+          <span class="text-center text-xs font-serif font-bold tracking-wide text-base-content/85 block">
+            Change Avatar (Image: square)<br/><span class="font-sans font-medium text-[11px] opacity-60">更換頭像（圖片：正方形）</span>
+          </span>
+          
+          <!-- Native Django model form input injection field -->
+          <div class="form-control w-full">
+            {{ profile_form.profile_picture }}
+          </div>
+          
+          <label class="text-[10px] font-sans text-base-content/40 select-none block leading-tight">
+            File size: &lt; 2MB｜檔案：2MB以內
+          </label>
+          
+          <!-- Enhanced Bilingual Database Error Intercept Wrapper Trace Matrix -->
+          {% if form.profile_picture.errors or "profile_picture" in profile_form_errors %}
+            <div class="text-[10px] text-error font-sans font-semibold pt-1 text-left bg-error/5 p-2 rounded-lg border border-error/10">
+              {% if form.profile_picture.errors %}
+                {{ form.profile_picture.errors.as_text }}
+              {% else %}
+                {% for error in profile_form_errors.profile_picture %}
+                  <p>⚠️ {{ error.message }}</p>
+                {% endfor %}
+              {% endif %}
             </div>
+          {% endif %}
         </div>
+      </div>
 
-        <!-- BACKGROUND VISUAL IMAGE ASSET COVER (z-0 sits safely beneath input/output contents) -->
-        <img src="/media/hero/red_leaves.jpeg" alt="Background" class="absolute left-0 top-0 w-full h-full object-cover z-0 rounded-2xl">
-        <div class="absolute inset-0 bg-black/15 z-0 pointer-events-none"></div> <!-- Soft overlay maximizes textual readability profiles -->
-    </div>
-    
-    <!-- form -->
-    <div class="flex flex-col gap-4 my-5">
-        <!-- form -->
-        <form id="profile_form" method="POST" enctype="multipart/form-data">
-            <div class="w-full border border-base-300 rounded-2xl p-5 mb-2">
-                <div class="flex w-full flex-col lg:flex-row gap-5">
-                    {% csrf_token %}
-                    <!-- LEFT -->
-                    <div class="w-1/2 lg:p-5 card bg-base-300 rounded-box grid grow place-items-center">
-                        <!-- [top] avatar image -->
-                        <div class="avatar m-auto pt-5">
-                            <div class="w-16 rounded-full border-4 border-solid border-secondary-content">
-                                <img class="bg-base-200" src="{{user_profile.profile_picture.url}}" alt="Profile Picture"/>
-                            </div>
-                        </div>
-                        <div class="border-b-1 border-dashed border-primary-content w-full pb-5 text-xs">
-                            <fieldset class="fieldset w-4/5 m-auto">
-                                <legend class="fieldset-legend text-center text-xs font-light">Change Avatar (Image: square)<br/>更換頭像（圖片：正方形）</legend>
-                                {{ profile_form.profile_picture }}
-                                <label class="label mx-auto">File size: < 2MB｜檔案：2MB以內</label>
-                                <!-- error msg -->
-                                {% if "profile_picture" in profile_form_errors %}
-                                    <div class="text-error">
-                                        {% for error in profile_form_errors.profile_picture %}
-                                            {{ error.message }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </fieldset>
-                        </div>
-                        <!-- [bottom] name details -->
-                        <div class="flex flex-col gap-2 py-5 w-4/5">
-                            <!-- Basic Info -->
-                            <div class="flex justify-between items-center px-1">
-                                <span class="text-xs font-semibold opacity-70">Basic Info｜會員概況</span>
-                            </div>
-                            <!-- first name -->
-                            <label class="input input-border flex w-full items-center gap-2">
-                                <i class="fa-solid fa-person"></i>
-                                {{ user_form.first_name }}
-                            </label>
-    
-                            <!-- last name -->
-                            <label class="input input-border flex w-full items-center gap-2">
-                                <i class="fa-solid fa-people-roof"></i> 
-                                {{ user_form.last_name }}
-                            </label>
-
-                            <!-- username -->
-                            <label class="input input-border flex w-full max-w-none items-center gap-2">
-                                <i class="fa-solid fa-user"></i>
-                                {{ user_form.username }}
-                            </label>
-
-                            <!-- Target for HTMX check results -->
-                            <div id="username-error" class="-mt-1"></div> 
-                            
-                            <!-- email -->
-                            <label class="input input-border flex w-full max-w-none items-center gap-2">
-                                <i class="fa-solid fa-envelope"></i>
-                                {{ user_form.email }}
-                            </label>
-
-                            <!-- DOB -->
-                            <label class="input input-border flex w-full items-center gap-2">
-                                <i class="fa-solid fa-cake-candles"></i> 
-                                {{ profile_form.dob }}
-                            </label>
-
-                            <!-- mobile number -->
-                            <div class="join">
-                                {{ user_form.mobile_area }}
-                                <div class="flex-grow">
-                                    <label class="w-full input  join-item">
-                                        <i class="fa-solid fa-mobile-screen-button"></i>
-                                        {{ user_form.mobile_number }}
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-    
-                    <!-- RIGHT -->
-                    <div class="w-1/2 lg:p-5 card bg-base-300 rounded-box grid grow place-items-center">
-
-                        <!-- address -->
-                        <div class="w-4/5 flex flex-col gap-2 py-5 border-b-1 border-dashed border-primary-content ">
-                            <div class="flex justify-between items-center px-1">
-                                <span class="text-xs font-semibold opacity-70">Address｜地址</span>                              
-                                <!-- The Clear Button -->
-                                <button id="clear_add_btn" type="button" onclick="clearAddressForm(), preAutoComplete(), initAutoComplete('profile_form')" class="btn btn-ghost btn-xs text-error">
-                                    <i class="fa-solid fa-eraser"></i> Clear Address｜清空地址
-                                </button>
-                            </div>
-                            <!-- address_1 -->
-                            <label class="input input-border flex items-center gap-2 w-full">
-                                <i class="fa-solid fa-map-location-dot shrink-0"></i>
-                                <div class="grid flex-1 min-w-0">
-                                    {{ address_form.address_line_1 }}
-                                </div>
-                            </label>          
-
-                            {% if address_form.address_line_1.errors %}
-                                <div class="text-error text-xs mt-1 px-2">
-                                    {% for error in address_form.address_line_1.errors %}
-                                        <p class="-mt-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i> {{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            
-                            <!-- address_2 -->
-                            <label class="input input-border flex w-full items-center gap-2">
-                                <i class="fa-solid fa-map-location"></i>
-                                {{ address_form.address_line_2 }}
-                            </label>
-                            
-                            {% if address_form.address_line_2.errors %}
-                                <div class="text-error text-xs mt-1 px-2">
-                                    {% for error in address_form.address_line_2.errors %}
-                                        <p class="-mt-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i> {{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-    
-                            <!-- city / suburb -->
-                            <label class="input input-border flex w-full items-center gap-2">
-                                <i class="fa-solid fa-tree-city"></i>
-                                {{ address_form.city }}
-                            </label>
-    
-                            {% if address_form.city.errors %}
-                                <div class="text-error text-xs mt-1 px-2">
-                                    {% for error in address_form.city.errors %}
-                                        <p class="-mt-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i> {{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-
-    
-                            <!-- state (Other Countries) -->
-                            <label id="region_field_wrapper" class="input input-border flex w-full items-center gap-2 {% if address_form.country.value == 'CN' %}hidden{% endif %}">
-                                <i class="fa-solid fa-map"></i>
-                                {{ address_form.state_province_region }}
-                            </label>
-                            {% if address_form.state_province_region.errors %}
-                                <div class="text-error text-xs mt-1 px-2">
-                                    {% for error in address_form.state_province_region.errors %}
-                                        <p class="-mt-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i> {{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-
-                            <!-- China province (Mainland China) -->
-                            <label id="china_field_wrapper" class="input input-border w-full items-center gap-2 {% if address_form.country.value == 'CN' %}flex{% else %}hidden{% endif %}">
-                                <i class="fa-solid fa-map"></i>
-                                {{ address_form.china_province }}
-                            </label>
-                            {% if address_form.china_province.errors %}
-                                <div class="text-error text-xs mt-1 px-2">
-                                    {% for error in address_form.china_province.errors %}
-                                        <p class="-mt-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i> {{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-    
-                            <!-- country -->
-                            <label class="input input-border flex w-full items-center gap-2">
-                                <i class="fa-solid fa-globe"></i>
-                                {{ address_form.country }}
-                            </label>
-                            
-                            {% if address_form.country.errors %}
-                                <div class="text-error text-xs mt-1 px-2">
-                                    {% for error in address_form.country.errors %}
-                                        <p class="-mt-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i> {{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-    
-                            <!-- zip -->
-                            <label class="input input-border flex w-full items-center gap-2">
-                                <i class="fa-solid fa-envelopes-bulk"></i>
-                                {{ address_form.postal_code }}
-                            </label>
-    
-                            {% if address_form.postal_code.errors %}
-                                <div class="text-error text-xs mt-1 px-2">
-                                    {% for error in address_form.postal_code.errors %}
-                                        <p class="-mt-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i> {{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-    
-                            {{ address_form.is_verified_by_google }}
-                            {{ address_form.google_place_id }}
-                            {{ address_form.latitude }}
-                            {{ address_form.longitude }}
-                        </div>
-    
-                        <!-- miscellaneous -->
-                        <div class="flex flex-col w-4/5 h-full my-5 text-center gap-2 justify-center">
-                            <!-- Basic Info -->
-                            <div class="flex justify-between items-center px-1">
-                                <span class="text-xs font-semibold opacity-70">etc...｜備注</span>
-                            </div>
-                            <!-- misc - gender -->
-                            {{ profile_form.gender }}
-                            <!-- misc - blood -->
-                            {{ profile_form.blood_type }}
-                            <!-- misc - color -->
-                            {{ profile_form.color }}
-    
-                            <!-- receive newsletter -->
-                            <div class="flex items-center gap-1 text-xs lg:text-sm">
-                                {{ user_form.receive_newsletter }}
-                                <div class="text-xs">Receive Newsletter｜接收時事通訊</div>
-                            </div>
-                        </div>
-                    </div>
+      <!-- ⏳ CHRONO SOLAR TERM CALENDAR & SEED PIXEL ANALOG CLOCK PARTIAL ACCENT -->
+      <div class="lg:col-span-2 w-full min-h-[14rem] sm:min-h-[16rem] rounded-[28px] text-white border border-info relative flex flex-col justify-between overflow-hidden shadow-lg shadow-neutral/40 bg-neutral order-1 lg:order-2">
+          
+          <!-- 🌟 FIXED: Added items-start to collapse the cross-axis flex-stretch, constraining shadows strictly to content widths -->
+          <div class="flex flex-col z-10 p-6 md:pl-[20%] lg:pl-12 space-y-4">
+              <!-- Solar Term Badges Container -->
+              {% if solar_term %}
+                <div class="flex items-center mb-2 gap-1 z-10 select-none bg-black/40 p-2.5 rounded-xl backdrop-blur-sm border border-white/10 w-fit">
+                  <div class="flex flex-col text-left leading-none">
+                        <span id="solar_term" class="text-sm sm:text-base font-black tracking-wide text-white">{{ solar_term|default:"處暑" }}</span>
+                        <span id="solar_term_en" class="text-[0.45rem] font-mono tracking-widest uppercase opacity-75 mt-1">{{ solar_term_en|default:"End of Heat" }}</span>
+                  </div>
+                  {% if next_solar_term %}
+                  <div class="solar-arrow-container">
+                      <div class="solar-arrow"></div>
+                  </div>
+                  <div class="flex flex-col text-left leading-none">
+                      <span id="next_solar_term" class="text-sm sm:text-base font-black tracking-wide text-white/90">{{ next_solar_term|default:"白露" }}</span>
+                      <span id="next_solar_term_en" class="text-[0.45rem] font-mono tracking-widest uppercase opacity-50 mt-1">{{ next_solar_term_en|default:"White Dew" }}</span>
+                  </div>
+                  {% endif %}
                 </div>
-            </div>
-            <button type="submit" class="mt-5 p-7 text-[1.05rem] btn btn-block btn-accent hover:bg-accent-content hover:text-accent hover:border-transparent">更&nbsp;新&nbsp;|&nbsp;UPDATE</button>
-        </form>
+              {% endif %}
+              
+              <!-- Time-Stamp Tracker Lines -->
+              <!-- 🌟 FIXED: Added items-start here as well to isolate the dynamic elements from extending tracking parameters -->
+              <div class="flex flex-col pl-2.5 space-y-1 text-left font-mono">
+                  <div id="dynamic-date" hx-preserve="true" class="text-[0.75rem] font-mono font-bold tracking-wider text-white drop-shadow-md"></div>
+                  <span id="dynamic-date-cn" class="text-[0.65rem] opacity-80 font-sans tracking-wide text-white/90 drop-shadow-md"></span>
+              </div>        
+          </div>
+          
+          <!-- High-Precision Synchronized Vector Clock Axis Frame -->
+          <div class="profile_clock absolute right-6 md:right-[20%] lg:right-12 bottom-2.5 xxs:bottom-6 z-10 scale-75 sm:scale-90 md:scale-100 origin-bottom-right">
+              {% include 'accounts/partials/clock_analog.html' %}
+          </div>               
+          <img src="{{ solar_term_bg_url }}" alt="Seasonal Red Leaves background" class="absolute left-0 top-0 w-full h-full object-cover select-none pointer-events-none filter brightness-[0.8] contrast-[1.05]">
+      </div>
     </div>
+    <!-- =========================================================================
+         🎨 SECOND ROW: SELECTION FIELD DATA INTAKE MATRIX
+         ========================================================================= -->
+    <!-- Encapsulated within a matching card frame using a slightly thinner boundary accent line -->
+    <div class="card bg-base-100 border border-info/20 shadow-sm rounded-2xl p-5 sm:p-6 space-y-4 w-full">
+      <h3 class="text-xs sm:text-sm font-bold tracking-widest font-serif text-base-content/80 uppercase border-b border-base-100 pb-2 mb-2 flex items-center gap-2 select-none">
+        <i class="fa-solid fa-user-gear text-primary"></i> Personal Specifications｜基本檔案管理
+      </h3>
+
+      <div class="space-y-4 w-full">
+        <!-- ── LINE 1: FIRST NAME & LAST NAME (50:50 Grid Split) ────────────────── -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          <!-- Input Field: First Name -->
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">First Name｜名字</span></label>
+            <label class="input input-bordered flex items-center gap-2 rounded-xl h-10 text-xs text-base-content border-base-200/80 focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all">
+              <i class="fa-solid fa-signature opacity-40"></i>
+              {{ user_form.first_name }}
+            </label>
+            {% if user_form.first_name.errors %}<span class="text-[10px] text-error pl-1 block font-sans">{{ user_form.first_name.errors.as_text }}</span>{% endif %}
+          </div>
+
+          <!-- Input Field: Last Name -->
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">Last Name｜姓氏</span></label>
+            <label class="input input-bordered flex items-center gap-2 rounded-xl h-10 text-xs text-base-content border-base-200/80 focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all">
+              <i class="fa-solid fa-font opacity-40"></i>
+              {{ user_form.last_name }}
+            </label>
+            {% if user_form.last_name.errors %}<span class="text-[10px] text-error pl-1 block font-sans">{{ user_form.last_name.errors.as_text }}</span>{% endif %}
+          </div>
+        </div>
+
+        <!-- ── LINE 2: USERNAME & EMAIL (50:50 Grid Split) ──────────────────────── -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          <!-- Input Field: Username (🌟 FIXED: Removed duplicate parent class wrappers to clear red borders) -->
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">Username｜用戶名</span></label>
+            <div class="flex items-center gap-2 border border-base-200/80 rounded-xl h-10 px-3 text-xs text-base-content focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all bg-base-100">
+              <i class="fa-solid fa-at opacity-40"></i>
+              {{ user_form.username }}
+            </div>
+            <div id="username-error" class="text-[10px] text-error pl-1 block font-sans"></div>
+            {% if user_form.username.errors %}<span class="text-[10px] text-error pl-1 block font-sans">{{ user_form.username.errors.as_text }}</span>{% endif %}
+          </div>
+
+          <!-- Input Field: Email Gateway Pointer (Read-Only Safety Guard Enabled) -->
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/50">Account Email｜註冊信箱 (唯讀)</span></label>
+            <div class="bg-base-200/40 flex items-center gap-2 border border-base-200/80 rounded-xl h-10 px-3 text-xs font-mono text-base-content/40 cursor-not-allowed">
+              <i class="fa-solid fa-envelope opacity-40"></i>
+              {{ user_form.email }}
+            </div>
+          </div>
+        </div>
+
+        <!-- ── LINE 3: MOBILE INTERFACE & DATE OF BIRTH (50:50 Grid Split) ──────── -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          <!-- Input Field: Mobile Contact Number (🌟 FIXED: Allowed fluid dropdown stretching) -->
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">Mobile Contact｜聯絡電話</span></label>
+            <div class="join w-full border border-base-200 rounded-xl overflow-hidden focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all flex h-10 bg-base-100">
+              <!-- Left 50% Panel: Houses the expanded selector dropdown -->
+              <div class="w-1/2 flex items-center">
+                {{ user_form.mobile_area }}
+              </div>
+              <!-- Right 50% Panel: Houses the phone number input -->
+              <div class="w-1/2 flex items-center">
+                {{ user_form.mobile_number }}
+              </div>
+            </div>
+            {% if user_form.mobile_number.errors %}<span class="text-[10px] text-error pl-1 block font-sans">{{ user_form.mobile_number.errors.as_text }}</span>{% endif %}
+          </div>
+
+          <!-- Input Field: Date of Birth -->
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">Date of Birth｜出生日期</span></label>
+            <div class="flex items-center gap-2 border border-base-200/80 rounded-xl h-10 px-3 text-xs text-base-content focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all bg-base-100">
+              <i class="fa-solid fa-cake-candles opacity-40"></i>
+              {{ profile_form.dob }}
+            </div>
+            <p class="text-[9px] font-sans text-base-content/40 pl-1 select-none">* Used for seasonal birthday perk gift vouchers｜用於發送專屬生日福利</p>
+            {% if profile_form.dob.errors %}<span class="text-[10px] text-error pl-1 block font-sans">{{ profile_form.dob.errors.as_text }}</span>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================================
+         🎨 THIRD ROW: PRIMARY SHIPPING ADDRESS INTEGRATION LEDGER
+         ========================================================================= -->
+    <!-- Encapsulated within a matching layout container using a clean info/20 accent border line -->
+    <div class="card bg-base-100 border border-info/20 shadow-sm rounded-2xl p-5 sm:p-6 space-y-4 w-full">
+      
+      <!-- HEADER INTERFACE DOCK: CONTAINS LABELS & INTEGRATED CLEAR ENGINE TRIGGER -->
+      <div class="w-full border-b border-base-100 pb-2 mb-2 flex items-center justify-between gap-4 select-none">
+        <h3 class="text-xs sm:text-sm font-bold tracking-widest font-serif text-base-content/80 uppercase flex items-center gap-2">
+          <i class="fa-solid fa-map-location-dot text-primary"></i> Shipping Destination｜預設配送地址
+        </h3>
+        
+        <!-- 🌟 THE CLEAN CLEAR BUTTON PASSTHROUGH ENGINE -->
+        <button id="clear_add_btn" type="button" 
+                onclick="clearAddressForm(); if(typeof preAutoComplete === 'function') preAutoComplete(); if(typeof initAutoComplete === 'function') initAutoComplete('profile_form');" 
+                class="btn btn-ghost btn-xs text-error font-serif font-bold rounded-lg px-2 py-1 h-auto min-h-0 transition-all hover:bg-error/5">
+          <i class="fa-solid fa-eraser text-[10px]"></i> Clear Address｜清空地址
+        </button>
+      </div>
+
+      <div class="space-y-4 w-full">
+        <!-- ── LINE 1: ADDRESS LINE 1 & ADDRESS LINE 2 (50:50 Grid Split) ──────── -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          <!-- Input Field: Address Line 1 (Google Places Auto-Complete Target) -->
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">Address Line 1｜詳細地址/門牌 (支援自動自動填寫)</span></label>
+            <div class="flex items-center gap-2 border border-base-200/80 rounded-xl h-10 px-3 text-xs text-base-content focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all bg-base-100 relative">
+              <i class="fa-solid fa-map-location-dot opacity-40 shrink-0"></i>
+              <div class="grid flex-1 min-w-0 font-sans">
+                {{ address_form.address_line_1 }}
+              </div>
+            </div>
+            {% if address_form.address_line_1.errors %}
+              <div class="text-[10px] text-error pl-1 block font-sans font-medium space-y-0.5 mt-1 bg-error/5 p-1.5 rounded-lg border border-error/10">
+                {% for error in address_form.address_line_1.errors %}
+                  <p><i class="fa-solid fa-triangle-exclamation text-[9px]"></i> {{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Input Field: Address Line 2 -->
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">Address Line 2｜樓層/單元 (選填)</span></label>
+            <div class="flex items-center gap-2 border border-base-200/80 rounded-xl h-10 px-3 text-xs text-base-content focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all bg-base-100">
+              <i class="fa-solid fa-map-location opacity-40 shrink-0"></i>
+              <div class="flex-1 min-w-0 font-sans">
+                {{ address_form.address_line_2 }}
+              </div>
+            </div>
+            {% if address_form.address_line_2.errors %}
+              <div class="text-[10px] text-error pl-1 block font-sans font-medium space-y-0.5 mt-1 bg-error/5 p-1.5 rounded-lg border border-error/10">
+                {% for error in address_form.address_line_2.errors %}
+                  <p><i class="fa-solid fa-triangle-exclamation text-[9px]"></i> {{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- ── LINE 2: CITY & STATE / PROVINCE REGION (50:50 Grid Split) ───────── -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          <!-- Input Field: City / Suburb -->
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">City｜城市/城鎮</span></label>
+            <div class="flex items-center gap-2 border border-base-200/80 rounded-xl h-10 px-3 text-xs text-base-content focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all bg-base-100">
+              <i class="fa-solid fa-tree-city opacity-40 shrink-0"></i>
+              <div class="flex-1 min-w-0 font-sans">
+                {{ address_form.city }}
+              </div>
+            </div>
+            {% if address_form.city.errors %}
+              <div class="text-[10px] text-error pl-1 block font-sans font-medium space-y-0.5 mt-1 bg-error/5 p-1.5 rounded-lg border border-error/10">
+                {% for error in address_form.city.errors %}
+                  <p><i class="fa-solid fa-triangle-exclamation text-[9px]"></i> {{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Input Field: Dynamic Region Wrapper (Other Countries vs Mainland China Regional Panels) -->
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">State / Province｜州 / 省份</span></label>
+            
+            <!-- Context Lane A: Global State Field Selector Panel -->
+            <div id="region_field_wrapper" class="items-center gap-2 border border-base-200/80 rounded-xl h-10 px-3 text-xs text-base-content focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all bg-base-100 {% if address_form.country.value == 'CN' %}hidden{% else %}flex{% endif %}">
+              <i class="fa-solid fa-map opacity-40 shrink-0"></i>
+              <div class="flex-1 min-w-0 font-sans">
+                {{ address_form.state_province_region }}
+              </div>
+            </div>
+            
+            <!-- Context Lane B: Dedicated Mainland China Dropdown Province Selection Panel -->
+            <div id="china_field_wrapper" class="items-center gap-2 border border-base-200/80 rounded-xl h-10 px-3 text-xs text-base-content focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all bg-base-100 {% if address_form.country.value == 'CN' %}flex{% else %}hidden{% endif %}">
+              <i class="fa-solid fa-map opacity-40 shrink-0"></i>
+              <div class="flex-1 min-w-0 font-sans select-clean">
+                {{ address_form.china_province }}
+              </div>
+            </div>
+
+            <!-- Consolidated Database Input Error Alerts Display Matrix -->
+            {% if address_form.state_province_region.errors or address_form.china_province.errors %}
+              <div class="text-[10px] text-error pl-1 block font-sans font-medium space-y-0.5 mt-1 bg-error/5 p-1.5 rounded-lg border border-error/10">
+                {% for error in address_form.state_province_region.errors %}
+                  <p><i class="fa-solid fa-triangle-exclamation text-[9px]"></i> {{ error }}</p>
+                {% endfor %}
+                {% for error in address_form.china_province.errors %}
+                  <p><i class="fa-solid fa-triangle-exclamation text-[9px]"></i> {{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- ── LINE 3: COUNTRY & POSTAL CODE (50:50 Grid Split) ────────────────── -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          <!-- Input Field: Country Selector Dropdown -->
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">Country / Region｜國家 · 地區</span></label>
+            <div class="flex items-center gap-2 border border-base-200/80 rounded-xl h-10 px-3 text-xs text-base-content focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all bg-base-100 select-clean">
+              <i class="fa-solid fa-globe opacity-40 shrink-0"></i>
+              <div class="flex-1 min-w-0 font-sans">
+                {{ address_form.country }}
+              </div>
+            </div>
+            {% if address_form.country.errors %}
+              <div class="text-[10px] text-error pl-1 block font-sans font-medium space-y-0.5 mt-1 bg-error/5 p-1.5 rounded-lg border border-error/10">
+                {% for error in address_form.country.errors %}
+                  <p><i class="fa-solid fa-triangle-exclamation text-[9px]"></i> {{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <!-- Input Field: Postal Code / Zip -->
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">Postal Code｜郵遞區號</span></label>
+            <div class="flex items-center gap-2 border border-base-200/80 rounded-xl h-10 px-3 text-xs text-base-content focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all bg-base-100">
+              <i class="fa-solid fa-envelopes-bulk opacity-40 shrink-0"></i>
+              <div class="flex-1 min-w-0 font-mono">
+                {{ address_form.postal_code }}
+              </div>
+            </div>
+            {% if address_form.postal_code.errors %}
+              <div class="text-[10px] text-error pl-1 block font-sans font-medium space-y-0.5 mt-1 bg-error/5 p-1.5 rounded-lg border border-error/10">
+                {% for error in address_form.postal_code.errors %}
+                  <p><i class="fa-solid fa-triangle-exclamation text-[9px]"></i> {{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- =========================================================================
+           🔒 HIDDEN GEOGRAPHIC COORDINATE TRACKING SYSTEM CODES
+           ========================================================================= -->
+      <!-- Preserves metadata coordinates required for automated tax/shipping calculations natively -->
+      <div class="hidden-metadata-parameters hidden opacity-0 pointer-events-none w-0 h-0">
+        {{ address_form.is_verified_by_google }}
+        {{ address_form.google_place_id }}
+        {{ address_form.latitude }}
+        {{ address_form.longitude }}
+      </div>
+    </div>          
+
+    <!-- =========================================================================
+         🎨 FOURTH ROW: PREFERENCES & MARKETING CHARACTERISTICS (DISCRETIONARY)
+         ========================================================================= -->
+    <!-- Encapsulated within a matching card frame using the thinner info border outline framework [INDEX] -->
+    <div class="card bg-base-100 border border-info/20 shadow-sm rounded-2xl p-5 sm:p-6 space-y-4 w-full">
+      <h3 class="text-xs sm:text-sm font-bold tracking-widest font-serif text-base-content/80 uppercase border-b border-base-100 pb-2 mb-2 flex items-center gap-2 select-none">
+        <i class="fa-solid fa-wand-magic-sparkles text-primary"></i> 4. Consumer Profile｜偏好與備註 (選填)
+      </h3>
+
+      <div class="space-y-5 w-full">
+        <!-- ── LINE 1: GENDER, BLOOD TYPE, FAVORITE COLOR (Responsive 3-Column Split) ── -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+          
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">Gender｜性別</span></label>
+            <div class="flex items-center gap-2 border border-base-200/80 rounded-xl h-10 px-3 text-xs text-base-content focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all bg-base-100">
+              <i class="fa-solid fa-venus-mars opacity-40 shrink-0"></i>
+              <div class="flex-1 min-w-0 h-full flex items-center">
+                {{ profile_form.gender }}
+              </div>
+            </div>
+            {% if profile_form.gender.errors %}<span class="text-[10px] text-error pl-1 block font-sans">{{ profile_form.gender.errors.as_text }}</span>{% endif %}
+          </div>
+
+          <!-- Selection Field: Blood Type Parameters -->
+          <div class="form-control w-full space-y-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">Blood Type｜血型</span></label>
+            <div class="flex items-center gap-2 border border-base-200/80 rounded-xl h-10 px-3 text-xs text-base-content focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all bg-base-100">
+              <i class="fa-solid fa-droplet opacity-40 shrink-0"></i>
+              <div class="flex-1 min-w-0 h-full flex items-center">
+                {{ profile_form.blood_type }}
+              </div>
+            </div>
+            {% if profile_form.blood_type.errors %}<span class="text-[10px] text-error pl-1 block font-sans">{{ profile_form.blood_type.errors.as_text }}</span>{% endif %}
+          </div>
+
+          <!-- Selection Field: Favorite Curated Aesthetic Color Spectrum -->
+          <div class="form-control w-full space-y-1 sm:col-span-2 lg:col-span-1">
+            <label class="label py-0 select-none"><span class="label-text text-[11px] font-medium text-base-content/60 font-serif">Favorite Color｜偏好色彩</span></label>
+            <div class="flex items-center gap-2 border border-base-200/80 rounded-xl h-10 px-3 text-xs text-base-content focus-within:border-info/40 focus-within:ring-1 focus-within:ring-info/20 transition-all bg-base-100">
+              <i class="fa-solid fa-palette opacity-40 shrink-0"></i>
+              <div class="flex-1 min-w-0 h-full flex items-center">
+                {{ profile_form.color }}
+              </div>
+            </div>
+            {% if profile_form.color.errors %}<span class="text-[10px] text-error pl-1 block font-sans">{{ profile_form.color.errors.as_text }}</span>{% endif %}
+          </div>
+        </div>
+
+        <!-- ── LINE 2: SUBSCRIPTION COMPLIANCE TOGGLE BUTTON (Full Width) ────────── -->
+        <div class="pt-1.5 w-full">
+          <div class="flex items-start sm:items-center gap-3 p-3 bg-base-50/50 border border-base-200 rounded-xl select-none group transition-colors hover:bg-base-200/20">
+            <label class="flex items-center cursor-pointer p-0 m-0 shrink-0">
+              {{ user_form.receive_newsletter }}
+            </label>
+            <div class="flex flex-col leading-tight grow min-w-0">
+              <span class="text-xs font-serif font-bold text-base-content/80 group-hover:text-primary transition-colors">
+                Receive Newsletter｜訂閱電子報與筆記通訊
+              </span>
+              <span class="text-[10px] font-sans text-base-content/40 mt-0.5 leading-normal">
+                Stay updated with seasonal promotional gift codes, 3D scenes entries, and curated art essays.
+                <br><span class="opacity-80">勾選以接收本站專屬節氣福利折扣券、全新三維虛擬場景發布以及藝術文化筆記。</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🌐 SUBMISSION ACTION CONTROL PANEL WRAPPER -->
+    <div class="flex items-center justify-end gap-3 pt-2 select-none w-full">
+      <a href="{% url 'dashboard' 'main' %}" 
+         hx-get="{% url 'dashboard' 'main' %}" 
+         hx-target="#dashboard-content" 
+         hx-push-url="true"
+         class="btn btn-sm btn-ghost font-serif text-xs rounded-xl px-4 transition-all tracking-wide text-base-content/40 hover:bg-base-200/50">
+        Discard｜放棄變更
+      </a>
+      <button type="submit" 
+              class="btn btn-sm btn-primary font-serif text-xs font-bold rounded-xl px-6 shadow-sm border border-primary/20 tracking-wider text-white transition-all hover:scale-[1.01] active:scale-[0.99]">
+        <i class="fa-solid fa-cloud-arrow-up text-[10px] opacity-80"></i> Save Changes｜儲存檔案變更
+      </button>
+    </div>
+  </form>
 </div>
+
+<!-- =========================================================================
+     ⚙️ HIGH-SECURITY FLICKER PROTECTION & INTERACTIVE LOGIC HARDENING
+     ========================================================================= -->
+<script>
+  (function() {
+      console.log("⚙️ Profile Autocomplete Debounce Protection Engine Engaged.");
+      const formElement = document.getElementById("profile_form");
+      if (!formElement) return;
+
+      // 🌟 STEP 3 DEBOUNCE SOLUTION ENFORCED
+      // Wraps inputs inside a 250ms timer window. This prevents your script from 
+      // aggressively querying Google API modules on every micro keystroke, 
+      // permanently ending the focus-trap grey screen flicker exception.
+      let verificationDebounceTimeout;
+      const targetAddressField = document.getElementById("id_address_line_1");
+
+      if (targetAddressField) {
+          targetAddressField.addEventListener("input", () => {
+              clearTimeout(verificationDebounceTimeout);
+              verificationDebounceTimeout = setTimeout(() => {
+                  // If autocomplete loops are registered globally, fire them cleanly 
+                  // only when the customer stops typing
+                  if (typeof window.updatePayButtonState === "function") {
+                      window.updatePayButtonState();
+                  }
+              }, 250); 
+          });
+      }
+
+      // Automatically re-mount and tick analog clock indicators inside the active viewport [INDEX]
+      if (typeof initializeAnalogClockLayout === "function") {
+          initializeAnalogClockLayout();
+      }
+  })();
+
+  
+</script>
+

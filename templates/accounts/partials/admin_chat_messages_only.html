@@ -1,0 +1,52 @@
+<!-- admin_chat_messages_only.html -->
+{% load humanize %}
+{% load chat_extras %}
+
+{% for msg in chat_messages %}
+    <div id="msg-{{ msg.id }}" 
+         class="message-row {% if msg.sender == request.user %}message-own{% else %}message-other{% endif %}">
+        
+        {% if msg.sender != request.user %}
+        <!-- Avatar for other person - LEFT side -->
+        <div class="message-avatar">
+            <img src="{{ msg.sender.profile.profile_picture.url }}" 
+                 alt="{{ msg.sender.username }}"
+                 loading="lazy"
+                 decoding="async">
+        </div>
+        {% endif %}
+        
+        <div class="message-content">
+            <div class="message-meta">
+                <span class="message-sender">{{ msg.sender.username }}</span>
+                <span class="message-time">{{ msg.timestamp|date:"H:i" }}</span>
+            </div>
+            
+            <div class="message-bubble">
+                {% if msg.highlighted_text %}
+                    {{ msg.highlighted_text|safe }}
+                {% else %}
+                    {{ msg.content|format_chat }}
+                {% endif %}
+                
+                {% if msg.image %}
+                    <img src="{{ msg.image.url }}" 
+                         alt="chat message image" 
+                         class="message-image"
+                         loading="lazy"
+                         decoding="async">
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if msg.sender == request.user %}
+        <!-- Avatar for own message - RIGHT side -->
+        <div class="message-avatar">
+            <img src="{{ msg.sender.profile.profile_picture.url }}" 
+                 alt="{{ msg.sender.username }}"
+                 loading="lazy"
+                 decoding="async">
+        </div>
+        {% endif %}
+    </div>
+{% endfor %}

@@ -20,6 +20,9 @@ import re
 from django.http import Http404
 from django.contrib.auth import login as auth_login
 from orders.tasks import send_secure_voucher_pin_email_task
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET, require_POST
+from accounts.templatetags.chat_extras import format_chat
 
 import uuid
 from django.views.decorators.csrf import csrf_exempt
@@ -29,7 +32,7 @@ import os
 from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
 from django.urls import reverse
-from carts.utils import update_header_cart_summary
+from carts.utils import update_header_cart_summary, get_total_wallet_funds, get_cash_voucher_balance, get_cash_voucher_pending_holds_total
 
 # get user model
 from django.contrib.auth import get_user_model
@@ -58,6 +61,8 @@ from django.db.models import Sum
 from decimal import Decimal
 from orders.models import OrderVoucherUsage
 from django.core.exceptions import ObjectDoesNotExist
+
+from django.conf import settings
 
 NUM_MSG_PER_LOAD = 10
 
@@ -506,6 +511,7 @@ def dashboard(request, subpage):
     if not request.user.is_authenticated:
         print("not logged in!")
         return redirect('login')
+  
     # main
     templates = {
         'main': 'accounts/dashboard_main.html',
@@ -534,8 +540,73 @@ def dashboard(request, subpage):
     template_name = templates.get(subpage, 'accounts/dashboard_main.html')
     subpage_title = page_title.get(subpage, 'Main｜管理主頁')
     chat_messages = ChatMessage.objects.none()
-    search_query = request.GET.get('q', '').strip()
-    active_member_id = request.session.get('chat_member_id')
+    member_id = request.session.get('chat_member_id')
+    context = {}
+
+    ### general ###
+    # 節氣
+    today = datetime.date.today()
+    today_is_solar_term = check_today_is_solar_term(today)
+    current_term, start_date = get_current_solar_term_period(today)
+    trad_term, term_en, trad_next_term = None, None, None
+    next_term, next_term_en = None, None
+    translator = opencc.OpenCC('s2t.json')
+
+    # 🎨 24 SOLAR TERM BACKING IMAGES TRACK INDEX (Using Simplified Chinese Keys)
+    solar_term_imgs = {
+        "小寒": "minor_cold.webp",
+        "大寒": "major_cold.webp",
+        "立春": "beginning_of_spring.webp",
+        "雨水": "rain_water.webp",
+        "惊蛰": "awakening_of_text.webp",
+        "春分": "spring_equinox.webp",
+        "清明": "pure_brightness.webp",
+        "谷雨": "grain_rain.webp",
+        "立夏": "beginning_of_summer.webp",
+        "小满": "grain_buds.webp",
+        "芒种": "grain_in_ear.webp",
+        "夏至": "summer_solstice.webp",
+        "小暑": "minor_heat.webp",
+        "大暑": "major_heat.webp",
+        "立秋": "beginning_of_autumn.webp",
+        "处暑": "end_of_heat.webp",
+        "白露": "white_dew.webp",
+        "秋分": "autumnal_equinox.webp",
+        "寒露": "cold_dew.webp",
+        "霜降": "frost_descent.webp",
+        "立冬": "beginning_of_winter.webp",
+        "小雪": "minor_snow.webp",
+        "大雪": "major_snow.webp",
+        "冬至": "winter_solstice.webp",
+    }
+
+    # 🔒 ROBUST FAILSAFE EVALUATION ROUTER
+    current_term_img = "hero/red_leaves.jpeg"  # Fallback to default asset if lookups omit keys
+
+    if current_term:
+        trad_term = translator.convert(current_term)
+        term_en = SOLAR[current_term]
+        
+        # Extract the matching image file name. Adjust folders string safely to match media directories
+        if current_term in solar_term_imgs:
+            current_term_img = f"solar_terms/{solar_term_imgs[current_term]}"
+            
+    if not today_is_solar_term:
+        next_term = get_next_solar_term(current_term)
+        trad_next_term = translator.convert(next_term[0])
+        next_term_en = next_term[1]
+
+    context.update({
+        # general
+        "subpage_template": template_name,
+        "subpage": subpage,
+        "user": request.user,
+        "solar_term": trad_term,
+        "solar_term_en": term_en,
+        "next_solar_term": trad_next_term,
+        "next_solar_term_en": next_term_en,
+        "solar_term_bg_url": f"{settings.MEDIA_URL}{current_term_img}",
+    })
 
     # main
     # 1. Calculate historical purchased quantities cleanly inside database indexes
@@ -546,13 +617,11 @@ def dashboard(request, subpage):
     ).aggregate(t_qty=Sum('quantity'))['t_qty'] or 0
 
     # 2. Wallet balance
-    wallet_balance = CustomerVoucher.objects.filter(
-        owner=request.user, 
-        is_used=False, 
-        balance__gt=0
-    ).aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
+    wallet_balance = get_total_wallet_funds(request)
+    free_cash = get_cash_voucher_balance(request)
+    pending_holds_total = get_cash_voucher_pending_holds_total(request)
 
-    # 2. Pull dynamic unread communications counts
+    # 3. Pull dynamic unread communications counts
     unread_count = 0 # Re-link to your customer messaging channels loops later
 
     # 🌟 4. ACTIVE TRACKER PIPELINE QUERY: Fetch in-flight split fulfillments safely!
@@ -561,6 +630,16 @@ def dashboard(request, subpage):
         is_ordered=True,
         order_status__in=['Processing', 'Partly_Dispatched', 'All_Dispatched']
     ).order_by('-ordered_at')
+
+    context.update({
+        # main
+        "total_items_purchased": total_items_purchased,
+        "wallet_balance": wallet_balance,
+        "free_cash": free_cash,
+        "pending_holds_total": pending_holds_total,
+        "unread_count": unread_count,
+        "in_progress_orders": in_progress_orders,
+    })
 
     # edit profile
     user_profile = None
@@ -632,37 +711,148 @@ def dashboard(request, subpage):
         else:
             user_form = UserForm(instance=request.user)
             profile_form = UserProfileForm(instance=user_profile)
-            address_form = AddressForm(instance=default_address)                
+            address_form = AddressForm(instance=default_address)    
+
+        context.update({
+            # profile
+            "user_profile": user_profile,
+            "user_form": user_form,
+            "profile_form": profile_form,
+            "address_form": address_form,
+            "user_form_errors": user_form_errors,
+            "profile_form_errors": profile_form_errors,
+            "address_form_errors": address_form_errors,
+            # sub_title_2
+            "sub_title_2": page_title.get(subpage, 'Main｜管理主頁')
+        })            
 
     # addresses
     address_book_form = None
     user_addresses = None
     submit_btn = None
+    address_exists = None
     if subpage == "addresses":
         user_profile, created = UserProfile.objects.get_or_create(user=request.user)
         user_addresses = Address.objects.filter(profile=user_profile)
         address_book_form = AddressBookForm()
         submit_btn = "Create｜新&nbsp;增"
-    
+        context.update({
+            "user_addresses": user_addresses,
+            "address_book_form": address_book_form,
+            "submit_btn": submit_btn,
+            "mainland_china_destinations": DESTINATIONS_MAINLAND_CHINA,
+            "has_saved_addresses": user_addresses.exists(), 
+        })   
+
     # orders
-    paid_orders = None
-    pending_orders = None
-    cancelled_orders = None
-
+    visible_orders = None
+    
     if subpage == "orders":
-        all_user_orders = Order.objects.filter(user=request.user).order_by('-created_at')
-        paid_orders = all_user_orders.filter(is_ordered=True).exclude(order_status='Cancelled')
-        pending_orders = all_user_orders.filter(is_ordered=False, order_status='New', inventory_hold_expiry__gt=timezone.now())
-        cancelled_orders = all_user_orders.filter(order_status='Cancelled')
+        # 1. Base query restricted to the authenticated user account
+        order_query = Order.objects.filter(user=request.user)      
 
+        # 2. Extract HTMX control and filter parameters
+        sort_by = request.GET.get('sort', '-created_at')
+        status_filter = request.GET.get('status', 'ALL')
+        search_num = request.GET.get('search_invoice', '').strip()
+        is_expanded = request.GET.get('expand', 'false') == 'true'
+
+        # 3. Apply operational search filters across tracking tokens
+        if search_num:
+            order_query = order_query.filter(order_number__icontains=search_num)
+            
+        if status_filter != 'ALL':
+            if status_filter == 'PENDING':
+                # Fixed: Fallback directly to status checks or check against timezone updates safely
+                order_query = order_query.filter(
+                    is_ordered=False, 
+                    order_status='Hold_Pending'
+                )
+            elif status_filter == 'PROCESSING':
+                # Fixed: Implemented explicit OR constraints matching your summary metrics engine counters
+                order_query = order_query.filter(
+                    Q(order_status='Processing') | Q(is_ordered=True, order_status='Processing')
+                )
+            elif status_filter == 'COMPLETED':
+                order_query = order_query.filter(order_status__in=['Delivered', 'All_Dispatched'])
+            elif status_filter == 'CANCELLED':
+                order_query = order_query.filter(order_status='Cancelled')
+
+        print("order_query: ", order_query)
+
+        # 4. Process dynamic ordering structures
+        if sort_by in ['-created_at', 'created_at', 'order_number', '-order_number']:
+            order_query = order_query.order_by(sort_by)
+        else:
+            order_query = order_query.order_by('-created_at')
+
+        # 5. Cache global metrics flags for the dashboard stats indicators
+        all_user_orders = Order.objects.filter(user=request.user)
+
+        # 1. Total Paid Collection (Used for ledger history views)
+        paid_orders = all_user_orders.filter(is_ordered=True).exclude(order_status='Cancelled')
+
+        # 2. FIXED METRIC: Query status directly from the absolute base queryset
+        # This ensures it captures orders cleanly regardless of row-locking commits
+        in_process_paid_orders_count = all_user_orders.filter(
+            Q(order_status='Processing') | Q(is_ordered=True, order_status='Processing')
+        ).count()
+
+        # 3. Completed Fulfillments count
+        completed_orders_count = all_user_orders.filter(order_status__in=['Delivered', 'All_Dispatched']).count()
+
+        # 4. Active pending bank wire holds within their expiration limit
+        pending_orders_count = all_user_orders.filter(
+            is_ordered=False, 
+            order_status='Hold_Pending', 
+            inventory_hold_expiry__gt=timezone.now()
+        ).count()
+
+        # 5. Apply pagination slicing layout metrics (Collapse to 4 records initially)
+        total_found_count = order_query.count()
+        print("total_found_count: ", total_found_count)
+        total_found_count_oob = f'''
+            <span id="total_found_count" hx-swap-oob="true" 
+                    class="font-mono text-xs text-info-content font-black">
+                    { total_found_count }
+            </span>
+        '''
+        if not is_expanded and total_found_count > 4:
+            visible_orders = order_query[:4]
+            show_expand_btn = True
+        else:
+            visible_orders = order_query
+            show_expand_btn = False
+
+        # 6. Update layout context state arrays
+        context.update({
+            "all_user_orders": visible_orders,
+            "total_found_count": total_found_count,
+            "show_expand_btn": show_expand_btn,
+            "current_sort": sort_by,
+            "current_status": status_filter,
+            "search_invoice": search_num,
+            "is_expanded": is_expanded,
+            "in_process_paid_orders_count": in_process_paid_orders_count,
+            "completed_orders_count": completed_orders_count,
+            "pending_orders_count": pending_orders_count,
+        })
+
+        # 7. HTMX Partial Swap Intercept for real-time list filtering
+        if request.headers.get('HX-Request') and request.headers.get('HX-Target') == "orders_ledger_container":
+            main_html = render_to_string("accounts/partials/orders_ledger_list.html", context, request=request)
+            response = HttpResponse(main_html + total_found_count_oob)
+            return response
+              
     # offers
     eligible_perks = None
     if subpage == "offers":
         all_active_perks = Perk.objects.filter(is_active=True)
         eligible_perks = []
-
+        print("all_active_perks")
         for perk in all_active_perks:
             status = PerkEvaluator.get_eligibility_status(request.user, perk)
+            print("perk: status - ", perk, ": ", status)
             if status == 'VALID':
                 # Using get_or_create is smart; it ensures the unique_code is generated once
                 user_perk, created = UserPerk.objects.get_or_create(
@@ -673,8 +863,12 @@ def dashboard(request, subpage):
                 # Just append the user_perk; the template will handle the rest via 'perk' FK
                 eligible_perks.append(user_perk)
 
-    vouchers = None
-    # wallet_balance = Decimal("0.00")
+        context.update({
+            # offers
+            "eligible_perks": eligible_perks,
+        })
+
+    # vouchers
     ledger_history = []
 
     if subpage == "vouchers":        
@@ -683,7 +877,7 @@ def dashboard(request, subpage):
         for v in claimed_vouchers:
             ledger_history.append({
                 "date": v.claimed_date if v.claimed_date else v.created_date,
-                "summary": f"充值禮品券面值金額 CNY ¥{v.value}<br/><span class='text-[0.65rem] opacity-60 font-mono'>ID: {str(v.id)[:8].upper()}...</span>",
+                "summary": f"Gift voucher credit top-up｜充值禮品券面值金額 CNY ¥{v.value}<br/><span class='text-[0.65rem] opacity-60 font-mono'>ID: {str(v.id)[:8].upper()}...</span>",
                 "amount": f"+RMB {v.value}",
                 "amount_class": "text-success font-bold",
                 "sort_date": v.claimed_date if v.claimed_date else v.created_date
@@ -694,7 +888,7 @@ def dashboard(request, subpage):
         for u in voucher_usages:
             ledger_history.append({
                 "date": u.created_at,
-                "summary": f"使用禮品券額度於訂單號：<br/><span class='font-mono font-bold text-primary'>{u.order.order_number}</span>",
+                "summary": f"Voucher usage for Order No｜使用禮品券額度於訂單號：<br/><span class='font-mono font-bold text-primary text-[8px] min-[401px]:max-[500px]:text-[9px] min-[501px]:max-[768px]:text-[11px] min-[769px]:text-xs'>{u.order.order_number}</span>",
                 "amount": f"-RMB {u.amount_deducted}",
                 "amount_class": "text-error font-bold",
                 "sort_date": u.created_at
@@ -703,12 +897,21 @@ def dashboard(request, subpage):
         # 4. Chronological Pass: Sort all actions newest-to-oldest
         ledger_history.sort(key=lambda x: x["sort_date"], reverse=True)
 
+        context.update({
+            "page_title": subpage_title,
+            "ledger_history": ledger_history,
+        })
+
     # wishlist
     wishlist = None
     if subpage == "wishlist":
         wishlist = UserProductList.objects.filter(user=request.user, list_type="WISHLIST").order_by("-added_date")
         for wish in wishlist:
             wish.sku = wish.product_variation.get_sku()
+
+        context.update({
+            "wishlist": wishlist,
+        })
 
     # favorites
     favorites = None
@@ -717,181 +920,121 @@ def dashboard(request, subpage):
         for favorite in favorites:
             favorite.sku = favorite.product_variation.get_sku()
 
+        context.update({
+            "favorites": favorites,
+        })
+
     # help
-    members = None
-    admin = None
-    other_user = None
-    first_unread_id = None
-    has_more = None
-    unread_count = None
     if subpage == "help":
-        admin = Account.objects.filter(is_superadmin=True).first()
-
-        if not request.headers.get('HX-Request'):
-            request.session.pop("chat_member_id", None)
-            active_member_id = None
+        admin_user = Account.objects.filter(is_superadmin=True).first()
+        user = request.user
         
-        # all-time chat history
-        if active_member_id:
-            other_user = get_object_or_404(Account, pk=active_member_id)
-            messages_qs = ChatMessage.objects.filter(
-                (Q(sender_id=active_member_id) & Q(receiver=request.user)) |
-                (Q(sender=request.user) & Q(receiver_id=active_member_id))
-            )
-        else:
-            other_user = admin if request.user != admin else request.user
-            messages_qs = ChatMessage.objects.filter(Q(sender=request.user) | Q(receiver=request.user))
-
-        if search_query:
-            messages_qs = messages_qs.filter(content__icontains=search_query).order_by('-timestamp')
-            chat_messages = list(reversed(messages_qs))
-            pattern = re.compile(f'({re.escape(search_query)})(?![^<]*>)', re.IGNORECASE) # Look for the query only when it is not preceded by < or inside a tag
-            for msg in chat_messages:
-                msg.is_match = True
-                # Use \1 to keep the original casing of the matched word
-                highlighted = pattern.sub(r'<span class="bg-warning text-dark search-hit">\1</span>', msg.content)
-                msg.highlighted_text = mark_safe(highlighted)
-        else:
+        # Get search query
+        search_query = request.GET.get('q', '').strip()
+        
+        # Initialize with empty messages
+        chat_messages = ChatMessage.objects.none()
+        other_user = None
+        
+        if user.is_superadmin:
+            # Admin: Start with NO messages loaded - wait for member selection
+            members = Account.objects.filter(is_superadmin=False)
+            
+            # Calculate unread counts for each member
+            for member in members:
+                member.unread_count = ChatMessage.objects.filter(
+                    sender=member,
+                    receiver=user,
+                    is_read=False
+                ).count()
+            
+            # Total unread count
             unread_count = ChatMessage.objects.filter(
-                receiver=request.user,
+                receiver=user,
                 is_read=False
             ).count()
+            
+            context["members"] = members
+            
+            # Check if there's a session-stored member selection
+            member_id = request.session.get('chat_member_id')
+            if member_id and not request.headers.get('HX-Request'):
+                # Only load on initial page load, not on HTMX requests
+                # Actually, let's not load any messages initially
+                request.session.pop('chat_member_id', None)
+            
+        else:
+            # Regular user: Load conversation with admin immediately
+            other_user = admin_user
+            chat_messages = ChatMessage.objects.filter(
+                (Q(sender=other_user) & Q(receiver=user)) |
+                (Q(sender=user) & Q(receiver=other_user))
+            ).order_by("timestamp")
+            
+            # Apply search filter if query exists
+            if search_query:
+                chat_messages = chat_messages.filter(
+                    Q(content__icontains=search_query) |
+                    Q(sender__username__icontains=search_query)
+                )
+                
+                # Add highlighting to search results
+                import re
+                from django.utils.safestring import mark_safe
+                
+                pattern = re.compile(f'({re.escape(search_query)})(?![^<]*>)', re.IGNORECASE)
+                for msg in chat_messages:
+                    msg.is_match = True
+                    msg.highlighted_text = mark_safe(
+                        pattern.sub(r'<span class="search-hit">\1</span>', msg.content)
+                    )
         
-            num_of_msg_per_load = max(NUM_MSG_PER_LOAD, unread_count+10)
-
-            latest_msgs_qs = messages_qs.order_by("-timestamp")[:num_of_msg_per_load]
-
-            chat_messages = list(reversed(latest_msgs_qs))
-
-            total_count = messages_qs.count()
-
-            has_more = total_count > num_of_msg_per_load
-
+        # Find first unread message (only for non-admin)
+        first_unread = None
+        if other_user and not user.is_superadmin:
             first_unread = ChatMessage.objects.filter(
-                receiver=request.user,
+                receiver=user,
+                sender=other_user,
                 is_read=False
             ).order_by('timestamp').first()
 
-            first_unread_id = first_unread.id if first_unread else None
+        print("chat_messages: ", chat_messages)
+        context.update({
+            "chat_messages": chat_messages,
+            "admin": admin_user,
+            "other_user": other_user,
+            "first_unread_id": first_unread.id if first_unread else None,
+            "search_query": search_query,
+        })
 
-            members = Account.objects.filter(
-                # Only get people who have sent a message that wasn't to the admin
-                sent_messages__isnull=False
-            ).exclude(
-                id=admin.id
-            ).annotate(
-                # 2. Add a property 'unread_count' to each member
-                # This counts messages where this member is the sender AND is_read is False
-                unread_count=Count(
-                    'sent_messages', 
-                    filter=Q(sent_messages__is_read=False, sent_messages__receiver=admin)
-                )
-            ).distinct()    
-       
-    ### general ###
-    # 節氣
-    today = datetime.date.today()
-    today_is_solar_term = check_today_is_solar_term(today)
-    current_term, start_date = get_current_solar_term_period(today)
-    trad_term, term_en, trad_next_term = None, None, None
-    next_term, next_term_en = None, None
-    translator = opencc.OpenCC('s2t.json')
-
-    if current_term:
-        trad_term = translator.convert(current_term)
-        term_en = SOLAR[current_term]
-
-    if not today_is_solar_term:
-        next_term = get_next_solar_term(current_term)
-        trad_next_term = translator.convert(next_term[0])
-        next_term_en = next_term[1]
-
-    context = {
-        # main
-        "subpage_template": template_name,
-        "subpage": subpage,
-        "user": request.user,
-        "solar_term": trad_term,
-        "solar_term_en": term_en,
-        "next_solar_term": trad_next_term,
-        "next_solar_term_en": next_term_en,
-        "total_items_purchased": total_items_purchased,
-        "wallet_balance": wallet_balance,
-        "unread_count": unread_count,
-        "in_progress_orders": in_progress_orders,
-
-        # profile
-        "user_profile": user_profile,
-        "user_form": user_form,
-        "profile_form": profile_form,
-        "address_form": address_form,
-        "user_form_errors": user_form_errors,
-        "profile_form_errors": profile_form_errors,
-        "address_form_errors": address_form_errors,
-
-        # addresses
-        "user_addresses": user_addresses,
-        "address_book_form": address_book_form,
-        "submit_btn": submit_btn,
-        "mainland_china_destinations": DESTINATIONS_MAINLAND_CHINA,
-
-        # orders
-        "paid_orders": paid_orders,
-        "pending_orders": pending_orders,
-        "cancelled_orders": cancelled_orders,
-        
-        # offers
-        "eligible_perks": eligible_perks,
-
-        # vouchers
-        "page_title": subpage_title,
-        "wallet_balance": wallet_balance,
-        "ledger_history": ledger_history,
-
-        # wishlist
-        "wishlist": wishlist,
-
-        # favorites
-        "favorites": favorites,
-
-        # help
-        "chat_messages": chat_messages,
-        "search_query": search_query,
-        "admin": admin,
-        "members": members,
-        "first_unread_id": first_unread_id,
-        "has_more": has_more,
-        "unread_count": unread_count,
-        "other_user": other_user,
-
-        # banner
+    # Global layout branding strings
+    context.update({
         "page_title": f"Member Hub｜我的中心控台 - {subpage_title}",
-        "main_title": f"Hi｜您好, {request.user.username}!",
-        "sub_title_1": "Your Exclusive Space｜您的专属空间",
-        "bread_crumb_1": "Home｜首頁",
-        "bread_crumb_2": "Member｜會員",
-        "bread_crumb_3": subpage_title,
-        "bread_crumb_1_url": "/",
-        "bread_crumb_2_url": f"/accounts/dashboard/main",
-        "bread_crumb_3_url": f"/accounts/dashboard/{subpage}",
-    }
+        "main_title": f"Hi｜你好, {request.user.username}!",
+        "sub_title_1": "Your Exclusive Space｜您的專屬空間",
+        "sub_title_2": f"{subpage_title}",
+    })
 
+    # 🌟 FIX HTMX INTERCEPT ROUTER TARGETS SAFELY
     if request.headers.get('HX-Request'):
         if request.headers.get('HX-Target') == "chat_message_list":
-            template = "accounts/partials/admin_chat_list.html" if active_member_id else "accounts/partials/chat_list.html"
+            # Check session values directly instead of using dangling tracking flags
+            if request.user.is_superadmin and request.session.get('chat_member_id'):
+                template = "accounts/partials/admin_chat_list.html"
+            else:
+                template = "accounts/partials/chat_list.html"
             return render(request, template, context)
-        
-        # Otherwise, it's a subpage navigation request (clicking a sidebar link)
+
+        # Standard sidebar navigation request (clicking a sidebar link swap)
         response = render(request, template_name, context)
         response['HX-Title'] = subpage_title
         response['HX-Trigger'] = json.dumps({
-            "updateBanner": {
-                "title": context.get("bread_crumb_3", ""),
-                "url": context.get("bread_crumb_3_url", "")
+            "updateBannerSubTitle": {
+                "sub_title_2": context.get("sub_title_2", ""),
             }
         })
         return response
-
+    
     return render(request, "accounts/dashboard.html", context)
 
 
@@ -901,24 +1044,28 @@ def get_profile_strength(request):
 
 def edit_address(request, pk):
     address = get_object_or_404(Address, pk=pk, profile=request.user.profile)
-    
-    # If it's a China address, pre-populate the china_province field for the form
     initial_data = {}
     if address.country == 'CN':
         initial_data['china_province'] = address.state_province_region
-        
+
+    has_saved_addresses = Address.objects.filter(profile=request.user.profile).exists()
+    
     address_book_form = AddressBookForm(instance=address, initial=initial_data)
-    submit_btn = "Update｜更&nbsp;新"
+    
     return render(request, 'accounts/partials/address_form.html', {
-        'address_book_form': address_book_form, 
-        'address': address, 
-        'submit_btn': submit_btn
+        'address_book_form': address_book_form,
+        'address': address,
+        'submit_btn': "Update｜更&nbsp;新",
+        'has_saved_addresses': has_saved_addresses
     })
 
 
 def update_address(request, pk):
     # Ensure the user owns this address
     address = get_object_or_404(Address, pk=pk, profile=request.user.profile)
+    
+    # 🌟 SURGICAL SAVE SAFEGUARD: Cache the original default status from database indexes
+    was_default = address.is_default 
     
     if request.method == "POST":
         form = AddressBookForm(request.POST, instance=address)
@@ -928,7 +1075,13 @@ def update_address(request, pk):
                 address.is_verified_by_google = False                            
             if address.country == 'CN':
                 address.state_province_region = form.cleaned_data.get('china_province')
-            form.save()
+            
+            # 🌟 HARDEN FLAG INTEGRITY: Enforce original default status if it was dropped 
+            # by form exclusions or unchecked checkbox missing payloads
+            if was_default:
+                address.is_default = True
+                
+            address.save() # Commit changes securely to the model layer
             
             # 1. Fetch updated list to re-render the address card grid
             user_addresses = Address.objects.filter(profile=request.user.profile)
@@ -942,33 +1095,35 @@ def update_address(request, pk):
             sidebar_html = render_to_string('accounts/partials/profile_strength_display.html', {
                 'user': request.user
             }, request=request)
-            
+
             # combined
-            response = HttpResponse(list_html + sidebar_html)
+            combined_html = list_html + sidebar_html
+            response = HttpResponse(combined_html)
             
             # 3. Trigger a client-side event to close the modal
             response['HX-Trigger'] = json.dumps({
                 "addressSaved": {
                     "closeModal": "my_modal_2",
-                }
+                },
+                "addressUpdated": True
             })
             return response
         else:
             response = render(request, 'accounts/partials/address_form.html', {
-                'address_book_form': form, # Use 'address_book_form' to match template variable
+                'address_book_form': form,
                 'address': address, 
-                'submit_btn': "Update｜更&nbsp;新"
+                'submit_btn': "Update｜更&nbsp;新",
+                'has_saved_addresses': True # 🌟 Keep form checkbox rendering consistent on error fallback paths
             })
-            response['HX-Retarget'] = '#modal_content_area' # Send errors back to update modal
+            response['HX-Retarget'] = '#modal_content_area'
             return response
             
-    return HttpResponse(status=405) # Method not allowed
+    return HttpResponse(status=405)
 
 
 def create_address(request):
     if request.method == "POST":
         address_book_form = AddressBookForm(request.POST)
-        
         if address_book_form.is_valid():
             address = address_book_form.save(commit=False)
             if not address.address_line_1:
@@ -981,38 +1136,37 @@ def create_address(request):
             # 1. Fetch updated list to re-render the address card grid
             user_addresses = Address.objects.filter(profile=request.user.profile)
 
-            # main target
+            # Render ONLY the clean list items directly into the targeted #address-list-container
             list_html = render_to_string('accounts/partials/address_list_partial.html', {
                 'user_addresses': user_addresses
             }, request=request)
 
-            # sidebar
             sidebar_html = render_to_string('accounts/partials/profile_strength_display.html', {
                 'user': request.user
             }, request=request)
+
+            combined_html = list_html + sidebar_html
+            response = HttpResponse(combined_html)
             
-            # combined
-            response = HttpResponse(list_html + sidebar_html)
-            
-            # 3. Trigger a client-side event to close the modal
+            # 🌟 THE UNIFIED SOLUTION: Dispatch native lifecycle bridges directly into your DOM
+            # This triggers your built-in SweetAlert toast and instantly shuts 'my_modal_1' cleanly!
             response['HX-Trigger'] = json.dumps({
+                "addressCreated": True,
                 "addressSaved": {
-                    "closeModal": "my_modal_1",
+                    "closeModal": "my_modal_1"
                 }
             })
-
             return response
         else:
-            # Failure: Return the FORM to the list-container (HTMX will swap it there)
-            # BUT: Since the target is the list-container, we have a problem.
-            # Fix: Use "HX-Retarget" to send the errors back to the modal instead!
+            has_saved_addresses = Address.objects.filter(profile=request.user.profile).exists()
             response = render(request, 'accounts/partials/address_form.html', {
                 'address_book_form': address_book_form,
-                'submit_btn': "Create｜新&nbsp;增"
+                'submit_btn': "Create｜新&nbsp;增",
+                'has_saved_addresses': has_saved_addresses
             })
             response['HX-Retarget'] = '#create_address_modal_content_area'
             return response
-    return HttpResponse(status=405) # Method not allowed
+    return HttpResponse(status=405)
 
 
 def delete_address(request, pk):
@@ -1032,12 +1186,45 @@ def delete_address(request, pk):
         sidebar_html = render_to_string('accounts/partials/profile_strength_display.html', {
             'user': request.user
         }, request=request)
+
+        combined_html = list_html + sidebar_html
+        response = HttpResponse(combined_html)
+
+        response['HX-Trigger'] = json.dumps({
+            "addressDeleted": True
+        })
         
-        # combined
-        response = HttpResponse(list_html + sidebar_html)
-        
-        # Render ONLY the card list partial
         return response
+    return HttpResponse(status=405)
+
+
+def set_default_address(request, pk):
+    """Sets target unique address instance default value to true natively."""
+    if request.method == "POST":
+        address = get_object_or_404(Address, pk=pk, profile=request.user.profile)
+        address.is_default = True
+        address.save() # Structural save logic handles wiping alternatives atomically
+        
+        # Pull dynamic entries collection to return a clean HTMX template loop response
+        user_addresses = Address.objects.filter(profile=request.user.profile)
+        
+        list_html = render_to_string('accounts/partials/address_list_partial.html', {
+            'user_addresses': user_addresses
+        }, request=request)
+        
+        sidebar_html = render_to_string('accounts/partials/profile_strength_display.html', {
+            'user': request.user
+        }, request=request)
+
+        combined_html = list_html + sidebar_html
+        response = HttpResponse(combined_html)
+
+        response['HX-Trigger'] = json.dumps({
+            "addressDefaultSet": True
+        })
+
+        return response
+    return HttpResponse(status=405)
 
 
 def get_wishlist_item(request, item_id):
@@ -1045,13 +1232,40 @@ def get_wishlist_item(request, item_id):
     return render(request, 'accounts/partials/wishlist_item.html', {'item': item})
 
 
+# def add_to_cart_qty(request, variation_id, source):
+#     # Get the variation and its related wishlist item for the current user
+#     variation = get_object_or_404(ProductVariation, id=variation_id, is_available=True)
+#     if source == "wishlist":
+#         list_item = variation.product_lists.filter(user=request.user, list_type="WISHLIST").first()
+#     elif source == "favorites":
+#         list_item = variation.product_lists.filter(user=request.user, list_type="FAVORITE").first()
+#     context = {
+#         'item': list_item,
+#         'variation': variation,
+#         'source': source,
+#     }
+#     return render(request, 'accounts/partials/item_qty_form.html', context)
+
+
+@login_required(login_url='login')
 def add_to_cart_qty(request, variation_id, source):
-    # Get the variation and its related wishlist item for the current user
-    variation = get_object_or_404(ProductVariation, id=variation_id, is_available=True)
+    """
+    Fetches the targeted available product variation profile and maps context 
+    dependencies safely based on source tracking matrices.
+    """
+    # 🌟 DATABASE PERFORMANCE OPTIMIZATION: Pull product attributes in a single row lock JOIN
+    variation = get_object_or_404(
+        ProductVariation.objects.select_related('product'), 
+        id=variation_id, 
+        is_available=True
+    )
+    
+    list_item = None
     if source == "wishlist":
         list_item = variation.product_lists.filter(user=request.user, list_type="WISHLIST").first()
     elif source == "favorites":
         list_item = variation.product_lists.filter(user=request.user, list_type="FAVORITE").first()
+        
     context = {
         'item': list_item,
         'variation': variation,
@@ -1162,37 +1376,41 @@ def delete_favorite_item(request, item_id):
 @login_required(login_url="login")
 @require_POST
 def send_message(request):
+    """Handle message sending - returns JSON for API or HTML for HTMX"""
     user = request.user
     receiver_id = request.POST.get('receiver_id')
     content = request.POST.get('content', '').strip()
     image = request.FILES.get('image')
 
-    # 1. Get the Admin account (the intended receiver)
+    # Determine receiver
     admin_user = Account.objects.filter(is_superadmin=True).first()
+    
     if user == admin_user:
-        receiver = Account.objects.get(pk=receiver_id)
+        try:
+            receiver = Account.objects.get(pk=receiver_id)
+        except Account.DoesNotExist:
+            return JsonResponse({'error': 'Receiver not found'}, status=404)
     else:
         receiver = admin_user
 
-    if not content:
-        return HttpResponse("Content is required", status=400)
+    if not content and not image:
+        return JsonResponse({'error': 'Content is required'}, status=400)
 
     if not admin_user:
-        return HttpResponse("System Admin not found", status=404)
+        return JsonResponse({'error': 'System Admin not found'}, status=404)
     
+    # Create message
     new_message = ChatMessage.objects.create(
         sender=request.user,
         receiver=receiver,
         content=content,
         image=image,
     )
-    context = {
-        "new_message": new_message,
-        "admin": admin_user
-    }
+    
+    # Send WebSocket notification
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
-        f"user_notifications_{receiver.id}", # group_name
+        f"user_notifications_{receiver.id}",
         {
             "type": "chat_notification",
             "msg_id": new_message.id,
@@ -1200,32 +1418,32 @@ def send_message(request):
             "sender_id": request.user.id,
             "sender_name": request.user.username,
             "sender_avatar_url": request.user.profile.profile_picture.url,
-            "msg_content": new_message.content, # Corrected key
+            "msg_content": new_message.content,
             "msg_img_url": new_message.image.url if new_message.image else None,
             "msg_timestamp": new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
         }
     )
-    response = render(request, 'accounts/partials/new_chat_mssg.html', context)
-    return response
-
-
-# def refresh_chat(request):
-#     msg_id = request.GET.get('msg_id')
-#     new_message = ChatMessage.objects.get(id=msg_id)
-#     admin_user = Account.objects.filter(is_superadmin=True).first()
-
-#     search_query = request.GET.get('q', '').strip()
-#     if search_query and search_query.lower() in new_message.content.lower():
-#         pattern = re.compile(f'({re.escape(search_query)})', re.IGNORECASE)
-#         new_message.is_match = True
-#         new_message.highlighted_text = mark_safe(pattern.sub(r'<span class="bg-warning text-dark search-hit">\1</span>', new_message.content))
-
-#     context = {
-#         "new_message": new_message,
-#         "admin": admin_user
-#     }
-
-#     return render(request, "accounts/partials/new_chat_mssg.html", context)
+    
+    # Check if this is an API request (fetch) or HTMX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json':
+        # Return JSON for API
+        return JsonResponse({
+            'id': new_message.id,
+            'sender_id': new_message.sender.id,
+            'sender_name': new_message.sender.username,
+            'sender_avatar': new_message.sender.profile.profile_picture.url,
+            'content': format_chat(new_message.content),
+            'image_url': new_message.image.url if new_message.image else None,
+            'timestamp': new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'is_read': new_message.is_read,
+        })
+    else:
+        # Return HTML for HTMX
+        context = {
+            "new_message": new_message,
+            "admin": admin_user
+        }
+        return render(request, 'accounts/partials/new_chat_mssg.html', context)
 
 def refresh_chat(request):
     msg_id = request.GET.get('msg_id')
@@ -1252,56 +1470,120 @@ def refresh_chat(request):
             pattern.sub(r'<span class="bg-warning text-dark search-hit">\1</span>', new_message.content)
         )
 
+    # ✅ Get updated unread count
+    unread_count = ChatMessage.objects.filter(receiver=request.user, is_read=False).count()
+
     context = {
         "new_message": new_message,
-        "admin": admin_user
+        "admin": admin_user,
+        "unread_count": unread_count,
     }
-    return render(request, "accounts/partials/new_chat_mssg.html", context)
+
+    # ✅ Also return OOB updates for badges
+    response = render(request, "accounts/partials/new_chat_mssg.html", context)
+
+    # Add OOB swap for unread count badges
+    oob_html = f'''
+        <span id="unread-count-header" hx-swap-oob="true">{unread_count}</span>
+        <span id="unread-count-sidebar" hx-swap-oob="true">{unread_count}</span>
+    '''
+    response.content = response.content + oob_html.encode()
+    
+    return response    
 
 
+@login_required(login_url='login')
 def filter_message_by_member(request, member_id):
+    """Load conversation with specific member for admin"""
+    print(f"=== DEBUG: filter_message_by_member called ===")
+    print(f"Request path: {request.path}")
+    
     admin = request.user
-    member = get_object_or_404(Account, pk=member_id)
-
-    unread_msgs_count_from_member = ChatMessage.objects.filter(
-        receiver=admin,
+    
+    if not admin.is_superadmin:
+        print("Not admin, returning 403")
+        return HttpResponse(status=403)
+    
+    try:
+        member = Account.objects.get(pk=member_id, is_superadmin=False)
+        print(f"Member found: {member.username}")
+    except Account.DoesNotExist:
+        print(f"Member {member_id} not found")
+        return HttpResponse("<div class='text-center text-white/50 py-10'>Member not found</div>")
+    
+    # Get ALL messages for this conversation
+    all_messages = ChatMessage.objects.filter(
+        (Q(sender=member) & Q(receiver=admin)) |
+        (Q(sender=admin) & Q(receiver=member))
+    ).order_by("timestamp")
+    
+    total_count = all_messages.count()
+    print(f"Total messages found: {total_count}")
+    
+    # Pagination - show last 50 messages initially
+    page_size = 50
+    messages_to_show = all_messages[max(0, total_count - page_size):]
+    
+    # Mark messages as read
+    ChatMessage.objects.filter(
         sender=member,
+        receiver=admin,
         is_read=False
-    ).count()
-
-    num_of_msg_per_load = max(NUM_MSG_PER_LOAD, unread_msgs_count_from_member+10)
-
-    all_msgs_with_member = ChatMessage.objects.filter(
-        (Q(sender=member) & Q(receiver=admin))|
-        (Q(sender=admin) & Q(receiver=member))
-    ).order_by("-timestamp")
-
-    latest_msgs_qs = all_msgs_with_member[:num_of_msg_per_load]
-
-    messages_with_member = list(reversed(latest_msgs_qs))
-
-    total_msgs_count_from_member = ChatMessage.objects.filter(
-        (Q(sender=member) & Q(receiver=admin))|
-        (Q(sender=admin) & Q(receiver=member))
-    ).count()
-
-    has_more = total_msgs_count_from_member > num_of_msg_per_load # True or False
-
-    first_unread = all_msgs_with_member.filter(
-        receiver=request.user,
-        is_read=False
-    ).order_by('timestamp').first()
-
-    context={
-        "chat_messages": messages_with_member,
+    ).update(is_read=True)
+    
+    context = {
+        "chat_messages": messages_to_show,
         "member": member,
         "other_user": member,
-        "has_more": has_more,
-        "first_unread_id": first_unread.id if first_unread else None
+        "admin": admin,
+        "first_unread_id": None,
+        "total_messages": total_count,
+        "shown_messages": messages_to_show.count(),
     }
+    
     request.session['chat_member_id'] = member_id
+    request.session.modified = True
+    
+    response = render(request, "accounts/partials/admin_chat_list.html", context)
+    response['HX-Trigger-After-Swap'] = 'chatLoaded'
+    print("=== DEBUG: Response rendered successfully ===")
+    return response
 
-    return render(request, "accounts/partials/admin_chat_list.html", context)
+
+@login_required(login_url='login')
+def load_all_messages(request, member_id):
+    """Load all messages for a specific member conversation"""
+    admin = request.user
+    
+    if not admin.is_superadmin:
+        return HttpResponse(status=403)
+    
+    try:
+        member = Account.objects.get(pk=member_id, is_superadmin=False)
+    except Account.DoesNotExist:
+        return HttpResponse("<div class='text-center text-white/50 py-10'>Member not found</div>")
+    
+    # Get ALL messages
+    all_messages = ChatMessage.objects.filter(
+        (Q(sender=member) & Q(receiver=admin)) |
+        (Q(sender=admin) & Q(receiver=member))
+    ).order_by("timestamp")
+    
+    context = {
+        "chat_messages": all_messages,
+        "member": member,
+        "other_user": member,
+        "admin": admin,
+        "first_unread_id": None,
+        "total_messages": all_messages.count(),
+        "shown_messages": all_messages.count(),
+    }
+    
+    request.session['chat_member_id'] = member_id
+    
+    response = render(request, "accounts/partials/admin_chat_list.html", context)
+    response['HX-Trigger-After-Swap'] = 'chatLoaded'
+    return response
 
 
 @require_POST
@@ -1317,22 +1599,360 @@ def mark_read(request, msg_id):
 def get_unread_count(request, sender_id=None):
     receiver = request.user
 
-    # 1. total count for anyone
+    # Mark all messages as read
+    if request.GET.get('mark_read') == 'true':
+        ChatMessage.objects.filter(receiver=receiver, is_read=False).update(is_read=True)
+
+    # Total count
     unread_msgs_count_total = ChatMessage.objects.filter(
         receiver=receiver, is_read=False
     ).count()
 
-    # 3. specific member count (for Admin view)
+    # Specific member count (for Admin view)
     if sender_id:
         count = ChatMessage.objects.filter(
             sender_id=sender_id, receiver=receiver, is_read=False
         ).count()
         return HttpResponse(str(count))
     
+    # Return JSON if requested
+    if request.GET.get('format') == 'json':
+        return JsonResponse({'unread_count': unread_msgs_count_total})
+    
+    # Return OOB HTML for HTMX
     html = f'<span id="unread-count-header" hx-swap-oob="true">{unread_msgs_count_total}</span>'
     html += f'<span id="unread-count-sidebar" hx-swap-oob="true">{unread_msgs_count_total}</span>'
     
     return HttpResponse(html)
+
+
+@login_required(login_url='login')
+@require_GET
+def api_conversation(request, member_id):
+    """API endpoint for loading conversation messages"""
+    admin = request.user
+    
+    if not admin.is_superadmin:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        member = Account.objects.get(pk=member_id, is_superadmin=False)
+    except Account.DoesNotExist:
+        return JsonResponse({'error': 'Member not found'}, status=404)
+    
+    limit = int(request.GET.get('limit', 50))
+    
+    messages = ChatMessage.objects.filter(
+        (Q(sender=member) & Q(receiver=admin)) |
+        (Q(sender=admin) & Q(receiver=member))
+    ).order_by("timestamp")
+    
+    total_count = messages.count()
+    messages = messages[max(0, total_count - limit):]
+    
+    # Mark as read
+    ChatMessage.objects.filter(
+        sender=member,
+        receiver=admin,
+        is_read=False
+    ).update(is_read=True)
+    
+    # Get updated unread counts
+    unread_count = ChatMessage.objects.filter(
+        receiver=admin,
+        is_read=False
+    ).count()
+    
+    messages_data = [{
+        'id': msg.id,
+        'sender_id': msg.sender.id,
+        'sender_name': msg.sender.username,
+        'sender_avatar': msg.sender.profile.profile_picture.url,
+        'content': format_chat(msg.content),
+        'image_url': msg.image.url if msg.image else None,
+        'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+        'is_read': msg.is_read,
+    } for msg in messages]
+    
+    return JsonResponse({
+        'messages': messages_data,
+        'total_count': total_count,
+        'unread_count': unread_count,
+    })
+
+
+@login_required(login_url='login')
+@require_GET
+def api_search_messages(request):
+    """API endpoint for searching messages in a conversation"""
+    search_query = request.GET.get('q', '').strip()
+    receiver_id = request.GET.get('receiver_id', '')
+    
+    user = request.user
+    
+    if not search_query:
+        return JsonResponse({'messages': [], 'total_count': 0})
+    
+    # Determine the conversation partner
+    if user.is_superadmin:
+        # Admin searching within a specific member's conversation
+        if not receiver_id:
+            return JsonResponse({'error': 'Receiver ID required'}, status=400)
+        
+        try:
+            other_user = Account.objects.get(pk=receiver_id, is_superadmin=False)
+        except Account.DoesNotExist:
+            return JsonResponse({'error': 'Member not found'}, status=404)
+    else:
+        # Regular user searching within admin conversation
+        other_user = Account.objects.filter(is_superadmin=True).first()
+        if not other_user:
+            return JsonResponse({'error': 'Admin not found'}, status=404)
+    
+    # Search messages
+    chat_messages = ChatMessage.objects.filter(
+        (Q(sender=other_user) & Q(receiver=user)) |
+        (Q(sender=user) & Q(receiver=other_user))
+    ).filter(
+        Q(content__icontains=search_query) |
+        Q(sender__username__icontains=search_query)
+    ).order_by("timestamp")
+    
+    total_count = chat_messages.count()
+    
+    # Build response data
+    messages_data = [{
+        'id': msg.id,
+        'sender_id': msg.sender.id,
+        'sender_name': msg.sender.username,
+        'sender_avatar': msg.sender.profile.profile_picture.url,
+        'content': format_chat(msg.content),
+        'image_url': msg.image.url if msg.image else None,
+        'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+        'is_read': msg.is_read,
+    } for msg in chat_messages]
+    
+    return JsonResponse({
+        'messages': messages_data,
+        'total_count': total_count,
+        'query': search_query,
+    })
+
+
+@login_required(login_url='login')
+@require_GET
+def api_my_conversation(request):
+    """API endpoint for non-admin users to load their conversation with admin"""
+    user = request.user
+    
+    if user.is_superadmin:
+        return JsonResponse({'error': 'Use admin endpoint'}, status=400)
+    
+    admin_user = Account.objects.filter(is_superadmin=True).first()
+    
+    if not admin_user:
+        return JsonResponse({'error': 'Admin not found'}, status=404)
+    
+    limit = int(request.GET.get('limit', 50))
+    
+    messages = ChatMessage.objects.filter(
+        (Q(sender=admin_user) & Q(receiver=user)) |
+        (Q(sender=user) & Q(receiver=admin_user))
+    ).order_by("timestamp")
+    
+    total_count = messages.count()
+    messages = messages[max(0, total_count - limit):]
+    
+    # Mark as read
+    ChatMessage.objects.filter(
+        sender=admin_user,
+        receiver=user,
+        is_read=False
+    ).update(is_read=True)
+    
+    messages_data = [{
+        'id': msg.id,
+        'sender_id': msg.sender.id,
+        'sender_name': msg.sender.username,
+        'sender_avatar': msg.sender.profile.profile_picture.url,
+        'content': format_chat(msg.content),
+        'image_url': msg.image.url if msg.image else None,
+        'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+        'is_read': msg.is_read,
+    } for msg in messages]
+    
+    return JsonResponse({
+        'messages': messages_data,
+        'total_count': total_count,
+    })
+
+
+@login_required(login_url='login')
+@require_POST
+def api_mark_all_read(request):
+    """Mark all messages as read for the current user"""
+    user = request.user
+    
+    # Check if we need to mark only specific member's messages
+    member_id = request.POST.get('member_id', '')
+    
+    if user.is_superadmin and member_id:
+        # Admin: mark only messages from specific member
+        updated = ChatMessage.objects.filter(
+            sender_id=member_id,
+            receiver=user,
+            is_read=False
+        ).update(is_read=True)
+    else:
+        # Mark all messages as read
+        updated = ChatMessage.objects.filter(
+            receiver=user,
+            is_read=False
+        ).update(is_read=True)
+    
+    # Get updated total unread count
+    total_unread = ChatMessage.objects.filter(
+        receiver=user,
+        is_read=False
+    ).count()
+    
+    return JsonResponse({
+        'status': 'success',
+        'updated_count': updated,
+        'total_unread': total_unread,
+    })
+
+
+# views.py
+@login_required(login_url='login')
+@require_GET
+def api_get_all_unread_counts(request):
+    """API endpoint to get unread counts for all members (admin only)"""
+    user = request.user
+    
+    if not user.is_superadmin:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    # Get unread counts per member
+    members = Account.objects.filter(is_superadmin=False)
+    
+    member_counts = []
+    total_unread = 0
+    
+    for member in members:
+        count = ChatMessage.objects.filter(
+            sender=member,
+            receiver=user,
+            is_read=False
+        ).count()
+        
+        total_unread += count
+        member_counts.append({
+            'member_id': member.id,
+            'unread_count': count,
+        })
+    
+    return JsonResponse({
+        'total_unread': total_unread,
+        'members': member_counts,
+    })
+
+
+@login_required(login_url='login')
+def search_messages(request):
+    """Search messages within the current conversation context"""
+    search_query = request.GET.get('q', '').strip()
+    receiver_id = request.GET.get('receiver_id', '')
+    
+    user = request.user
+    admin_user = Account.objects.filter(is_superadmin=True).first()
+    
+    # If query is empty, return full conversation
+    if not search_query:
+        # Determine the conversation partner
+        if user.is_superadmin:
+            # Admin - reload selected member's conversation
+            if receiver_id:
+                try:
+                    other_user = Account.objects.get(pk=receiver_id)
+                except Account.DoesNotExist:
+                    return HttpResponse(status=404)
+            else:
+                # No member selected, return empty
+                return HttpResponse("<div class='text-center text-white/50 py-10'>Select a member to view conversation</div>")
+        else:
+            # Regular user - reload admin conversation
+            other_user = admin_user
+        
+        # Get full conversation
+        chat_messages = ChatMessage.objects.filter(
+            (Q(sender=other_user) & Q(receiver=user)) |
+            (Q(sender=user) & Q(receiver=other_user))
+        ).order_by("timestamp")
+        
+    else:
+        # Determine the conversation partner for search
+        if user.is_superadmin:
+            # Admin searching within a specific member's conversation
+            if receiver_id:
+                try:
+                    other_user = Account.objects.get(pk=receiver_id)
+                except Account.DoesNotExist:
+                    return HttpResponse(status=404)
+            else:
+                # No specific member selected
+                return HttpResponse(status=204)
+        else:
+            # Regular user searching within admin conversation
+            other_user = admin_user
+        
+        # Filter messages for this conversation
+        chat_messages = ChatMessage.objects.filter(
+            (Q(sender=other_user) & Q(receiver=user)) |
+            (Q(sender=user) & Q(receiver=other_user))
+        ).filter(
+            Q(content__icontains=search_query) |
+            Q(sender__username__icontains=search_query)
+        ).order_by("timestamp")
+        
+        # Add highlighting
+        import re
+        from django.utils.safestring import mark_safe
+        
+        pattern = re.compile(f'({re.escape(search_query)})(?![^<]*>)', re.IGNORECASE)
+        for msg in chat_messages:
+            msg.is_match = True
+            msg.highlighted_text = mark_safe(
+                pattern.sub(r'<span class="search-hit">\1</span>', msg.content)
+            )
+    
+    context = {
+        "chat_messages": chat_messages,
+        "admin": admin_user,
+        "other_user": other_user,
+    }
+    
+    if user.is_superadmin:
+        template = "accounts/partials/admin_chat_list.html"
+    else:
+        template = "accounts/partials/chat_list.html"
+    
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+@require_POST
+def set_chat_member(request, member_id):
+    """Set the active chat member for admin"""
+    if not request.user.is_superadmin:
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+    
+    try:
+        member = Account.objects.get(pk=member_id, is_superadmin=False)
+        request.session['chat_member_id'] = member_id
+        return JsonResponse({'status': 'success'})
+    except Account.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Member not found'}, status=404)
 
 
 def load_earlier_messages(request):
@@ -1341,7 +1961,7 @@ def load_earlier_messages(request):
     search_query = request.GET.get('q', '').strip()
     admin = Account.objects.filter(is_superadmin=True).first()
 
-    is_hybrid = str(other_user_id) == str(request.user.id) # False
+    is_hybrid = str(other_user_id) == str(request.user.id)
 
     if is_hybrid:
         query = Q(sender=admin) | Q(receiver=admin)
@@ -1350,18 +1970,17 @@ def load_earlier_messages(request):
         other_user = get_object_or_404(Account, pk=other_user_id)
         query = (Q(sender=other_user) & Q(receiver=request.user)) | \
                 (Q(sender=request.user) & Q(receiver=other_user))
-
+        
     if search_query:
         query &= Q(content__icontains=search_query)
 
     earlier_messages_qs = ChatMessage.objects.filter(
         query,
-        id__lt=last_id # "less than" filter for older IDs
-    ).order_by('-timestamp')[:NUM_MSG_PER_LOAD] # Get NUM_MSG_PER_LOAD, latest of the old ones first
+        id__lt=last_id
+    ).order_by('-timestamp')[:NUM_MSG_PER_LOAD]
 
     messages = list(reversed(earlier_messages_qs))
 
-    # Apply highlighting logic
     if search_query:
         pattern = re.compile(f'({re.escape(search_query)})', re.IGNORECASE)
         for msg in messages:
@@ -1379,7 +1998,53 @@ def load_earlier_messages(request):
         "search_query": search_query,
     }
 
+    # ✅ Render the wrapper template
     return render(request, "accounts/partials/earlier_messages_wrapper.html", context)
+
+
+@login_required(login_url='login')
+def get_message_fragment(request, member_id):
+    """Return only the message items for a conversation"""
+    admin = request.user
+    
+    if not admin.is_superadmin:
+        return HttpResponse(status=403)
+    
+    try:
+        member = Account.objects.get(pk=member_id, is_superadmin=False)
+    except Account.DoesNotExist:
+        return HttpResponse("<div class='text-center text-white/50 py-10'>Member not found</div>")
+    
+    # Get the last 50 messages
+    all_messages = ChatMessage.objects.filter(
+        (Q(sender=member) & Q(receiver=admin)) |
+        (Q(sender=admin) & Q(receiver=member))
+    ).order_by("timestamp")
+    
+    total_count = all_messages.count()
+    messages_to_show = all_messages[max(0, total_count - 50):]
+    
+    # Mark as read
+    ChatMessage.objects.filter(
+        sender=member,
+        receiver=admin,
+        is_read=False
+    ).update(is_read=True)
+    
+    context = {
+        "chat_messages": messages_to_show,
+        "member": member,
+        "other_user": member,
+        "admin": admin,
+        "total_messages": total_count,
+        "shown_messages": messages_to_show.count(),
+    }
+    
+    # Return ONLY the message items, no wrapper
+    return render(request, "accounts/partials/admin_chat_messages_only.html", context)
+
+
+
 
 
 def wishlist(request):

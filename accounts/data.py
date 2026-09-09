@@ -2,7 +2,7 @@
 # https://my.ems.com.cn/pcp-web/f/pcp/indexController/quotequery
 AREA_CODE = [
     # ('DEFAULT', '🌏'),
-    ('', '🌏'),
+    ('',        '🌏 Area Code｜區號'),
     ('+93',     'Afghanistan 🇦🇫 +93'),
     ('+355',    'Albania 🇦🇱 +355'),
     ('+213',    'Algeria 🇩🇿 +213'),
@@ -539,6 +539,7 @@ DESTINATIONS_MAINLAND_CHINA = [
     ('Xizang',              '西藏自治區|Xīzàng'),
 ]
 DESTINATIONS_FOR_INPUT = [
+    ('',        '🌏 Country｜國家/地區'),
     ('AU',	           'Australia 🇦🇺'),
     ('CN',	               'China 🇨🇳'),
     ('HK',             'Hong Kong 🇭🇰'),
@@ -806,9 +807,9 @@ DESTINATIONS_INCL_DIGITAL = [
 ]
 GENDER = [
         ('DEFAULT',     '♂♀⚥'),
-        ('MALE',        '男性 | Male'),
-        ('FEMALE',      '女性 | Female'),
-        ('SECRET',      '秘密 | Secret'),
+        ('MALE',        'Male｜男性'),
+        ('FEMALE',      'Female｜女性'),
+        ('SECRET',      'Secret｜秘密'),
     ]
 BLOOD = [
         ('DEFAULT', '🩸'),
@@ -816,29 +817,29 @@ BLOOD = [
         ('TYPE_B', 'B'),
         ('TYPE_AB', 'AB'),
         ('TYPE_O', 'O'),
-        ('TYPE_OTHER', '其他 | Other'),
+        ('TYPE_OTHER', 'Other｜其他'),
     ]
 COLOR = [
     ('DEFAULT',     '🎨'),
-    ('RED',         '紅色 | Red'),
-    ('PINK',        '粉色 | Pink'),
-    ('ORANGE',      '橙色 | Orange'),
-    ('YELLOW',      '黃色 | Yellow'),
-    ('PURPLE',      '紫色 | Purple'),
-    ('GREEN',       '綠色 | Green'),
-    ('BLUE',        '藍色 | Blue'),
-    ('BROWN',       '棕色 | Brown'),
-    ('WHITE',       '白色 | White'),
-    ('GRAY',        '灰色 | Gray'),
-    ('BLACK',       '黑色 | Black'),
-    ('OTHER',       '其他 | Other'),
+    ('RED',         'Red｜紅色'),
+    ('PINK',        'Pink｜粉色'),
+    ('ORANGE',      'Orange｜橙色'),
+    ('YELLOW',      'Yellow｜黃色'),
+    ('PURPLE',      'Purple｜紫色'),
+    ('GREEN',       'Green｜綠色'),
+    ('BLUE',        'Blue｜藍色'),
+    ('BROWN',       'Brown｜棕色'),
+    ('WHITE',       'White｜白色'),
+    ('GRAY',        'Gray｜灰色'),
+    ('BLACK',       'Black｜黑色'),
+    ('OTHER',       'Other｜其他'),
 ]
 LABEL = [
-    ('',            '標籤🏷️🪹 | Label'),
-    ('home',        '家🏠｜Home'),
-    ('work',        '工作🏢｜Work'),
-    ('school',      '學校🏫｜School'),
-    ('other',       '其他🛸｜Other'),
+    ('',            'Label｜標籤🏷️🪹'),
+    ('home',        'Home｜家🏠'),
+    ('work',        'Work｜工作🏢'),
+    ('school',      'School｜學校🏫'),
+    ('other',       'Other｜其他🛸'),
 ]
 CURRENCIES = [
     "HKD",

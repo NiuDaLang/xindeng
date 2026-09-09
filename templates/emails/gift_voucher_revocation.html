@@ -1,0 +1,59 @@
+<!-- templates/emails/gift_voucher_revocation.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    .card { border: 1px dashed #ef4444; padding: 24px; border-radius: 12px; background-color: #fdf2f2; margin: 24px 0; text-align: center; }
+    .footer-note { font-size: 11px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 32px; }
+  </style>
+</head>
+<body style="font-family: 'Georgia', serif; color: #1f2937; line-height: 1.6; background-color: #ffffff; padding: 20px;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 10px;">
+    
+    <!-- Premium Editorial Header Component -->
+    <h2 style="color: #ef4444; font-family: 'Georgia', serif; font-size: 20px; tracking: 0.05em; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; font-weight: normal;">
+      Gift Voucher Status Update｜🎁 電子禮品卡狀態更新
+    </h2>
+    
+    <p style="font-size: 14px; margin-top: 20px;">Dear Recipient / 您好,</p>
+    
+    <p style="font-size: 13px; color: #4b5563;">
+      We are writing to inform you that the electronic store credit voucher gifted to you by 
+      <strong style="color: #1f2937;">{{ order.email }}</strong> has been deactivated because the associated purchase transaction was cancelled and refunded by the buyer.
+    </p>
+
+    <!-- 🛑 Warning Notice Card Block Component -->
+    <div class="card">
+      <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; color: #b91c1c; display: block; margin-bottom: 4px;">
+        Voucher Cancelled｜禮品卡已註銷失效
+      </span>
+      <div style="font-size: 14px; font-weight: bold; color: #1f2937; margin: 6px 0; font-family: monospace;">
+        Token Reference / 憑證編號: #{{ short_ids_str }}
+      </div>
+      <p style="font-size: 12px; color: #7f1d1d; margin: 0; line-height: 1.5; font-family: sans-serif;">
+        The security PIN and claim link associated with this store credit token are no longer active. If you have not claimed or bound this token balance to a registered profile wallet, the credit has been permanently voided by our system.
+        <br><span style="opacity: 0.8; display: block; margin-top: 6px;">提示：此商店代金券之驗證碼與兌換連結目前已被系統安全註銷。如您先前未將其核銷綁定至您的註冊會員錢包，該筆額度已正式作廢。</span>
+      </p>
+    </div>
+
+    {% if order.gift_message %}
+      <p style="font-size: 12px; color: #9ca3af; font-style: italic; margin-bottom: 4px;">Original Gift Message｜原祝詞回顧:</p>
+      <div style="font-style: italic; border-left: 3px solid #ef4444; padding-left: 14px; margin: 12px 0; color: #4b5563; font-size: 13px;">
+        "{{ order.gift_message }}"
+      </div>
+    {% endif %}
+
+    <p style="font-size: 13px; color: #4b5563; margin-top: 20px;">
+      If you believe this cancellation occurred in error, please reach out to the original sender to coordinate a new gift card placement.
+      <br><span style="font-size: 12px; opacity: 0.7; display: block; margin-top: 4px; font-family: sans-serif;">如您認為此狀態變更為誤操作，請與原送禮人聯絡以重新發起送禮申請。</span>
+    </p>
+
+    
+    <div class="footer-note">
+      <p style="margin: 0; font-size: 12px; color: #9ca3af; font-family: sans-serif;">Hṛdayadīpa｜心燈 Team</p>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,138 +1,90 @@
-{% autoescape off %}
+<!-- templates/emails/cancellation_initiation_email.html -->
 <!DOCTYPE html>
-<html lang="en" style="padding:0;margin:0;box-sizing:border-box;">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Cancellation Processing Alert｜訂單取消申請中</title>
-        <link rel="preconnect" href="https://googleapis.com">
-        <link rel="preconnect" href="https://gstatic.com" crossorigin>
-        <link href="https://googleapis.com/css2?family=Noto+Sans+TC:wght@100..900&family=Zalando+Sans:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
-    </head>
-    <body style="font-family: 'Noto Sans TC','Zalando Sans',sans-serif; margin:0; background-color: #f7f5f3; padding: 20px 0;">
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="table-layout: fixed;">
-            <tr>
-                <td align="center" style="padding: 0 10px;">
-                    <table class="content" width="600" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse; border: 1px solid #cccccc; background-color:#f7f5f3; width: 600px; max-width: 100%;">
-                        
-                        <!-- Header Strip -->
-                        <tr>
-                            <td class="header" style="background-color: #c2bdb9; padding: 40px; text-align: center; color:#161616; font-size: 1.15rem; line-height: 1.35rem; font-weight: bold;">
-                                Cancellation Processing Alert
-                                <br/>
-                                訂單取消申請處理中
-                            </td>
-                        </tr>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    .ledger-box { border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; background-color: #f9fafb; margin: 20px 0; }
+    .intake-box { background-color: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13px; color: #78350f; font-family: sans-serif; }
+    .intake-box ul { margin: 6px 0 0 20px; padding: 0; }
+    .caveat-box { background-color: #f3f4f6; border-radius: 8px; padding: 12px; margin-top: 16px; font-size: 11px; color: #4b5563; font-family: sans-serif; }
+  </style>
+</head>
+<body style="font-family: 'Georgia', serif; color: #1f2937; line-height: 1.6; background-color: #ffffff; padding: 20px;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 10px;">
+    
+    <!-- Premium Editorial Header Grid -->
+    <h2 style="color: #d97706; font-family: 'Georgia', serif; font-size: 20px; tracking: 0.05em; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; font-weight: normal;">
+      Refund Request Received｜退款申請已受理
+    </h2>
+    
+    <p style="font-size: 14px; margin-top: 20px;">Dear Reader / 您好,</p>
+    
+    <p style="font-size: 13px; color: #4b5563;">
+      We have successfully registered your request to cancel order <strong style="color: #1f2937;">#{{ order.order_number }}</strong>. Our Hong Kong corporate accounting team is currently reviewing your transaction parameters.
+    </p>
 
-                        <!-- Main Core Body Context -->
-                        <tr>
-                            <td class="body" style="padding: 40px 40px 20px 40px; text-align: left; font-size: 0.85rem; line-height: 1.45rem; color: #161616;">
-                                Dear Customer,
-                                <br><br>
-                                We have received an automated request to cancel your order reference <strong>#{{ order.order_number }}</strong>. Our administration desk has initialized the processing parameters.<br/>
-                                我們已收到針對您訂單編號 <strong>#{{ order.order_number }}</strong> 的取消申請，系統正在為您安排後續處理程序。
-                            </td>
-                        </tr>
+    <!-- 📊 Accounting Breakdown Summary Certificate -->
+    <div class="ledger-box">
+      <div style="font-size: 11px; text-transform: uppercase; tracking: 0.1em; color: #9ca3af; margin-bottom: 8px;">Estimated Refund Breakdown｜預估退款明細</div>
+      <table style="width: 100%; font-size: 13px; font-family: sans-serif; border-collapse: collapse;">
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 6px 0; color: #6b7280;">Original Order Total｜訂單原始總額:</td>
+          <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #1f2937;">CNY ¥{{ order.total_due }}</td>
+        </tr>
+        {% if original_voucher_spent > 0 %}
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 6px 0; color: #6b7280;">Voucher Credit Reversal｜自動退回代金券:</td>
+          <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #059669;">CNY ¥{{ original_voucher_spent }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+          <td style="padding: 6px 0; color: #6b7280;">Net Cash Refund Payout｜預估應退實付金額:</td>
+          <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #d97706;">{{ currency_code }} {{ net_cash_payout_str }}</td>
+        </tr>
+      </table>
+    </div>
 
-                        <!-- DYNAMIC PATHWAY CONTEXT MODULE GATES -->
-                        {% if refund_type == 'voucher' and claim_registration_url %}
-                        <!-- Standard B: Guest Voucher Refund (Full Value Return) -->
-                        <tr>
-                            <td style="padding: 0 40px 20px 40px;">
-                                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; border-collapse: separate;">
-                                    <tr>
-                                        <td style="padding: 16px; text-align: left; font-size: 0.8rem; color: #166534; line-height: 1.45rem;">
-                                            <strong style="font-size: 0.85rem; display: block; margin-bottom: 6px;">
-                                                🎁 Create Account to Claim Full Store Credit ➔ 註冊會員領取全額購物金
-                                            </strong>
-                                            You opted to receive a 100% full refund via store credit. We have pre-allocated your voucher! Please **click the secure button below to create your account**. Upon registration, the full value will automatically credit directly into your profile wallet balance.<br/>
-                                            <span style="display: block; margin-top: 4px; color: #15803d;">
-                                                您已選擇全額退回為購物金（虛擬禮品卡）。我們已成功為您保留額度！請**點擊下方按鈕完成會員註冊**，完成後該筆面值將**自動全額匯入**您的個人帳戶錢包中。
-                                            </span>
-                                            
-                                            <!-- Interactive Call to Action Registration Link Wrapper -->
-                                            <table border="0" cellpadding="0" cellspacing="0" style="margin: 20px auto 10px auto; background-color:#15803d; border-radius:5px;">
-                                                <tr>
-                                                    <td align="center" valign="middle" style="font-size:14px; font-weight:bold; padding: 12px 24px;">
-                                                        <a href="{{ claim_registration_url }}" target="_blank" style="color:#ffffff; text-decoration:none;">Register & Claim Wallet Credit｜註冊並領取全額購物金</a>
-                                                    </td>
-                                                </tr>
-                                            </table>  
+    <!-- 🌟 DYNAMIC PAYMENTV VECTOR DISPLAY INTERCEPT CONTROLLER -->
+    {% if is_online_gateway %}
+      <!-- Case (h-i-ii)-(b): Online Gateway Channel Processing -->
+      <p style="font-size: 13px; color: #4b5563;">
+        <strong>Fulfillment Notification:</strong> Your original payment was cleared via an online payment gateway (PayPal/Stripe). The net cash refund amount will be credited back automatically to your original funding card or account. No further action is required from you.
+        <br><span style="font-size: 12px; opacity: 0.8; display: block; margin-top: 6px; font-family: sans-serif;">提示：由於您原先使用線上即時網關（PayPal/Stripe）支付，款項在審核完成後將由系統自動刷退返還至您原先綁定的卡片或帳戶中，您無需提供任何帳戶資訊。</span>
+      </p>
+    {% else %}
+      <!-- Case (h-i-ii)-(a): Offline Hong Kong Bank Remittance Processing -->
+      <div class="intake-box">
+        <strong style="font-size: 14px; display: block; margin-bottom: 4px;">Action Required: Reply with Account Details｜💡 煩請回覆您的收款明細</strong>
+        To execute manual clearing via our Hong Kong Corporate Profile, please reply directly to this email message providing your preferred bank account coordinates:
+        <ul>
+          <li>Bank Name｜銀行名稱</li>
+          <li>Account Number｜銀行帳號</li>
+          <li>Account Holder Name｜帳戶戶名</li>
+          <li>SWIFT Code / IBAN (For Cross-Border Wires)｜跨境電匯代碼</li>
+        </ul>
+        <span style="opacity: 0.9; display: block; margin-top: 8px; font-size: 12px;">提示：本站線下收單由香港實體公司主體承接。煩請您直接回覆此郵件，提供上述本地港幣或跨境電匯受款帳戶資料，以便我們的駐港財務人員為您手動匯回退款。</span>
+      </div>
+    {% endif %}
 
-                                            <span style="font-size: 11px; color: #166534; opacity: 0.85; display: block; border-top: 1px dashed #bbf7d0; padding-top: 10px; margin-top: 12px; line-height: 1.3rem;">
-                                                ⚠️ <strong>Legal Terms / 權益須知:</strong> This unclaimed voucher code carries a strict <b>1-year validity limit</b>. If registration is not finalized within 365 days from today, this credit token will automatically lapse and the store duty will terminate.<br/>
-                                                此未領取的全額購物金設有嚴格的 <b>1 年有效期限（365天）</b>。若未在即日起 365 天內完成會員註冊與領取，該購物金面值將自動失效，本站亦將終止其兌付義務。
-                                            </span>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                        {% elif refund_type == 'cash' %}
-                        <!-- Standard C: Cash Refund Method (Informs of the 3% Admin Fee) -->
-                        <tr>
-                            <td style="padding: 0 40px 20px 40px;">
-                                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; border-collapse: separate;">
-                                    <tr>
-                                        <td style="padding: 16px; text-align: left; font-size: 0.8rem; color: #555555; line-height: 1.4rem;">
-                                            You opted for a refund back to your original payment gateway channel. Please note that a <strong>3% administration handling fee deduction</strong> will apply to the final payout balance to cover processing and restocking overheads.<br/>
-                                            <span style="display: block; margin-top: 4px; color: #666666;">
-                                                您已選擇退回原支付管道。請注意，為填補訂單處理與倉庫入庫手續，最終退款總額將扣除 <strong>3% 的行政手續費</strong>。
-                                            </span>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                        {% endif %}
+    <!-- 🌟 NON-MEMBER REGISTRATION CONVERSION FUNNEL NOTICE -->
+    {% if user_type == 'guest' %}
+      <div class="caveat-box">
+        <strong>Membership Registration Caveat｜訪客轉換提示:</strong>
+        Please note that future access to self-service tracking sheets, invoice downloads, and promo voucher claims requires an active member profile. You can register anytime on our portal using your verified checkout email: <strong style="color: #1f2937;">{{ order.email }}</strong>.
+        <br><span style="opacity: 0.75; display: block; margin-top: 4px;">溫馨提示：註冊成為會員後即可解鎖完整的線上下單、歷史發票下單查核、以及未來專屬代金券禮券的管理功能。</span>
+      </div>
+    {% endif %}
 
-                        <!-- Security Warning Block -->
-                        <tr>
-                            <td style="padding: 0 40px 20px 40px;">
-                                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #fef2f2; border: 1px solid #fee2e2; border-radius: 8px; border-collapse: separate;">
-                                    <tr>
-                                        <td style="padding: 16px; text-align: left; font-size: 0.8rem; color: #991b1b; line-height: 1.4rem;">
-                                            <strong>🛡️ Security Warning / 安全提示:</strong><br/>
-                                            If this cancellation request was NOT initiated by you, please click the link below or contact us immediately to halt the process.<br/>
-                                            若此操作並非由您本人發起，請立刻點擊下方連結或直接回信與我們聯繫，以防止未經授權的變更：
-                                            <br/><br/>
-                                            <a href="{{ site_domain }}/contact/" style="color: #b91c1c; font-weight: bold; text-decoration: underline;">Contact Support Instantly｜聯絡客服中心</a>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
+    <p style="font-size: 13px; color: #9ca3af; margin-top: 32px; font-family: sans-serif; border-top: 1px solid #f3f4f6; padding-top: 12px;">
+      Our typical manual verification turnaround lifecycle takes approximately 3 to 5 business days. Thank you for your patience.
+      <br><span style="font-size: 11px; opacity: 0.8; display: block; margin-top: 2px;">退款人工核銷流程通常需要 3 至 5 個工作天，感謝您的配合。</span>
+    </p>
 
-                        <!-- Closing Global Disclaimer -->
-                        <tr>
-                            <td class="body" style="padding: 10px 40px 30px 40px; text-align: left; font-size:0.7rem; line-height: 1.0rem; color: #666666; border-top: 1px dashed #cccccc; padding-top: 20px;">
-                                If you did not make a purchase or request a modification at xindeng.com, please ignore this email.<br/>
-                                如果您沒有在心燈 xindeng.com 購物或提交變更申請，請忽視這份郵件。     
-                            </td>
-                        </tr>
+    <div style="margin-top: 24px; font-size: 12px; color: #9ca3af; font-family: sans-serif;">
+      Hṛdayadīpa｜心燈 Team
+    </div>
 
-                        <!-- Footer -->
-                        <tr>
-                            <td class="footer" style="background-color: #333333; padding: 40px; text-align: center; color: white; font-size: 14px;">
-                                Copyright &copy; 2026 | xindeng.art
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
-    </body>
+  </div>
+</body>
 </html>
-
-<style>
-@media screen and (max-width: 600px) {
-    .content {
-        width: 100% !important;
-        padding: 0 !important;
-    }
-    .header, .body, .footer {
-        padding: 25px !important;
-    }
-}
-</style>
-{% endautoescape %}

@@ -39,8 +39,8 @@
                 
                 <!-- DYNAMIC ORDERPRODUCT QUERYSET LOOP -->
                 <div class="space-y-4">
-                    {% if order.orderproduct_set.all %}
-                        {% for item in order.orderproduct_set.all %}
+                    {% if order.items.all %}
+                        {% for item in order.items.all %}
                         <div class="flex items-center justify-between gap-4 p-3 rounded-xl bg-base-200/40 border border-base-200/60">
                             <div class="flex items-center gap-3">
                                 {% if item.product_variation.product.image %}
@@ -142,10 +142,15 @@
                 
                 <div class="flex flex-col gap-2 pt-1">
                     <!-- LIFECYCLE CHRONO GATE: ALLOW SELF CANCELLATIONS STRICTLY ON SAFE STATUS HOOKS -->
-                    {% if order.order_status == 'Processing' or order.order_status == 'Hold_Pending' %}
-                    <button onclick="triggerOrderCancellation('{{ order.order_number }}', '{{ order.total_due }}')" class="btn btn-sm btn-error btn-outline font-sans text-xs rounded-lg w-full shadow-sm tracking-wide">
-                        Cancel Order｜取消訂單
-                    </button>
+                    {% if order.can_be_cancelled_online %}
+                        <button onclick="triggerOrderCancellation('{{ order.order_number }}', '{{ order.total_due }}')" class="btn btn-sm btn-error btn-outline font-sans text-xs rounded-lg w-full shadow-sm tracking-wide">
+                            Cancel Order｜取消訂單
+                        </button>
+                    {% else %}
+                        <!-- Fallback Notice Action Node to manage user communication paths professionally -->
+                        <a href="{% url 'contact' %}" class="btn btn-xs btn-ghost text-base-content/40 text-[10px] font-sans rounded-md px-2 py-1 h-auto min-h-0 select-none">
+                            <i class="fa-solid fa-headset opacity-60"></i> Locked｜聯絡售後客服
+                        </a>
                     {% endif %}
                     
                     <a href="{% url 'contact' %}" class="btn btn-sm btn-neutral font-sans text-xs rounded-lg w-full shadow-sm tracking-wide">
@@ -229,6 +234,21 @@
         </div>
     </div>
 </div>
+
+<style>
+    .chat-bubble {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+        line-height: 1.4;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background-image: none !important;
+        border: none !important;
+    }
+</style>
+
 
 <script>
 // 1. GLOBAL ROOT HTMX LIFECYCLE LISTENERS

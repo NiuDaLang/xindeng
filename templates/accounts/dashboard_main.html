@@ -1,3 +1,4 @@
+{% load humanize %}
 <title>{{ page_title }}</title>
 <!-- contents -->
 <div id="dashboard_main" class="subpage flex flex-col gap-6 animate-fade-in w-full text-neutral font-sans select-none">
@@ -5,80 +6,110 @@
     <!-- ================================================================= -->
     <!-- 📊 TOP SECTION: THE BRAND PLATFORM METRIC TILES                   -->
     <!-- ================================================================= -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
         <!-- CARD 1: COLLECTED WORKS -->
-        <div class="border-2 rounded-[24px] border-info bg-neutral-content/40 flex items-center p-4 justify-between transition-all hover:bg-neutral-content/60 shadow-sm relative group overflow-hidden">
-            <div class="flex flex-col gap-2 max-w-[75%]">
-                <div class="flex flex-col font-black text-[0.68rem] tracking-wider uppercase opacity-60">
-                    <span>Works Owned by You</span>
-                    <span class="font-sans font-medium text-[0.62rem] opacity-70">您已擁有的商品數量</span>
-                </div>
+        <div class="flex flex-col border-2 border-info rounded-[24px] bg-neutral-content/40 items-center p-4 pb-8 justify-between transition-all hover:bg-neutral-content/60 shadow-sm relative group overflow-hidden">
+            <div class="flex flex-col w-full items-start font-black text-[0.68rem] tracking-wider uppercase opacity-60">
+                <span>Works Owned by You</span>
+                <span class="font-sans font-medium text-[0.62rem] opacity-70">您已擁有的商品數量</span>
+            </div>
+            <div class="flex justify-between w-full">
                 <div class="flex items-baseline gap-1 mt-1 font-mono">
-                    <strong class="text-4xl font-black text-info-content tracking-tight">{{ total_items_purchased|default:"0" }}</strong>
+                    <strong class="text-4xl font-black text-info-content tracking-tight">{{ total_items_purchased|default:"0"|intcomma }}</strong>
                     <span class="text-[0.68rem] opacity-50 font-sans">items｜件</span>
                 </div>
-            </div>
-            <div class="tooltip tooltip-left flex items-center justify-center p-2 rounded-xl bg-info-content/5 text-info-content hover:bg-info-content hover:text-white transition-all cursor-pointer" data-tip="View Orders｜訂單紀錄">
-                <a href="{% url 'dashboard' 'orders' %}" 
-                    hx-get="{% url 'dashboard' 'orders' %}" 
-                    hx-target="#dashboard-content" 
-                    hx-push-url="true"
-                    hx-on:click="updateActiveLink(this)"
-                >
-                    <i class="fa-solid fa-circle-info text-xl"></i>
-                </a>
+                <div class="tooltip tooltip-left flex items-center justify-center p-2 rounded-xl bg-info-content/5 text-info-content hover:bg-info-content hover:text-white transition-all cursor-pointer" data-tip="View Orders｜訂單紀錄">
+                    <a href="{% url 'dashboard' 'orders' %}" 
+                        hx-get="{% url 'dashboard' 'orders' %}" 
+                        hx-target="#dashboard-content" 
+                        hx-push-url="true"
+                        hx-on:click="updateActiveLink(this)"
+                        id="works_owned"
+                    >
+                        <i class="fa-solid fa-circle-info text-xl"></i>
+                    </a>
+                </div>
             </div>
         </div>
 
         <!-- CARD 2: AVAILABLE GIFT VOUCHERS -->
-        <div class="border-2 rounded-[24px] border-info bg-neutral-content/40 flex items-center p-4 justify-between transition-all hover:bg-neutral-content/60 shadow-sm relative group overflow-hidden">
-            <div class="flex flex-col gap-2 max-w-[75%]">
-                <div class="flex flex-col font-black text-[0.68rem] tracking-wider uppercase opacity-60">
-                    <span>Wallet Balance</span>
-                    <span class="font-sans font-medium text-[0.62rem] opacity-70">我的代金券可用餘額</span>
-                </div>
+        <div class="flex flex-col border-2 border-info rounded-[24px] bg-neutral-content/40 items-center p-4 pb-8 justify-between transition-all hover:bg-neutral-content/60 shadow-sm relative group overflow-hidden">
+            <div class="flex flex-col w-full items-start font-black text-[0.68rem] tracking-wider uppercase opacity-60">
+                <span>Wallet Balance</span>
+                <span class="font-sans font-medium text-[0.62rem] opacity-70">您的代金券可用餘額</span>
+            </div>
+            <div class="flex justify-between w-full">
                 <div class="flex items-baseline gap-1 mt-1 font-mono">
                     <span class="text-xs opacity-50">¥</span>
-                    <strong class="text-4xl font-black text-info-content tracking-tight">{{ wallet_balance|default:"0.00" }}</strong>
+                    <strong class="flex items-baseline gap-0 text-4xl font-black text-info-content tracking-tight font-mono">
+                        <span>{{ wallet_balance|default:"0.00"|floatformat:0|intcomma }}</span>
+                        <span class="text-xl font-bold opacity-85">.{% with cents=wallet_balance|default:"0.00"|floatformat:2 %}{{ cents|slice:"-2:" }}{% endwith %}</span>
+                    </strong>
                     <span class="text-[0.65rem] opacity-50 font-sans uppercase">CNY</span>
                 </div>
+                <div class="tooltip tooltip-left flex items-center justify-center p-2 rounded-xl bg-info-content/5 text-info-content hover:bg-info-content hover:text-white transition-all cursor-pointer" data-tip="My Vouchers｜禮品券明細">
+                    <a href="{% url 'dashboard' 'vouchers' %}" 
+                        hx-get="{% url 'dashboard' 'vouchers' %}" 
+                        hx-target="#dashboard-content" 
+                        hx-push-url="true"
+                        hx-on:click="updateActiveLink(this)"
+                        id="my_vouchers"
+                    >
+                        <i class="fa-solid fa-coins text-xl"></i>
+                    </a>
+                </div>
             </div>
-            <div class="tooltip tooltip-left flex items-center justify-center p-2 rounded-xl bg-info-content/5 text-info-content hover:bg-info-content hover:text-white transition-all cursor-pointer" data-tip="My Vouchers｜禮品券明細">
-                <a href="{% url 'dashboard' 'vouchers' %}" 
-                    hx-get="{% url 'dashboard' 'vouchers' %}" 
-                    hx-target="#dashboard-content" 
-                    hx-push-url="true"
-                    hx-on:click="updateActiveLink(this)"
-                >
-                    <i class="fa-solid fa-coins text-xl"></i>
-                </a>
+            
+            <!-- Bottom Segment: Dynamic 72-Hour Double-Spend Protection Status Tracker -->
+            <div class="absolute left-0 bottom-0 w-full px-4 pb-1">
+                {% if pending_holds_total and pending_holds_total > 0 %}
+                    <div class="border-t border-dashed border-base-200 flex items-center justify-between text-[10px] font-sans text-base-content/60 animate-fade-in">
+                        <div class="flex items-center gap-1.5 truncate">
+                            <span class="relative flex h-1.5 w-1.5 flex-shrink-0">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-warning"></span>
+                            </span>
+                            <span class="truncate opacity-80" title="Held for pending transfers｜待轉帳鎖定金額">
+                                Reserved Funds｜銀行匯款在途鎖定
+                            </span>
+                        </div>
+                        <span class="font-mono font-bold text-warning whitespace-nowrap bg-warning/10 px-1.5 py-0.5 rounded">
+                            -¥{{ pending_holds_total|floatformat:2|intcomma }}
+                        </span>
+                    </div>
+                {% else %}
+                    <div class="border-t border-transparent flex items-center justify-between text-[10px] text-base-content/30 select-none">
+                        <span>No pending holds｜暫無鎖定額度</span>
+                    </div>
+                {% endif %}
             </div>
         </div>
 
         <!-- CARD 3: UNREAD ACCOUNT COMMUNICATIONS -->
-        <div class="border-2 rounded-[24px] border-info bg-neutral-content/40 flex items-center p-4 justify-between transition-all hover:bg-neutral-content/60 shadow-sm relative group overflow-hidden">
-            <div class="flex flex-col gap-2 max-w-[75%]">
-                <div class="flex flex-col font-black text-[0.68rem] tracking-wider uppercase opacity-60">
-                    <span>Unread Messages</span>
-                    <span class="font-sans font-medium text-[0.62rem] opacity-70">未讀通知訊息</span>
-                </div>
+        <div class="flex flex-col border-2 border-info rounded-[24px] bg-neutral-content/40 items-center p-4 pb-8 justify-between transition-all hover:bg-neutral-content/60 shadow-sm relative group overflow-hidden">
+            <div class="flex flex-col w-full items-start font-black text-[0.68rem] tracking-wider uppercase opacity-60">
+                <span>Unread Messages</span>
+                <span class="font-sans font-medium text-[0.62rem] opacity-70">未讀通知訊息</span>
+            </div>
+            <div class="flex justify-between w-full">
                 <div class="flex items-baseline gap-1 mt-1 font-mono">
                     <strong class="text-4xl font-black {% if unread_count > 0 %}text-error animate-pulse{% else %}text-info-content/40{% endif %} tracking-tight">
-                        {{ unread_count|default:"0" }}
+                        {{ unread_count|default:"0"|intcomma }}
                     </strong>
                     <span class="text-[0.68rem] opacity-50 font-sans">lines｜條</span>
                 </div>
-            </div>
-            <div class="tooltip tooltip-left flex items-center justify-center p-2 rounded-xl bg-info-content/5 text-info-content hover:bg-info-content hover:text-white transition-all cursor-pointer" data-tip="Support Chat｜聯絡客服">
-                <a href="{% url 'dashboard' 'help' %}" 
-                    hx-get="{% url 'dashboard' 'help' %}" 
-                    hx-target="#dashboard-content" 
-                    hx-push-url="true"
-                    hx-on:click="updateActiveLink(this)"
-                >
-                    <i class="fa-solid fa-envelope text-xl"></i>
-                </a>
+                <div class="tooltip tooltip-left flex items-center justify-center p-2 rounded-xl bg-info-content/5 text-info-content hover:bg-info-content hover:text-white transition-all cursor-pointer" data-tip="Support Chat｜聯絡客服">
+                    <a href="{% url 'dashboard' 'help' %}" 
+                        hx-get="{% url 'dashboard' 'help' %}" 
+                        hx-target="#dashboard-content" 
+                        hx-push-url="true"
+                        hx-on:click="updateActiveLink(this)"
+                        id="helpdesk"
+                    >
+                        <i class="fa-solid fa-envelope text-xl"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -86,7 +117,7 @@
     <!-- ================================================================= -->
     <!-- 📉 BOTTOM CONTENT GRID: TASK PIPELINES, NAVIGATION & UTILITIES    -->
     <!-- ================================================================= -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mt-2">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start mt-2">
         
         <!-- 🛒 LEFT LANE COLUMN: PROCESS TRACKERS & GRAPHIC TILES (Span: 2) -->
         <div class="lg:col-span-2 space-y-6 flex flex-col h-full">
@@ -96,8 +127,7 @@
                 <span class="text-[0.65rem] font-bold uppercase tracking-widest text-neutral/40">In-Flight Trackers｜在途訂單動態監測</span>
             </div>
             
-            {% if in_progress_orders %}
-                {% for order in in_progress_orders %}
+            {% for order in in_progress_orders %}
                 <div class="flex flex-col md:flex-row justify-between items-center gap-6 bg-neutral-content/20 border border-info p-5 rounded-[28px] shadow-sm relative overflow-hidden transition-all hover:bg-neutral-content/30">
                     
                     <!-- A. Dynamic Vertical Timeline Module -->
@@ -108,33 +138,35 @@
                             <div class="timeline-middle">
                                 <i class="fa-solid fa-circle-check {% if order.order_status != 'Hold_Pending' %}text-info-content{% else %}text-neutral/20{% endif %} text-base"></i>
                             </div>
-                            <div class="timeline-end pl-2.5 font-bold {% if order.order_status != 'Hold_Pending' %}text-info-content{% else %}text-neutral/40{% endif %}">訂單已處理｜Processed</div>
+                            <div class="timeline-end pl-2.5 font-bold {% if order.order_status != 'Hold_Pending' %}text-info-content{% else %}text-neutral/40{% endif %}">訂單已處理<br>Processed</div>
                             <hr class="{% if order.order_status != 'Hold_Pending' %}bg-info-content{% else %}bg-info/20{% endif %}" />
                         </li>
 
                         <!-- Step 2: Partly Dispatched Gateway -->
                         <li class="min-h-[3.8rem]">
                             <hr class="{% if order.order_status != 'Hold_Pending' %}bg-info-content{% else %}bg-info/20{% endif %}" />
-                            <div class="timeline-start"><i class="fa-solid fa-box-open {% if order.order_status == 'Partly_Dispatched' or order.order_status == 'All_Dispatched' or order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/30{% endif %}"></i></div>
+                            <div class="timeline-end"><i class="fa-solid fa-box-open {% if order.order_status == 'Partly_Dispatched' or order.order_status == 'All_Dispatched' or order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/30{% endif %}"></i></div>
                             <div class="timeline-middle">
                                 {% if order.order_status == 'Partly_Dispatched' %}
                                     <i class="fa-solid fa-boxes-packing text-base text-warning animate-pulse"></i>
-                                }) {% else %}
+                                {% else %}
                                     <i class="fa-solid fa-circle-check {% if order.order_status == 'All_Dispatched' or order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/20{% endif %} text-base"></i>
                                 {% endif %}
                             </div>
-                            <div class="timeline-end pl-2.5 font-bold {% if order.order_status == 'Partly_Dispatched' or order.order_status == 'All_Dispatched' or order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/40{% endif %}">部分發貨｜Partly Dispatched</div>
+                            <div class="timeline-start text-end pr-2.5 font-bold {% if order.order_status == 'Partly_Dispatched' or order.order_status == 'All_Dispatched' or order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/40{% endif %}">
+                                部分發貨<br>Partly Dispatched
+                            </div>
                             <hr class="{% if order.order_status == 'All_Dispatched' or order.order_status == 'Shipped' or order.order_status == 'Completed' %}bg-info-content{% else %}bg-info/20{% endif %}" />
                         </li>
 
                         <!-- Step 3: All Dispatched & Outbound -->
                         <li class="min-h-[3.8rem]">
                             <hr class="{% if order.order_status == 'All_Dispatched' or order.order_status == 'Shipped' or order.order_status == 'Completed' %}bg-info-content{% else %}bg-info/20{% endif %}" />
-                            <div class="timeline-start"><i class="fa-solid fa-truck-fast {% if order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/30{% endif %}"></i></div>
+                            <div class="timeline-end"><i class="fa-solid fa-truck-fast {% if order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/30{% endif %}"></i></div>
                             <div class="timeline-middle">
                                 <i class="fa-solid fa-circle-check {% if order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/20{% endif %} text-base"></i>
                             </div>
-                            <div class="timeline-end pl-2.5 font-bold {% if order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/40{% endif %}">物品已發送｜Dispatched</div>
+                            <div class="timeline-start text-end pr-2.5 font-bold {% if order.order_status == 'Shipped' or order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/40{% endif %}">物品已發送<br>Dispatched</div>
                             <hr class="{% if order.order_status == 'Completed' %}bg-info-content{% else %}bg-info/20{% endif %}" />
                         </li>
 
@@ -145,50 +177,181 @@
                             <div class="timeline-middle">
                                 <i class="fa-solid fa-truck-ramp-box {% if order.order_status == 'Completed' %}text-info-content animate-bounce{% else %}text-neutral/20{% endif %} text-base"></i>
                             </div>
-                            <div class="timeline-end pl-2.5 font-bold {% if order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/40{% endif %}">已送達交易完結｜Arrived</div>
+                            <div class="timeline-end pl-2.5 font-bold {% if order.order_status == 'Completed' %}text-info-content{% else %}text-neutral/40{% endif %}">已送達交易完結<br>Arrived</div>
                         </li>
                     </ul>
 
                     <!-- B. Compact Receipt Accounting Information Block -->
                     <div class="card w-full md:w-[58%] bg-base-100 border border-info rounded-2xl shadow-sm overflow-hidden text-[0.7rem]">
                         <div class="p-4 space-y-3.5">
-                            <div class="flex justify-between items-center border-b border-info/20 pb-2">
+                            <div class="flex flex-col items-center border-b border-info/20 pb-2">
                                 <span class="font-black text-info-content font-mono select-all">Invoice: #{{ order.order_number }}</span>
                                 <span class="badge badge-sm font-bold bg-info-content text-white font-mono text-[0.58rem] px-2 py-1 uppercase tracking-wider">{{ order.get_order_status_display }}</span>
                             </div>
-                            <div class="grid grid-cols-2 gap-x-2 gap-y-1.5 text-neutral/70 font-sans leading-tight">
-                                <div><strong class="opacity-50">Order Date｜訂單日期:</strong><br><span class="font-mono text-[0.65rem] text-base-content">{{ order.created_at|date:"Y-m-d H:i" }}</span></div>
-                                <div><strong class="opacity-50">Tracking｜快遞單號:</strong><br><span class="font-mono text-[0.65rem] select-all text-info-content font-bold">{{ order.tracking_number|default:"Fulfilling｜安排中" }}</span></div>
+                            <div class="flex flex-col gap-x-2 gap-y-1.5 text-neutral/70 font-sans leading-tight">
+                                <div class="flex flex-wrap items-center justify-between">
+                                    <strong class="opacity-50">Order Date｜訂單日期:</strong>
+                                    <span class="font-mono text-[0.65rem] text-base-content">{{ order.created_at|date:"Y-m-d H:i" }}</span>
+                                </div>
+                                <div class="flex flex-wrap items-center justify-between">
+                                    <strong class="opacity-50">Tracking｜快遞單號:</strong>
+                                    <span class="font-mono text-[0.65rem] select-all text-info-content font-bold">{{ order.tracking_number|default:"Fulfilling｜安排中" }}</span>
+                                </div>
                             </div>
                             <div class="border-t border-dashed border-info/30 pt-2.5 space-y-1 font-mono bg-neutral-content/10 p-2.5 rounded-xl">
-                                <div class="flex justify-between opacity-70"><span>Items Sum｜商品小計</span><span>¥{{ order.product_total }}</span></div>
-                                <div class="flex justify-between opacity-70"><span>Courier｜物流運費</span><span>¥{{ order.shipping_cost }}</span></div>
-                                <div class="flex justify-between text-info-content font-black border-t border-info/20 pt-1.5 text-xs">
-                                    <span>Grand Total｜實付總金額</span><span>¥{{ order.total_due }}</span>
+                                <div class="flex justify-between opacity-70"><span>Items Sum｜商品小計</span><span>¥{{ order.product_total|floatformat:2|intcomma }}</span></div>
+                                <div class="flex justify-between opacity-70"><span>Courier｜物流運費</span><span>¥{{ order.shipping_cost|floatformat:2|intcomma }}</span></div>
+                                <div class="flex justify-between items-center w-full text-info-content font-black border-t border-info/20 pt-1.5 text-xs">
+                                    <span>Grand Total<br>總金額</span><span>CNY ¥{{ order.total_due|floatformat:2|intcomma }}</span>
                                 </div>
                             </div>
                             <div class="pt-0.5">
-                                <a  href="{% url 'dashboard' 'orders' %}" 
-                                    hx-get="{% url 'dashboard' 'orders' %}"
-                                    hx-target="#dashboard-content"
-                                    hx-push-url="true"
-                                    hx-on:click="updateActiveLink(this)"
-                                    class="btn btn-xs btn-neutral text-white btn-block rounded-xl py-2 h-auto min-h-0 font-bold shadow-sm tracking-wide"
-                                >
-                                    View Specifications｜查 看 訂 單 明 細
-                                </a>
+                                <button onclick="openOrderDetailsModal('{{ order.order_number }}')" 
+                                        class="btn btn-xs btn-outline border-info-content/20 text-info-content hover:bg-info-content hover:text-white font-bold w-full rounded-lg py-2 h-auto min-h-0 shadow-sm transition-all duration-200">
+                                    View Order Details｜查看明細
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
-                {% endfor %}
-            {% else %}
+
+                <!-- DYNAMIC ITEM MANIFEST DETAILS MODAL DRAWER CONTAINER -->
+                <dialog id="modal_{{ order.order_number }}" class="modal modal-bottom sm:modal-middle bg-black/60 backdrop-blur-sm select-none">
+                    <div class="modal-box bg-base-100 border border-base-300 rounded-2xl max-w-xl p-0 overflow-hidden shadow-2xl animate-fade-in relative text-base-content">
+                        
+                        <!-- MODAL TITLE HEADER STRIP -->
+                        <div class="bg-info-content text-white p-4 flex items-center justify-between shadow-sm rounded-t-2xl">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-receipt text-accent text-sm"></i>
+                                <div class="flex flex-col">
+                                    <h4 class="font-black text-sm tracking-wide">Order Specifications｜訂單明細摘要</h4>
+                                    <span class="text-[0.6rem] opacity-70 font-mono tracking-widest uppercase">Invoice Pass: {{ order.order_number }}</span>
+                                </div>
+                            </div>
+                            <button onclick="closeOrderDetailsModal('{{ order.order_number }}')" class="btn btn-xs btn-circle btn-ghost text-white font-bold">✕</button>
+                        </div>
+
+                        <!-- INNER SUMMARY GRID DETAILS -->
+                        <div class="p-3 space-y-4 text-xs font-sans max-h-[30rem] overflow-y-auto">
+                            
+                            <!-- 1. BASELINE ACCOUNTING TRANSACTION LEDGER SUMMARY BOX -->
+                            <div class="grid grid-cols-2 gap-x-4 gap-y-2 bg-base-200/60 border border-base-300 p-3 rounded-xl font-mono text-[0.7rem] shadow-inner text-base-content/80">
+                                <div class="col-span-2">
+                                    <span class="opacity-50">Order Date｜訂單日期:</span>
+                                    <span class="font-bold text-base-content">{{ order.created_at|date:"Y-m-d H:i" }}</span>
+                                </div>
+                                <div class="col-span-2">
+                                    <span class="opacity-50">Recipient｜收件人:</span>
+                                    <span class="font-bold text-base-content">
+                                        {% if order.recipient_first_name or order.recipient_last_name %}
+                                            {{ order.recipient_first_name }}&nbsp;{{ order.recipient_last_name }}
+                                        {% else %}
+                                            Self｜自用
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div><span class="opacity-50">Base Total｜產品實付:</span> <span class="font-bold text-base-content">¥{{ order.product_total|default:order.total_due|floatformat:2|intcomma }}</span></div>
+                                <div><span class="opacity-50">Grand Total｜總計結算:</span> <span class="font-black text-info-content">¥{{ order.total_due|floatformat:2|intcomma }}</span></div>
+                                
+                                <div class="col-span-2 pt-1 border-t border-dashed border-base-300/60 mt-1 text-[10px] text-base-content/40 font-sans tracking-wide leading-normal">
+                                    * Summary shows standard CNY values only.<br>此明細僅限顯示常規人民幣計價金額。
+                                </div>
+                            </div>
+
+                            <!-- 2. DYNAMIC PURCHASED ORDERPRODUCT manifest LIST -->
+                            <div class="space-y-1.5">
+                                <span class="text-[0.65rem] font-bold uppercase tracking-widest text-base-content/40 block pl-0.5">Purchased Lines｜訂購商品清單</span>
+                                <div class="divide-y divide-base-300 bg-base-50 rounded-xl border border-base-300 px-3.5">
+                                    {% for item in order.items.all %}
+                                    <div class="flex justify-between items-center py-3 text-[0.7rem] gap-4">
+                                        <div class="flex flex-col space-y-0.5 max-w-[65%]">
+                                            <span class="font-black text-base-content/90 text-xs leading-tight">{{ item.product.product_name }}</span>
+                                            <span class="opacity-50 font-mono text-[0.6rem]">SKU: {{ item.product_variation.get_sku }} × {{ item.quantity }}</span>
+                                            
+                                            {% if item.product_variation.product.is_physical %}
+                                            <div class="text-[0.6rem] mt-1">
+                                                {% if item.is_dispatched %}
+                                                    <span class="text-success font-medium"><i class="fa-solid fa-circle-check"></i> Dispatched｜已發貨</span>
+                                                {% else %}
+                                                    <span class="text-info font-medium"><i class="fa-solid fa-hourglass-half"></i> Processing｜備貨中</span>
+                                                {% endif %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="text-right flex-shrink-0">
+                                            {% if item.product_variation.product.is_digital and item.product_variation.product.digital_fulfillment_type == 'INSTANT' %}
+                                                {% for tok in item.download_tokens.all %}
+                                                    {% if not tok.is_expired %}
+                                                        <a href="{% url 'secure_file_download_gate' tok.id %}" class="btn btn-xs btn-accent text-white font-bold rounded-lg px-2.5 shadow-sm py-1.5 h-auto min-h-0">
+                                                            <i class="fa-solid fa-download text-[0.65rem]"></i> Download｜下載
+                                                        </a>
+                                                    {% else %}
+                                                        <div class="badge badge-sm badge-ghost text-error font-mono font-bold border border-error/10">Expired｜已失效</div>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% elif item.product_variation.product.is_voucher %}
+                                                <span class="text-[0.65rem] bg-accent/10 text-accent font-bold px-2 py-0.5 rounded border border-accent/20 font-mono">E-Voucher</span>
+                                            {% else %}
+                                                <span class="font-bold font-mono text-base-content/70">¥{{ item.get_subtotal|floatformat:2|intcomma }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- 3. LOGISTICS SHIPPINGS AND DELIVERY NOTE SPEC BOXES -->
+                            {% if order.delivery_note or order.tracking_number %}
+                            <div class="space-y-1.5">
+                                <span class="text-[0.65rem] font-bold uppercase tracking-widest text-base-content/40 block pl-0.5">Courier Instructions｜物流配送備註</span>
+                                <div class="bg-base-200/40 border border-base-300 p-3 rounded-xl space-y-2 text-[0.7rem] text-base-content/80">
+                                    {% if order.tracking_number %}
+                                    <p class="font-mono"><strong>Tracking Reference｜運單號碼:</strong> <span class="badge badge-sm font-bold bg-base-100 border text-info-content select-all font-mono">{{ order.tracking_number }}</span></p>
+                                    {% endif %}
+                                    {% if order.delivery_note %}
+                                    <p class="leading-relaxed"><strong>Delivery Remark｜配送附言:</strong> <span class="text-base-content">{{ order.delivery_note }}</span></p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- 4. OPERATIONAL MANAGER ACTION ROW TRIGGERS -->
+                            <div class="border-t border-base-content/10 pt-3 mt-4 flex flex-col sm:flex-row gap-2 justify-between items-stretch sm:items-center">
+                                
+                                {% if order.is_ordered %}
+                                <a href="{% url 'generate_order_confirmation_pdf' order.order_number %}" target="_blank" class="btn btn-xs btn-outline border-base-content/20 text-base-content/80 hover:bg-base-content hover:text-base-100 font-bold flex gap-1 items-center justify-center py-2 h-auto min-h-0 rounded-lg shadow-sm">
+                                    <i class="fa-solid fa-file-pdf"></i> Download Receipt｜下載 PDF 水單
+                                </a>
+                                {% else %}
+                                <div></div>
+                                {% endif %}
+                                
+                                <div class="flex gap-2">
+                                    {% if order.can_be_cancelled_online %}
+                                        <!-- ✅ FIXED: Removed double colon -->
+                                        <button onclick="triggerOrderCancellation('{{ order.order_number }}', '{{ order.total_due }}', '{{ order.voucher_applied|yesno:'true,false' }}', 'true')" 
+                                                class="btn btn-xs btn-error btn-outline font-serif font-bold rounded-lg px-2.5 py-1.5 h-auto min-h-0 shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]">
+                                            Cancel Order｜取消訂單
+                                        </button>
+                                    {% else %}
+                                        <span class="text-xs font-sans text-base-content/30 italic select-none">
+                                            Locked｜唯讀鎖定
+                                        </span>
+                                    {% endif %}
+                                    <button onclick="closeOrderDetailsModal('{{ order.order_number }}')" class="btn btn-xs btn-neutral font-bold rounded-lg px-2 py-2 h-auto min-h-0 shadow-sm grow sm:grow-0">
+                                        Close｜關閉
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </dialog>
+
+            {% empty %}
                 <!-- Empty State Floating Water-Bubbles Canvas Frame -->
-                <!-- CLEAN WATER-BUBBLE EMPTY STATE GRAPHIC CONTAINER -->
                 <div class="relative bubble-wrapper rounded-[28px] border border-info bg-neutral-content/10 w-full min-h-[16.5rem] flex flex-col items-center justify-center text-center p-6 shadow-inner overflow-hidden">
                     
-                    <!-- CENTRAL TYPOGRAPHY ACCENTS (Elevated with z-10 for layered depth layout) -->
-                    <!-- 🌟 FIX: Removed the generic <div> wrapper container tag around the icon! -->
                     <i class="fa-solid fa-clipboard-list fa-xl text-info-content/30 p-3.5 bg-info-content/5 rounded-full w-14 h-14 flex items-center justify-center mb-2.5 z-10 select-none pointer-events-none"></i>
                     
                     <h2 class="text-info-content font-black text-xs tracking-wide z-10 select-none">
@@ -201,7 +364,7 @@
                         任何新成立的線下手動轉帳或即時線上支付訂單皆會在此視窗內動態呈現其物流與履約進度時間軸。
                     </p>
 
-                    <!-- 🫧 THE 15 LAYERED ASYNCHRONOUS BUBBLE SHIELDS (Direct children divs only) -->
+                    <!-- 🫧 THE 15 LAYERED ASYNCHRONOUS BUBBLE SHIELDS -->
                     <div><span class="dot"></span></div>
                     <div><span class="dot"></span></div>
                     <div><span class="dot"></span></div>
@@ -219,103 +382,109 @@
                     <div><span class="dot"></span></div>
                     
                 </div>
-            {% endif %}
 
+            {% endfor %}
+            
             <!-- SIX-GRID RECTANGULAR NAVIGATION GRID MATRIX -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-white font-black text-[0.72rem] tracking-wider uppercase">
-                
                 <!-- 1. Profile Panel -->
                 <a href="{% url 'dashboard' 'profile' %}"
                     hx-get="{% url 'dashboard' 'profile' %}"
                     hx-target="#dashboard-content"
                     hx-push-url="true"
                     hx-on:click="updateActiveLink(this)"
+                    id="edit_profile_label" 
                     class="flex aspect-[5/1.25] rounded-l-none rounded-r-[24px] border border-info bg-info-content overflow-hidden shadow-sm group hover:scale-[1.01] transition-transform duration-200"
                 >
                     <div class="w-[28%] h-full bg-neutral flex justify-center items-center group-hover:bg-neutral/80 transition-colors">
                         <i class="fa-solid fa-address-card text-xl text-white"></i>
                     </div>
-                    <div class="flex flex-1 items-center justify-start pl-5 text-neutral-content bg-neutral-content/10 font-bold">
+                    <div class="flex flex-1 items-center justify-start pl-5 text-base-200 bg-[#0284c7] font-bold">
                         Edit Profile<br/>會員檔案
                     </div>                    
                 </a>
-                
-                <!-- 2. Address Book -->
+
+                <!-- 2. Address Book - ✅ FIXED: Removed duplicate id -->
                 <a href="{% url 'dashboard' 'addresses' %}" 
                     hx-get="{% url 'dashboard' 'addresses' %}"
                     hx-target="#dashboard-content"
                     hx-push-url="true"
                     hx-on:click="updateActiveLink(this)"
+                    id="address_book_label"
                     class="flex aspect-[5/1.25] rounded-l-none rounded-r-[24px] border border-info bg-info-content overflow-hidden shadow-sm group hover:scale-[1.01] transition-transform duration-200"
                 >
                     <div class="w-[28%] h-full bg-neutral flex justify-center items-center group-hover:bg-neutral/80 transition-colors">
                         <i class="fa-solid fa-address-book text-xl text-white"></i>
                     </div>
-                    <div class="flex flex-1 items-center justify-start pl-5 text-neutral-content bg-neutral-content/10 font-bold">
+                    <div class="flex flex-1 items-center justify-start pl-5 text-base-200 bg-[#0284c7] font-bold">
                         Address Book<br/>地址簿管理
                     </div>                        
-                </a>
+                </a>                
                 
-                <!-- 3. Voucher Offers -->
-                <a href="{% url 'dashboard' 'vouchers' %}"
-                    hx-get="{% url 'dashboard' 'vouchers' %}"
+                <!-- 3. Offers/Perks - ✅ FIXED: Changed to proper id -->
+                <a href="{% url 'dashboard' 'offers' %}"
+                    hx-get="{% url 'dashboard' 'offers' %}"
                     hx-target="#dashboard-content"
                     hx-push-url="true"
                     hx-on:click="updateActiveLink(this)"
+                    id="perks_label"
                     class="flex aspect-[5/1.25] rounded-l-none rounded-r-[24px] border border-info bg-info-content overflow-hidden shadow-sm group hover:scale-[1.01] transition-transform duration-200"
                 >
                     <div class="w-[28%] h-full bg-neutral flex justify-center items-center group-hover:bg-neutral/80 transition-colors">
                         <i class="fa-solid fa-gifts text-xl text-white"></i>
                     </div>
-                    <div class="flex flex-1 items-center justify-start pl-5 text-neutral-content bg-neutral-content/10 font-bold">
+                    <div class="flex flex-1 items-center justify-start pl-5 text-base-200 bg-[#0284c7] font-bold">
                         Offers & Perks<br/>專屬優惠領取
                     </div>                        
                 </a>
-                
-                <!-- 4. Wishlist Gallery -->
+               
+                <!-- 4. Wishlist Gallery - ✅ FIXED: Added hx-on:click -->
                 <a href="{% url 'dashboard' 'wishlist' %}" 
                     hx-get="{% url 'dashboard' 'wishlist' %}"
                     hx-target="#dashboard-content"
                     hx-push-url="true"
                     hx-on:click="updateActiveLink(this)"
+                    id="wishlist_label"
                     class="flex aspect-[5/1.25] rounded-l-none rounded-r-[24px] border border-info bg-info-content overflow-hidden shadow-sm group hover:scale-[1.01] transition-transform duration-200"
                 >
                     <div class="w-[28%] h-full bg-neutral flex justify-center items-center group-hover:bg-neutral/80 transition-colors">
                         <i class="fa-solid fa-clipboard-list text-xl text-white"></i>
                     </div>
-                    <div class="flex flex-1 items-center justify-start pl-5 text-neutral-content bg-neutral-content/10 font-bold">
-                        Wishlist<br/>我的收藏清單
+                    <div class="flex flex-1 items-center justify-start pl-5 text-base-200 bg-[#0284c7] font-bold">
+                        Wishlist<br/>您的收藏清單
                     </div>                        
                 </a>
-                
-                <!-- 5. Favorites Bookmarks -->
+
+                <!-- 5. Favorites Bookmarks - ✅ FIXED: Added hx-on:click -->
                 <a href="{% url 'dashboard' 'favorites' %}"
                     hx-get="{% url 'dashboard' 'favorites' %}"
                     hx-target="#dashboard-content"
                     hx-push-url="true"
                     hx-on:click="updateActiveLink(this)"
+                    id="favorites_label"
                     class="flex aspect-[5/1.25] rounded-l-none rounded-r-[24px] border border-info bg-info-content overflow-hidden shadow-sm group hover:scale-[1.01] transition-transform duration-200"
                 >
                     <div class="w-[28%] h-full bg-neutral flex justify-center items-center group-hover:bg-neutral/80 transition-colors">
                         <i class="fa-solid fa-bookmark text-xl text-white"></i>
                     </div>
-                    <div class="flex flex-1 items-center justify-start pl-5 text-neutral-content bg-neutral-content/10 font-bold">
+                    <div class="flex flex-1 items-center justify-start pl-5 text-base-200 bg-[#0284c7] font-bold">
                         Favorites<br/>喜愛項目書籤
                     </div>                        
                 </a>
-                
-                <!-- 6. Interactive 3D Canvas Scene Studio -->
+
+                <!-- 6. Interactive 3D Canvas Scene Studio - ✅ FIXED: Added hx-on:click -->
                 <a href="{% url 'dashboard' 'threed' %}"
                     hx-get="{% url 'dashboard' 'threed' %}"
                     hx-target="#dashboard-content"
                     hx-push-url="true"
                     hx-on:click="updateActiveLink(this)"
+                    id="threed_label"
                     class="flex aspect-[5/1.25] rounded-l-none rounded-r-[24px] border border-info bg-info-content overflow-hidden shadow-sm group hover:scale-[1.01] transition-transform duration-200"
                 >
                     <div class="w-[28%] h-full flex justify-center items-center bg-[linear-gradient(180deg,rgba(252,5,5,1)0%,rgba(255,14,142,1)12%,rgba(169,28,255,1)25%,rgba(42,136,255,1)37%,rgba(57,255,200,1)50%,rgba(124,242,156,1)63%,rgba(206,255,72,1)75%,rgba(255,105,87,1)88%,rgba(255,120,120,1)100%)] group-hover:opacity-90 transition-opacity">
                         <i class="fa-solid fa-cube text-xl text-white"></i>
                     </div>
-                    <div class="flex flex-1 items-center justify-start pl-5 text-neutral-content bg-neutral-content/10 font-bold">
+                    <div class="flex flex-1 items-center justify-start pl-5 text-base-200 bg-[#0284c7] font-bold">
                         3D Scene Studio<br/>空間藝術展示
                     </div>                        
                 </a>
@@ -326,13 +495,10 @@
         <div class="space-y-5 lg:col-span-1 flex flex-col h-full text-neutral">
             
             <!-- A. DYNAMIC EPHEMERIS TRADITIONAL SEASONAL CALENDAR HEADER CARD -->
-            <!-- Expanded min-h-[25rem] sets the parent container vertical height to exactly 400px! -->
-            <div class="w-full min-h-[25rem] mt-[3rem] rounded-[28px] text-white border border-info relative flex flex-col justify-between overflow-hidden shadow-md">
-                
-                <!-- Season & Date Specifications Overlay Layout (Stays clean at the top) -->
-                <div class="flex flex-col z-10 p-6 space-y-4">
+            <div class="w-full min-h-[20rem] xs:min-h-[15rem] mt-[3rem] rounded-[28px] text-white border border-info relative flex flex-col justify-between overflow-hidden shadow-md">
+                <div class="flex flex-col z-10 p-6 md:pl-[20%] lg:pl-3 lg:pt-3 space-y-4">
                     {% if solar_term %}
-                        <div class="flex items-center gap-4 z-10 select-none bg-neutral/40 p-2.5 rounded-xl backdrop-blur-sm border border-white/5 w-fit">
+                        <div class="flex items-center gap-1 mb-2 z-10 select-none bg-neutral/40 p-2.5 rounded-xl backdrop-blur-sm border border-white/5 w-fit">
                             <div class="flex flex-col text-left leading-none">
                                 <span id="solar_term" class="text-base font-black tracking-wide text-white">{{ solar_term }}</span>
                                 <span id="solar_term_en" class="text-[0.42rem] font-mono tracking-widest uppercase opacity-60 mt-1">{{ solar_term_en }}</span>
@@ -348,25 +514,23 @@
                             {% endif %}
                         </div>
                     {% endif %}
-                    
-                    <div class="flex flex-col space-y-1 text-left font-mono">
+
+                    <div class="flex flex-col pl-2.5 space-y-1 text-left font-mono">
                         <span id="dynamic-date" hx-preserve="true" class="text-[0.75rem] font-bold tracking-wider text-white drop-shadow-md"></span>
                         <span id="dynamic-date-cn" class="text-[0.65rem] opacity-80 font-sans tracking-wide text-white/90 drop-shadow-md"></span>
                     </div>
                 </div>
                 
-                <!-- Analog Clock Attached Widget Container (Locked cleanly leaning to the bottom right) -->
-                <div class="absolute right-6 bottom-6 z-10 scale-100 origin-bottom-right w-[200px] h-[200px]">
+                <div class="main_clock absolute right-4 xxs:right-6 md:right-[20%] lg:right-3 bottom-4 xxs:bottom-6 lg:bottom-3 z-10 scale-100 origin-bottom-right">
                     {% include 'accounts/partials/clock_analog.html' %}
                 </div>
                 
-                <!-- Background Graphic Wallpaper Layer -->
-                <img src="/media/hero/red_leaves.jpeg" alt="Seasonal Red Leaves background" class="absolute left-0 top-0 w-full h-full object-cover select-none pointer-events-none filter brightness-[0.7]">
+                <img src="{{ solar_term_bg_url }}" alt="Seasonal Red Leaves background" class="absolute left-0 top-0 w-full h-full object-cover select-none pointer-events-none filter brightness-[0.8]">
             </div>
 
             <!-- B. SYSTEM ACCORDION COLLAPSE SELF-HELP DESK -->
             <div class="w-full join join-vertical text-[0.68rem] rounded-2xl border border-info overflow-hidden shadow-sm bg-base-100 text-neutral">
-                
+               
                 <!-- FAQ Item 1 -->
                 <div class="collapse collapse-arrow bg-base-100 join-item border-b border-info/20">
                     <input type="radio" name="faq-joint" checked="checked" />
@@ -375,17 +539,18 @@
                             <i class="fa-solid fa-circle-question text-[0.65rem] opacity-60 text-info-content"></i> 
                             Can I request custom items outside the standard catalog?
                         </div>
-                        <span class="font-sans font-medium text-[0.62rem] opacity-60 pl-[1.1rem]">可以訂製常規產品之外的產品嗎？</span>
+                        <span class="font-sans font-medium text-[0.62rem] opacity-60 pl-[1.1rem]">可以訂製常規目錄之外的產品嗎？</span>
                     </div>
                     <div class="collapse-content text-neutral/80 bg-neutral-content/10 pt-2.5 leading-relaxed space-y-2">
                         <p class="font-sans font-medium text-info-content">
                             Yes, custom specifications and bespoke artistic requirements are negotiable. 
                             <a href="{% url 'dashboard' 'help' %}"
-                                hx-get="{% url 'dashboard' 'threed' %}"
+                                hx-get="{% url 'dashboard' 'help' %}"
                                 hx-target="#dashboard-content"
                                 hx-push-url="true"
                                 hx-on:click="updateActiveLink(this)"
                                 class="underline text-accent"
+                                id="help_faq_en1"
                             >Chat</a>
                             with us.
                         </p>
@@ -397,11 +562,12 @@
                                 hx-push-url="true"
                                 hx-on:click="updateActiveLink(this)"
                                 class="underline text-accent"
+                                id="help_faq_cn1"
                             >客服熱線</a>
                             頁面發送正式諮詢至本店，我們將為您安排專屬工藝師進行一對一洽商。</p>
                     </div>
                 </div>
-                
+
                 <!-- FAQ Item 2 -->
                 <div class="collapse collapse-arrow bg-base-100 join-item border-b border-info/20">
                     <input type="radio" name="faq-joint" />
@@ -421,6 +587,7 @@
                                 hx-push-url="true"
                                 hx-on:click="updateActiveLink(this)"
                                 class="underline text-accent"
+                                id="profile_faq_en"
                             >Edit Profile</a>
                             page in the sidebar menu.
                         </p>
@@ -433,6 +600,7 @@
                                 hx-push-url="true"
                                 hx-on:click="updateActiveLink(this)"
                                 class="underline text-accent"
+                                id="profile_faq_cn"
                             >會員檔案</a>
                             頁面，在上傳檔案欄位中選取您喜愛的影像檔案（支援 PNG/JPG 格式），確認後點擊修改更新即可同步完成。
                         </p>
@@ -470,11 +638,12 @@
                         <p class="font-sans font-medium text-info-content">
                             Each transaction must be fully finalized using a single selected currency track. For offline options, please
                             <a href="{% url 'dashboard' 'help' %}"
-                                hx-get="{% url 'dashboard' 'threed' %}"
+                                hx-get="{% url 'dashboard' 'help' %}"
                                 hx-target="#dashboard-content"
                                 hx-push-url="true"
                                 hx-on:click="updateActiveLink(this)"
                                 class="underline text-accent"
+                                id="help_faq_en2"
                             >Chat</a>
                             with us.
                         </p>
@@ -482,17 +651,18 @@
                         <p class="opacity-80">
                             抱歉，每一次結帳均有對應的匯率快取鎖定機制，單一筆訂單僅限使用一種貨幣進行即時結算。如果您有特殊的跨境或跨幣種支付調配需求，請進入
                             <a href="{% url 'dashboard' 'help' %}"
-                                hx-get="{% url 'dashboard' 'threed' %}"
+                                hx-get="{% url 'dashboard' 'help' %}"
                                 hx-target="#dashboard-content"
                                 hx-push-url="true"
                                 hx-on:click="updateActiveLink(this)"
                                 class="underline text-accent"
+                                id="help_faq_cn2"
                             >客服熱線</a>
                             洽商。
                         </p>
                     </div>
                 </div>
-                
+
                 <!-- FAQ Item 5 -->
                 <!-- <div class="collapse collapse-arrow bg-base-100 join-item">
                     <input type="radio" name="faq-joint" />
@@ -509,6 +679,9 @@
                         <p class="opacity-80">若您在財務報銷或公司資產核銷上有開立正式商業發票或收據憑證之需求，請於完成支付付款後，直接聯繫線上人工客服提供您的抬頭與統編資訊。</p>
                     </div>
                 </div> -->
+
+
+
             </div>
         </div>
     </div>

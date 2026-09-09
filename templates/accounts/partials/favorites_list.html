@@ -1,131 +1,145 @@
+<!-- favorites_list.html -->
 {% load humanize %}
 {% if favorites %}
-    <div class="grid md:grid-cols-2 gap-8 my-5">
-        {% for favorite in favorites%}
-            <div id="favorite_item_{{ favorite.pk }}" class="card bg-base-100 shadow-sm">
-                <figure class="relative">
-                    <a href="{{ favorite.product_variation.product.get_url }}" class="w-full h-full group transition-all duration-5000 ease-in-out">
-                        <img
-                            src="{{ favorite.product_variation.images.url }}"
-                            alt="Product Image" 
-                        />
-                        <div class="bg-primary/0 absolute w-full h-full top-0 left-0 group-hover:bg-primary/20 cursor-pointer">
-                        </div>
-                        <i class="absolute left-1/2 top-1/2 -translate-1/2 fa-solid fa-right-to-bracket fa-lg opacity-0 group-hover:opacity-100 text-base-100"></i>
+    <!-- DYNAMIC RESPONSIVE DOUBLE COLUMN PLATFORM GRID MESH -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full items-start my-2">
+        {% for favorite in favorites %}
+            <!-- 🌟 MASTER SAVED CARD WORKSPACE PLATFORM WITH BLURRY PALE BLUE OUTLINES -->
+            <div id="favorite_item_{{ favorite.pk }}" 
+                 class="card bg-base-100/40 border-2 border-info/20 shadow-sm rounded-2xl transition-all duration-300 hover:shadow-md relative overflow-hidden flex flex-col justify-between group h-full">
+
+                <!-- A. PRODUCT VISUAL COVER ASSET RAMP -->
+                <figure class="relative aspect-video w-full overflow-hidden border-b border-base-200 bg-neutral/10 shrink-0">
+                    <a href="{{ favorite.product_variation.product.get_url }}" class="w-full h-full block relative group/link">
+                        <img src="{{ favorite.product_variation.images.url }}" alt="{{ favorite.product_variation.product.product_name }}" class="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover/link:scale-105" />
+                        <div class="absolute inset-0 bg-neutral-950/0 transition-colors duration-300 group-hover/link:bg-neutral-950/20 cursor-pointer z-10"></div>
+                        <i class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 fa-solid fa-right-to-bracket fa-lg opacity-0 scale-95 transition-all duration-300 group-hover/link:opacity-100 group-hover/link:scale-100 text-white z-20 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]"></i>
                     </a>
-                    <div class="absolute right-2 top-2 z-20 flex flex-col items-center">
-                        <!-- add to cart -->
-                        {% if favorite.product_variation.stock > 0 and favorite.product_variation.is_available %}
-                            <button type="button"
-                                    id="add_favorite_to_cart_btn_{{ favorite.pk }}"
-                                    class="btn btn-circle btn-xs btn-ghost hover:bg-success-content hover:text-white transition-colors"             
-                                    hx-get="{% url 'add_to_cart_qty' favorite.product_variation.pk 'favorites' %}"
-                                    hx-target="#change_qty_wrapper"
-                                    hx-trigger="click consume"
-                                    onclick="my_modal_3.showModal()"
-                            >
-                                <i class="fa-solid fa-cart-plus fa-lg"></i>
-                            </button>
-                        {% else %}
-                            <button disabled>
-                                <i class="fa-solid fa-store-slash"></i>
-                            </button>
-                        {% endif %}
-                        <!-- share -->
-                        <button type="button"
-                                class="btn btn-circle btn-xs btn-ghost hover:bg-info-content hover:text-white transition-colors"
-                                data-title="Hṛdayadīpa (हृदयदीप) - {{ favorite.product_variation.product.product_name }}"
-                                data-text="{{ favorite.product_variation.get_sku }}"
-                                data-link="{{ request.build_absolute_uri }}"
-                                hx-on:click="share_link(this.getAttribute('data-title'), this.getAttribute('data-text'), this.getAttribute('data-link'))"
-                        >
-                            <i class="fa-solid fa-share-from-square fa-lg"></i>
-                        </button>
 
-
-                        <!-- delete -->
-                        <button type="button" 
-                                class="btn btn-circle btn-xs btn-ghost hover:bg-error-content hover:text-white transition-colors"
-                                hx-post="{% url 'delete_favorite_item' favorite.pk %}"
-                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                                hx-target="#favorites_wrapper"
-                                hx-trigger="confirmed"
-                                onclick="confirmAction(
-                                    button=this,
-                                    title='Are you sure?｜您確定嗎？',
-                                    html=`This item will be removed from your favorites!<br>此寶貝將從您的收藏清單中移除！`,
-                                    icon='warning',
-                                    show_cancel=true,
-                                    confirm_btn_color='#d33',
-                                    cancel_btn_color='#3085d6',
-                                    confirm_btn_text='Yes, remove it!｜確定移除！',
-                                    cancel_btn_text='Cancel｜取消',
-                                )"
-                        >
-                            <i class="fa-solid fa-trash-can fa-lg"></i>
-                        </button>
+                    <!-- TOP LEFT VISUAL CHIP BADGES -->
+                    <div class="absolute top-3 left-3 z-20 flex flex-wrap gap-1 select-none pointer-events-none">
+                        <span class="badge badge-secondary badge-xs font-sans text-[9px] font-bold px-1.5 py-1 rounded shadow-sm border-0">新上架</span>
+                        <span class="badge badge-error badge-xs font-sans text-[9px] font-bold px-1.5 py-1 rounded shadow-sm border-0">人气！</span>
                     </div>
-    
-                    <!-- tags -->
-                    <div class="card-title absolute top-3 left-3">
-                        <span class="badge badge-secondary badge-xs text-[0.6rem]">新上架</span>
-                        <span class="badge badge-error badge-xs text-[0.6rem]">人气！</span>
-                        <span class="badge badge-success badge-xs text-[0.6rem]">优惠！</span>
+
+                    <!-- TOP RIGHT QUICK UTILITY TOOL CONTROL HOOKS -->
+                    <div class="absolute right-3 top-3 z-20 flex items-center gap-1.5">
+                        <!-- Add to Cart Quick Trigger -->
+                        {% if favorite.product_variation.stock > 0 and favorite.product_variation.is_available %}
+                            <div class="tooltip tooltip-left font-sans text-[10px]" data-tip="Move to Cart｜移入車">
+                                <button type="button" id="add_favorite_to_cart_btn_{{ favorite.pk }}"
+                                        hx-get="{% url 'add_to_cart_qty' favorite.product_variation.pk 'favorites' %}" 
+                                        hx-target="#change_qty_wrapper" hx-trigger="click consume" 
+                                        data-sidebar-target="favorites_label"
+                                        onclick="my_modal_3.showModal(); updateActiveLink(this)"
+                                        class="btn btn-circle btn-xs border-0 bg-black/60 hover:bg-success text-white shadow-sm transition-all focus:outline-none focus:ring-0">
+                                    <i class="fa-solid fa-cart-plus text-[10px]"></i>
+                                </button>
+                            </div>
+                        {% else %}
+                            <button disabled class="btn btn-circle btn-xs border-0 bg-black/40 text-white/40 cursor-not-allowed"><i class="fa-solid fa-store-slash text-[10px]"></i></button>
+                        {% endif %}
+
+                        <!-- Share Link Dispatcher -->
+                        <div class="tooltip tooltip-left font-sans text-[10px]" data-tip="Share｜分享">
+                            <button type="button" class="btn btn-circle btn-xs border-0 bg-black/60 hover:bg-success text-white shadow-sm transition-all focus:outline-none focus:ring-0"
+                                    data-title="Hṛdayadīpa (हृदयदीप) - {{ favorite.product_variation.product.product_name }}" 
+                                    data-text="{{ favorite.product_variation.get_sku }}" 
+                                    data-link="{{ request.build_absolute_uri }}"
+                                    data-sidebar-target="favorites_label"
+                                    onclick="share_link(this.getAttribute('data-title'), this.getAttribute('data-text'), this.getAttribute('data-link')); updateActiveLink(this)">
+                                    <i class="fa-solid fa-share-nodes text-[10px]"></i>
+                            </button>
+                        </div>
+
+                        <!-- Delete Row Hook -->
+                        <div class="tooltip tooltip-left font-sans text-[10px]" data-tip="Remove｜移除">
+                            <button type="button" class="btn btn-circle btn-xs border-0 bg-black/60 hover:bg-error text-white shadow-sm transition-all focus:outline-none focus:ring-0"
+                                    hx-post="{% url 'delete_favorite_item' favorite.pk %}" 
+                                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' 
+                                    hx-target="#favorites_wrapper" 
+                                    hx-trigger="confirmed"
+                                    data-sidebar-target="favorites_label"
+                                    onclick="window.confirmAction(
+                                        button=this, 
+                                        title='Are you sure?｜確定刪除嗎？', 
+                                        html=`<div class='text-center font-sans space-y-1 py-1'>
+                                                <p class='font-bold text-neutral-800 text-sm'>This item will be removed from your favorites!</p>
+                                                <p class='text-xs text-base-content/60 leading-normal'>此寶貝將從您的收藏清單中移除！</p>
+                                            </div>`, 
+                                        icon='warning', 
+                                        show_cancel=true, 
+                                        confirm_btn_color='#d33', 
+                                        cancel_btn_color='#3085d6', 
+                                        confirm_btn_text='Yes, remove it!｜確定移除！', 
+                                        cancel_btn_text='Cancel｜取消'
+                                    ); updateActiveLink(this)"
+                            >
+                                <i class="fa-solid fa-trash-can text-[10px]"></i>
+                            </button>
+                        </div>
                     </div>
                 </figure>
-                <div class="flex flex-col gap-[0.5rem] p-[1.5rem] text-[0.875rem]">
-                    <div class="text-[1.125rem] leading-tight font-medium flex items-start">
-                        <div class="pr-1">
-                            <i class="fa-solid fa-tag fa-xs inline-block"></i>
+
+                <!-- B. LOWER CORE INFRASTRUCTURE CONTENT AREA -->
+                <div class="flex-1 p-5 flex flex-col justify-between gap-4 font-sans text-xs">
+                    <div class="space-y-2">
+                        <div class="flex items-start gap-2">
+                            <i class="fa-solid fa-tag text-primary/50 text-[11px] mt-1 shrink-0"></i>
+                            <div class="space-y-0.5 min-w-0 flex-1">
+                                <span class="font-serif font-black text-sm tracking-wide text-base-content/90 block whitespace-normal break-words leading-tight">{{ favorite.product_variation.product.product_name }}</span>
+                                <span class="text-[10px] font-mono tracking-wider opacity-40 uppercase block whitespace-normal break-words">{{ favorite.sku }}</span>
+                            </div>
                         </div>
-                        <div class="flex flex-col">
-                            <span class="inline-block text-[0.9rem] text-shadow-lg/10">{{ favorite.product_variation.product.product_name }}</span>
-                            <span class="text-[0.65rem] uppercase font-light opacity-60">{{ favorite.sku }}</span>
+                        <p class="text-[11px] font-sans font-light text-base-content/60 leading-relaxed line-clamp-2" title="{{ favorite.product_variation.product.description }}">
+                            {{ favorite.product_variation.product.description }}
+                        </p>
+                    </div>
+                    <!-- C. TRAY FOOTING DATA ELEMENTS MATRIX -->
+                    <div class="border-t border-info/10 pt-3 flex items-center justify-between gap-4 select-none shrink-0">
+                        <!-- Dual Price Ledger Block Frame -->
+                        <div class="flex flex-col font-mono text-left leading-none">
+                            <div class="font-bold text-xs sm:text-sm text-base-content/80 flex items-center gap-1">
+                                <i class="fa-solid fa-money-check-dollar text-[10px] opacity-40"></i>
+                                <span>CNY <span class="text-teal-600 font-extrabold">{{ favorite.product_variation.price|floatformat:2|intcomma }}</span></span>
+                            </div>
+                            {% if favorite.product_variation.original_price and favorite.product_variation.original_price > favorite.product_variation.price %}
+                                <span class="text-[10px] text-base-content/40 line-through tracking-tight font-medium mb-0.5">
+                                    CNY {{ favorite.product_variation.original_price|floatformat:2|intcomma }}
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Catalog Item Badges Tag Strips Loop -->
+                        <div class="flex flex-wrap justify-end gap-1 flex-1 max-w-[60%]">
+                            {% if favorite.product_variation.product.tags %}
+                                {% for tag in favorite.product_variation.product.tags.all %}
+                                    <span class="badge badge-outline border-base-200 text-base-content/50 font-sans text-[9px] px-1.5 py-1 h-fit rounded truncate max-w-[75px]" title="{{ tag }}">
+                                        {{ tag }}
+                                    </span>
+                                {% endfor %}
+                            {% endif %}
                         </div>
                     </div>
-                    <p class="text-xs font-light">{{ favorite.product_variation.product.description }}</p>
-                    <!-- price -->
-                    <div class="card-title">
-                        <i class="fa-solid fa-money-check-dollar fa-sm"></i>                            
-                        <i class="font-extralight text-shadow-md text-shadow-stone-300 text-sm">CNY {{ favorite.product_variation.price|floatformat:2|intcomma}}</i>
-                    </div>
-                    <!-- labels -->
-                    <div class="card-actions justify-start">
-                        {% if favorite.product_variation.product.tags %}
-                            {% for tag in favorite.product_variation.product.tags.all %}
-                                <a href="" class="badge badge-outline badge-xs py-2 text-[0.65rem]">{{ tag }}</a>
-                            {% endfor %}
-                        {% endif %}
-                    </div>
+
                 </div>
             </div>
         {% endfor %}
     </div>
 {% else %}
-<!-- Elegant Empty State Placeholder for Favorites Page -->
-    <div class="flex flex-col items-center justify-center p-12 bg-base-200/30 rounded-box border border-dashed border-base-300/60 text-center my-8 select-none transition-all duration-300">
-        <!-- Sophisticated Visual Anchor -->
-        <div class="mb-4 text-primary/70 animate-pulse">
-            <i class="fa-regular fa-heart fa-2xl"></i>
-        </div>
-        
-        <!-- Sophisticated Title & Subtitle -->
-        <h3 class="text-sm font-medium tracking-wide text-base-content/90 mb-2">
-            <a href="{% url 'products' 'all' %}" class="link link-hover text-secondary transition-colors duration-200 font-semibold">傾心之作</a>正於此靜候您的回眸。<br>
-            <span class="text-xs font-normal tracking-normal text-base-content/60 block mt-1">Our fine-art creations quietly await your discerning gaze here.</span>
+    <!-- POETIC EMPTY DATA ARCHIVE REGISTER ENVELOPE FALLBACK -->
+    <div class="flex flex-col items-center justify-center p-12 bg-base-100/30 rounded-2xl border-2 border-dashed border-base-200 text-center my-6 select-none backdrop-blur-xs w-full transition-all duration-300">
+        <div class="mb-4 text-primary/60 animate-pulse"><i class="fa-regular fa-heart fa-2xl"></i></div>
+        <h3 class="text-xs sm:text-sm font-bold tracking-wide text-base-content/90 font-serif leading-relaxed">
+            <a href="{% url 'products' 'all' %}" class="link link-hover text-secondary font-black">傾心之作</a>正於此靜候您的回眸。<br>
+            <span class="text-[11px] font-sans font-normal opacity-50 block mt-0.5">Our fine-art creations quietly await your discerning gaze here.</span>
         </h3>
-        
-        <!-- Poetic Explanatory Text -->
-        <p class="text-[11px] leading-relaxed text-base-content/50 max-w-md mt-2">
+        <p class="text-[10px] sm:text-[11px] font-sans opacity-40 max-w-md mt-3 leading-relaxed">
             世間所有的不期而遇，皆是蓄謀已久的驚艷。願您在此定格靈感，慢慢探尋屬於您的專屬雅致。<br>
-            <span class="block mt-1 font-serif italic">Every crossroad between a collector and art is a calculated wonder. Capture your inspiration here as you curate your personal sanctuary.</span>
+            <span class="block mt-1 font-serif italic text-[10px] opacity-80">Every crossroad between a collector and art is a calculated wonder. Capture your inspiration here as you curate your personal sanctuary.</span>
         </p>
-
-        <!-- Call to Action Link -->
-        <a href="{% url 'products' 'all' %}" class="btn btn-outline btn-xs mt-5 tracking-wider font-light rounded-full px-4 border-base-300 text-base-content/70 hover:bg-secondary hover:text-secondary-content hover:border-secondary">
+        <a href="{% url 'products' 'all' %}" class="btn btn-outline btn-xs mt-5 tracking-wider font-sans font-medium rounded-full px-5 border-base-300 text-base-content/70 hover:bg-secondary hover:text-white hover:border-secondary transition-all">
             步入展廳 | Explore the Gallery
         </a>
     </div>
 {% endif %}
-
-    

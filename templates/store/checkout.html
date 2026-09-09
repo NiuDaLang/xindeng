@@ -530,9 +530,7 @@
                     </a>
                 </div>
             </div>
-
         </div>
-
     </main>
 </div>
 <script>
@@ -572,7 +570,12 @@ function initAddressAutoComplete(){
         }
     }
 
-    // ⚙️ GLOBAL RUNTIME PAY TRIGGER STATE MONITOR
+    // 💡 THE HARDENING FIX: DEBOUNCE WRAPPER
+    // Prevents your script from aggressively checking the form on EVERY single keystroke,
+    // permanently ending the focus-trap grey flicker with Google Autocomplete layers.
+    let validationDebounceTimeout;
+
+        // ⚙️ GLOBAL RUNTIME PAY TRIGGER STATE MONITOR
     window.updatePayButtonState = function() {
         if (window.checkoutTimer && window.checkoutTimer.currencyExpired) {
             payButton.disabled = true;
@@ -646,11 +649,21 @@ function initAddressAutoComplete(){
         }
     };
 
-    // Event delegation tracking loops
+    // 🚀 THE FIX: Use a 250ms debounce window for inputs instead of raw instant listeners
+    const debouncedStateUpdate = () => {
+        clearTimeout(validationDebounceTimeout);
+        validationDebounceTimeout = setTimeout(() => {
+            window.updatePayButtonState();
+        }, 250); // Waits for a 250ms pause in typing before checking the form
+    };
+
+    // Remove old aggressive listeners
     form.removeEventListener("input", window.updatePayButtonState);
     form.removeEventListener("change", window.updatePayButtonState);
-    form.addEventListener("input", window.updatePayButtonState);
-    form.addEventListener("change", window.updatePayButtonState);
+
+    // Attach your new, debounced safety handles
+    form.addEventListener("input", debouncedStateUpdate);
+    form.addEventListener("change", window.updatePayButtonState); // Direct execution is fine for clean click dropdowns
 
     window.updatePayButtonState();
 }

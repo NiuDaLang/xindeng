@@ -6,9 +6,10 @@ from django.urls import reverse
 from django_ckeditor_5.fields import CKEditor5Field
 from django.contrib.contenttypes.fields import GenericRelation
 from django.conf import settings
-import uuid
 from django.utils import timezone
-
+from django.core.validators import MaxValueValidator, MinValueValidator
+import uuid
+import decimal
 
 # Create your models here.
 # Model for global color options
@@ -18,6 +19,12 @@ class Color(models.Model):
     def __str__(self):
         return self.color_name
 
+    @property
+    def clean_color(self):
+        if not self.color_name or self.color_name in ["N/A", "不適用", "N/A｜不適用"]:
+            return "--"
+        return self.color_name
+    
 
 # Model for global size options
 class Size(models.Model):
@@ -27,6 +34,12 @@ class Size(models.Model):
 
     def __str__(self):
         return self.size_name
+
+    @property
+    def clean_size(self):
+        if not self.size_name or self.size_name in ["N/A", "不適用", "N/A｜不適用"]:
+            return "--"
+        return self.size_name
     
 
 # Model for global type options
@@ -34,6 +47,12 @@ class Type(models.Model):
     type_name       = models.CharField(max_length=100, unique=True, blank=True)
 
     def __str__(self):
+        return self.type_name
+
+    @property
+    def clean_type(self):
+        if not self.type_name or self.type_name in ["N/A", "不適用", "N/A｜不適用"]:
+            return "--"
         return self.type_name
 
 
@@ -90,7 +109,7 @@ class Product(models.Model):
     is_physical     = models.BooleanField(default=True)
     is_voucher      = models.BooleanField(default=False)
 
-    is_digital = models.BooleanField(default=False)
+    is_digital      = models.BooleanField(default=False)
     digital_fulfillment_type = models.CharField(
         max_length=15,
         choices=[
@@ -147,6 +166,14 @@ class ProductVariation(models.Model):
     is_available    = models.BooleanField(default=True)
     price           = models.DecimalField(max_digits=10, decimal_places=2) # Use DecimalField for money
     original_price  = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True) # Use DecimalField for money
+
+    cancellation_fee_pct = models.DecimalField(
+        max_length=5,
+        max_digits=5, 
+        decimal_places=2, 
+        default=decimal.Decimal('0.00'),
+        validators=[MinValueValidator(0), MaxValueValidator(90)]
+    )
 
     with_shipping   = models.BooleanField(default=False)
     single_pack     = models.BooleanField(default=False)
@@ -215,6 +242,38 @@ class ProductVariation(models.Model):
         filtered_sku = [part for part in sku_parts if part.strip()]
         
         return "-".join(filtered_sku) or f"SKU-VAR-{self.pk}"
+
+    def save(self, *args, **kwargs):
+        """
+        Database-Level Infinite Asset Enforcement.
+        Forces instant e-products to maintain a static inventory balance of 1,
+        making them immune to accidental human edits or workflow deductions.
+        """
+        # 🌟 Check your explicit business rule condition safely at runtime
+        is_instant_eproduct = (
+            self.product.is_digital and 
+            self.product.digital_fulfillment_type == 'INSTANT' and 
+            not self.product.is_voucher
+        )
+
+        if is_instant_eproduct:
+            # Enforce binary availability rules for infinite digital goods
+            self.stock = 1
+            self.is_available = True
+            
+            # If your save call specifies 'update_fields', make sure 'stock' and 'is_available' are included
+            if 'update_fields' in kwargs and kwargs['update_fields'] is not None:
+                # Convert tuple to list to allow modifications safely
+                fields = list(kwargs['update_fields'])
+                if 'stock' not in fields:
+                    fields.append('stock')
+                if 'is_available' not in fields:
+                    fields.append('is_available')
+                kwargs['update_fields'] = fields
+
+        # Execute standard parent class save routing to write down to SQL engines cleanly
+        super().save(*args, **kwargs)
+
 
 
 class ProductGallery(models.Model):

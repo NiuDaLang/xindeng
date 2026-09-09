@@ -1,0 +1,33 @@
+<!-- templates/emails/cancellation_completion_email.txt -->
+Hṛdayadīpa (हृदयदीप)｜心燈 - Refund Settlement Confirmed｜兌換餘額簽發完成
+
+Hello / 您好,
+
+We have successfully finalized the cancellation processing parameters for order #{{ order.order_number }}. As requested, your remaining out-of-pocket values have been securely returned as an electronic store credit voucher token.
+
+[📊 REFUND CERTIFICATE LEDGER｜結算明細]
+--------------------------------------------------
+Original Invoice Total｜訂單原始面額: CNY ¥{{ order.total_due }}
+Issued Store Credit｜簽發購物金總額: CNY ¥{{ net_amount_str }}
+{% if short_voucher_id %}Voucher Reference｜憑證編號: #{{ short_voucher_id }}{% endif %}
+--------------------------------------------------
+
+{% if user_type == 'member' %}
+The compiled balance has been applied directly to your profile database vault wallet. The face value is immediately active with zero administrative fees and available to apply during your next checkout loop session.
+上述購物金額度已直接安全入帳至您的會員個人錢包，下次消費時可直接進行折抵，完全免收任何行政手續費。
+
+View Wallet Wallet URL: {{ site_domain }}/accounts/dashboard/vouchers/
+{% else %}
+REGISTRATION funnel ACCOUNT CAVEAT｜訪客轉換重要提示:
+To activate and apply this electronic store credit voucher, platform regulatory terms require you to possess a registered user profile account using your checkout email address ({{ order.email }}).
+為啟用並折抵此筆購物金，您需要點擊下方高強度加密連結完成新會員帳戶註冊，以利系統在1秒內將孤立的額度激活掛載至您的新帳戶錢包中。
+
+Secure Activation Bridge Link: {{ claim_link }}
+(This link container remains active for a lifespan of 365 days)
+{% endif %}
+
+Thank you for your patient cooperation throughout our financial tracking loops.
+感謝您在我們進行財務審核與對帳程序期間的配合。
+
+Warmest regards,
+The Hṛdayadīpa｜心燈 Team

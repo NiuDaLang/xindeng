@@ -1,87 +1,124 @@
 {% load humanize %}
+{% load chat_extras %}
+
 <title>{{ page_title }}</title>
-<div id="dashboard_help" class="subpage flex flex-col gap-5 mb-5 w-full">
+
+<div id="dashboard_help" class="subpage flex flex-col gap-2 mb-5 w-full" data-is-admin="{% if request.user == admin %}true{% else %}false{% endif %}">
     <!-- mobile mockup -->
-    <div class="w-full h-[calc(100vh-86px-8rem-2.5rem)]">
-        <div id="mockup-phone-base">
+    <div class="w-full h-[calc(100vh-86px-8rem)]">
+        <div id="mockup-phone-base" class="relative h-full">
             <!-- phone camera -->
-            <div id="mockup-phone-camera-part"></div>
+            <div id="mockup-phone-camera-part" class="w-[15%] xxs:w-[20%] xs:w-[30%]"></div>
+            
             <!-- clock -->
-            <div class="absolute top-[4%] left-8 z-10 text-left text-white text-xs flex h-[1rem]">
+            <div class="absolute top-[4%] left-8 z-20 text-left text-white text-[0.65rem] xs:text-xs flex flex-row xs:flex-col md:flex-row h-[1rem]">
                 <div id="dynamic-date"></div>
                 <div id="dynamic-clock"></div>
             </div>
+            
             <!-- Num of Unread Messages -->
-            <div class="absolute top-[4%] right-8 z-10 text-right text-white text-xs h-[1rem]">
-                <span class="text-xs">Inbox｜收件匣</span>
+            <div class="flex justify-end items-center absolute top-[calc(4%+0.8rem)] xs:top-[4%] left-8 xs:right-8 z-20 text-right text-white text-[0.65rem] xs:text-xs h-[1rem]">
+                <span class="xxs:text-[0.55rem] xs:text-xs">Inbox｜收件匣</span>
                 <div id="total_unread_count_badge_member"
                     hx-get="{% url 'get_unread_count' %}"
                     hx-trigger="refresh_count from:body"
-                    class="badge badge-md badge-secondary"
+                    class="badge badge-xs xs:badge-md badge-secondary text-[0.65rem] xs:text-xs"
                 >
                     {{ unread_count }}
                 </div>
             </div>
-            <!-- Mockup Phone -->
-            <div id="mockup-phone-main-container">
-                <div class="flex flex-col h-full bg-accent text-white px-6 pt-[6%]">
-                    <!-- TOP - input -->
+            
+            <!-- Mockup Phone - Fixed structure -->
+            <div id="mockup-phone-main-container" class="h-full relative">
+                <!-- Content overlay -->
+                <div class="relative z-10 flex flex-col h-full text-white px-2 xs:px-6 pt-[calc(6%+1.5rem)] md:pt-[6%]">
+                    
+                    <!-- 1. TOP - input (fixed height) -->
                     <form id="chat_msg_input_form"
-                            hx-post="{% url 'send_message' %}"
-                            hx-target="#chat_message_list"
-                            hx-swap="beforeend"
-                            hx-on::after-request="this.reset()"
-                            enctype="multipart/form-data" 
-                            class="w-full py-4 border-b border-white/10 flex"
-                    >
+                        class="w-full pt-4 pb-2 border-b border-white/10 flex flex-row gap-2 xs:gap-3 items-stretch xs:items-center flex-shrink-0 bg-transparent">
+                        
                         {% csrf_token %}
-                        <input type="hidden" name="receiver_id" id="receiver_id_input" value="{{admin.id}}">
-                        <input type="hidden" name="user_id" id="user_id" value="{{request.user.id}}"></input>
-                        <div class="flex flex-col gap-1 flex-grow-1 h-full relative">
-                            <textarea id="chat_content" name="content" maxlength="1000" placeholder="Max 1,000 characters｜限1,000字" required class="w-full flex-grow textarea textarea-primary text-primary"></textarea>
-                            <input type="file" name="image" accept="image/*" class="file-input w-full h-[2rem] text-base-content">
+                        <input type="hidden" name="receiver_id" id="receiver_id_input" value="{% if not request.user.is_superadmin %}{{ admin.id }}{% endif %}">
+                        <input type="hidden" name="user_id" id="user_id" value="{{ request.user.id }}">
+
+                        <div class="flex flex-col gap-2 flex-1 w-full min-w-0">
+                            <textarea id="chat_content" 
+                                    name="content" 
+                                    maxlength="1000" 
+                                    placeholder="{% if request.user == admin and not other_user %}Select a member to start chatting｜選擇會員開始對話{% else %}Max 1,000 characters｜限1,000字{% endif %}" 
+                                    required 
+                                    class="w-full box-border textarea textarea-primary text-primary h-[7vh] min-h-[0px] max-h-[10vh] xs:h-[3.5rem] xs:min-h-[3.5rem] xs:max-h-none text-xs xs:text-sm placeholder:text-xs placeholder:xs:text-sm bg-base-100 focus:outline-none focus:ring-0 focus:border-primary transition-all rounded-none py-1.5 px-3 resize-none m-0 border border-primary flex-1 {% if request.user == admin and not other_user %}opacity-50 pointer-events-none{% endif %}"></textarea>
+                            <input type="file" 
+                                name="image" 
+                                accept="image/*"
+                                class="file-input-sharp file-input file-input-bordered file-input-xs xs:file-input-sm w-full text-xs font-sans text-base-content rounded-none bg-base-100 m-0 box-border {% if request.user == admin and not other_user %}opacity-50 pointer-events-none{% endif %}">
                         </div>
-                        <div class="flex-grow-0 min-w-[5rem] flex justify-center items-center p-3">
-                            <button type="submit" class="pushable">
-                                <span class="front w-full h-full text-white">Send<br>發&nbsp;送</span>
+
+                        <div class="xs:w-auto xs:shrink-0 flex justify-center items-center pt-1.5 xs:p-0">
+                            <button type="submit" class="pushable w-full xs:w-auto h-full flex items-center {% if request.user == admin and not other_user %}opacity-50 pointer-events-none{% endif %}">
+                                <div class="front h-full text-center text-white select-none whitespace-nowrap">
+                                    <div class="h-full flex items-center text-xs xs:text-sm">Send<br>發&nbsp;送</div>
+                                </div>
                             </button>
                         </div>
                     </form>
-                    <!-- BOTTOM - dialog -->
-                    <div id="chat_message_list"
-                         hx-get="{% url 'refresh_chat' %}"
-                         hx-trigger="refresh_chat from:body"
-                         hx-include="[name='q']"
-                         hx-swap="beforeend"
-                         hx-vals="js:{msg_id: event.detail.msg_id}"
-                         class="flex-grow overflow-y-auto min-h-0 py-4 custom-scrollbar"
-                         >
-                        {% include 'accounts/partials/chat_list.html' %}
+                    
+                    <!-- 2. MIDDLE - Message area with background -->
+                    <div id="chat-middle-area" class="flex-1 relative overflow-hidden min-h-0">
+                        
+                        <!-- 2a. BACKGROUND - Static -->
+                        <div class="absolute inset-0 bg-cover bg-center bg-no-repeat z-0"
+                            style="background-image: linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.45)), url('{{ solar_term_bg_url }}'); background-attachment: fixed;">
+                        </div>
+                        
+                        <!-- 2b. CHAT SCROLL CONTAINER -->
+                        <div id="chat-scroll-container" 
+                            class="absolute inset-0 overflow-y-auto z-10">
+                            <!-- STABLE WRAPPER - Never replaced -->
+                            <div id="chat-messages-wrapper" class="relative min-h-full">
+                                
+                                <!-- Message list - Content is dynamically managed by JavaScript -->
+                                <div id="chat_message_list" class="relative py-4 bg-transparent">
+                                    <!-- Initial content loaded from server -->
+                                    {% if request.user == admin %}
+                                        {% if chat_messages %}
+                                            {% include "accounts/partials/admin_chat_list.html" %}
+                                        {% else %}
+                                            <div id="chat-empty-state" class="flex flex-col items-center justify-center text-center text-white/60 py-20">
+                                                <i class="fa-solid fa-comments text-4xl opacity-40 mb-4"></i>
+                                                <p class="text-sm font-medium">Select a member to view conversation</p>
+                                                <p class="text-xs opacity-60 mt-2">請選擇會員以查看對話</p>
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        {% include "accounts/partials/chat_list.html" %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <!-- MIDDLE - Search Container -->
-                    <div id="chat_search_container" class="flex py-4 mt-auto border-t border-white/10 relative">
+                    
+                    <!-- 3. BOTTOM - Search Container -->
+                    <div id="chat_search_container" class="flex items-center py-4 border-t border-white/10 relative flex-shrink-0 z-20 {% if request.user == admin and not other_user %}opacity-50 pointer-events-none{% endif %}">
                         <button id="search-trigger" onclick="toggleSearch(true)" class="btn btn-ghost btn-circle ml-auto">
                             <i class="fas fa-search text-white"></i>
                         </button>
 
-                        <div id="search-input-container" class="d-none bg-light p-2 rounded border shadow-sm flex-grow-1 flex items-center">
-                            <span class="loading loading-dots loading-xs htmx-indicator mr-2"></span>
-                            <input type="text" name="q"
-                                    hx-get="{% url 'dashboard' 'help' %}"
-                                    hx-target="#chat_message_list"
-                                    hx-trigger="keyup changed delay:300ms"
-                                    hx-swap="innerHTML"
-                                    hx-indicator=".loading-dots"
-                                    placeholder="Search dialogue｜搜索內容..."
-                                    class="form-control form-control-sm flex-grow-1 outline-none text-white"
-                            >
-                            <span id="search-counter" class="text-xs text-white/70 mx-2 min-w-[3rem] text-center">
-                                0 / 0
-                            </span>
-                            <div class="flex-grow-0 flex gap-1 ml-2">
-                                <button class="btn btn-xs" onclick="navigateSearch(-1)">▲</button>
-                                <button class="btn btn-xs" onclick="navigateSearch(1)">▼</button>
-                                <button class="btn btn-xs text-danger" onclick="toggleSearch(false)">✕</button>
+                        <div id="search-input-container" class="d-none bg-light p-2 rounded border shadow-sm flex-1 flex flex-col min-[600px]:flex-row items-stretch min-[600px]:items-center gap-2 mr-4">
+                            <div class="flex-1 w-full min-[600px]:w-auto">
+                                <input id="chat_search_input" 
+                                    type="text" 
+                                    name="q" 
+                                    placeholder="Search dialogue｜搜索內容..." 
+                                    class="w-full box-border textarea textarea-primary text-primary h-[1.75rem] min-h-[0px] text-xs xs:text-sm placeholder:text-xs placeholder:xs:text-sm bg-base-100 focus:outline-none focus:ring-0 focus:border-primary transition-all rounded-none py-1.5 px-3 resize-none m-0 border border-primary flex-1">
+                            </div>
+                            <div class="flex items-center justify-center min-[600px]:justify-end w-full min-[600px]:w-auto gap-2 min-[600px]:gap-0">
+                                <div id="search-counter" class="text-sm flex items-center text-white/70 min-w-[3rem] text-center flex-shrink-0">0 / 0</div>
+                                <div id="search_result_actions" class="flex items-center gap-1 flex-shrink-0">
+                                    <button class="btn btn-2xs min-[600px]:btn-xs" onclick="navigateSearch(-1)">▲</button>
+                                    <button class="btn btn-2xs min-[600px]:btn-xs" onclick="navigateSearch(1)">▼</button>
+                                    <button class="btn btn-2xs min-[600px]:btn-xs text-danger" onclick="toggleSearch(false)">✕</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -90,29 +127,21 @@
         </div>
     </div>
 
-    <!-- chatting members -->
-    {% if request.user == admin%}
-    <div class="flex justify-start py-5 px-3 gap-2 relative w-full h-auto">
-        {% if members %} 
+    <!-- chatting members (for admin only) -->
+    {% if request.user == admin %}
+    <div class="flex justify-start py-2 px-3 gap-2 relative w-full h-auto flex-shrink-0 overflow-x-auto z-30">
+        {% if members %}
             {% for member in members %}
             <button type="button"
                     id="member-btn-{{ member.pk }}"
-                    hx-get="{% url 'filter_message_by_member' member.pk %}"
-                    hx-include="[name='q']"
-                    hx-target="#chat_message_list"
-                    hx-on:click="setActiveMember('{{ member.pk }}', this)"
-                     class="btn bg-white text-black border-[#e5e5e5] member-filter-btn"
-            >
+                    data-member-id="{{ member.pk }}"
+                    onclick="loadConversation({{ member.pk }}, this)"
+                    class="btn bg-white text-black border-[#e5e5e5] member-filter-btn hover:bg-gray-50 transition-all duration-200 flex items-center gap-2 min-w-fit">
                 <svg aria-label="Email icon" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="black"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></g></svg>
-                <!-- Num of Unread Messages - ADMIN - by MEMBER -->
-                <span hx-get="{% url 'get_unread_count' sender_id=member.id %}"
-                      hx-trigger="refresh_count from:body"
-                      hx-target="this" 
-                      class="badge badge-sm badge-secondary"
-                >
-                    {{ member.unread_count }}
-                </span>
-                <span>{{ member.username }}</span>
+                {% if member.unread_count > 0 %}
+                <span class="badge badge-sm badge-secondary">{{ member.unread_count }}</span>
+                {% endif %}
+                <span>{{ member.username }} ({{ member.unread_count }})</span>
             </button>
             {% endfor %}
         {% endif %}
@@ -120,113 +149,841 @@
     {% endif %}
 </div>
 
-<!-- <script>
-    const textarea = document.getElementById('chat_content');
-    const charCount = document.getElementById('char_count');
-
-    textarea.addEventListener('input', function() {
-        const length = textarea.value.length;
-        charCount.textContent = length;
-
-        // Visual warning: Turn text red if it gets close to the limit
-        if (length >= 240) {
-            charCount.classList.add('text-error');
-        } else {
-            charCount.classList.remove('text-danger');
-        }
-    });
-</script> -->
-
-<!-- <script>
-    document.body.addEventListener('htmx:afterOnLoad', function(evt) {
-    if (evt.detail.target.id === 'chat_message_list') {
-        const list = document.getElementById('chat_message_list');
-        list.scrollTop = list.scrollHeight;
-    }
-    document.addEventListener('htmx:afterSwap', function(evt) {
-        if (evt.detail.target.id === 'chat_message_list') {
-            evt.detail.target.scrollTop = evt.detail.target.scrollHeight;
-        }
-    });
-});
-</script> -->
-
 <script>
-    // const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
-    // const chatSocket = new WebSocket(window.wsprotocol + window.location.host + '/ws/chat_notifications/');
-    const chatUrl = (window.location.protocol === "https:" ? "wss://" : "ws://" + window.location.host + '/ws/chat_notifications/');
-    const chatSocket = new WebSocket(chatUrl);
-    
-    chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        const event = new CustomEvent("refresh_chat", {
-            detail: { msg_id: data.msg_id } 
-        });
-        console.log(event)
-
-        if (data.type === 'new_message') {
-            // Replace htmx.trigger('body', 'refresh_count') with:
-            document.body.dispatchEvent(new CustomEvent('refresh_count'));
-
-            // This is the person the current user is talking to
-            const activeChatPartnerId = document.getElementById('receiver_id_input').value;
-            const myId = document.getElementById('user_id').value;
-
-            // Refresh if:
-            // 1. I'm looking at "All Messages" (Hybrid: activeChatPartnerId == myId)
-            // 2. I'm looking at a specific member (activeChatPartnerId == data.sender_id)
-            if (activeChatPartnerId == myId || data.sender_id == activeChatPartnerId) {
-                htmx.trigger('body', 'refresh_chat', { msg_id: data.msg_id });
-            }
-        }
-    };
-
-    document.body.addEventListener('htmx:beforeSwap', function(evt) {
-        if (evt.detail.target.id === "chat_message_list") {
-            // Record height before new messages are added
-            evt.detail.oldHeight = evt.detail.target.scrollHeight;
-        }
-    })
-
-    document.addEventListener('htmx:afterSwap', function(evt) {
-        if (evt.detail.target.id === "chat_message_list" && evt.detail.oldHeight) {
-            // Step 2: After new messages land, adjust scroll based on height change
-            const container = evt.detail.target;
-            const newHeight = container.scrollHeight;
-            container.scrollTop = newHeight - evt.detail.oldHeight;
-        }
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            toggleSearch(false);
-        }
-    });
-
-    
-    // Correct the enum error and wrap in a function
-    function adjustChatScroll() {
-        const chat_divider = document.getElementById('unread-separator');
-        const container = document.getElementById('chat_message_list');
-        
-        if (chat_divider) {
-            // 'smooth' or 'auto' for behavior; 'start' for block alignment
-            chat_divider.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (container) {
-            container.scrollTop = container.scrollHeight;
+// When help page loads, clear badges
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target.id === 'dashboard-content') {
+        const hasHelpPage = evt.detail.target.querySelector('#dashboard_help');
+        if (hasHelpPage && window.ChatManager) {
+            // Clear badges when help page is loaded
+            window.ChatManager.clearUnreadBadges();
         }
     }
+});
 
-    // Run on initial load
-    document.addEventListener('DOMContentLoaded', adjustChatScroll);
+// ============================================================
+// 🎯 CHAT MANAGER - Complete Version
+// ============================================================
+(function() {
+    'use strict';
 
-    // Run after HTMX updates the list
-    document.body.addEventListener('htmx:afterOnLoad', function(evt) {
-        if (evt.detail.target.id === "chat_message_list") {
-            // Only scroll to bottom if NOT loading earlier messages (infinite scroll)
-            if (!evt.detail.pathInfo.requestPath.includes('load_earlier_messages')) {
-                adjustChatScroll();
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
             }
         }
-    });
+        return cookieValue;
+    }
+
+    // Also expose to window
+    window.getCookie = getCookie;
+    
+    const ChatManager = {
+        currentMemberId: null,
+        messages: [],
+        displayedMessages: 50,
+        totalMessages: 0,
+        isLoading: false,
+        isAdmin: false,
+        
+        init() {
+            console.log('Chat Manager initializing...');
+            
+            this.isAdmin = document.getElementById('dashboard_help')?.dataset?.isAdmin === 'true';
+            console.log('Is admin:', this.isAdmin);
+            
+            this.bindEvents();
+            this.initWebSocket();
+            
+            // ✅ Clear unread badges when help page loads
+            this.clearUnreadBadges();
+            
+            if (this.isAdmin) {
+                this.disableChatInput();
+                // ✅ Only update member badges for admin
+                this.updateMemberBadges();
+            } else {
+                this.currentMemberId = document.querySelector('input[name="receiver_id"]')?.value || '';
+                this.enableChatInput();
+                this.loadConversationForNonAdmin();
+            }
+        },
+        
+        bindEvents() {
+            // Send message form
+            const form = document.getElementById('chat_msg_input_form');
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.sendMessage(form);
+                });
+            }
+            
+            // Search input
+            const searchInput = document.getElementById('chat_search_input');
+            if (searchInput) {
+                searchInput.addEventListener('input', debounce((e) => {
+                    this.searchMessages(e.target.value);
+                }, 300));
+                
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.clearSearch();
+                    }
+                });
+            }
+            
+            // Scroll to load more (admin only)
+            const scrollContainer = document.getElementById('chat-scroll-container');
+            if (scrollContainer) {
+                scrollContainer.addEventListener('scroll', () => {
+                    if (scrollContainer.scrollTop < 100 && !this.isLoading && this.isAdmin) {
+                        this.loadMoreMessages();
+                    }
+                });
+            }
+            
+            // Global Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const searchContainer = document.getElementById('search-input-container');
+                    if (searchContainer && !searchContainer.classList.contains('d-none')) {
+                        this.clearSearch();
+                    }
+                }
+            });
+        },
+        
+        async loadConversationForNonAdmin() {
+            console.log('Loading conversation for non-admin user');
+            this.isLoading = true;
+            
+            try {
+                const response = await fetch('/accounts/api/my_conversation/');
+                const data = await response.json();
+                
+                this.messages = data.messages;
+                this.totalMessages = data.total_count;
+                this.displayedMessages = data.messages.length;
+                
+                this.renderMessages(this.messages);
+                
+                setTimeout(() => {
+                    this.scrollToBottom();
+                }, 50);
+            } catch (error) {
+                console.error('Error loading conversation:', error);
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
+        clearSearch() {
+            const searchInput = document.getElementById('chat_search_input');
+            const searchContainer = document.getElementById('search-input-container');
+            const searchTrigger = document.getElementById('search-trigger');
+            
+            if (searchInput) {
+                searchInput.value = '';
+                searchInput.blur();
+            }
+            
+            if (searchContainer) {
+                searchContainer.classList.add('d-none');
+            }
+            
+            if (searchTrigger) {
+                searchTrigger.classList.remove('d-none');
+            }
+            
+            this.enableChatInput();
+            
+            if (this.messages.length > 0) {
+                this.renderMessages(this.messages);
+            }
+            
+            // ✅ Reset search counter
+            this.resetSearchCounter();
+        },
+        
+        disableChatInput() {
+            const textarea = document.getElementById('chat_content');
+            const fileInput = document.querySelector('#chat_msg_input_form input[type="file"]');
+            const submitBtn = document.querySelector('#chat_msg_input_form button[type="submit"]');
+            const searchContainer = document.getElementById('chat_search_container');
+            
+            if (textarea) {
+                textarea.classList.add('opacity-50', 'pointer-events-none');
+                textarea.disabled = true;
+            }
+            if (fileInput) {
+                fileInput.classList.add('opacity-50', 'pointer-events-none');
+                fileInput.disabled = true;
+            }
+            if (submitBtn) {
+                submitBtn.classList.add('opacity-50', 'pointer-events-none');
+                submitBtn.disabled = true;
+            }
+            if (searchContainer) {
+                searchContainer.classList.add('opacity-50', 'pointer-events-none');
+            }
+        },
+        
+        enableChatInput() {
+            const textarea = document.getElementById('chat_content');
+            const fileInput = document.querySelector('#chat_msg_input_form input[type="file"]');
+            const submitBtn = document.querySelector('#chat_msg_input_form button[type="submit"]');
+            const searchContainer = document.getElementById('chat_search_container');
+            
+            if (textarea) {
+                textarea.classList.remove('opacity-50', 'pointer-events-none');
+                textarea.disabled = false;
+            }
+            if (fileInput) {
+                fileInput.classList.remove('opacity-50', 'pointer-events-none');
+                fileInput.disabled = false;
+            }
+            if (submitBtn) {
+                submitBtn.classList.remove('opacity-50', 'pointer-events-none');
+                submitBtn.disabled = false;
+            }
+            if (searchContainer) {
+                searchContainer.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        },
+        
+        async loadConversation(memberId, buttonElement) {
+            console.log(`Loading conversation for member ${memberId}`);
+            
+            this.currentMemberId = memberId;
+            this.isLoading = true;
+            
+            this.setActiveButton(buttonElement);
+            document.getElementById('receiver_id_input').value = memberId;
+            this.enableChatInput();
+            
+            try {
+                const response = await fetch(`/accounts/api/conversation/${memberId}/?limit=50`);
+                const data = await response.json();
+                
+                this.messages = data.messages;
+                this.totalMessages = data.total_count;
+                this.displayedMessages = data.messages.length;
+                
+                this.renderMessages(this.messages);
+                
+                // ✅ After loading conversation, update badges
+                // The selected member's messages are now read
+                await this.updateMemberBadges();
+                
+                setTimeout(() => {
+                    this.scrollToBottom();
+                }, 50);
+            } catch (error) {
+                console.error('Error loading conversation:', error);
+            } finally {
+                this.isLoading = false;
+            }
+        },
+        
+        async loadMoreMessages() {
+            if (this.displayedMessages >= this.totalMessages) return;
+            
+            this.isLoading = true;
+            const scrollContainer = document.getElementById('chat-scroll-container');
+            const oldScrollHeight = scrollContainer.scrollHeight;
+            
+            try {
+                const newLimit = this.displayedMessages + 50;
+                const response = await fetch(`/accounts/api/conversation/${this.currentMemberId}/?limit=${newLimit}`);
+                const data = await response.json();
+                
+                this.messages = data.messages;
+                this.displayedMessages = data.messages.length;
+                
+                this.renderMessages(this.messages);
+                
+                requestAnimationFrame(() => {
+                    const newScrollHeight = scrollContainer.scrollHeight;
+                    scrollContainer.scrollTop = newScrollHeight - oldScrollHeight;
+                });
+            } catch (error) {
+                console.error('Error loading more messages:', error);
+            } finally {
+                this.isLoading = false;
+            }
+        },
+        
+        renderMessages(messages) {
+            const messageList = document.getElementById('chat_message_list');
+            if (!messageList) return;
+            
+            messageList.innerHTML = '';
+            
+            if (messages.length === 0) {
+                messageList.innerHTML = `
+                    <div class="flex flex-col items-center justify-center text-center text-white/60 py-20">
+                        <i class="fa-solid fa-comments text-4xl opacity-40 mb-4"></i>
+                        <p class="text-sm font-medium">No messages</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const fragment = document.createDocumentFragment();
+            
+            messages.forEach(msg => {
+                const messageElement = this.createMessageElement(msg);
+                fragment.appendChild(messageElement);
+            });
+            
+            messageList.appendChild(fragment);
+        },
+        
+        // createMessageElement(msg) {
+        //     const isOwnMessage = msg.sender_id == document.getElementById('user_id').value;
+            
+        //     const div = document.createElement('div');
+        //     div.id = `msg-${msg.id}`;
+        //     div.className = `message-row ${isOwnMessage ? 'message-own' : 'message-other'}`;
+            
+        //     const time = msg.timestamp.split(' ')[1] || msg.timestamp;
+            
+        //     div.innerHTML = `
+        //         ${!isOwnMessage ? `
+        //         <div class="message-avatar">
+        //             <img src="${msg.sender_avatar}" alt="${msg.sender_name}" loading="lazy" decoding="async">
+        //         </div>
+        //         ` : ''}
+                
+        //         <div class="message-content">
+        //             <div class="message-meta">
+        //                 <span class="message-sender">${msg.sender_name}</span>
+        //                 <span class="message-time">${time}</span>
+        //             </div>
+        //             <div class="message-bubble">
+        //                 ${msg.content}
+        //                 ${msg.image_url ? `<img src="${msg.image_url}" class="message-image" loading="lazy" decoding="async">` : ''}
+        //             </div>
+        //         </div>
+                
+        //         ${isOwnMessage ? `
+        //         <div class="message-avatar">
+        //             <img src="${msg.sender_avatar}" alt="${msg.sender_name}" loading="lazy" decoding="async">
+        //         </div>
+        //         ` : ''}
+        //     `;
+            
+        //     return div;
+        // },
+        
+createMessageElement(msg) {
+    const isOwnMessage = msg.sender_id == document.getElementById('user_id').value;
+    
+    const div = document.createElement('div');
+    div.id = `msg-${msg.id}`;
+    div.className = `message-row ${isOwnMessage ? 'message-own' : 'message-other'}`;
+    
+    const time = msg.timestamp.split(' ')[1] || msg.timestamp;
+    
+    // ✅ Use content directly - backend already formatted it
+    const formattedContent = msg.content;
+    
+    div.innerHTML = `
+        ${!isOwnMessage ? `
+        <div class="message-avatar">
+            <img src="${msg.sender_avatar}" alt="${msg.sender_name}" loading="lazy" decoding="async">
+        </div>
+        ` : ''}
+        
+        <div class="message-content">
+            <div class="message-meta">
+                <span class="message-sender">${msg.sender_name}</span>
+                <span class="message-time">${time}</span>
+            </div>
+            <div class="message-bubble">
+                ${formattedContent}
+                ${msg.image_url ? `<img src="${msg.image_url}" class="message-image" loading="lazy" decoding="async">` : ''}
+            </div>
+        </div>
+        
+        ${isOwnMessage ? `
+        <div class="message-avatar">
+            <img src="${msg.sender_avatar}" alt="${msg.sender_name}" loading="lazy" decoding="async">
+        </div>
+        ` : ''}
+    `;
+    
+    return div;
+},
+
+
+        async sendMessage(form) {
+            const formData = new FormData(form);
+            
+            if (!formData.get('receiver_id') || formData.get('receiver_id') === '') {
+                formData.set('receiver_id', this.currentMemberId);
+            }
+            
+            try {
+                const response = await fetch('/accounts/api/send_message/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    const newMessage = await response.json();
+                    this.messages.push(newMessage);
+                    this.appendMessage(newMessage);
+                    this.scrollToBottom();
+                    form.reset();
+                } else {
+                    const error = await response.json();
+                    console.error('Error:', error.error);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
+        },
+        
+        appendMessage(msg) {
+            const messageList = document.getElementById('chat_message_list');
+            if (!messageList) return;
+            
+            const messageElement = this.createMessageElement(msg);
+            messageList.appendChild(messageElement);
+        },
+        
+        async searchMessages(query) {
+            if (!query || query.trim().length === 0) {
+                this.renderMessages(this.messages);
+                this.resetSearchCounter();
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/accounts/api/search_messages/?q=${encodeURIComponent(query)}&receiver_id=${this.currentMemberId}`);
+                
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Expected JSON response');
+                }
+                
+                const data = await response.json();
+                
+                const messages = data.messages.map(msg => ({
+                    ...msg,
+                    content: this.highlightText(msg.content, query)
+                }));
+                
+                this.renderMessages(messages);
+                
+                // Update search counter after rendering
+                setTimeout(() => {
+                    this.updateSearchCounter();
+                }, 50);
+            } catch (error) {
+                console.error('Error searching messages:', error);
+                this.renderMessages(this.messages);
+                this.resetSearchCounter();
+            }
+        },
+       
+        updateSearchCounter() {
+            const counter = document.getElementById('search-counter');
+            if (!counter) return;
+            
+            const hits = document.querySelectorAll('.search-hit');
+            const total = hits.length;
+            
+            if (total === 0) {
+                counter.innerText = '0 / 0';
+                window.currentMatchIndex = -1;
+            } else {
+                window.currentMatchIndex = 0; // Reset to first hit
+                counter.innerText = `1 / ${total}`;
+            }
+        },
+
+        resetSearchCounter() {
+            const counter = document.getElementById('search-counter');
+            if (counter) {
+                counter.innerText = '0 / 0';
+            }
+            window.currentMatchIndex = -1;
+        },        
+
+        navigateSearch(direction) {
+            const hits = document.querySelectorAll('.search-hit');
+            if (hits.length === 0) return;
+            
+            // Remove previous active state
+            if (window.currentMatchIndex !== -1 && hits[window.currentMatchIndex]) {
+                hits[window.currentMatchIndex].classList.remove('active-hit');
+            }
+            
+            // Calculate new index
+            window.currentMatchIndex = (window.currentMatchIndex + direction + hits.length) % hits.length;
+            
+            // Apply active state
+            const target = hits[window.currentMatchIndex];
+            if (target) {
+                target.classList.add('active-hit');
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            // Update counter
+            const counter = document.getElementById('search-counter');
+            if (counter) {
+                counter.innerText = `${window.currentMatchIndex + 1} / ${hits.length}`;
+            }
+        },
+        
+        highlightText(text, query) {
+            const regex = new RegExp(`(${query})`, 'gi');
+            return text.replace(regex, '<span class="search-hit">$1</span>');
+        },
+        
+        setActiveButton(button) {
+            document.querySelectorAll('.member-filter-btn').forEach(btn => {
+                btn.classList.remove('btn-primary', 'text-white');
+                btn.classList.add('bg-white', 'text-black');
+            });
+            
+            if (button) {
+                button.classList.remove('bg-white', 'text-black');
+                button.classList.add('btn-primary', 'text-white');
+            }
+        },
+        
+        scrollToBottom(instant = true) {
+            const scrollContainer = document.getElementById('chat-scroll-container');
+            if (scrollContainer) {
+                if (instant) {
+                    scrollContainer.style.scrollBehavior = 'auto';
+                    requestAnimationFrame(() => {
+                        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                    });
+                } else {
+                    scrollContainer.style.scrollBehavior = 'smooth';
+                    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                }
+            }
+        },
+        
+        showLoading() {
+            const messageList = document.getElementById('chat_message_list');
+            if (messageList) {
+                messageList.innerHTML = '<div class="flex justify-center py-10"><span class="loading loading-spinner loading-lg"></span></div>';
+            }
+        },
+        
+        hideLoading() {},
+
+        initWebSocket() {
+            const wsUrl = `ws://${window.location.hostname}:8000/ws/chat_notifications/`;
+            console.log('Connecting to WebSocket:', wsUrl);
+            
+            const socket = new WebSocket(wsUrl);
+            
+            socket.onopen = function() {
+                console.log('✅ Chat WebSocket connected');
+            };
+            
+            socket.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    console.log('📨 WebSocket message received:', data);
+                    
+                    if (data.type === 'new_message') {
+                        document.body.dispatchEvent(new CustomEvent('refresh_count'));
+                        
+                        const myId = document.getElementById('user_id')?.value;
+                        
+                        // ✅ Normalize WebSocket data to match expected format
+                        const normalizedMessage = {
+                            id: data.msg_id,
+                            sender_id: data.sender_id,
+                            sender_name: data.sender_name,
+                            sender_avatar: data.sender_avatar_url,
+                            content: data.msg_content,
+                            image_url: data.msg_img_url,
+                            timestamp: data.msg_timestamp,
+                            is_read: false,
+                        };
+                        
+                        console.log('Normalized message:', normalizedMessage);
+                        
+                        // ✅ UPDATE BADGES BASED ON USER TYPE
+                        if (this.isAdmin) {
+                            // Admin: update all member badges
+                            this.updateMemberBadges();
+                        } else {
+                            // Non-admin: update total badges only
+                            fetch('/accounts/get_unread_count/?format=json')
+                                .then(res => res.json())
+                                .then(data => {
+                                    this.updateBadgeDisplay(data.unread_count);
+                                    if (typeof window.updateNotificationEnvelope === 'function') {
+                                        window.updateNotificationEnvelope();
+                                    }
+                                })
+                                .catch(err => console.error('Error fetching unread count:', err));
+                        }
+                        
+                        // ✅ APPEND MESSAGE IF RELEVANT
+                        // For admin: check if message is from/to selected member
+                        if (this.isAdmin && this.currentMemberId) {
+                            if (normalizedMessage.sender_id == this.currentMemberId || 
+                                data.receiver_id == this.currentMemberId) {
+                                if (data.receiver_id == myId || normalizedMessage.sender_id == myId) {
+                                    this.appendMessage(normalizedMessage);
+                                    this.scrollToBottom();
+                                }
+                            }
+                        } 
+                        // For non-admin: check if message is from admin
+                        else if (!this.isAdmin) {
+                            if (normalizedMessage.sender_id == this.currentMemberId || 
+                                data.receiver_id == this.currentMemberId) {
+                                if (data.receiver_id == myId) {
+                                    this.appendMessage(normalizedMessage);
+                                    this.scrollToBottom();
+                                }
+                            }
+                        }
+                        
+                        // ✅ SHOW NOTIFICATION IF MESSAGE IS FOR ME
+                        if (data.receiver_id == myId) {
+                            this.showNotification(normalizedMessage);
+                        }
+                        
+                        // ✅ FOR ADMIN: If message is from a member NOT currently selected,
+                        // update that member's badge specifically
+                        if (this.isAdmin && data.sender_id != this.currentMemberId) {
+                            // Refresh all member badges to show the new unread count
+                            setTimeout(() => {
+                                this.updateMemberBadges();
+                            }, 500);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+            
+            socket.onclose = function(e) {
+                console.log('WebSocket closed:', e.code);
+            };
+            
+            socket.onerror = function(e) {
+                console.error('WebSocket error:', e);
+            };
+        },
+
+        showNotification(data) {
+            if (window.Swal) {
+                Swal.fire({
+                    title: `📩 New message from ${data.sender_name}`,
+                    html: `
+                        <div class="text-left font-sans">
+                            <p class="text-sm text-base-content/80">${data.content || data.msg_content}</p>
+                            <p class="text-xs text-base-content/40 mt-2">${data.timestamp || data.msg_timestamp}</p>
+                        </div>
+                    `,
+                    icon: 'info',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3000,
+                    showConfirmButton: false,
+                });
+            }
+        },
+
+        async updateMemberBadges(excludeMemberId = null) {
+            // ✅ Only run for admin users
+            if (!this.isAdmin) {
+                console.log('Skipping member badge update - not admin');
+                return;
+            }
+
+            try {
+                const response = await fetch('/accounts/api/get_all_unread_counts/');
+                const data = await response.json();
+                
+                if (this.isAdmin) {
+                    // Update each member button badge
+                    data.members.forEach(member => {
+                        const memberBtn = document.getElementById(`member-btn-${member.member_id}`);
+                        if (memberBtn) {
+                            // Update or create the badge
+                            let badge = memberBtn.querySelector('.badge');
+                            
+                            if (member.unread_count > 0) {
+                                if (!badge) {
+                                    // Create badge if it doesn't exist
+                                    badge = document.createElement('span');
+                                    badge.className = 'badge badge-sm badge-secondary';
+                                    memberBtn.insertBefore(badge, memberBtn.querySelector('span:last-child'));
+                                }
+                                badge.textContent = member.unread_count;
+                                badge.style.display = '';
+                            } else {
+                                // Hide badge if count is 0
+                                if (badge) {
+                                    badge.style.display = 'none';
+                                }
+                            }
+                            
+                            // Update the text in the last span
+                            const lastSpan = memberBtn.querySelector('span:last-child');
+                            if (lastSpan) {
+                                // Find and replace the (count) part
+                                const username = lastSpan.textContent.replace(/\s*\(\d+\)\s*$/, '');
+                                lastSpan.textContent = `${username} (${member.unread_count})`;
+                            }
+                        }
+                    });
+                    
+                    // Update total badges
+                    this.updateBadgeDisplay(data.total_unread);
+                    
+                    // Update notification envelope
+                    if (typeof window.updateNotificationEnvelope === 'function') {
+                        window.updateNotificationEnvelope();
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating member badges:', error);
+            }
+        },
+
+        async clearUnreadBadges(excludeMemberId = null) {
+            console.log('Clearing unread badges...', excludeMemberId ? `excluding member ${excludeMemberId}` : 'all');
+            
+            try {
+                const response = await fetch('/accounts/api/mark_all_read/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(`Marked ${data.updated_count} messages as read`);
+                    
+                    // ✅ Only update member badges for admin
+                    if (this.isAdmin) {
+                        await this.updateMemberBadges();
+                    } else {
+                        // For non-admin, just update total badges
+                        this.updateBadgeDisplay(data.total_unread || 0);
+                    }
+                    
+                    // Hide notification envelope
+                    this.hideNotificationEnvelope();
+                    
+                    // Dispatch event to refresh other components
+                    document.body.dispatchEvent(new CustomEvent('refresh_count'));
+                }
+            } catch (error) {
+                console.error('Error marking messages as read:', error);
+            }
+        },
+
+        updateBadgeDisplay(count) {
+            // Update header badge
+            const headerBadge = document.getElementById('unread-count-header');
+            if (headerBadge) {
+                headerBadge.textContent = count;
+            }
+            
+            // Update sidebar badge
+            const sidebarBadge = document.getElementById('unread-count-sidebar');
+            if (sidebarBadge) {
+                sidebarBadge.textContent = count;
+            }
+            
+            // Update total badge on help page
+            const totalBadge = document.getElementById('total_unread_count_badge_member');
+            if (totalBadge) {
+                totalBadge.textContent = count;
+            }
+        },
+
+        hideNotificationEnvelope() {
+            const envelope = document.getElementById('notification-envelope');
+            if (envelope) {
+                envelope.classList.add('hidden');
+            }
+        },
+
+        formatChatContent(text) {
+            if (!text) return '';
+            
+            // Escape HTML first
+            const escaped = this.escapeHtml(text);
+            
+            // Find and replace URLs
+            const urlPattern = /(https?:\/\/[^\s]+)/g;
+            
+            const processed = escaped.replace(urlPattern, (url) => {
+                // Check if it's a product link
+                if (url.includes('/product/')) {
+                    return `<a href="${url}" target="_blank" class="btn btn-xs btn-outline btn-primary">View Product｜查看產品 📦</a>`;
+                }
+                // Standard link
+                return `<a href="${url}" target="_blank" class="link link-primary">${url}</a>`;
+            });
+            
+            return processed;
+        },
+
+        escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        },
+
+    };
+    
+    // Debounce utility
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    // Initialize on page load
+    if (document.getElementById('dashboard_help')) {
+        ChatManager.init();
+    }
+    
+    // Expose to window
+    window.ChatManager = ChatManager;
+    window.loadConversation = (memberId, button) => ChatManager.loadConversation(memberId, button);
+    
+})();
+
 </script>

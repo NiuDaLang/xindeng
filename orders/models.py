@@ -9,6 +9,9 @@ from django.conf import settings
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from django.db.models import Sum
+import decimal
+from django.utils import timezone
+import uuid
 
 
 # Create your models here.
@@ -86,7 +89,7 @@ class Order(models.Model):
     
     user                    = models.ForeignKey(Account, on_delete=models.SET_NULL, blank=True, null=True)
     payment                 = models.ForeignKey(Payment, on_delete=models.SET_NULL, blank=True, null=True)
-    order_number            = models.CharField(max_length=20)
+    order_number            = models.CharField(max_length=50, unique=True)
 
     # Buyer Context line (Used directly for your auto-generated email loops!)
     email                   = models.EmailField(max_length=100, blank=True, null=True)
@@ -108,7 +111,7 @@ class Order(models.Model):
     state_province_region   = models.CharField(max_length=100, blank=True, null=True)
     country                 = models.CharField(max_length=2, choices=DESTINATIONS_FOR_INPUT, default="", blank=False)
     postal_code             = models.CharField(max_length=20, blank=True, null=True)
-    delivery_note           = models.TextField(max_length=250, blank=True, null=True)
+    delivery_note           = models.TextField(blank=True, null=True)
     do_not_send_invoice     = models.BooleanField(default=False)
 
     # Generic field to hold Taiwan ID, Korea PCCC, etc.
@@ -124,16 +127,16 @@ class Order(models.Model):
     total_due               = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
 
     # Financial Totals (Foreign Currency)
-    product_total_foreign   = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
-    shipping_cost_foreign   = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
-    discount_foreign        = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
-    tax_foreign             = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
-    duty_amount_foreign     = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-    voucher_applied_foreign = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
-    total_due_foreign       = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
-
+    product_total_foreign   = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
+    shipping_cost_foreign   = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
+    discount_foreign        = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
+    tax_foreign             = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
+    duty_amount_foreign     = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
+    voucher_applied_foreign = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
+    total_due_foreign       = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
+    
     locked_exchange_rate    = models.DecimalField(max_digits=10, decimal_places=4, default=1.0)
-    currency_code           = models.CharField(max_length=10, default="USD", blank=True, null=True)
+    currency_code           = models.CharField(max_length=10, default="HKD")
 
     # Control Metadata Flags
     ip                      = models.CharField(blank=True, max_length=20)
@@ -145,12 +148,27 @@ class Order(models.Model):
     email_sent              = models.BooleanField(default=False) # 🏦 Tracks bank hold instruction dispatches
     payment_email_sent      = models.BooleanField(default=False) # Tracks absolute paid confirmation receipts separately
 
+    # 🌟 NEW CANCELLATION LEDGER SNAPSHOT FIELDS
+    refund_type             = models.CharField(max_length=20, blank=True, null=True, help_text="VOUCHER or CASH")
+    user_classification     = models.CharField(max_length=20, blank=True, null=True, help_text="MEMBER or GUEST")
+    is_online_gateway       = models.BooleanField(default=True, help_text="True for PayPal/Stripe, False for Bank Wires")
+    
+    # Financial metrics recorded in base currency (CNY) and payment currency natively
+    total_cancellation_fee_applied  = models.DecimalField(max_digits=10, decimal_places=2, default=decimal.Decimal('0.00'))
+    restored_voucher_pool_amount    = models.DecimalField(max_digits=10, decimal_places=2, default=decimal.Decimal('0.00'))
+    net_cash_payout_amount_foreign  = models.DecimalField(max_digits=12, decimal_places=2, default=decimal.Decimal('0.00'))
+    
+    # Store the string UUID pointer to any newly generated CustomerVoucher row
+    refund_voucher_id_str           = models.CharField(max_length=100, blank=True, null=True)
+    is_self_service_cancelled       = models.BooleanField(default=False, help_text="True if done via customer web portal, False if staff-managed")
+
     created_at              = models.DateTimeField(auto_now_add=True)
     updated_at              = models.DateTimeField(auto_now=True)
 
     # Set only upon true payment clearance
     def __str__(self):
         return self.order_number
+
     
     def update_fulfillment_status(self):
         """
@@ -158,7 +176,10 @@ class Order(models.Model):
         Analyzes item categories and fulfillment lines to automatically 
         apply granular order statuses across split shipments matching ORDER_STATUS_CHOICES.
         """
-        lines = self.orderproduct_set.all()
+        if not self.is_ordered and self.order_status == 'Hold_Pending':
+            return
+
+        lines = self.items.all()
         if not lines.exists():
             return
 
@@ -199,25 +220,128 @@ class Order(models.Model):
         # Note: We do not call self.save() here since your views and signals 
         # handle committing the fields via update_fields=['order_status'] atomically!
 
-    # 💡 ADD this method inside your Order class:
     def get_total_items_count(self):
         """
         Calculates the true aggregate sum of all item quantities purchased.
         """
-        result = self.orderproduct_set.aggregate(total_qty=Sum('quantity'))
+        result = self.items.aggregate(total_qty=Sum('quantity'))
         return result['total_qty'] or 0
 
+    def evaluate_cancellation_details(self):
+        """
+        Deep Validation Engine for Python Views.
+        Returns a tuple: (is_eligible: bool, total_fee: Decimal, message: str)
+        """
+        # Hard block: If the order has already been cancelled or refunded, exit early
+        if self.order_status in ['Cancelled', 'Refunded']:
+            return False, decimal.Decimal('0.00'), "Order already cancelled. / 訂單先前已取消。"
+
+        now = timezone.now()
+        aggregate_fee = decimal.Decimal('0.00')
+        order_items = self.items.all()
+
+        if not order_items.exists():
+            return False, decimal.Decimal('0.00'), "Order contains no items. / 訂單內無商品。"
+
+        # Hard block: If the order has an applied Discount
+        if self.discount > 0:
+            return False, decimal.Decimal('0.00'), "Orders with promotional offers applied require manual processing. Please contact support. / 包含特惠折抵的訂單無法線上自動取消，請洽客服人員。"
+
+        for item in order_items:
+            product = item.product
+            product_variation = item.product_variation
+            
+            # 🌟 STEP A: Physical item dispatch verification guard
+            if product.is_physical and item.is_dispatched:
+                return False, decimal.Decimal('0.00'), f"Physical item '{product.product_name} {product_variation.get_sku()}' has been dispatched. / 實體商品已發貨，不可取消。"
+            
+            # 🌟 STEP B: Instant digital download claiming & time window boundaries
+            elif product.is_digital and product.digital_fulfillment_type == 'INSTANT' and not product.is_voucher:
+                if item.is_claimed:
+                    return False, decimal.Decimal('0.00'), f"Digital item '{product.product_name} {product_variation.get_sku()}' has already been claimed. / 數位產品已下載領取，無法取消。"
+                if (now - self.created_at).days > 7:
+                    return False, decimal.Decimal('0.00'), "The 7-day digital download window has expired. / 已超過 7 天數位產品鑑賞期限制。"
+
+            # 🌟 STEP C: Unused voucher item validation traces
+            elif product.is_voucher and item.is_partially_used:
+                return False, decimal.Decimal('0.00'), "Gift credit voucher has been partially consumed or claimed. / 禮品券已被核銷使用，無法取消。"
+
+            item_fee = item.product_price * item.quantity * (product_variation.cancellation_fee_pct / decimal.Decimal('100.00'))
+            aggregate_fee += item_fee
+
+        return True, aggregate_fee, "Eligible / 可線上自動取消訂單"
+
+    @property
+    def can_be_cancelled_online(self):
+        """
+        🌟 CLEAN WORKAROUND FOR DJANGO TEMPLATES
+        Extracts only the boolean value from the detailed validation helper.
+        Usage in HTML: {% if order.can_be_cancelled_online %}
+        """
+        is_eligible, _, _ = self.evaluate_cancellation_details()
+        return is_eligible
+
+    @property
+    def estimated_cancellation_fee(self):
+        """
+        🌟 OPTIONAL BONUS PROPERTY FOR TEMPLATES
+        Allows you to display the cancellation fee in your markup easily if needed.
+        Usage in HTML: {{ order.estimated_cancellation_fee }}
+        """
+        _, total_fee, _ = self.evaluate_cancellation_details()
+        return total_fee
+
+    @property
+    def has_physical_items(self):
+        """
+        Evaluates whether this order contains any physical warehouse items.
+        """
+        return self.items.filter(product_variation__product__is_physical=True).exists()
+
+    @property
+    def visible_tracking_records(self):
+        """
+        Dynamic Visibility Logic Matrix mapping your specific order statuses.
+        Returns a filtered queryset of tracking records or None.
+        """
+        # 1. Guard check: If there are no physical goods, tracking is irrelevant
+        if not self.has_physical_items:
+            return None
+
+        # 2. Strict whitelist configuration: Only display tracking for active transit statuses
+        tracking_allowed_statuses = ['Partly_Dispatched', 'All_Dispatched', 'Delivered']
+        if self.order_status not in tracking_allowed_statuses:
+            return None
+
+        # 3. Handle Partly_Dispatched split-shipment states
+        if self.order_status == 'Partly_Dispatched':
+            # Only display tracking records linked to lines that have been marked as dispatched
+            return self.tracking_records.filter(order_product__is_dispatched=True)
+
+        # 4. Handle fully completed states ('All_Dispatched', 'Delivered')
+        # Return all tracking numbers assigned to this order
+        return self.tracking_records.all()
+    
 
 class OrderProduct(models.Model):
-    order                   = models.ForeignKey(Order, on_delete=models.CASCADE)
+    order                   = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     payment                 = models.ForeignKey(Payment, on_delete=models.SET_NULL, blank=True, null=True)
     user                    = models.ForeignKey(Account, on_delete=models.CASCADE, blank=True, null=True)
-    product                 = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product                 = models.ForeignKey(Product, on_delete=models.PROTECT)
     product_variation       = models.ForeignKey(ProductVariation, on_delete=models.CASCADE, blank=True, null=True)
-    quantity                = models.IntegerField()
     product_price           = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
+    quantity                = models.IntegerField(default=1)
     ordered                 = models.BooleanField(default=False)
     is_dispatched           = models.BooleanField(default=False)
+
+    # E-Product Specific Claim Safety Trackers
+    is_claimed              = models.BooleanField(default=False)
+    claim_timestamp         = models.DateTimeField(null=True, blank=True)
+
+    # Voucher Product Specific Usage Control Vectors
+    issued_voucher_uuid     = models.UUIDField(null=True, blank=True)
+    is_partially_used       = models.BooleanField(default=False)
+    
     created_at              = models.DateTimeField(auto_now_add=True)
     updated_at              = models.DateTimeField(auto_now=True)
 
@@ -254,13 +378,18 @@ def auto_recalculate_order_fulfillment_state(sender, instance, created, **kwargs
     if instance.order:
         parent_order = instance.order
         
-        # Trigger your model's status engine to re-run its checks
-        parent_order.update_fulfillment_status()
+        # # Trigger your model's status engine to re-run its checks
+        # parent_order.update_fulfillment_status()
         
-        # Save the updated status string value firmly to the disk drive
-        parent_order.save(update_fields=['order_status'])
-        print(f"⚡ SIGNAL SYNC: Recalculated status for Order #{parent_order.order_number} to: {parent_order.order_status}")
+        # # Save the updated status string value firmly to the disk drive
+        # parent_order.save(update_fields=['order_status'])
+        # print(f"⚡ SIGNAL SYNC: Recalculated status for Order #{parent_order.order_number} to: {parent_order.order_status}")
 
+        if parent_order:
+            # 🌟 FIXED: The underlying model update_fulfillment_status() method 
+            # was already fixed to use `.items`, but make sure it matches!
+            parent_order.update_fulfillment_status()
+            parent_order.save(update_fields=['order_status'])
 
 class OrderInquiry(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='inquiries')
@@ -280,3 +409,24 @@ class OrderInquiry(models.Model):
 
     class Meta:
         ordering = ['created_at']
+
+
+class TrackingNumber(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order = models.ForeignKey('Order', on_delete=models.CASCADE, related_name='tracking_records')
+    order_product = models.ForeignKey('OrderProduct', on_delete=models.SET_NULL, null=True, blank=True, related_name='tracking_assignments')
+    
+    tracking_code = models.CharField(max_length=100, unique=True, verbose_name="Tracking Number / 物流單號")
+    carrier_name = models.CharField(max_length=100, blank=True, null=True, help_text="e.g., SF Express, DHL, etc. / 物流承運商名稱")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Tracking Reference"
+        verbose_name_plural = "Tracking References"
+
+    def __str__(self):
+        return f"{self.carrier_name or 'Courier'}: {self.tracking_code}"
+

@@ -1,0 +1,36 @@
+<div class="dashboard_hero lg:col-span-2 w-full min-h-[14rem] sm:min-h-[16rem] rounded-[28px] text-white border border-info relative flex flex-col justify-between overflow-hidden shadow-lg shadow-neutral/40 bg-neutral order-1 lg:order-2">
+    <div class="flex flex-col z-10 p-6 md:pl-[20%] space-y-4">
+        <!-- Solar Term Badges Container -->
+        {% if solar_term %}
+        <div class="flex items-center mb-2 gap-1 z-10 select-none bg-black/40 p-2.5 rounded-xl backdrop-blur-sm border border-white/10 w-fit">
+            <div class="flex flex-col text-left leading-none">
+                <span id="solar_term" class="text-sm sm:text-base font-black tracking-wide text-white">{{ solar_term|default:"處暑" }}</span>
+                <span id="solar_term_en" class="text-[0.45rem] font-mono tracking-widest uppercase opacity-75 mt-1">{{ solar_term_en|default:"End of Heat" }}</span>
+            </div>
+            {% if next_solar_term %}
+            <div class="solar-arrow-container">
+                <div class="solar-arrow"></div>
+            </div>
+            <div class="flex flex-col text-left leading-none">
+                <span id="next_solar_term" class="text-sm sm:text-base font-black tracking-wide text-white/90">{{ next_solar_term|default:"白露" }}</span>
+                <span id="next_solar_term_en" class="text-[0.45rem] font-mono tracking-widest uppercase opacity-50 mt-1">{{ next_solar_term_en|default:"White Dew" }}</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Time-Stamp Tracker Lines -->
+        <!-- 🌟 FIXED: Added items-start here as well to isolate the dynamic elements from extending tracking parameters -->
+        <div class="flex flex-col pl-2.5 space-y-1 text-left font-mono">
+            <div id="dynamic-date" hx-preserve="true" class="text-[0.75rem] font-mono font-bold tracking-wider text-white drop-shadow-md"></div>
+            <span id="dynamic-date-cn" class="text-[0.65rem] opacity-80 font-sans tracking-wide text-white/90 drop-shadow-md"></span>
+        </div>        
+    </div>
+    
+    <!-- High-Precision Synchronized Vector Clock Axis Frame -->
+    <div class="standard_horizontal profile_clock absolute right-6 md:right-[20%] bottom-2.5 xxs:bottom-6 z-10 scale-75 sm:scale-90 md:scale-100 origin-bottom-right">
+        {% include 'accounts/partials/clock_analog.html' %}
+    </div>               
+    <img src="{{ solar_term_bg_url }}" alt="Seasonal Red Leaves background" class="absolute left-0 top-0 w-full h-full object-cover object-top select-none pointer-events-none filter brightness-[0.8] contrast-[1.05]">
+    <!-- <img src="{{ solar_term_bg_url }}" alt="Seasonal Red Leaves background" class="absolute left-0 top-0 w-full h-full object-cover object-top select-none pointer-events-none filter brightness-[0.8] contrast-[1.05]" -->
+</div>

@@ -1,43 +1,82 @@
+<!-- item_qty_form.html -->
 {% load humanize %}
-<form 
-    id="item_qty_form"
-    hx-post="{% url 'add_to_cart_from_dashboard' variation.pk %}"
-    {% if source == 'wishlist' %}
-        hx-target="#wishlist_wrapper"
-    {% else %}
-        hx-swap="none"
-    {% endif %}
-    onsubmit="my_modal_3.close()"
->
+<form id="item_qty_form"
+      hx-post="{% url 'add_to_cart_from_dashboard' variation.pk %}"
+      {% if source == 'wishlist' %}
+          hx-target="#wishlist_wrapper"
+      {% else %}
+          hx-swap="none"
+      {% endif %}
+      onsubmit="my_modal_3.close()"
+      class="w-full text-left space-y-4 font-sans">
+    
     {% csrf_token %}
-    <!-- Add this hidden input -->
     <input type="hidden" name="source" value="{{ source }}">
 
-
-    {% csrf_token %}
-    <div class="w-full flex flex-col gap-2 py-5">
-        <!-- Details -->
-        <div class="w-full flex flex-col gap-2 py-5">
-            <div class="flex flex-col flex-grow justify-center text-center">
-                <p class="font-semibold text-lg">{{ variation.product.product_name }}</p>
-                <p class="text-sm opacity-60">{{ variation.variation_value }}</p>
-                <p class="text-primary font-bold mt-2">Available: {{ variation.stock }}</p>
+    <!-- 📊 SEGMENT A: CURATED VARIATION SUMMARY HEADER -->
+    <div class="card bg-info/5 border border-info/20 rounded-xl p-4 flex flex-row items-center gap-4 select-none">
+        {% if variation.images %}
+            <div class="w-14 h-14 rounded-lg overflow-hidden border border-base-200 shrink-0 bg-base-100">
+                <img src="{{ variation.images.url }}" alt="{{ variation.product.product_name }}" class="w-full h-full object-cover">
+            </div>
+        {% endif %}
+        <div class="flex-1 min-w-0 space-y-0.5">
+            <h4 class="font-serif font-black text-xs sm:text-sm text-base-content/90 truncate leading-snug">
+                {{ variation.product.product_name }}
+            </h4>
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-mono tracking-wide text-base-content/50">
+                <span class="truncate">Specs: {{ variation.variation_value|default:"Standard ｜ 預設" }}</span>
+                <span class="text-base-content/20">/</span>
+                <span class="text-primary font-bold">Stock: {{ variation.stock }} Available</span>
             </div>
         </div>
-        <!-- Qty Input -->
-        <div class="flex items-center gap-4 justify-center">
-            <label class="label font-bold">Qty:</label>
-            <input type="number" 
-                   name="quantity" 
-                   value="1" 
-                   min="1" 
-                   max="{{ variation.stock }}" 
-                   class="input input-bordered w-24"
-                   required>
+    </div>
+
+    <!-- 📊 SEGMENT B: STABLE QUANTITY INCREMENTOR CONSOLE -->
+    <div class="space-y-2">
+        <label class="label py-0 select-none">
+            <span class="label-text text-[11px] font-medium text-base-content/60 font-serif">Select Quantity ｜ 選擇購買數量</span>
+        </label>
+        
+        <div class="flex items-center justify-between border border-base-200 rounded-xl p-3 bg-base-50/10">
+            <div class="text-left select-none">
+                <span class="text-[10px] uppercase font-mono tracking-wider text-base-content/40 block leading-none">Unit Pricing</span>
+                <span class="text-xs font-mono font-bold text-teal-600 block mt-1">
+                    CNY {{ variation.price|floatformat:2|intcomma }}
+                </span>
+            </div>
+
+            <!-- PREMIUM INPUT FIELD CONTROL MATRIX (Bypasses messy native scroll steps) -->
+            <div class="join border border-base-200 rounded-xl overflow-hidden shadow-2xs h-9 bg-base-100">
+                <button type="button" 
+                        onclick="const input = this.nextElementSibling; if(input.value > 1) { input.value = parseInt(input.value) - 1; input.dispatchEvent(new Event('change')); }"
+                        class="btn btn-ghost btn-sm join-item h-full min-h-0 w-9 text-xs font-bold text-base-content/60 hover:bg-base-200 focus:outline-none focus:ring-0 select-none">
+                    <i class="fa-solid fa-minus text-[9px]"></i>
+                </button>
+                
+                <input type="number" 
+                       name="quantity" 
+                       id="id_quantity_selector"
+                       value="1" 
+                       min="1" 
+                       max="{{ variation.stock }}" 
+                       onchange="const max = parseInt(this.max); if(parseInt(this.value) > max) this.value = max; if(parseInt(this.value) < 1 || isNaN(parseInt(this.value))) this.value = 1;"
+                       class="input join-item h-full min-h-0 w-14 font-mono text-xs font-black text-center border-0 bg-transparent focus:outline-none focus:ring-0 p-0 text-base-content [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                       required>
+                
+                <button type="button" 
+                        onclick="const input = this.previousElementSibling; if(parseInt(input.value) < parseInt(input.max)) { input.value = parseInt(input.value) + 1; input.dispatchEvent(new Event('change')); }"
+                        class="btn btn-ghost btn-sm join-item h-full min-h-0 w-9 text-xs font-bold text-base-content/60 hover:bg-base-200 focus:outline-none focus:ring-0 select-none">
+                    <i class="fa-solid fa-plus text-[9px]"></i>
+                </button>
+            </div>
         </div>
-        <!-- Submit Btn -->
-        <div class="modal-action flex justify-center mt-6">
-            <button type="submit" class="btn btn-success w-full">Add to Cart!｜加入購物車！</button>
-        </div>
+    </div>
+
+    <!-- 📊 SEGMENT C: DISPATCH REGISTRY ACTION ACTION BUTTON -->
+    <div class="pt-4 border-t border-base-200 flex justify-end">
+        <button type="submit" class="btn btn-primary btn-sm rounded-xl font-sans text-xs tracking-wide text-white px-6 shadow-sm w-full sm:w-auto transition-all hover:scale-[1.01]">
+            <i class="fa-solid fa-cart-plus text-[10px]"></i> Add to Cart ｜ 加入購物車
+        </button>
     </div>
 </form>

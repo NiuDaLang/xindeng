@@ -1,119 +1,371 @@
+<!-- templates/pages/after_sales_service.html -->
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<!-- BANNER -->
-<div class="relative mt-[65px] lg:mt-[86px] w-full">
-    <!-- Banner Overridden directly for customized context -->
-    <div class="relative w-full bg-base-300 py-16 text-center border-b border-base-200 select-none">
-        <div class="max-w-xl mx-auto px-4">
-            <h1 class="text-2xl md:text-3xl font-serif tracking-widest text-base-content mb-3">
-                After-Sales Service <span class="font-sans font-light text-xl opacity-60 ml-2">/ 售後服務</span>
-            </h1>
-            <p class="text-xs md:text-sm tracking-wide text-base-content/70 leading-relaxed font-serif">
-                A promise of quality, ensuring peace of mind for every masterpiece.<br>
-                <span class="block mt-1 font-sans font-light text-[11px] md:text-xs opacity-60 italic">
-                    承諾於心，臻選無憂。
-                </span>
-            </p>
-        </div>
+<div class="w-full font-sans antialiased bg-base-50/10 min-h-screen selection:bg-primary/10">
+
+  <!-- 🎨 LAYER 1: EDITORIAL SERIF BRAND HERO BANNER -->
+  <div class="relative mt-[65px] lg:mt-[86px] w-full bg-base-300 py-6 sm:py-8 border-b border-base-200 select-none">
+    <div class="max-w-[1380px] mx-auto px-[max(0.5rem,3vw)] xl:px-[max(2.5rem,8vw)] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="text-center md:text-left min-w-0">
+        <h1 class="text-base sm:text-lg md:text-xl font-serif tracking-widest text-base-content font-bold uppercase">
+          Cancellation & Refund Policy ｜ 售後退換與取消條款
+        </h1>
+        <p class="text-[10px] sm:text-[11px] tracking-wide text-base-content/60 font-serif mt-1">
+          Transparent financial reconciliation protocols managed via our Hong Kong Corporate Entity.
+          <br><span class="opacity-75">本站售後、取消與退款手續均由香港主體公司依跨境合規標準嚴格執行。</span>
+        </p>
+      </div>
+      <div class="text-[10px] sm:text-xs font-light text-base-content/40 tracking-wide flex items-center justify-center md:justify-end gap-1.5 whitespace-nowrap overflow-x-auto py-1">
+        <a href="/" class="hover:text-primary transition-colors">Home</a>
+        <span class="opacity-30">/</span>
+        <span class="text-base-content/70 font-medium">After-Sales Service</span>
+      </div>
     </div>
+  </div>
+
+  <!-- 🎨 LAYER 2: SYSTEM ARCHITECTURE GRAPHICAL INJECTOR (MERMAID) -->
+  <section class="w-full max-w-[1380px] mx-auto px-[max(0.5rem,3vw)] xl:px-[max(2.5rem,8vw)] py-8 select-none">
+    <div class="card bg-base-100 border border-base-200/80 shadow-sm rounded-2xl p-4 sm:p-6 md:p-8 flex flex-col items-center">
+
+      <!-- 🌐 UPPER HEADER CONTROLS DOCK -->
+      <div class="w-full border-b border-base-100 pb-3 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <h3 class="text-xs sm:text-sm font-bold tracking-widest font-serif text-base-content/80 uppercase flex items-center gap-2 select-none">
+          <i class="fa-solid fa-diagram-project text-primary animate-pulse"></i> Operational Resolution Flowchart ｜ 售後自動化處置決策樹
+        </h3>
+        
+        <!-- 🔍 INTERACTIVE ZOOM BUTTON MATRIX INTERFACE -->
+        <div class="join border border-base-200 shadow-sm bg-base-100 select-none">
+          <button onclick="executeDiagramZoom(1.15)" class="btn btn-sm btn-ghost join-item text-xs font-serif font-bold transition-all hover:bg-base-200/50" title="Zoom In">
+            <i class="fa-solid fa-magnifying-glass-plus text-primary mr-1"></i> 放大 +
+          </button>
+          <button onclick="executeDiagramZoom(0.85)" class="btn btn-sm btn-ghost join-item text-xs font-serif font-bold transition-all hover:bg-base-200/50" title="Zoom Out">
+            <i class="fa-solid fa-magnifying-glass-minus text-base-content/60 mr-1"></i> 縮小 -
+          </button>
+          <button onclick="executeDiagramZoom(0)" class="btn btn-sm btn-ghost join-item text-[10px] font-sans text-base-content/40 transition-all hover:bg-base-200/50" title="Reset View">
+            重置 Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- 🌐 THE UPGRADED FRAME CANVAS CONTAINER (WITH ACTIVE GRAB INDICATORS) -->
+      <!-- The addition of 'cursor-grab active:cursor-grabbing select-none' provides clear visual feedback on mouse clicks -->
+      <div id="mermaid-frame-sandbox" 
+          class="w-full overflow-auto flex justify-start sm:justify-center bg-base-50/40 p-4 rounded-xl border border-base-200/60 min-h-[30rem] scrollbar-thin relative cursor-grab active:cursor-grabbing select-none">
+
+        <div id="mermaid-zoom-target-canvas" class="mermaid transition-transform duration-200 ease-out origin-top-left sm:origin-top w-auto min-w-[760px] py-2">
+          graph TD
+            %% 🌟 Syntax-Compliant Class Style Definitions
+            classDef default font-family:sans-serif,font-size:11px;
+            classDef startNode fill:#f3f4f6,stroke:#e5e7eb,stroke-width:1px,font-weight:bold;
+            classDef decisionNode fill:#4b9aaa/0.06,stroke:#4b9aaa/0.4,stroke-width:1px,font-weight:bold;
+            classDef actionNode fill:#0284c7/0.06,stroke:#0284c7/0.4,stroke-width:1px;
+            classDef successNode fill:#16a34a/0.08,stroke:#16a34a/0.4,stroke-width:1px,font-weight:bold;
+            classDef errorNode fill:#dc2626/0.08,stroke:#dc2626/0.4,stroke-width:1px,font-weight:bold;
+
+            %% 🌟 Strict Version 11 Structural Layout Nodes
+            A("Buyer Initiates Cancellation <br> 買家發起取消申請") --> B{"Is Dispatched? <br> 商品是否已發貨?"}
+            class A startNode; class B decisionNode;
+
+            B -- "Yes / 是" --> C("Hard Lock: Contact Helpdesk <br> 線上鎖定: 請聯絡客服手動處置")
+            class C errorNode;
+
+            B -- "No / 否" --> D{"Product Type <br> 商品品類審查"}
+            class D decisionNode;
+
+            D -- "E-Product / 數位商品" --> E{"Claimed or >7 Days? <br> 已下載或超過7天?"}
+            D -- "Voucher Gift / 儲值禮券" --> F{"Partially Used? <br> 禮券是否已被部分消費?"}
+            D -- "Physical / 實體產品" --> G{"Producer Cancellable? <br> 是否支持客製化取消?"}
+            class E,F,G decisionNode;
+
+            E -- "Yes / 是" --> C
+            F -- "Yes / 是" --> C
+            G -- "No / 否" --> H("Deduct Product Cancellation Fee <br> 扣除商品自訂客製化損耗費")
+            class H actionNode;
+
+            E -- "No / 否" --> I{"User Identity <br> 買家身份校驗"}
+            F -- "No / 否" --> I
+            G -- "Yes / 是" --> I
+            H --> I
+            class I decisionNode;
+
+            I -- "Member / 註冊會員" --> J{"Payment Vector <br> 原始支付通路結構"}
+            I -- "Guest / 匿名訪客" --> K("Ask Refund Pathway <br> 彈出視窗詢問退款路徑")
+            class J,K decisionNode;
+
+            J -- "100% Store Voucher / 100% 全額儲值購物金" --> L("Instant 100% Store Credit Restore <br> 自動即時無痕退回錢包餘額")
+            J -- "Split / Gateway Cash / 混合拆分-原管道現金退款" --> M("Restore Voucher Portion + Deduct 5% Admin Fee on Cash <br> 原面值退回代金券 + 現金部分扣除5%手續費原路退回")
+            class L,M successNode;
+
+            K -- "Choose Store Credit / 選擇退回儲值金（免手續費）" --> N("Generate Encrypted Claim Link <br> 寄送包含1年效期的儲值金領取註冊連結")
+            K -- "Choose Original Cash / 選擇退回原始支付管道（扣除5%行政費）" --> O{"Original Gateway <br> 判斷原線上/線下通路"}
+            class N,O actionNode; class O decisionNode;
+
+            O -- "Online PayPal/Stripe / 線上即時網關 (PayPal/Stripe) 自動刷退" --> P("Auto Gateway Reversal <br> 原路網關自動刷退返還")
+            O -- "Offline Bank Transfer / 香港公司帳戶線下轉帳 (FPS/跨境電匯)" --> Q("Initiation Email Sent: Request Bank Details <br> 發送首階段信件: 索取香港/跨境匯款帳戶明細")
+            class P,Q successNode;
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 🎨 LAYER 3: CORE COMPONENT BRIEFINGS (FINANCIAL LEDGERS) -->
+  <main class="w-full max-w-[1380px] mx-auto px-[max(0.5rem,3vw)] xl:px-[max(2.5rem,8vw)] pb-12 flex flex-col gap-6 md:gap-8 items-start">
+    
+    <!-- COMPREHENSIVE BILINGUAL POLICY MATRICES -->
+    <div class="w-full space-y-6 md:space-y-8 min-w-0">
+      
+      <!-- BLOCK 1: FULFILLMENT MATRIX RULES -->
+      <div class="card bg-base-100 border border-base-200/80 shadow-sm rounded-2xl p-4 sm:p-6 md:p-8 w-full">
+        <h2 class="text-xs sm:text-sm font-bold tracking-widest font-serif text-base-content/80 uppercase border-b border-base-100 pb-3 mb-4 flex items-center gap-2 select-none">
+          <i class="fa-solid fa-boxes-packing text-primary"></i> 1. Product Eligibility Matrix ｜ 項目核銷退款權限矩陣
+        </h2>
+        
+        <div class="overflow-x-auto scrollbar-none border border-base-200/60 rounded-xl w-full">
+          <table class="table table-sm w-full bg-base-50/20 text-xs font-medium">
+            <thead>
+              <tr class="bg-base-200/40 text-base-content/60 font-serif select-none border-b border-base-200">
+                <th class="w-[30%] py-2.5">Category ｜ 品類</th>
+                <th class="w-[45%] py-2.5">Cancellation Boundary ｜ 自動取消邊界條件</th>
+                <th class="w-[25%] py-2.5">Override ｜ 補救機制</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-base-200/60 font-sans leading-relaxed text-base-content/80">
+              <!-- Row 1: Physical Product -->
+              <tr>
+                <td class="font-bold py-3">Physical Fine Art<br><span class="text-[10px] opacity-40 font-normal">實物藝術精品</span></td>
+                <td>
+                  Allowed <strong class="text-primary font-bold">ONLY BEFORE</strong> fulfillment dispatch logs change state. Subject to custom structural producer configuration loss fees if checked.
+                  <br><span class="text-[10px] opacity-50 block mt-0.5">僅限在倉儲未發貨前允許取消。若商品包含客製化自訂損耗費，將按比例扣除。</span>
+                </td>
+                <td class="font-serif text-[10px] opacity-60">Manual Helpdesk<br>手動客服協調</td>
+              </tr>
+              <!-- Row 2: Eproduct -->
+              <tr>
+                <td class="font-bold py-3">Digital E-Products<br><span class="text-[10px] opacity-40 font-normal">三維電子產品</span></td>
+                <td>
+                  Cancellable strictly within <strong class="text-primary font-bold">7 days of payment confirmation</strong>, provided the cryptographic high-speed server download link remains completely <strong class="text-warning font-bold">unclaimed</strong>.
+                  <br><span class="text-[10px] opacity-50 block mt-0.5">自付款確認起 7 天內且「未點擊領取/下載數位產品」之前，允許線上全額退款。自第 8 天起權限將永久鎖定。</span>
+                </td>
+                <td class="font-serif text-[10px] text-error font-bold">Non-Refundable<br>下載後不可退</td>
+              </tr>
+              <!-- Row 3: Voucher products -->
+              <tr>
+                <td class="font-bold py-3">Gift Voucher Cards<br><span class="text-[10px] opacity-40 font-normal">虛擬電子禮券</span></td>
+                <td>
+                  100% non-refundable if the database logs track any fractional transaction consumption (<strong class="text-error font-bold">partially used</strong>). Unused gift lines can be canceled back into cash pathways exclusively by the original buyer.
+                  <br><span class="text-[10px] opacity-50 block mt-0.5">若代金券在系統中已產生任何部分的消費扣值，則全盤失去退款資格。全新未使用的禮券可由原購買人申請全額原路退回。</span>
+                </td>
+                <td class="font-serif text-[10px] opacity-60">Buyer Reversal<br>限原購買人退</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- BLOCK 2: FINANCIAL ARITHMETIC FEE MATRIX -->
+      <div class="card bg-base-100 border border-base-200/80 shadow-sm rounded-2xl p-4 sm:p-6 md:p-8 w-full">
+        <h2 class="text-xs sm:text-sm font-bold tracking-widest font-serif text-base-content/80 uppercase border-b border-base-100 pb-3 mb-4 flex items-center gap-2 select-none">
+          <i class="fa-solid fa-calculator text-secondary"></i> 2. Financial Deductions & Fee Matrix ｜ 金融結算扣款與補償機制
+        </h2>
+        
+        <p class="text-[11px] text-base-content/60 leading-relaxed font-sans mb-4 select-none">
+          All calculations follow strict compliance rules to cover processing fees. If an item includes a customized producer loss fee, that fee is deducted first from the store credit voucher pool. Any remaining fee balance is then deducted from the cash refund pool.
+          <br><span class="opacity-70 text-[10px] block mt-1">本站退款依循金融合規標準計算。若訂單內含客製化商品損耗費，系統將優先從會員代金券額度中扣除；若代金券餘額不足折抵，差額將自動轉由現金退款池中加計扣除。</span>
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          <!-- Card 1: 5% Admin Fee -->
+          <div class="border border-base-200 rounded-xl p-4 bg-base-50/30 flex items-start gap-3">
+            <div class="p-2 bg-warning/10 rounded-lg text-warning mt-0.5"><i class="fa-solid fa-percent text-sm"></i></div>
+            <div class="space-y-1 min-w-0">
+              <h4 class="font-serif font-bold text-xs text-base-content/90">5% Gateway Administrative Fee ｜ 5% 金融管道手續費</h4>
+              <p class="text-[11px] text-base-content/60 leading-normal font-sans">
+                Applies **exclusively to the cash/gateway** segment of a refund to cover third-party processing and manual audit overhead. Vouchers are returned at 100% value.
+                <br><span class="text-[10px] opacity-75 block mt-1">僅針對「現金/刷卡原路退回」部分收取，用以充抵第三方支付網關手續費及跨境人工審核開支。若選擇全額轉為儲值金則完全免除此費用。</span>
+              </p>
+            </div>
+          </div>
+          <!-- Card 2: Custom Producer Cancellation Fee -->
+          <div class="border border-base-200 rounded-xl p-4 bg-base-50/30 flex items-start gap-3">
+            <div class="p-2 bg-error/10 rounded-lg text-error mt-0.5"><i class="fa-solid fa-hammer text-sm"></i></div>
+            <div class="space-y-1 min-w-0">
+              <h4 class="font-serif font-bold text-xs text-base-content/90">Producer Cancellation Loss Fee ｜ 客製化生產損耗補償</h4>
+              <p class="text-[11px] text-base-content/60 leading-normal font-sans">
+                Applies if a product has an active custom manufacturing fee percentage set. Calculated dynamically as: `Item Price × Cancellation Fee %`.
+                <br><span class="text-[10px] opacity-75 block mt-1">若選購的藝術品包含工坊生產階段鎖定標籤，將依據產品設定之百分比，由系統自乘計算 `單品單價 × 取消手續費率` 後予以扣除。</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GUEST ACCOUNT CLAIM PROFILE PANEL -->
+      <div class="w-full rounded-2xl border border-base-200 relative flex flex-col justify-between overflow-hidden shadow-sm bg-neutral select-none py-6 px-5 min-h-[16rem]">
+        <div class="flex flex-col z-10 space-y-3 text-white text-left">
+          <div class="flex items-center gap-2 bg-black/30 p-2 rounded-xl backdrop-blur-sm border border-white/5 w-fit">
+            <i class="fa-solid fa-wand-magic-sparkles text-warning text-xs"></i>
+            <span class="text-[10px] font-bold font-serif tracking-widest uppercase">Guest Payout Conversion ｜ 訪客購物金轉化</span>
+          </div>
+          <h3 class="text-sm font-bold font-serif tracking-wide leading-snug pt-1">
+            Non-Member Store Credit Claim Rules<br>匿名訪客購物金申領與帳戶轉換機制
+          </h3>
+          <p class="text-[11px] font-sans opacity-85 leading-relaxed">
+            When a casual guest buyer requests a refund via store credits, our system dispatches an encrypted registration link to their verified checkout email. 
+            <br><span class="opacity-70 text-[10px] block mt-1.5 font-sans leading-normal">當非註冊會員（訪客）選擇以「100%全額購物金」形式退款時，系統將向其結算信箱自動發送一條高強度加密的註冊帳戶連結。訪客點擊該專屬連結完成新會員註冊後，原先孤立的退款面值將在 1 秒內自動激活並掛載至新錢包中，享 1 年（365天）全功能消費折抵。</span>
+          </p>
+        </div>
+        <img src="/media/solar_terms/red_leaves.jpeg" alt="HK Compliance Background" class="absolute left-0 top-0 w-full h-full object-cover select-none pointer-events-none brightness-[0.35]">
+      </div>
+
+      <!-- FAQ ACCORDION COLLAPSE SYSTEM -->
+      <div class="join join-vertical w-full border border-base-200/80 rounded-2xl overflow-hidden bg-base-100 shadow-sm text-xs">
+        <div class="collapse collapse-arrow bg-base-100 join-item border-b border-base-200/60">
+          <input type="radio" name="faq-sales" checked="checked" aria-label="FAQ Payment Methods Toggle 1" />
+          <div class="collapse-title font-bold text-base-content/90 pr-10 flex flex-col justify-center leading-tight">
+            <div class="font-serif tracking-wide text-xs">How do Hong Kong bank refunds process?</div>
+            <span class="text-[10px] opacity-50 font-sans font-normal mt-0.5">香港公司線下銀行轉帳退款如何運作？</span>
+          </div>
+          <div class="collapse-content text-base-content/80 bg-base-200/20 pt-3 leading-relaxed font-serif text-[11px]">
+            <p>If your original checkout was processed via Hong Kong Bank Transfer, our first-stage automated email will securely collect your clearing identifiers (including Faster Payment System (FPS) tokens or international SWIFT bank details). Manual offline clearing is then executed smoothly by our accounting staff team.</p>
+            <p class="opacity-60 font-sans text-[10px] mt-1.5">若您原先使用香港銀行轉帳等線下通路，系統首階段信件將向您收取受款明細（如轉數快識別碼或跨境電匯代碼），隨後由我們駐港財務人員手動匯回。</p>
+          </div>
+        </div>
+        
+        <div class="collapse collapse-arrow bg-base-100 join-item">
+          <input type="radio" name="faq-sales" aria-label="FAQ Payment Methods Toggle 2" />
+          <div class="collapse-title font-bold text-base-content/90 pr-10 flex flex-col justify-center leading-tight">
+            <div class="font-serif tracking-wide text-xs">What happens to a gifted voucher?</div>
+            <span class="text-[10px] opacity-50 font-sans font-normal mt-0.5">如果我取消的是送給朋友的電子禮券怎麼辦？</span>
+          </div>
+          <div class="collapse-content text-base-content/80 bg-base-200/20 pt-3 leading-relaxed font-serif text-[11px]">
+            <p>Upon confirming the cancellation of an unused voucher product, our platform automatically revokes the original token key string. Simultaneously, an alert is sent to the recipient's email to notify them that the gift link has been deactivated, routing them safely to a standard landing notice page if clicked.</p>
+            <p class="opacity-60 font-sans text-[10px] mt-1.5">全新未動用的送禮類電子券一經取消，原券碼將即刻失效。系統亦會同步向收件信箱發送通知，若對方不慎點擊原禮物連結，將被流暢引導至禮券已失效之提示頁面。</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
 </div>
 
-<!-- MAIN CONTAINER -->
-<main class="flex flex-row justify-center lg:px-[max(2rem,8vw)] xl:px-[max(3rem,8vw)] pt-[1.5rem] sm:pt-[3rem] md:pt-15 lg:pt-25 pb-[30vh] min-h-[calc(100dvh-200px)]" style="background-color: #f7f5f5;">
-    <!-- Reading Content Wrapper (888px Column Constraint) -->
-    <div class="md:max-w-[888px] md:w-4/5 w-9/10 font-sans text-base-content/80 leading-relaxed text-sm md:text-base">
-        
-        <!-- ========================================== -->
-        <!-- CHINESE SEGMENT (繁體中文)                  -->
-        <!-- ========================================== -->
-        <section class="border-b border-base-300/60 pb-12 mb-12">
-            <h1 class="text-xl md:text-2xl font-semibold tracking-wide text-base-content mb-2">售後保障與退換貨政策</h1>
-            <p class="text-xs text-base-content/50 mb-8 font-mono">最後更新日期：2026年6月</p>
 
-            <div class="space-y-6">
-                <div>
-                    <h2 class="font-medium text-base-content mb-2 text-base">一、 30天安心退換貨保障</h2>
-                    <p class="mb-1">自您收到<b>實體商品</b>之次日起算（依據快遞簽收日期為準），新燈藝術商店提供 <b>30 天</b>的退換貨申請窗口。</p>
-                    <p class="text-xs text-base-content/60">※ 提醒您：提出申請前，請務必先透過官方電子信箱或後台客服與我們聯繫，切勿自行寄回包裹。</p>
-                </div>
+<!-- CORRECTED RUNTIME MODULE COMPILER LOADERS -->
+<script type="module">
+  // Bypasses jsDelivr entirely to resolve your network connection timeout errors natively
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'
+  mermaid.initialize({ 
+    startOnLoad: true, 
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#4b9aaa',
+      lineColor: '#e5e7eb',
+      textColor: '#1f2937',
+      fontFamily: 'sans-serif'
+    },
+    // 🌟 THE CSS INJECTION FIX: Forces the vector graphics engine to scale text elements safely
+    themeCSS: `
+      .node text, .edgeLabel text, .label text {
+        font-size: 14px !important;
+        font-weight: 500 !important;
+      }
+    `
+  });
+</script>
 
-                <div>
-                    <h2 class="font-medium text-base-content mb-2 text-base">二、 適用商品與完好狀態標準</h2>
-                    <p class="mb-2">退換貨服務<b>僅適用於實體商品</b>，且必須符合以下完整度標準：</p>
-                    <ul class="list-disc pl-5 space-y-1 text-sm">
-                        <li><b>原創畫作與藝術品：</b> 必須保持出廠時的原始狀態。無污損、無刮傷、未經裝框改造、防撕標籤未受破壞，且所有隨附的藝術家收藏證書（C.O.A.）均須一併退回。</li>
-                        <li><b>文具、手工藝品與家居摆飾：</b> 包裝必須未經拆封。內外包裝完整、零配件無缺失，不影響二次銷售。</li>
-                    </ul>
-                    <p class="mt-2 text-secondary font-medium">❌ 排除條款（不適用退換貨）：數位電子商品 (E-Products)、電子授權碼、虛擬現金券 (Vouchers) 以及任何客製化定製藝術品，一經售出或發送即無法辦理退換貨。</p>
-                </div>
+<!-- Inject this script block directly beneath your zoom controller method inside the page template -->
+<script>
+  // Global view tracking state variable [INDEX]
+  let currentDiagramScaleMultiplier = 1.0;
 
-                <div>
-                    <h2 class="font-medium text-base-content mb-2 text-base">三、 物流費用責任歸屬 (行業標準)</h2>
-                    <p class="mb-1">依據跨境電商國際慣例，退換貨之運費劃分如下：</p>
-                    <ul class="list-disc pl-5 space-y-1 text-sm">
-                        <li><b>買家承擔（個人因素）：</b> 若因「不喜歡、與想像不符、買錯尺寸或款式」等個人審美與主觀原因申請退貨，<b>雙向往返運費、包裝成本及可能產生的海關進口關稅將由買家全額承擔</b>。</li>
-                        <li><b>商家承擔（瑕疵與品質因素）：</b> 若商品在長途運輸中發生嚴重受損、破裂、原畫嚴重受潮，或團隊漏發、寄錯品項，<b>由此產生的退換貨國際運費及清關規費將由新燈藝術商店全額承擔</b>。</li>
-                    </ul>
-                </div>
+  /**
+   * Universal Vector Graphic Transform Controller.
+   * Adjusts the inner diagram scale seamlessly on click while keeping the parent wrapper frame locked.
+   */
+  function executeDiagramZoom(scalingFactorFactor) {
+      const zoomCanvasNode = document.getElementById('mermaid-zoom-target-canvas');
+      const boundingSandboxNode = document.getElementById('mermaid-frame-sandbox');
+      
+      if (!zoomCanvasNode) return;
 
-                <div>
-                    <h2 class="font-medium text-base-content mb-2 text-base">四、 運輸受損 (Damaged Art) 處理流程</h2>
-                    <p class="mb-1">藝術品十分脆弱。若您在收到包裹時發現包裝嚴重破損、變形，請依循以下步驟以保障您的權益：</p>
-                    <ol class="list-decimal pl-5 space-y-1 text-sm">
-                        <li>請在簽收包裹時，當場<b>拍照或錄影</b>留存外部紙箱破損外觀。</li>
-                        <li>開箱時請錄影，清晰拍攝商品受損的具體部位，並於<b> 48 小時內</b>將影片與訂單編號發送至客服信箱。</li>
-                        <li>經團隊審查確認後，我們將立即為您安排全額退款或啟動藝術品修復、重新補發程序。</li>
-                    </ol>
-                </div>
-            </div>
-        </section>
+      if (scalingFactorFactor === 0) {
+          // Reset action path: restore the baseline layout snapshot dimensions instantly
+          currentDiagramScaleMultiplier = 1.0;
+          zoomCanvasNode.style.transform = 'scale(1.0)';
+          zoomCanvasNode.style.width = 'auto';
+          return;
+      }
 
-        <!-- ========================================== -->
-        <!-- ENGLISH SEGMENT (英文)                      -->
-        <!-- ========================================== -->
-        <section>
-            <h1 class="text-xl md:text-2xl font-semibold tracking-wide text-base-content mb-2">After-Sales & Returns Policy</h1>
-            <p class="text-xs text-base-content/50 mb-8 font-mono">Last Updated: June 2026</p>
+      // Multiply the scaling factor factor against the active state tracker (e.g. 1.0 * 1.15 = 1.15) [INDEX]
+      currentDiagramScaleMultiplier = currentDiagramScaleMultiplier * scalingFactorFactor;
 
-            <div class="space-y-6">
-                <div>
-                    <h2 class="font-medium text-base-content mb-2 text-base">1. 30-Day Evaluation Window</h2>
-                    <p class="mb-1">XinDeng Art Shop provides a <b>30-day return or exchange eligibility window</b>, commencing the calendar day immediately following tracking delivery confirmation.</p>
-                    <p class="text-xs text-base-content/60">*Note: Please register an inquiry via your Personal Registry or support email before shipping items back; unsolicited packages cannot be processed.</p>
-                </div>
+      // Establish safety minimum/maximum zoom boundaries to prevent interface breakage [INDEX]
+      if (currentDiagramScaleMultiplier < 0.6) currentDiagramScaleMultiplier = 0.6;
+      if (currentDiagramScaleMultiplier > 2.5) currentDiagramScaleMultiplier = 2.5;
 
-                <div>
-                    <h2 class="font-medium text-base-content mb-2 text-base">2. Product Eligibility & Conditions</h2>
-                    <p class="mb-2">Returns are **strictly limited to physical assets** adhering to global gallery standards:</p>
-                    <ul class="list-disc pl-5 space-y-1 text-sm">
-                        <li><b>Original Masterpieces & Artworks:</b> Must arrive in pristine condition. Free of scuffs, scratches, framing modifications, or seal damage. All attached Certificate of Authenticity (C.O.A.) documents must be returned inside the container.</li>
-                        <li><b>Stationery, Crafts & Decor:</b> Manufactured packaging must remain unopened, factory-sealed, and completely undamaged to qualify for resale layout requirements.</li>
-                    </ul>
-                    <p class="mt-2 text-secondary font-medium">❌ Non-Returnable Items: Digital Assets (E-products), downloadable graphic licenses, virtual Cash Vouchers, and customized bespoke commissions cannot be cancelled or returned under any circumstances once processed.</p>
-                </div>
+      // 🌟 Apply the CSS transform matrix rule natively inside the vector wrapper
+      zoomCanvasNode.style.transform = `scale(${currentDiagramScaleMultiplier})`;
+      
+      // Dynamic width expansion compensation rules: prevents borders from clipping larger sizes
+      if (currentDiagramScaleMultiplier > 1.0) {
+          zoomCanvasNode.style.width = `${100 * currentDiagramScaleMultiplier}%`;
+      } else {
+          zoomCanvasNode.style.width = 'auto';
+      }
+  }
 
-                <div>
-                    <h2 class="font-medium text-base-content mb-2 text-base">3. Shipping Cost Allocations (Market Standard)</h2>
-                    <p class="mb-1">Fulfillment infrastructure cost assignments mirror cross-border e-commerce criteria:</p>
-                    <ul class="list-disc pl-5 space-y-1 text-sm">
-                        <li><b>Buyer Responsibility (Change of Mind):</b> If an exchange or return is initiated due to personal aesthetic variations, sizing miscalculations, or subjective criteria, <b>all multi-directional international logistics fees, return custom entries, and packaging overhead remain the exclusive financial responsibility of the buyer</b>.</li>
-                        <li><b>Seller Responsibility (Defect or Damaged Arrival):</b> If a piece exhibits structurally verified damage, structural faults, wrong item dispatches, or moisture disruption sustained mid-transit, <b>all alternative transit, clearance fees, and return billing will be covered entirely by XinDeng Art Shop</b>.</li>
-                    </ul>
-                </div>
+  document.addEventListener('DOMContentLoaded', () => {
+      const sandboxContainer = document.getElementById('mermaid-frame-sandbox');
+      if (!sandboxContainer) return;
 
-                <div>
-                    <h2 class="font-medium text-base-content mb-2 text-base">4. Damaged Art Claim Framework</h2>
-                    <p class="mb-1">Fine art requires extreme care. Should your parcel arrive visibly compromised, please follow this legal protection blueprint:</p>
-                    <ol class="list-decimal pl-5 space-y-1 text-sm">
-                        <li>Document the external shipping container’s condition via <b>high-resolution photography or video footage</b> immediately upon arrival.</li>
-                        <li>Record an uninterrupted unboxing sequence illustrating the precise visual location of the damage. Forward this evidence to support within <b>48 hours</b> alongside your order serial key.</li>
-                        <li>Upon confirmation, we will swiftly initiate a comprehensive financial credit refund or proceed with an expedited reproduction/restoration process.</li>
-                    </ol>
-                </div>
-            </div>
-        </section>
+      // Initialize internal coordinate tracking variables
+      let mouseIsClickedDown = false;
+      let initialMouseClickX, initialMouseClickY;
+      let baselineScrollLeft, baselineScrollTop;
 
-    </div>
-</main>
+      // 🖱️ Event A: Catch the initial mouse down press
+      sandboxContainer.addEventListener('mousedown', (event) => {
+          mouseIsClickedDown = true;
+          
+          // Map initial tracking coordinates relative to current window placement
+          initialMouseClickX = event.pageX - sandboxContainer.offsetLeft;
+          initialMouseClickY = event.pageY - sandboxContainer.offsetTop;
+          
+          // Freeze the baseline scroll metrics before calculations change them
+          baselineScrollLeft = sandboxContainer.scrollLeft;
+          baselineScrollTop = sandboxContainer.scrollTop;
+      });
+
+      // 🖱️ Event B: Release the lock immediately when the mouse button lets go
+      sandboxContainer.addEventListener('mouseleave', () => {
+          mouseIsClickedDown = false;
+      });
+
+      sandboxContainer.addEventListener('mouseup', () => {
+          mouseIsClickedDown = false;
+      });
+
+      // 🖱️ Event C: Translate mouse acceleration vectors into dynamic panning actions
+      sandboxContainer.addEventListener('mousemove', (event) => {
+          // If the mouse is just hovering without a click pass, exit early
+          if (!mouseIsClickedDown) return;
+          
+          // Block standard system highlighting mechanics to prevent accidental text selections
+          event.preventDefault();
+          
+          // Compute the fresh cursor location properties
+          const currentMouseX = event.pageX - sandboxContainer.offsetLeft;
+          const currentMouseY = event.pageY - sandboxContainer.offsetTop;
+          
+          // Calculate pixel displacement delta steps (Multiply by 1.5 to add fluid panning speed)
+          const movementDeltaX = (currentMouseX - initialMouseClickX) * 1.5;
+          const movementDeltaY = (currentMouseY - initialMouseClickY) * 1.5;
+          
+          // Commit the offset variables down onto the scroll overflow boundaries
+          sandboxContainer.scrollLeft = baselineScrollLeft - movementDeltaX;
+          sandboxContainer.scrollTop = baselineScrollTop - movementDeltaY;
+      });
+  });
+</script>
 {% endblock %}

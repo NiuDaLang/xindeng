@@ -213,7 +213,7 @@ def send_gift_voucher_email(v_id, link):
         target_recipient = voucher.purchaser_email.strip()
         gift_message_text = ""
      
-    mail_subject = f"🎁 您收到了一份來自 {voucher.purchaser_email} 的禮品券！ | A Gift Voucher For You!"
+    mail_subject = f"🎁 A Gift Voucher For You!｜您收到了一份來自 {voucher.purchaser_email} 的禮品券！"
    
     context = {
         "voucher": voucher,
@@ -281,6 +281,57 @@ def send_secure_voucher_pin_email(v_id, pin_code):
     mail.send()
 
 
+def send_gift_voucher_revocation_email(order_id, recipient_email):
+    """
+    Compiles and dispatches professional bilingual cancellation alerts
+    to 3rd-party gift receivers when a purchased gift card is deactivated.
+    """
+    # 1. Fetch matching transaction variables securely from database
+    order = Order.objects.get(id=order_id)
+    
+    # 2. Gather deactivated vouchers linked to this recipient for tracking
+    # Grabs short 8-character token signatures to display safely without exposing full strings
+    revoked_vouchers = CustomerVoucher.objects.filter(
+        purchaser_email=order.email, 
+        registered_email=recipient_email.strip().lower()
+    )
+    
+    short_ids = [str(v.id)[:8].upper() for v in revoked_vouchers]
+    short_ids_str = ", ".join(short_ids) if short_ids else f"VAR-{order.order_number[:8].upper()}"
+
+    # 3. Configure administrative email tracking headers
+    mail_subject = f"🛑 Gift Card Notice｜您的電子禮品卡狀態變更與註銷通知 [#{order.order_number}]"
+    
+    current_site = Site.objects.get_current()
+    site_domain = f"http://{current_site.domain}"
+    
+    # 4. Bind runtime template variables
+    context = {
+        "order": order,
+        "site_domain": site_domain,
+        "recipient_email": recipient_email.strip(),
+        "short_ids_str": short_ids_str,
+    }
+    
+    # 5. Render separate multi-part template files for strict client reliability
+    html_message = render_to_string("emails/gift_voucher_revocation.html", context)
+    plain_message = render_to_string("emails/gift_voucher_revocation.txt", context)
+    
+    # 6. Build and dispatch the multi-part email
+    mail = EmailMultiAlternatives(
+        subject=mail_subject,
+        body=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[recipient_email.strip()]
+    )
+    
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = 'utf-8'
+    mail.send()
+    
+    return True
+
+
 def send_inquiry_alert_email(order_number, message_content):
     """Alerts shop admins immediately when a customer logs a fresh query."""
     order = Order.objects.get(order_number=order_number)
@@ -334,71 +385,122 @@ def send_staff_reply_email(order_number, message_content):
     mail.send()
 
 
-def send_cancellation_initiation_email(order_number):
-    """Compiles safety warning frameworks when a user clicks the cancellation trigger button."""
-    order = Order.objects.get(order_number=order_number)
-    mail_subject = f"⚠️ Cancellation Processing Alert｜訂單取消申請處理中 [#{order.order_number}]"
+def send_cancellation_initiation_email(order_id, user_type, is_online_gateway, currency_code, net_cash_payout_str):
+    """
+    Compiles and dispatches professional bilingual cash refund intake requests.
+    Adapts text layouts based on user membership and original payment gateway routes.
+    """
+    order = Order.objects.get(id=order_id)
+    mail_subject = f"⏳ Refund Processing｜您的訂單取消與退款申請已受理 [#{order.order_number}]"
     
     current_site = Site.objects.get_current()
     site_domain = f"http://{current_site.domain}"
     
+    # Calculate original voucher applied amount part to display in context safely
+    original_voucher_spent = order.voucher_applied
+
+    # Assemble contextual template parameter dictionaries
     context = {
         "order": order,
-        "site_domain": site_domain,
+        "user_type": user_type,                  # 'member' or 'guest'
+        "is_online_gateway": is_online_gateway,  # True (PayPal/Stripe) or False (Bank Transfer)
+        "currency_code": currency_code.upper(),
+        "net_cash_payout_str": net_cash_payout_str,
+        "original_voucher_spent": original_voucher_spent,
+        "site_domain": site_domain
     }
     
     html_message = render_to_string("emails/cancellation_initiation_email.html", context)
     plain_message = render_to_string("emails/cancellation_initiation_email.txt", context)
     
-    mail = EmailMultiAlternatives(subject=mail_subject, body=plain_message, from_email=settings.DEFAULT_FROM_EMAIL, to=[order.email])
+    mail = EmailMultiAlternatives(
+        subject=mail_subject,
+        body=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[order.email.strip()]
+    )
+    
     mail.attach_alternative(html_message, "text/html")
     mail.encoding = 'utf-8'
     mail.send()
+    
+    return True
 
 
-def send_cancellation_finalized_email(order_number):
-    """Compiles customized closing statements adapting instructions dynamically to match payment methods."""
-    order = Order.objects.get(order_number=order_number)
-    mail_subject = f"✅ Cancellation Complete & Refund Notice｜訂單取消與退款完成通知 [#{order.order_number}]"
+def send_cancellation_completion_email(order_id, user_type, voucher_id_str, net_amount_str):
+    """
+    Compiles and dispatches professional bilingual refund confirmation statements.
+    Appends automated ledger vouchers or secure registration activation funnels dynamically.
+    """
+    order = Order.objects.get(id=order_id)
+    mail_subject = f"✨ Refund Completed｜您的訂單取消與購物金簽發已完成 [#{order.order_number}]"
     
     current_site = Site.objects.get_current()
     site_domain = f"http://{current_site.domain}"
     
-    # 🌟 CORE DISCRIMINATOR: Detect if payment was processed offline
-    is_offline_method = order.payment and order.payment.payment_method in ['Bank Transfer', 'AliPay', 'WeChat', 'Cash On Delivery', 'Other']
+    claim_link = ""
+    short_voucher_id = ""
     
+    # 🌟 Secure extraction of token metadata vectors if a voucher database row exists
+    if voucher_id_str:
+        try:
+            voucher = CustomerVoucher.objects.get(id=voucher_id_str)
+            short_voucher_id = str(voucher.id)[:8].upper()
+            # Programmatically construct an absolute endpoint URL path for guests
+            claim_link = f"{site_domain}/vouchers/claim/{str(voucher.id)}/"
+        except CustomerVoucher.DoesNotExist:
+            short_voucher_id = "VCH-ERR"
+
+    # Assemble template mapping dictionary parameters
     context = {
         "order": order,
-        "payment": order.payment,
-        "site_domain": site_domain,
-        "is_offline_method": is_offline_method,
+        "user_type": user_type,  # 'member' or 'guest'
+        "net_amount_str": net_amount_str,
+        "short_voucher_id": short_voucher_id,
+        "claim_link": claim_link,
+        "site_domain": site_domain
     }
     
-    html_message = render_to_string("emails/cancellation_finalized_email.html", context)
-    plain_message = render_to_string("emails/cancellation_finalized_email.txt", context)
+    html_message = render_to_string("emails/cancellation_completion_email.html", context)
+    plain_message = render_to_string("emails/cancellation_completion_email.txt", context)
     
-    mail = EmailMultiAlternatives(subject=mail_subject, body=plain_message, from_email=settings.DEFAULT_FROM_EMAIL, to=[order.email])
+    mail = EmailMultiAlternatives(
+        subject=mail_subject,
+        body=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[order.email.strip()]
+    )
+    
     mail.attach_alternative(html_message, "text/html")
     mail.encoding = 'utf-8'
     mail.send()
+    
+    return True
 
 
-
-# __str__ returned non-string (type ProductVariation)
-# Request Method:	POST
-# Request URL:	http://localhost:8000/admin/orders/order/
-# Django Version:	6.0.1
-# Exception Type:	TypeError
-# Exception Value:	
-# __str__ returned non-string (type ProductVariation)
-# Exception Location:	/Users/mycomputer/Documents/path/project/env/lib/python3.13/site-packages/django/contrib/admin/utils.py, line 148, in format_callback
-# Raised during:	django.contrib.admin.options.changelist_view
-# Python Executable:	/Users/mycomputer/Documents/path/project/env/bin/python
-# Python Version:	3.13.5
-# Python Path:	
-# ['/Users/mycomputer/Documents/path/project',
-#  '/Users/mycomputer/Documents/path/project',
-#  '/opt/anaconda3/lib/python313.zip',
-#  '/opt/anaconda3/lib/python3.13',
-#  '/opt/anaconda3/lib/python3.13/lib-dynload',
-#  '/Users/mycomputer/Documents/path/project/env/lib/python3.13/site-packages']
+# def send_cancellation_finalized_email(order_number, **kwargs):
+#     order = Order.objects.get(order_number=order_number)
+#     mail_subject = f"✅ Cancellation Complete & Refund Notice｜訂單取消與退款完成通知 [#{order.order_number}]"
+    
+#     current_site = Site.objects.get_current()
+#     site_domain = f"http://{current_site.domain}"
+    
+#     # 🌟 FIXED: Added safe fallback in case payment instance mapping fields are completely null
+#     is_offline_method = False
+#     if order.payment:
+#         is_offline_method = order.payment.payment_method in ['Bank Transfer', 'AliPay', 'WeChat', 'Cash On Delivery', 'Other']
+    
+#     context = {
+#         "order": order,
+#         "payment": order.payment, # Can evaluate to None safely in templates now
+#         "site_domain": site_domain,
+#         "is_offline_method": is_offline_method,
+#     }
+    
+#     html_message = render_to_string("emails/cancellation_finalized_email.html", context)
+#     plain_message = render_to_string("emails/cancellation_finalized_email.txt", context)
+    
+#     mail = EmailMultiAlternatives(subject=mail_subject, body=plain_message, from_email=settings.DEFAULT_FROM_EMAIL, to=[order.email])
+#     mail.attach_alternative(html_message, "text/html")
+#     mail.encoding = 'utf-8'
+#     mail.send()

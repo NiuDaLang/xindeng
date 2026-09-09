@@ -1,10 +1,155 @@
+// main.js
+
+// ============================================
+// PERFORMANCE API PATCH (Google Maps startTime Fix)
+// ============================================
+(function patchPerformanceAPI() {
+    // Store original methods
+    const originalMethods = {};
+    
+    function applyPatch() {
+        if (!window.performance) return;
+        
+        // Store originals once
+        if (!originalMethods.getEntriesByType && window.performance.getEntriesByType) {
+            originalMethods.getEntriesByType = window.performance.getEntriesByType.bind(window.performance);
+        }
+        if (!originalMethods.getEntriesByName && window.performance.getEntriesByName) {
+            originalMethods.getEntriesByName = window.performance.getEntriesByName.bind(window.performance);
+        }
+        if (!originalMethods.getEntries && window.performance.getEntries) {
+            originalMethods.getEntries = window.performance.getEntries.bind(window.performance);
+        }
+        
+        // Patch getEntriesByType
+        if (originalMethods.getEntriesByType) {
+            window.performance.getEntriesByType = function(type) {
+                try {
+                    const entries = originalMethods.getEntriesByType(type);
+                    return entries && entries.length > 0 ? entries : [];
+                } catch (e) {
+                    return [];
+                }
+            };
+        }
+        
+        // Patch getEntriesByName
+        if (originalMethods.getEntriesByName) {
+            window.performance.getEntriesByName = function(name, type) {
+                try {
+                    const entries = originalMethods.getEntriesByName(name, type);
+                    return entries && entries.length > 0 ? entries : [];
+                } catch (e) {
+                    return [];
+                }
+            };
+        }
+        
+        // Patch getEntries
+        if (originalMethods.getEntries) {
+            window.performance.getEntries = function() {
+                try {
+                    const entries = originalMethods.getEntries();
+                    return entries || [];
+                } catch (e) {
+                    return [];
+                }
+            };
+        }
+    }
+    
+    // Apply immediately
+    applyPatch();
+    
+    // Re-apply after HTMX swaps (in case something resets it)
+    document.addEventListener('htmx:afterSwap', function() {
+        applyPatch();
+    });
+    
+    // Re-apply when Google Maps might load
+    document.addEventListener('DOMContentLoaded', function() {
+        applyPatch();
+    });
+    
+    // Expose for manual re-patching if needed
+    window.repatchPerformanceAPI = applyPatch;
+})();
+
+// ============================================
+// ERROR SUPPRESSION (Backup)
+// ============================================
+const originalConsoleError = console.error;
+console.error = function(...args) {
+    const errorMsg = args[0] ? String(args[0]) : '';
+    
+    if (
+        errorMsg.includes('startTime') ||
+        errorMsg.includes('reportAllChanges') ||
+        errorMsg.includes('Cannot read properties of undefined') ||
+        (errorMsg.includes('WebSocket connection') && errorMsg.includes('Back-Forward Cache'))
+    ) {
+        console.debug('🔇 Suppressed known error');
+        return;
+    }
+    
+    originalConsoleError.apply(console, args);
+};
+
+// Global error handler
+window.addEventListener('error', function(e) {
+    if (e.message && (
+        e.message.includes('startTime') ||
+        e.message.includes('reportAllChanges')
+    )) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return true;
+    }
+}, true);
+
+// Unhandled rejection handler
+window.addEventListener('unhandledrejection', function(e) {
+    const reason = e.reason;
+    if (reason && (
+        (reason.message && reason.message.includes('startTime')) ||
+        (typeof reason === 'string' && reason.includes('startTime'))
+    )) {
+        e.preventDefault();
+        return true;
+    }
+});
+
+// ============================================
+// GOOGLE MAPS AUTOCCOMPLETE INTEGRATION
+// ============================================
+// This ensures Google Maps works correctly with HTMX-loaded content
+window.initGoogleMapsAutocomplete = function(inputElement, options = {}) {
+    if (!window.google || !window.google.maps || !window.google.maps.places) {
+        console.warn('Google Maps not loaded yet');
+        return null;
+    }
+    
+    try {
+        const autocomplete = new window.google.maps.places.Autocomplete(
+            inputElement,
+            options
+        );
+        
+        // Add listener for place selection
+        autocomplete.addListener('place_changed', function() {
+            const place = autocomplete.getPlace();
+            console.log('Place selected:', place);
+        });
+        
+        return autocomplete;
+    } catch (error) {
+        console.error('Error initializing Google Autocomplete:', error);
+        return null;
+    }
+};
+
 import "@/css/main.css"
 
-// import Swiper from 'swiper'
-// import { Navigation, Pagination } from 'swiper/modules'
-// import 'swiper/css'
-// import 'swiper/css/navigation'
-// import 'swiper/css/pagination'
 import "cally"
 import Swal from 'sweetalert2'
 
@@ -46,10 +191,7 @@ import htmx from 'htmx.org';
 //     console.error("Content:", evt.detail.content);
 // });
 
-// 1. Maintain a clean backup reference to the browser's native error engine
-const originalConsoleError = console.error;
-
-// 2. Listen for the native popstate event (fires the instant a user hits the back button)
+// Listen for the native popstate event (fires the instant a user hits the back button)
 window.addEventListener('popstate', function() {
     // Override console.error temporarily to filter out the HTMX internal string
     console.error = function(...args) {
@@ -71,44 +213,6 @@ window.addEventListener('popstate', function() {
     }, 100); // 100ms is plenty of time for doSwap and restoreHistory execution frames
 });
 
-// ***** change theme *****
-// let checkbox = document.querySelector("#day_night_checkbox")
-// let lightTheme = "valentine"
-// let darkTheme = "aqua"
-// let selectedTheme = localStorage.getItem("theme")
-// const is_dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-// // (1) on document load, set checkbox status + set localStorage's theme
-// document.addEventListener('DOMContentLoaded', function() {
-//     if(localStorage.getItem("theme")==="auto"){
-//         is_dark ? localStorage.setItem("theme", darkTheme) : localStorage.setItem("theme", lightTheme)
-//         return
-//     }
-//     checkbox.checked = localStorage.getItem("theme") === darkTheme ? true : false
-//     if(!selectedTheme){
-//         if(is_dark){
-//             localStorage.setItem("theme", darkTheme)
-//             checkbox.checked = true
-//         } else {
-//             localStorage.setItem("theme", lightTheme)
-//             checkbox.checked = false
-//         }
-//     }
-//     document.documentElement.setAttribute('data-theme', localStorage.getItem("theme"));
-// });
-
-// (2) for default mode, enable << light <==> dark >> toggle
-// checkbox.addEventListener("click", () => {
-//     if(checkbox.checked) {
-//         // if dark mode
-//         localStorage.setItem("theme", darkTheme)
-//     } else {
-//         // if light mode
-//         localStorage.setItem("theme", lightTheme)
-//     }
-//     document.documentElement.setAttribute('data-theme', localStorage.getItem("theme"));
-// })
-
 // ***** change navbar color on-scroll *****
 let scrollTimer = null;
 const header = document.querySelector("#navbar");
@@ -125,7 +229,6 @@ const normalLogo_landscape = "/static/images/logos/logo_full_landscape.svg";
 const altLogo_landscape = "/static/images/logos/logo_full_landscape_light.svg";
 const normalLogo_square = "/static/images/logos/logo_transparent.svg";
 const altLogo_square = "/static/images/logos/logo_transparent_light.svg";
-
 
 
 window.addEventListener('scroll', function() {
@@ -166,7 +269,6 @@ window.addEventListener('scroll', function() {
             register_btn.classList.add("bg-neutral-content", "text-primary-content")
             register_btn.classList.remove("bg-transparent")
         }
-
     }
 }); 
 
@@ -186,23 +288,6 @@ function isAtBottomZone() {
         return false
     }
 }
-
-// ***** swiper *****
-// const swiper = new Swiper('.swiper', {
-//     modules: [Navigation, Pagination],
-//     direction: 'horizontal',
-//     loop: true,
-//     pagination: {
-//         el: '.swiper-pagination',
-//     },
-//     navigation: {
-//         nextEl: '.swiper-btn-next',
-//         prevEl: '.swiper-btn-prev',
-//     },
-//     scrollbar: {
-//         el: '.swiper-scrollbar',
-//     },
-// });
 
 // ***** Glightbox (Product - Gallery) Engine Block *****
 let dynamicLightbox = null; 
@@ -540,28 +625,48 @@ const updateHeaderCartDetails = (items_count, items_total, cart_items) => {
 
 // share function
 const share_link = async (title, text, link) => {
-    console.log("title: ", title)
-    console.log("text: ", text)
-    console.log("link: ", link)
-    // 1. Define the data we want to share
+    console.log("Sharing triggered:", { title, text, link });
+
     const shareData = {
         title: title,
         text: text,
         url: link,
     };
 
-    // 2. Check if the Web Share API is supported (mobile devices, some desktops)
-    if (navigator.share) {
+    // 📱 Native System Share Sheet Path (Mobile Safari, iOS/Android Chrome)
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         try {
-            // Use the native system share dialogue
             await navigator.share(shareData);
+            console.log('Successfully shared natively!');
         } catch (err) {
-            console.error('Error sharing:', err);
+            // Ignore AbortError if the user simply closed their native share window
+            if (err.name !== 'AbortError') {
+                console.error('Native sharing exception caught:', err);
+            }
         }
-    } else {
-        // 3. Fallback for desktop browsers: Use a custom pop-up menu
-        // We'll simulate a simple modal or use window.open for specific links
-        showCustomSharePopup(shareData);
+    } 
+    // 💻 Desktop Web Browser Resilient Fallback Pass
+    else {
+        try {
+            // Copy the product link directly to the user's system clipboard
+            await navigator.clipboard.writeText(link);
+            
+            // 💡 Toggle an elegant custom sweetalert alert dialog popup notification
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: "Link Copied!｜連結已複製",
+                    html: "Product link copied to clipboard successfully! Share it with your friends.<br><span class='text-xs opacity-60 mt-1 block font-sans'>商品專屬連結已複製到您的剪貼簿，趕快分享給好友吧！</span>",
+                    icon: "success",
+                    timer: 2500,
+                    showConfirmButton: false,
+                    customClass: { popup: 'rounded-2xl font-sans text-xs' }
+                });
+            } else {
+                alert("Link copied to clipboard!｜連結已複製！");
+            }
+        } catch (clipboardErr) {
+            console.error('Clipboard injection blocked:', clipboardErr);
+        }
     }
 }
 
@@ -610,13 +715,28 @@ async function post_and_fetch_data(url, headers, body){
 /*************************  PAYPAL  **************************/ 
 window.paypalSdkLoadingStarted = window.paypalSdkLoadingStarted || false;
 
-function get_csrf_token(){
-    const csrf_element = document.querySelector("[name=csrfmiddlewaretoken]");
+function get_csrf_token() {
+    // 1. Look for the hidden input node generated by the master token element template tag
+    let csrf_element = document.querySelector("#global-js-csrf-token [name=csrfmiddlewaretoken]");
+    
+    // 2. Local fallback check against your manual transfer form inside place_order.html
     if (!csrf_element) {
-        console.error("CSRF token element not found in template!");
-        return null;
+        csrf_element = document.querySelector("[name=csrfmiddlewaretoken]");
     }
-    return csrf_element.value;
+    
+    // 🌟 THE FIX: Explicitly ensure we return the .value text string hash, not the DOM Node!
+    if (csrf_element && csrf_element.value) {
+        return csrf_element.value;
+    }
+    
+    // 3. Fallback direct browser cookstring lookup pass if form inputs are missing entirely
+    const match = document.cookie.match(/csrftoken=([^;]+)/);
+    if (match) {
+        return match[1]; // Extract the capture capture string safely
+    }
+    
+    console.error("🔒 Security Core Alert: Unable to resolve authorization credentials from current DOM layout.");
+    return null;
 }
 
 async function createOrder() {
@@ -702,14 +822,32 @@ async function getBrowserSafeClientToken() {
     const csrf_token = get_csrf_token();
     if (!csrf_token) return null;
     
-    const response = await fetch("/orders/api/paypal/token/", {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": csrf_token,
-            "Content-Type": "application/json",
-        },
-    });
-    return await response.json();
+    try {
+        const response = await fetch("/orders/api/paypal/token/", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrf_token,
+                "Content-Type": "application/json",
+            },
+        });
+        
+        if (!response.ok) {
+            console.error(`❌ Token Proxy Error: Server responded with status code ${response.status}`);
+            return null;
+        }
+        
+        const data = await response.json();
+        // Failsafe check: Verify that access_token exists before passing data forward
+        if (!data || !data.access_token) {
+            console.error("❌ Token Mismatch: Backend payload returned without a valid access_token key.");
+            return null;
+        }
+        
+        return data;
+    } catch (err) {
+        console.error("❌ Network Failure: Unable to fetch gateway authorization token details:", err);
+        return null;
+    }
 }
 
 async function renderPayPalComponents(clientToken) {
@@ -965,6 +1103,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+
 /**
  * SWAL alerts 
  */
@@ -1169,204 +1308,242 @@ function preAutoComplete(){
 
 // init AutoComplete
 async function initAutoComplete(form_id) {
-    const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
-    const { Place } = await google.maps.importLibrary("routes"); 
+    try {
+        // ✅ Check if Google Maps is available
+        if (typeof google === 'undefined' || !google.maps) {
+            console.warn('Google Maps not available');
+            return;
+        }
 
-    const form = document.getElementById(form_id);
-    if (!form) return;
+        const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
+        const { Place } = await google.maps.importLibrary("routes");
+        
+        const form = document.getElementById(form_id);
+        if (!form) return;
+        
+        // ✅ Check if the address input exists
+        const oldInput = form.querySelector('[id$="id_address_line_1"]');
+        if (!oldInput || oldInput.tagName === 'GMP-PLACE-AUTOCOMPLETE') return;
+
+        // ✅ CAPTURE THE ORIGINAL VALUE BEFORE REPLACING
+        const initialValue = oldInput.value || '';
+        console.log('Preserving initial address value:', initialValue);
+
+        // Create and configure the New Web Component
+        const allowedCountries = ["au", "nz", "jp", "kr", "tw", "hk", "mo", "sg", "my"]
+        const autocomplete = new PlaceAutocompleteElement({
+            includedRegionCodes: allowedCountries,
+            includedPrimaryTypes: ["geocode"],
+            componentRestrictions: { country: allowedCountries }
+        });
+
+        const hiddenAddressInput = document.createElement('input');
+        hiddenAddressInput.type='hidden'
+        hiddenAddressInput.name = 'address_line_1'
+        hiddenAddressInput.id = 'hidden_address_line_1'
+        form.appendChild(hiddenAddressInput)
+
+        // avoid duplication of name
+        if (oldInput) {
+            // 1. STRIP THE NAME from the old element so it isn't sent in the POST
+            oldInput.removeAttribute('name'); 
             
-    // 1. Find the target input (whether it's the original Django one or the Web Component)
-    // Using [id$="..."] helps if Django prefixes IDs (common in FormSets)
-    const oldInput = form.querySelector('[id$="id_address_line_1"]');
-    if (!oldInput || oldInput.tagName === 'GMP-PLACE-AUTOCOMPLETE') return;
-
-    // 2. Create and configure the New Web Component
-    const allowedCountries = ["au", "nz", "jp", "kr", "tw", "hk", "mo", "sg", "my"]
-    const autocomplete = new PlaceAutocompleteElement({
-        includedRegionCodes: allowedCountries,
-        includedPrimaryTypes: ["geocode"],
-        componentRestrictions: { country: allowedCountries }
-    });
-
-    const hiddenAddressInput = document.createElement('input');
-    hiddenAddressInput.type='hidden'
-    hiddenAddressInput.name = 'address_line_1'
-    hiddenAddressInput.id = 'hidden_address_line_1'
-    form.appendChild(hiddenAddressInput)
-
-    // avoid duplication of name
-    if (oldInput) {
-        // 1. STRIP THE NAME from the old element so it isn't sent in the POST
-        oldInput.removeAttribute('name'); 
-        
-        // 2. ONLY the hidden input should have name="address_line_1"
-        hiddenAddressInput.name = 'address_line_1';
-    }
-
-    autocomplete.removeAttribute('name')
-
-    autocomplete.addEventListener("gmp-select", async (event) => {
-        const prediction = event.placePrediction;
-        if (!prediction) return;
-
-        const place = await prediction.toPlace();
-        // 1. MUST fetch 'id' and 'location' for Place ID and Lat/Lng
-        await place.fetchFields({ fields: ["addressComponents", "displayName", "id", "location"] });
-
-        // 2. Define target inputs FIRST (Fixes ReferenceError)
-        const cityInput = form.querySelector('[id$="id_city"]');
-        const stateInput = form.querySelector('[id$="id_state_province_region"]');
-        const zipInput = form.querySelector('[id$="id_postal_code"]');
-        const countrySelect = form.querySelector('[id$="id_country"]');
-        const verifiedInput = form.querySelector('[id$="id_is_verified_by_google"]');
-        const idInput = form.querySelector('[id$="id_google_place_id"]');
-        const latInput = form.querySelector('[id$="id_latitude"]');
-        const lngInput = form.querySelector('[id$="id_longitude"]');
-        const line2Input = form.querySelector('[id$="id_address_line_2"]');
-        const hiddenInput = form.querySelector('#hidden_address_line_1');
-
-        if (place.id && idInput) {
-            idInput.value = place.id;
-            // SET VERIFIED TO TRUE
-            if (verifiedInput) verifiedInput.value = "True"; 
+            // 2. ONLY the hidden input should have name="address_line_1"
+            hiddenAddressInput.name = 'address_line_1';
         }
 
-        // 3. Helper to get address components
-        const getComp = (type, short = false) => {
-            const c = place.addressComponents.find(c => c.types.includes(type));
-            return c ? (short ? c.shortText : c.longText) : "";
-        };
+        autocomplete.removeAttribute('name')
 
-        // 4. Extract data
-        const city = getComp("locality") || getComp("ward") || getComp("sublocality_level_1");
-        const state = getComp("administrative_area_level_1");
-        const country = getComp("country", true);
-        const zip = getComp("postal_code");
-        const addressLine1 = place.displayName || "";
-        
-        // Calculate Line 2
-        const excludedTypes = ["locality", "ward", "sublocality_level_1", "administrative_area_level_1", "country", "postal_code"];
-        const addressLine2 = place.addressComponents
-            .filter(c => !c.types.some(type => excludedTypes.includes(type)))
-            .map(c => c.longText)
-            .reverse()
-            .join(" ");
+        autocomplete.addEventListener("gmp-select", async (event) => {
+            const prediction = event.placePrediction;
+            if (!prediction) return;
 
-        // 5. Populate fields
-        if (cityInput && !cityInput.readOnly) cityInput.value = city;
-        if (stateInput && !stateInput.readOnly) stateInput.value = state;
-        if (zipInput && !zipInput.readOnly) zipInput.value = zip;
+            const place = await prediction.toPlace();
+            // 1. MUST fetch 'id' and 'location' for Place ID and Lat/Lng
+            await place.fetchFields({ fields: ["addressComponents", "displayName", "id", "location"] });
 
-        // Protect Country field from being overwritten if it is locked
-        if (countrySelect && !countrySelect.hasAttribute('readonly') && !countrySelect.disabled) {
-            countrySelect.value = country;
-            // Trigger change event to keep your custom region UI logic synced
-            countrySelect.dispatchEvent(new Event('change', { bubbles: true }));
+            // 2. Define target inputs FIRST (Fixes ReferenceError)
+            const cityInput = form.querySelector('[id$="id_city"]');
+            const stateInput = form.querySelector('[id$="id_state_province_region"]');
+            const zipInput = form.querySelector('[id$="id_postal_code"]');
+            const countrySelect = form.querySelector('[id$="id_country"]');
+            const verifiedInput = form.querySelector('[id$="id_is_verified_by_google"]');
+            const idInput = form.querySelector('[id$="id_google_place_id"]');
+            const latInput = form.querySelector('[id$="id_latitude"]');
+            const lngInput = form.querySelector('[id$="id_longitude"]');
+            const line2Input = form.querySelector('[id$="id_address_line_2"]');
+            const hiddenInput = form.querySelector('#hidden_address_line_1');
+
+            if (place.id && idInput) {
+                idInput.value = place.id;
+                // SET VERIFIED TO TRUE
+                if (verifiedInput) verifiedInput.value = "True"; 
+            }
+
+            // 3. Helper to get address components
+            const getComp = (type, short = false) => {
+                const c = place.addressComponents.find(c => c.types.includes(type));
+                return c ? (short ? c.shortText : c.longText) : "";
+            };
+
+            // 4. Extract data
+            const city = getComp("locality") || getComp("ward") || getComp("sublocality_level_1");
+            const state = getComp("administrative_area_level_1");
+            const country = getComp("country", true);
+            const zip = getComp("postal_code");
+            const addressLine1 = place.displayName || "";
+            
+            // Calculate Line 2
+            const excludedTypes = ["locality", "ward", "sublocality_level_1", "administrative_area_level_1", "country", "postal_code"];
+            const addressLine2 = place.addressComponents
+                .filter(c => !c.types.some(type => excludedTypes.includes(type)))
+                .map(c => c.longText)
+                .reverse()
+                .join(" ");
+
+            // 5. Populate fields
+            if (cityInput && !cityInput.readOnly) cityInput.value = city;
+            if (stateInput && !stateInput.readOnly) stateInput.value = state;
+            if (zipInput && !zipInput.readOnly) zipInput.value = zip;
+
+            // Protect Country field from being overwritten if it is locked
+            if (countrySelect && !countrySelect.hasAttribute('readonly') && !countrySelect.disabled) {
+                countrySelect.value = country;
+                // Trigger change event to keep your custom region UI logic synced
+                countrySelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (line2Input && !line2Input.readOnly) line2Input.value = addressLine2;
+
+            // Populate Google Metadata
+            if (idInput) idInput.value = place.id || "";
+            if (latInput) latInput.value = place.location?.lat().toFixed(6) || "";
+            if (lngInput) lngInput.value = place.location?.lng().toFixed(6) || "";
+
+            // 6. Update Address Line 1 and Sync
+            if (hiddenInput) {
+                hiddenInput.value = addressLine1;
+                // This triggers your 'input' listeners to clear red errors
+                hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            setTimeout(() => {
+                autocomplete.value = addressLine1;
+                // REMOVE name from the component again to be safe against re-renders
+                autocomplete.removeAttribute('name');
+            }, 1);
+
+            // 🌟 ADD THIS BLOCK HERE: Force event bubbling & refresh the button state
+            const filledFields = ['id_city', 'id_state_province_region', 'id_postal_code'];
+            filledFields.forEach(fieldId => {
+                const el = form.querySelector(`[id$="${fieldId}"]`);
+                if (el) {
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+            if (typeof window.updatePayButtonState === "function") window.updatePayButtonState();        
+        });
+
+        // Sync attributes so Django POST/HTMX works
+        autocomplete.id = oldInput.id;
+        autocomplete.name = "address_line_1";
+        autocomplete.className = oldInput.className; 
+        autocomplete.placeholder = oldInput.placeholder || "Input Address...｜輸入地址..."; 
+        autocomplete.style.colorScheme = 'light';
+
+        // ✅ SET THE VALUE BEFORE REPLACING
+        if (initialValue) {
+            autocomplete.value = initialValue;
         }
-        if (line2Input && !line2Input.readOnly) line2Input.value = addressLine2;
 
-        // Populate Google Metadata
-        if (idInput) idInput.value = place.id || "";
-        if (latInput) latInput.value = place.location?.lat().toFixed(6) || "";
-        if (lngInput) lngInput.value = place.location?.lng().toFixed(6) || "";
+        // 3. Swap the elements
+        oldInput.replaceWith(autocomplete);
 
-        // 6. Update Address Line 1 and Sync
-        if (hiddenInput) {
-            hiddenInput.value = addressLine1;
-            // This triggers your 'input' listeners to clear red errors
-            hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+        // ✅ AFTER REPLACEMENT, SYNC THE HIDDEN INPUT
+        if (initialValue) {
+            hiddenAddressInput.value = initialValue;
+            
+            // Also sync with the hidden input that has id
+            const hiddenInput2 = form.querySelector('#id_address_line_1');
+            if (hiddenInput2) {
+                hiddenInput2.value = initialValue;
+            }
         }
 
-        setTimeout(() => {
-            autocomplete.value = addressLine1;
-            // REMOVE name from the component again to be safe against re-renders
-            autocomplete.removeAttribute('name');
-        }, 1);
+        // 4. Listener for manual clearing (when user backspaces or clicks 'X')
+        // autocomplete.addEventListener('input', (e) => {
+        //     const val = e.target.value;
+        //     hiddenAddressInput.value = val
 
-        // 🌟 ADD THIS BLOCK HERE: Force event bubbling & refresh the button state
-        const filledFields = ['id_city', 'id_state_province_region', 'id_postal_code'];
-        filledFields.forEach(fieldId => {
-            const el = form.querySelector(`[id$="${fieldId}"]`);
-            if (el) {
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-                el.dispatchEvent(new Event('change', { bubbles: true }));
+        //     if (!val) {
+        //         hiddenAddressInput.value = '';
+        //         // Remove error classes if they were added by a previous failed submit
+        //         const wrapper = autocomplete.closest('label');
+        //         wrapper?.classList.remove('border-error');
+        //     }
+        // });
+
+        // Inside your autocomplete.addEventListener('input', ...
+        autocomplete.addEventListener('input', (e) => {
+            const val = e.target.value;
+
+            // Find both variations of the hidden layout inputs securely
+            const hiddenInput1 = form.querySelector('#hidden_address_line_1');
+            const hiddenInput2 = form.querySelector('#id_address_line_1');
+            
+            if (hiddenInput1) hiddenInput1.value = val;
+            if (hiddenInput2) hiddenInput2.value = val;
+
+            // IF USER MANUALLY CHANGES TEXT, THEY ARE NO LONGER VERIFIED
+            const verifiedInput = form.querySelector('[id$="id_is_verified_by_google"]');
+            if (verifiedInput) verifiedInput.value = "False";
+
+            if (!val) {
+                // Clear Google data if input is wiped
+                ['id_google_place_id', 'id_latitude', 'id_longitude'].forEach(suffix => {
+                    const el = form.querySelector(`[id$="${suffix}"]`);
+                    if (el) el.value = '';
+                });
+
+                // Force the hidden synced inputs to be absolutely blank strings
+                if (hiddenInput1) hiddenInput1.value = '';
+                if (hiddenInput2) hiddenInput2.value = '';
+                
+                const wrapper = autocomplete.closest('label');
+                wrapper?.classList.remove('border-error');
+            }
+
+            // 🌟 FORCE AN IMMEDIATE RETRY ON THE VALIDATOR ENGINE
+            if (typeof window.updatePayButtonState === "function") {
+                window.updatePayButtonState();
             }
         });
-        if (typeof window.updatePayButtonState === "function") window.updatePayButtonState();        
-    });
 
-    // Sync attributes so Django POST/HTMX works
-    autocomplete.id = oldInput.id;
-    autocomplete.name = "address_line_1";
-    autocomplete.className = oldInput.className; 
-    autocomplete.placeholder = oldInput.placeholder || "Input Address...｜輸入地址..."; 
-    autocomplete.style.colorScheme = 'light';
-
-    // 3. Swap the elements
-    oldInput.replaceWith(autocomplete);
-
-    // 4. Listener for manual clearing (when user backspaces or clicks 'X')
-    // autocomplete.addEventListener('input', (e) => {
-    //     const val = e.target.value;
-    //     hiddenAddressInput.value = val
-
-    //     if (!val) {
-    //         hiddenAddressInput.value = '';
-    //         // Remove error classes if they were added by a previous failed submit
-    //         const wrapper = autocomplete.closest('label');
-    //         wrapper?.classList.remove('border-error');
-    //     }
-    // });
-
-    // Inside your autocomplete.addEventListener('input', ...
-    autocomplete.addEventListener('input', (e) => {
-        const val = e.target.value;
-
-        // Find both variations of the hidden layout inputs securely
-        const hiddenInput1 = form.querySelector('#hidden_address_line_1');
-        const hiddenInput2 = form.querySelector('#id_address_line_1');
-        
-        if (hiddenInput1) hiddenInput1.value = val;
-        if (hiddenInput2) hiddenInput2.value = val;
-
-        // IF USER MANUALLY CHANGES TEXT, THEY ARE NO LONGER VERIFIED
-        const verifiedInput = form.querySelector('[id$="id_is_verified_by_google"]');
-        if (verifiedInput) verifiedInput.value = "False";
-
-        if (!val) {
-            // Clear Google data if input is wiped
-            ['id_google_place_id', 'id_latitude', 'id_longitude'].forEach(suffix => {
-                const el = form.querySelector(`[id$="${suffix}"]`);
-                if (el) el.value = '';
-            });
-
-            // Force the hidden synced inputs to be absolutely blank strings
-            if (hiddenInput1) hiddenInput1.value = '';
-            if (hiddenInput2) hiddenInput2.value = '';
-            
-            const wrapper = autocomplete.closest('label');
-            wrapper?.classList.remove('border-error');
-        }
-
-        // 🌟 FORCE AN IMMEDIATE RETRY ON THE VALIDATOR ENGINE
-        if (typeof window.updatePayButtonState === "function") {
-            window.updatePayButtonState();
-        }
-    });
-
-    // 5. Enable BOTH manual and autocomplete
-    autocomplete.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            // If the autocomplete dropdown is NOT open, allow the form to submit
-            const pacContainer = document.querySelector('.pac-container');
-            if (!pacContainer || pacContainer.style.display === 'none') {
-                // Let it submit manually
-                return;
+        // 5. Enable BOTH manual and autocomplete
+        autocomplete.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                // If the autocomplete dropdown is NOT open, allow the form to submit
+                const pacContainer = document.querySelector('.pac-container');
+                if (!pacContainer || pacContainer.style.display === 'none') {
+                    // Let it submit manually
+                    return;
+                }
+                // If dropdown IS open, prevent submit so user can select a place
+                e.preventDefault();
             }
-            // If dropdown IS open, prevent submit so user can select a place
-            e.preventDefault();
+        });
+
+
+
+
+    } catch (error) {
+        // ✅ Catch and suppress Google Maps errors
+        if (error && error.message && error.message.includes('startTime')) {
+            console.warn('Google Maps performance tracking error suppressed');
+            return;
         }
-    });
+        console.error('initAutoComplete error: ', error)
+    }
 }
 
 function initRegionLogic(form_id) {
@@ -1500,65 +1677,403 @@ function openOrderDetailsModal(orderNumber) {
     const targetModal = document.getElementById(`modal_${orderNumber}`);
     if (targetModal) targetModal.showModal();
 }
+
 function closeOrderDetailsModal(orderNumber) {
     const targetModal = document.getElementById(`modal_${orderNumber}`);
     if (targetModal) targetModal.close();
 }
-function triggerOrderCancellation(orderNumber, totalDue) {
-    if (typeof closeOrderDetailsModal === "function") closeOrderDetailsModal(orderNumber);
+// JavaScript cancellation routine handler function execution track
+async function triggerOrderCancellation(orderNumber, totalDue, paidByVoucher, isSelfService) {
+    const activeTokenString = window.get_csrf_token();
     
-    // Parse totalDue safely to handle numeric evaluations
-    const cashRemaining = parseFloat(totalDue || "0");
+    // 🌟 THE RESOLUTION ANCHOR: Locate the active parent modal dialog element in the current DOM
+    const targetModalContainer = document.getElementById(`modal_${orderNumber}`);
+    
+    // Fallback safely to document.body if target lookups omit nodes
+    const swalMountTarget = targetModalContainer ? targetModalContainer : 'body';
 
-    if (cashRemaining <= 0) {
-        // 🌟 If paid entirely by voucher, skip choices and process instantly
+    if (!activeTokenString) {
         Swal.fire({
-            title: 'Cancel Order?｜申請取消訂單？',
-            text: `This order was paid entirely using store credits. The full amount will be credited back as a voucher. / 此訂單為全額購物金支付，取消後面值將全額退回至您的虛擬禮品卡中。確定取消嗎？`,
-            icon: 'info',
-            showCancelButton: true,
-            confirmButtonColor: '#4b9aaa',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Confirm｜確定取消',
-            cancelButtonText: 'Keep｜保持原狀'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = `/orders/cancel-request/${orderNumber}/?refund_type=voucher`;
-            } else {
-                if (typeof openOrderDetailsModal === "function") openOrderDetailsModal(orderNumber);
-            }
+            icon: 'error',
+            title: 'Authorization Expired｜驗證權限失效',
+            text: 'Security verification token length mismatch. Please reload your dashboard and try again.',
+            target: swalMountTarget // 🌟 Scoped fail warning anchor
         });
         return;
     }
 
-    Swal.fire({
-        title: 'Cancel Order?｜申請取消訂單？',
-        text: `Select your preferred return avenue for order #${orderNumber}: / 請選擇您的取消與退款方式：`,
+    // Displays confirmation prompt dialogues inside the modal layer, eliminating stack collisions
+    const selection = await Swal.fire({
+        title: 'Cancel Order?｜取消確認',
+        text: `Are you sure you want to cancel Invoice #${orderNumber}? This action will release held item inventory pools.`,
         icon: 'warning',
-        input: 'radio',
-        inputOptions: {
-            'voucher': '100% Full Refund via Store Voucher (Instant)｜100% 全額儲值購物金（無行政費、即時到帳）',
-            'cash': 'Original Payment Avenue (Minus 3% Administration Fee)｜退回原支付管道（須扣除 3% 行政手續費）'
-        },
-        inputValidator: (value) => {
-            if (!value) {
-                return 'You must choose a refund pathway!｜您必須選擇一種退款方式！'
-            }
-        },
         showCancelButton: true,
-        confirmButtonColor: '#4b9aaa',
+        confirmButtonColor: '#d33',
         cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Confirm Cancellation｜確定取消',
-        cancelButtonText: 'No, Keep Order｜保持原狀'
-    })
-    .then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = `/orders/cancel-request/${orderNumber}/?refund_type=${result.value}`;
-        } else { 
-            if (typeof openOrderDetailsModal === "function") openOrderDetailsModal(orderNumber);
-        }
+        confirmButtonText: 'Yes, Cancel｜確認取消',
+        cancelButtonText: 'No, Keep｜保留訂單',
+        target: swalMountTarget // 🌟 Forces prompt overlay to stack perfectly on top of open dialogs
     });
+
+    if (!selection.isConfirmed) return;
+
+    // Display non-dismissible loading block while background thread transactions compile
+    Swal.fire({
+        title: 'Processing Cancellation...｜正在取消中',
+        text: 'Please do not close this window.',
+        allowOutsideClick: false,
+        target: swalMountTarget, // 🌟 Keeps background spinner over open modal viewport bounds
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        const refundTypeParam = (paidByVoucher === 'true') ? 'voucher' : 'cash';
+        const url = `/orders/cancel_request/${orderNumber}/?refund_type=${refundTypeParam}`;
+        
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": activeTokenString,
+                "Content-Type": "application/json",
+                "mode": 'same-origin'
+            }
+        });
+
+        // 🌟 FIXED: Read json payload parameters to identify hidden 403 authorization failures
+        const resultData = await response.json();
+
+        if (response.ok && resultData.status === "SUCCESS") {
+            Swal.fire({
+                icon: 'success',
+                title: 'Cancelled ｜ 變更成功',
+                text: 'Order cancellation parameters processed successfully.',
+                timer: 2000,
+                showConfirmButton: false,
+                target: swalMountTarget
+            }).then(() => {
+                if (targetModalContainer && typeof targetModalContainer.close === 'function') {
+                    targetModalContainer.close();
+                }
+                if (window.htmx) {
+                    htmx.ajax('GET', window.location.href, {target: '#orders_ledger_container', swap: 'innerHTML'});
+                } else {
+                    window.location.reload();
+                }
+            });
+        } else {
+            // Drop directly down to display actual target verification issue strings
+            throw new Error(resultData.error || `Server verification dropped with status: ${response.status}`);
+        }
+
+    } catch (err) {
+        console.error("Cancellation pipeline network exception encountered:", err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Action Blocked｜請求遭拒絕',
+            text: 'Unable to authorize cancellation requests. This order profile may be locked or undergoing verification.',
+            target: swalMountTarget // 🌟 Scoped exception display track
+        });
+    }
 }
+
+/**
+ * Programmatic form submittal router to process data over secure POST channels.
+ */
+function executeSecurePostCancellation(orderNumber, refundType) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/orders/cancel_request/${orderNumber}/?refund_type=${refundType}`;
+
+    const csrfToken = document.cookie.split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=');
+
+    if (csrfToken) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
+
+// Update sidebar active visual borders
+// function updateActiveLink(element) {
+//     console.log("update activate link")
+//     if (!element) return;
+//     const items = document.querySelectorAll('.dashboard-item');
+//     items.forEach(li => li.classList.remove("is-active"));
+//     if (!element.classList.contains('sidebar_link')) {
+//         let link_type = element.id
+//         console.log("link type: ", link_type)
+//         switch (link_type) {
+//             case "profile_header":
+//             case "complete_profile":
+//             case "edit_profile_label":
+//             case "profile_faq_en":
+//             case "profile_faq_cn":
+//                 const edit_profile_li = document.querySelector("#edit_profile_li")
+//                 edit_profile_li.classList.add("is-active")
+//                 break;
+//             case "addresses_header":
+//             case "addresses":
+//             case "address_book_label":
+//                 const addresses_li = document.querySelector("#addresses_li")
+//                 addresses_li.classList.add("is-active")
+//                 break;
+//             case "orders_header":
+//             case "works_owned":
+//                 const orders_li = document.querySelector("#orders_li")
+//                 orders_li.classList.add("is-active")
+//                 break;
+//             case "offers_header":
+//             case "perks_label":
+//                 const perks_li = document.querySelector("#perks_li")
+//                 perks_li.classList.add("is-active")
+//                 break;
+//             case "vouchers_header":
+//             case "my_vouchers":
+//                 const vouchers_li = document.querySelector("#vouchers_li")
+//                 vouchers_li.classList.add("is-active")
+//                 break;
+//             case "wishlist_header":
+//             case "wishlist_label":
+//                 const wishlist_li = document.querySelector("#wishlist_li")
+//                 wishlist_li.classList.add("is-active")
+//                 break;
+//             case "favorites_header":
+//             case "favorites_label":
+//                 const favorites_li = document.querySelector("#favorites_li")
+//                 favorites_li.classList.add("is-active")
+//                 break;
+//             case "help_header":
+//             case "helpdesk":
+//             case "help_faq_en1":
+//             case "help_faq_cn1":
+//             case "help_faq_en2":
+//             case "help_faq_cn2":
+//             case (link_type.startsWith("order_")):
+//                 const help_li = document.querySelector("#help_li")
+//                 help_li.classList.add("is-active")
+//                 break;
+//             case "threed_header":
+//             case "threed_label":
+//                 const threed_li = document.querySelector("#threed_li")
+//                 threed_li.classList.add("is-active")
+//                 break;
+//             default:
+//                 const main_li = document.querySelector("#main_li")
+//                 main_li.classList.add("is-active")
+//         }
+//     } else {
+//         const parentLi = element.closest("li");
+//         if (parentLi) {
+//             parentLi.classList.add("is-active");
+//         }
+//     }
+// }
+
+function updateActiveLink(element) {
+    console.log("update activate link");
+    if (!element) return;
+    
+    const items = document.querySelectorAll('.dashboard-item');
+    items.forEach(li => li.classList.remove("is-active"));
+    
+    // Get the element's ID
+    let link_type = element.id || element.dataset.sidebarTarget;
+    console.log("link type: ", link_type);
+    
+    // If it's a sidebar link, find the parent li directly
+    if (element.classList.contains('sidebar_link')) {
+        const parentLi = element.closest("li");
+        if (parentLi) {
+            parentLi.classList.add("is-active");
+        }
+        return;
+    }
+    
+    // For non-sidebar elements, map ID to li selector
+    const idMap = {
+        // Profile related
+        'profile_header': '#edit_profile_li',
+        'complete_profile': '#edit_profile_li',
+        'edit_profile_label': '#edit_profile_li',
+        'profile_faq_en': '#edit_profile_li',
+        'profile_faq_cn': '#edit_profile_li',
+        // Address related
+        'addresses_header': '#addresses_li',
+        'addresses': '#addresses_li',
+        'address_book_label': '#addresses_li',
+        // Orders related
+        'orders_header': '#orders_li',
+        'works_owned': '#orders_li',
+        // Offers related
+        'offers_header': '#perks_li',
+        'perks_label': '#perks_li',
+        // Vouchers related
+        'vouchers_header': '#vouchers_li',
+        'my_vouchers': '#vouchers_li',
+        // Wishlist related
+        'wishlist_header': '#wishlist_li',
+        'wishlist_label': '#wishlist_li',
+        // Favorites related
+        'favorites_header': '#favorites_li',
+        'favorites_label': '#favorites_li',
+        // Help related
+        'help_header': '#help_li',
+        'helpdesk': '#help_li',
+        'help_faq_en1': '#help_li',
+        'help_faq_cn1': '#help_li',
+        'help_faq_en2': '#help_li',
+        'help_faq_cn2': '#help_li',
+        // 3D related
+        'threed_header': '#threed_li',
+        'threed_label': '#threed_li',
+        // Main default
+        'main_link': '#main_li',
+    };
+    
+    // Handle dynamic "order_" prefix
+    if (link_type && link_type.startsWith("order_")) {
+        const helpLi = document.querySelector("#help_li");
+        if (helpLi) helpLi.classList.add("is-active");
+        return;
+    }
+    
+    // Find the target li
+    const targetSelector = idMap[link_type];
+    if (targetSelector) {
+        const targetLi = document.querySelector(targetSelector);
+        if (targetLi) targetLi.classList.add("is-active");
+    } else {
+        // Default fallback
+        const mainLi = document.querySelector("#main_li");
+        if (mainLi) mainLi.classList.add("is-active");
+    }
+}
+
+// ============================================================
+// 📩 NOTIFICATION DOT CONTROLLER
+// ============================================================
+function updateNotificationEnvelope() {
+    const envelope = document.getElementById('notification-envelope');
+    if (!envelope) {
+        // Element not found - try again after a delay
+        setTimeout(updateNotificationEnvelope, 100);
+        return;
+    }
+    
+    // Get unread count from multiple sources for reliability
+    let unreadCount = 0;
+    
+    // Source 1: Check the header badge
+    const headerBadge = document.getElementById('unread-count-header');
+    if (headerBadge) {
+        const text = headerBadge.textContent.trim();
+        unreadCount = parseInt(text) || 0;
+    }
+    
+    // // Source 2: Check the sidebar badge (fallback)
+    // if (unreadCount === 0) {
+    //     const sidebarBadge = document.getElementById('unread-count-sidebar');
+    //     if (sidebarBadge) {
+    //         const text = sidebarBadge.textContent.trim();
+    //         unreadCount = parseInt(text) || 0;
+    //     }
+    // }
+    
+    // // Source 3: Check the total unread badge on help page
+    // if (unreadCount === 0) {
+    //     const totalBadge = document.getElementById('total_unread_count_badge_member');
+    //     if (totalBadge) {
+    //         const text = totalBadge.textContent.trim();
+    //         unreadCount = parseInt(text) || 0;
+    //     }
+    // }
+    
+    // // Show/hide envelope based on unread count
+    // if (unreadCount > 0) {
+    //     envelope.classList.remove('hidden');
+    //     // Add a small number badge if > 1
+    //     updateEnvelopeCount(unreadCount);
+    // } else {
+    //     envelope.classList.add('hidden');
+    // }
+
+    if (unreadCount > 0) {
+        envelope.classList.remove('hidden');
+    } else {
+        envelope.classList.add('hidden');
+    }
+}
+
+function updateEnvelopeCount(count) {
+    const envelope = document.getElementById('notification-envelope');
+    if (!envelope) return;
+    
+    // Check if we already have a count badge
+    let countBadge = envelope.querySelector('.envelope-count');
+    
+    if (count > 1) {
+        if (!countBadge) {
+            // Create count badge
+            countBadge = document.createElement('span');
+            countBadge.className = 'envelope-count absolute -top-1 -right-1 bg-error text-white text-[8px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center ring-2 ring-white/80';
+            // Find the envelope icon container
+            const iconContainer = envelope.querySelector('.bg-error');
+            if (iconContainer) {
+                iconContainer.appendChild(countBadge);
+            }
+        }
+        countBadge.textContent = count > 9 ? '9+' : count;
+        countBadge.classList.remove('hidden');
+    } else {
+        if (countBadge) {
+            countBadge.classList.add('hidden');
+        }
+    }
+}
+
+// ✅ Update envelope when refresh_count event fires
+document.body.addEventListener('refresh_count', function() {
+    // Small delay to ensure badges have updated
+    setTimeout(updateNotificationEnvelope, 50);
+});
+
+// ✅ Update envelope on page load
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(updateNotificationEnvelope, 500);
+});
+
+// ✅ Update envelope after HTMX swaps
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    const targetId = evt.detail.target?.id;
+    if (targetId === 'dashboard-content' || 
+        targetId === 'unread-count-header' ||
+        targetId === 'unread-count-sidebar' ||
+        targetId === 'total_unread_count_badge_member') {
+        setTimeout(updateNotificationEnvelope, 100);
+    }
+});
+
+// ✅ Also update when page becomes visible (tab switch)
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+        setTimeout(updateNotificationEnvelope, 200);
+    }
+});
+
+// ✅ Update on pageshow (bfcache restore)
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+        setTimeout(updateNotificationEnvelope, 300);
+    }
+});
 
 
 window.confirmSweetAlertDelete = confirmSweetAlertDelete;
@@ -1580,6 +2095,8 @@ window.GLightbox = GLightbox
 window.post_and_fetch_data = post_and_fetch_data
 window.htmx = htmx;
 
+window.get_csrf_token = get_csrf_token
+
 window.preAutoComplete = preAutoComplete;
 window.initAutoComplete = initAutoComplete;
 window.initRegionLogic = initRegionLogic;
@@ -1587,3 +2104,6 @@ window.toggleProvinceFields = toggleProvinceFields;
 window.openOrderDetailsModal = openOrderDetailsModal;
 window.closeOrderDetailsModal = closeOrderDetailsModal;
 window.triggerOrderCancellation = triggerOrderCancellation;
+
+window.updateActiveLink = updateActiveLink;
+window.updateNotificationEnvelope = updateNotificationEnvelope;

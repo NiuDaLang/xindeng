@@ -16,6 +16,9 @@ project_structure.txt
 __pycache__
 *.pem# 📂 File Location: .gitignore (Universal Production Safe Filter)
 
+# Development-only commands
+dev_commands/
+
 # ── 1. PROJECT DATA LAYERS & EMBEDDED DATABASE STORAGE ──────────────
 db.sqlite3
 private_digital_vault/
@@ -60,6 +63,7 @@ product_copy.html
 checkout_copy.html
 order_complete_copy.html
 place_order_copy.html
+banner_copy.html
 
 test.html
 project_structure.txt

@@ -30,15 +30,32 @@ export default defineConfig({
     }),
     glsl(),
   ],
+  // server: {
+  //   port: 5173,
+  //   strictPort: true,
+  //   origin: 'http://localhost:5173', // Force absolute URLs for HMR
+  //   hmr: {
+  //     protocol: 'ws',
+  //     host: 'localhost',
+  //     port: 5173,
+  //   }
+  // },
   server: {
     port: 5173,
     strictPort: true,
-    origin: 'http://localhost:5173', // Force absolute URLs for HMR
+    origin: 'http://localhost:5173',
     hmr: {
-      protocol: 'ws',
-      host: 'localhost',
-      port: 5173,
+        protocol: 'ws',
+        host: 'localhost',
+        port: 5173,
+        overlay: false,
+        // ✅ Add this to handle bfcache
+        timeout: 60000,
+    },
+    // ✅ Add this to handle bfcache better
+    watch: {
+        usePolling: true,
+        interval: 1000,
     }
-  }
+  },
 })
-

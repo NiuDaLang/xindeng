@@ -1,0 +1,310 @@
+{% load humanize %}
+
+<!-- STATIC SECURITY ANCHOR PASS: Protects asynchronous cancel requests from multi-tab token loss -->
+<div style="display: none;" id="ledger-loop-fallback-token">
+    {% csrf_token %}
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full">
+    {% for order in all_user_orders %}
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 bg-neutral-content/20 border border-info/20 px-2 py-5 xs:py-5 rounded-[24px] shadow-sm relative overflow-hidden transition-all hover:bg-neutral-content/30 hover:border-info/40">
+        
+        <!-- A. Dynamic Vertical Timeline Module Routing Gateway -->
+        {% if order.order_status in 'Cancelled,Refunding,Refunded' %}
+            
+            <!-- 🛑 VARIATION A: DECOMMISSIONED RECONCILIATION RED TIMELINE -->
+            <ul class="timeline timeline-vertical w-full sm:w-[38%] text-left font-sans text-[0.6rem] leading-none select-none">
+                
+                <!-- Point 1: Cancel Requested (Always active for these states) -->
+                <li class="min-h-[3.5rem]">
+                    <div class="timeline-start"><i class="fa-solid fa-rectangle-xmark text-error"></i></div>
+                    <div class="timeline-middle"><i class="fa-solid fa-circle-xmark text-xs text-error"></i></div>
+                    <div class="timeline-end pl-2 font-black text-error">取消申請成功<br>Cancel Requested</div>
+                    <hr class="bg-error" />
+                </li>
+                
+                <!-- Point 2: Refunding (Active if status is Refunding, Refunded, or Cancelled) -->
+                <li class="min-h-[3.5rem]">
+                    <hr class="bg-error" />
+                    <div class="timeline-end"><i class="fa-solid fa-calculator text-error"></i></div>
+                    <div class="timeline-middle">
+                        {% if order.order_status == 'Refunding' %}
+                            <i class="fa-solid fa-circle-notch text-xs text-error animate-spin"></i>
+                        {% else %}
+                            <i class="fa-solid fa-circle-check text-xs text-error"></i>
+                        {% endif %}
+                    </div>
+                    <div class="timeline-start text-end pr-2 font-black text-error">退款審核中<br>Refunding</div>
+                    <hr class="{% if order.order_status in 'Refunded,Cancelled' %}bg-error{% else %}bg-neutral/20{% endif %}" />
+                </li>
+                <!-- Point 3: Refunded (Active if status is Refunded or Cancelled) -->
+                <li class="min-h-[3.5rem]">
+                    <hr class="{% if order.order_status in 'Refunded,Cancelled' %}bg-error{% else %}bg-neutral/20{% endif %}" />
+                    <div class="timeline-start text-end pr-2 font-black {% if order.order_status in 'Refunded,Cancelled' %}text-error{% else %}text-neutral/40{% endif %}">退款發放完畢<br>Refunded</div>
+                    <div class="timeline-middle">
+                        {% if order.order_status in 'Refunded,Cancelled' %}
+                        <i class="fa-solid fa-circle-check text-xs text-error"></i>
+                        {% else %}
+                        <i class="fa-solid fa-circle text-xs text-neutral/20"></i>
+                        {% endif %}
+                    </div>
+                    <div class="timeline-end"><i class="fa-solid fa-wallet {% if order.order_status in 'Refunded,Cancelled' %}text-error{% else %}text-neutral/30{% endif %}"></i></div>
+                    <hr class="{% if order.order_status == 'Cancelled' %}bg-error{% else %}bg-neutral/20{% endif %}" />
+                </li>
+                
+                <!-- Point 4: Cancelled Permanent Archive (Active only when status is permanently Cancelled) -->
+                <li>
+                    <hr class="{% if order.order_status == 'Cancelled' %}bg-error{% else %}bg-neutral/20{% endif %}" />
+                    <div class="timeline-start"><i class="fa-solid fa-file-invoice-dollar {% if order.order_status == 'Cancelled' %}text-error{% else %}text-neutral/30{% endif %} opacity-60"></i></div>
+                    <div class="timeline-middle">
+                        {% if order.order_status == 'Cancelled' %}
+                            <i class="fa-solid fa-ban text-xs text-error animate-pulse"></i>
+                        {% else %}
+                            <i class="fa-solid fa-circle text-xs text-neutral/20"></i>
+                        {% endif %}
+                    </div>
+                    <div class="timeline-end text-start pl-2 font-black {% if order.order_status == 'Cancelled' %}text-error{% else %}text-neutral/40{% endif %}">交易永久關閉<br>Cancelled</div>
+                </li>
+            </ul>
+
+        {% else %}
+            
+            <!-- 📦 VARIATION B: STANDARD PROGRESSIVE SHIPPING TIMELINE LOOP -->
+            <ul class="timeline timeline-vertical w-full sm:w-[38%] text-left font-sans text-[0.6rem] leading-none">
+                <li class="min-h-[3.5rem]">
+                    <div class="timeline-start"><i class="fa-solid fa-list-check {% if order.order_status != 'Hold_Pending' %}text-info-content{% else %}text-neutral/30{% endif %}"></i></div>
+                    <div class="timeline-middle"><i class="fa-solid fa-circle-check text-xs {% if order.order_status != 'Hold_Pending' %}text-info-content{% else %}text-neutral/20{% endif %}"></i></div>
+                    <div class="timeline-end pl-2 font-bold {% if order.order_status != 'Hold_Pending' %}text-info-content{% else %}text-neutral/40{% endif %}">訂單已處理<br>Processed</div>
+                    <hr class="{% if order.order_status != 'Hold_Pending' %}bg-info-content{% else %}bg-info/20{% endif %}" />
+                </li>
+                <li class="min-h-[3.5rem]">
+                    <hr class="{% if order.order_status != 'Hold_Pending' %}bg-info-content{% else %}bg-info/20{% endif %}" />
+                    <div class="timeline-end"><i class="fa-solid fa-box-open {% if order.order_status in 'Partly_Dispatched,All_Dispatched,Delivered' %}text-info-content{% else %}text-neutral/30{% endif %}"></i></div>
+                    <div class="timeline-middle">
+                        {% if order.order_status == 'Partly_Dispatched' %}
+                            <i class="fa-solid fa-boxes-packing text-xs text-warning animate-pulse"></i>
+                        {% else %}
+                            <i class="fa-solid fa-circle-check text-xs {% if order.order_status in 'All_Dispatched,Delivered' %}text-info-content{% else %}text-neutral/20{% endif %}"></i>
+                        {% endif %}
+                    </div>
+                    <div class="timeline-start text-end pr-2 font-bold {% if order.order_status in 'Partly_Dispatched,All_Dispatched,Delivered' %}text-info-content{% else %}text-neutral/40{% endif %}">部分發貨<br>Partly Dispatched</div>
+                    <hr class="{% if order.order_status in 'All_Dispatched,Delivered' %}bg-info-content{% else %}bg-info/20{% endif %}" />
+                </li>
+                <li class="min-h-[3.5rem]">
+                    <hr class="{% if order.order_status in 'All_Dispatched,Delivered' %}bg-info-content{% else %}bg-info/20{% endif %}" />
+                    <div class="timeline-end"><i class="fa-solid fa-truck-fast {% if order.order_status in 'All_Dispatched,Delivered' %}text-info-content{% else %}text-neutral/30{% endif %}"></i></div>
+                    <div class="timeline-middle"><i class="fa-solid fa-circle-check {% if order.order_status in 'All_Dispatched,Delivered' %}text-info-content{% else %}text-neutral/20{% endif %} text-xs"></i></div>
+                    <div class="timeline-start text-end pr-2 font-bold {% if order.order_status in 'Partly_Dispatched,All_Dispatched,Delivered' %}text-info-content{% else %}text-neutral/40{% endif %}">物品已發送<br>Dispatched</div>
+                    <hr class="{% if order.order_status == 'Delivered' %}bg-info-content{% else %}bg-info/20{% endif %}" />
+                </li>
+                <li>
+                    <hr class="{% if order.order_status == 'Delivered' %}bg-info-content{% else %}bg-info/20{% endif %}" />
+                    <div class="timeline-start"><i class="fa-solid fa-house-chimney-user {% if order.order_status == 'Delivered' %}text-info-content{% else %}text-neutral/30{% endif %}"></i></div>
+                    <div class="timeline-middle"><i class="fa-solid fa-truck-ramp-box text-xs {% if order.order_status == 'Delivered' %}text-info-content animate-bounce{% else %}text-neutral/20{% endif %}"></i></div>
+                    <div class="timeline-end pl-2 font-bold {% if order.order_status == 'Delivered' %}text-info-content{% else %}text-neutral/40{% endif %}">已送達完結<br>Arrived</div>
+                </li>
+            </ul>
+
+        {% endif %}
+        <!-- B. Compact Receipt Accounting Information Block -->
+        <div class="card w-full sm:w-[62%] bg-base-100 border border-info/10 rounded-2xl shadow-sm overflow-hidden text-[0.7rem]">
+            <div class="p-4 space-y-3">
+                <div class="flex flex-col xs:flex-row xl:flex-col items-center border-b border-neutral-content pb-2 gap-0.5">
+                    <span class="font-black text-info-content font-mono select-all">Invoice: #{{ order.order_number }}</span>
+                    <span class="badge badge-sm font-mono text-[0.58rem] px-2 py-0.5 uppercase tracking-wider font-bold
+                        {% if order.order_status == 'Cancelled' %}bg-error/10 text-error border-error/20
+                        {% elif order.order_status == 'Refunding' %}bg-error/20 text-error-content border-error/30 animate-pulse
+                        {% elif order.order_status == 'Refunded' %}bg-neutral-content text-neutral border-neutral/20
+                        {% elif order.order_status == 'Hold_Pending' %}bg-warning/10 text-warning border-warning/20
+                        {% elif order.order_status == 'Processing' %}bg-success/30 text-success-content border-primary-content/20
+                        {% else %}bg-info-content text-white{% endif %}">
+                        {{ order.get_order_status_display }}
+                    </span>
+                </div>
+                <div class="flex flex-col gap-3.5 text-neutral/70 font-sans leading-tight">
+                    <div class="flex flex-col xs:flex-row items-center xl:items-start xl:flex-col gap-0.5 text-[0.68rem]">
+                        <strong class="text-neutral/50 font-bold uppercase tracking-wider text-[0.6rem]">Order Date/訂單日期:</strong>
+                        <span class="xs:mx-2 font-mono text-base-content text-[0.72rem]">{{ order.created_at|date:"Y-m-d H:i" }}</span>
+                    </div>
+
+                    <div class="flex flex-col xs:flex-row items-center gap-0.5 w-full border-t border-base-200/60 pt-2.5">
+                        {% if order.has_physical_items %}
+                            {% if order.visible_tracking_records %}
+                                <div class="flex flex-col xs:flex-row xl:flex-col items-center xl:items-start gap-1.5 text-[0.68rem]">
+                                    <strong class="text-neutral/50 font-bold uppercase tracking-wider text-[0.6rem]">Tracking/運單號碼:</strong>
+                                    <div class="xs:mx-2 flex flex-wrap gap-1.5 justify-start max-w-full">
+                                        {% for track in order.visible_tracking_records %}
+                                        <span class="badge badge-sm font-mono font-bold bg-base-100 text-info-content rounded border border-info/20 px-2 py-2 select-all tracking-wide shadow-xs block truncate max-w-full" title="{{ track.carrier_name }}: {{ track.tracking_code }}">
+                                            <i class="fa-solid fa-truck-ramp-box text-[9px] mr-1 opacity-70"></i>{{ track.tracking_code }}
+                                        </span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="flex flex-col xs:flex-row xl:flex-col items-center xl:items-start gap-0.5 text-[0.68rem]">
+                                    <strong class="text-neutral/50 font-bold uppercase tracking-wider text-[0.6rem]">Tracking Status/物流狀態:</strong>
+                                    <span class="xs:mx-2 font-sans text-neutral/40 italic font-medium text-[0.72rem] pl-0.5">
+                                        {% if order.order_status == 'Hold_Pending' %}Reserved｜庫存已鎖定（待核對匯款）{% elif order.order_status == 'Processing' %}Fulfilling｜安排中{% else %}Not Available｜無物流資訊{% endif %}
+                                    </span>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="flex flex-col xs:flex-row xl:flex-col items-start xl:items-start xl:justify-start gap-1 text-[0.68rem]">
+                                <strong class="text-neutral/50 font-bold uppercase tracking-wider text-[0.6rem]">Delivery Type/交付方式:</strong>
+                                <div class="flex flex-col items-start leading-none gap-1 pl-0.5">
+                                    <span class="badge h-auto py-0.5 px-1.5 bg-accent/10 text-accent font-sans font-bold border border-accent/20 tracking-wider text-[8.5px] uppercase">Digital Auto-Fulfill</span>
+                                    <span class="text-accent/60 mx-auto xs:mx-2 font-sans font-medium text-[8px] tracking-wide">數位產品隨選即發</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="border-t border-dashed border-base-200 pt-2 font-mono bg-neutral-content/10 p-2.5 rounded-xl space-y-1 text-[0.65rem]">
+                    <div class="flex justify-between items-end xxs:items-center opacity-60 text-neutral">
+                        <span>Product Value<span class="hidden xxs:inline">/</span><br class="xxs:hidden">商品價值</span>
+                        <span class="font-bold">¥{{ order.product_total|floatformat:2|intcomma }}</span>
+                    </div>
+                    {% if order.voucher_applied > 0 %}
+                    <div class="flex justify-between items-end xxs:items-center text-error opacity-80">
+                        <span>Voucher Used<span class="hidden xxs:inline">/</span><br class="xxs:hidden">代金券扣減</span>
+                        <span class="font-medium">-¥{{ order.voucher_applied|floatformat:2|intcomma }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between items-end xxs:items-center w-full text-info-content font-black border-t border-t-base-200/60 pt-1.5 mt-1 text-xs xl:text-[0.7rem]">
+                        <span>Grand Total<span class="hidden xxs:inline">/</span><br class="xxs:hidden">實付總額</span>
+                        <span class="font-black text-info-content">¥{{ order.total_due|floatformat:2|intcomma }}</span>
+                    </div>
+                </div>
+                
+                <div class="pt-1">
+                    <button onclick="document.getElementById('modal_{{ order.order_number }}').showModal()" class="btn btn-xs btn-outline border-info-content/20 text-info-content hover:bg-info-content hover:text-white font-bold w-full rounded-lg h-7 min-h-0 shadow-sm transition-all duration-200">View Details｜查看明細</button>
+                </div>
+            </div>
+        </div>
+        <!-- 📦 INJECT MODAL DIRECTLY INSIDE DYNAMIC LEDGER PARTIALS LOOP -->
+        <dialog id="modal_{{ order.order_number }}" class="modal modal-bottom sm:modal-middle bg-black/50 backdrop-blur-xs select-none">
+            <div class="modal-box bg-base-100 border border-info/20 rounded-2xl max-w-xl p-0 overflow-hidden shadow-2xl animate-fade-in text-base-content font-sans">
+                <div class="bg-info-content rounded-t-2xl text-white p-4 flex items-center justify-between shadow-sm">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-receipt text-warning text-base"></i>
+                        <div class="flex flex-col leading-tight">
+                            <h4 class="font-black text-sm tracking-wide">Order Specifications｜訂單明細摘要</h4>
+                            <span class="text-[0.62rem] opacity-75 font-mono tracking-widest uppercase">Invoice Tracking Pass: #{{ order.order_number }}</span>
+                        </div>
+                    </div>
+                    <button onclick="document.getElementById('modal_{{ order.order_number }}').close()" class="btn btn-xs btn-circle btn-ghost text-white font-bold text-xs">✕</button>
+                </div>
+                
+                <div class="p-4 space-y-4 text-[0.72rem] max-h-[28rem] overflow-y-auto">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 bg-neutral-content/10 border border-info/10 p-3 rounded-xl font-mono text-[0.68rem] text-base-content/80 shadow-inner">
+                        <div><span class="opacity-50 block text-[0.58rem] font-sans font-bold uppercase tracking-wider">Order Date:</span><span class="font-bold text-base-content">{{ order.created_at|date:"Y-m-d H:i" }}</span></div>
+                        <div><span class="opacity-50 block text-[0.58rem] font-sans font-bold uppercase tracking-wider">Recipient Name:</span><span class="font-bold text-base-content">{% if order.recipient_first_name or order.recipient_last_name %}{{ order.recipient_first_name }}&nbsp;{{ order.recipient_last_name }}{% else %}Self／本人自用{% endif %}</span></div>
+                        <div class="border-t border-dashed border-base-200/60 sm:border-0 pt-1.5 sm:pt-0"><span class="opacity-50 block text-[0.58rem] font-sans font-bold uppercase tracking-wider">Product Base Total:</span><span class="font-bold text-base-content">¥{{ order.product_total|floatformat:2|intcomma }}</span></div>
+                        <div class="border-t border-dashed border-base-200/60 sm:border-0 pt-1.5 sm:pt-0"><span class="opacity-50 block text-[0.58rem] font-sans font-bold uppercase tracking-wider">Grand Total Settlement:</span><span class="font-black text-info-content text-xs">¥{{ order.total_due|floatformat:2|intcomma }}</span></div>
+                    </div>
+
+                    <div class="space-y-1.5 w-full">
+                        <span class="text-[0.6rem] font-bold uppercase tracking-widest text-base-content/40 block pl-0.5">Purchased Lines Manifest｜訂購商品清單</span>
+                        <div class="divide-y divide-base-200/60 bg-base-50 rounded-xl border border-base-200/80 px-3">
+                            {% for item in order.items.all %}
+                            <div class="flex justify-between items-center py-2.5 gap-4">
+                                <div class="flex flex-col space-y-0.5 max-w-[70%]">
+                                    <span class="font-black text-base-content/90 text-xs leading-tight">{{ item.product.product_name }}</span>
+                                    <span class="opacity-50 font-mono text-[0.62rem]">SKU: {{ item.product_variation.get_sku }} × {{ item.quantity }}</span>
+                                    {% if item.product_variation.product.is_physical %}
+                                    <div class="text-[0.6rem] mt-0.5">
+                                        {% if order.is_ordered %}
+                                            {% if item.is_dispatched %}<span class="text-success font-bold"><i class="fa-solid fa-circle-check"></i> Dispatched／已出庫發貨</span>
+                                            {% else %}<span class="text-info font-bold animate-pulse"><i class="fa-solid fa-hourglass-half"></i> Processing／倉庫備貨中</span>{% endif %}
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="text-right flex-shrink-0 font-mono font-bold text-neutral/70">
+                                    {% if item.product_variation.product.is_voucher %}<span class="text-[0.62rem] bg-accent/10 text-accent font-bold px-1.5 py-0.5 rounded border border-accent/20 font-sans">E-Voucher</span>
+                                    {% else %}¥{{ item.get_subtotal|floatformat:2|intcomma }}{% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {% if order.delivery_note or order.tracking_records.exists %}
+                    <div class="space-y-1.5 w-full">
+                        <span class="text-[0.6rem] font-bold uppercase tracking-widest text-base-content/40 block pl-0.5">Courier Routing Note｜物流配送與備註</span>
+                        <div class="bg-neutral-content/10 border border-info/10 p-3 rounded-xl space-y-1.5 text-[0.68rem] text-base-content/70">
+                            {% if order.visible_tracking_records %}
+                                <p class="font-mono flex flex-wrap gap-1 items-center"><strong>Tracking Pass hashes:</strong>
+                                    {% for track in order.visible_tracking_records %}
+                                        <span class="badge badge-sm font-bold bg-base-100 text-info-content rounded border border-info/20 px-1.5 select-all">{{ track.tracking_code }}</span>
+                                    {% endfor %}
+                                </p>
+                            {% endif %}
+                            {% if order.delivery_note %}<p class="leading-relaxed"><strong>Delivery Remark:</strong> <span class="text-base-content font-sans">{{ order.delivery_note }}</span></p>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- ⏳ FIXED STEP: DYNAMIC EXPIRED INVENTORY HOLD TIMEOUT WARNING BANNER -->
+                    <!-- Displays a prominent red warning banner if an order is unpaid and has an active inventory hold window -->
+                    {% if not order.is_ordered and order.order_status == 'Hold_Pending' and order.inventory_hold_expiry %}
+                    <div class="w-full alert alert-warning bg-warning/5 border border-warning/30 rounded-xl p-3.5 flex flex-col items-start gap-1 text-[0.68rem] text-base-content select-none leading-normal shadow-inner animate-fade-in">
+                        <div class="flex items-center gap-2 font-black text-warning uppercase text-[0.62rem] tracking-wider">
+                            <i class="fa-solid fa-triangle-exclamation text-xs animate-pulse"></i>
+                            <span>Payment Deadlines Expiration Window｜庫存保留截止提醒</span>
+                        </div>
+                        <p class="text-base-content/80 text-[11px] font-sans leading-relaxed">
+                            This reservation pass is locked awaiting manual wire confirmation. Remittance updates must settle completely before the hard cut-off window closes on <strong class="font-mono text-xs font-bold text-error bg-error/5 border border-error/10 px-1.5 py-0.5 rounded">{{ order.inventory_hold_expiry|date:"Y-m-d H:i" }}</strong>, or held items will auto-expire back to stock pools.<br>
+                            <span class="opacity-60 block mt-1 font-medium">本單配額目前處於臨時鎖定狀態。請務必於上方截止時間前完成轉帳並經由后台客服核銷。如若逾期未收到款項，系統線程將會全自動釋放商品庫存並永久關閉本條交易記錄。</span>
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <div class="border-t border-base-200/80 pt-3 mt-2 flex flex-col sm:flex-row gap-2 justify-between items-center w-full select-none">
+                        {% if order.is_ordered and order.order_status not in 'Cancelled,Refunding,Refunded' %}
+                            <a href="{% url 'generate_order_confirmation_pdf' order.order_number %}" target="_blank" class="btn btn-xs btn-outline border-info/30 text-info-content hover:bg-info-content hover:text-white font-bold flex gap-1 items-center justify-center h-8 rounded-xl px-3 shadow-xs w-full sm:w-auto">
+                                <i class="fa-solid fa-file-pdf"></i> Download Receipt PDF 水單
+                            </a>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex gap-2 w-full sm:w-auto justify-end">
+                        {% if not order.is_ordered and order.order_status == 'Hold_Pending' %}
+                            <span class="text-[0.62rem] text-warning font-sans font-bold italic flex items-center pr-1 uppercase tracking-wider">
+                                <i class="fa-solid fa-hourglass-half mr-1 animate-pulse"></i> Awaiting Transfer Clearance｜待線下轉帳核銷
+                            </span>
+                        {% elif order.can_be_cancelled_online %}
+                            <button onclick="triggerOrderCancellation('{{ order.order_number }}', '{{ order.total_due }}', '{{ order.voucher_applied|yesno:'true,false' }}', 'true')" class="btn btn-xs btn-error btn-outline font-bold rounded-xl h-8 px-3 shadow-xs transition-transform hover:scale-[1.01] w-full sm:w-auto">Cancel Order 取消訂單</button>
+                        {% else %}
+                            <span class="text-[0.62rem] text-neutral/30 italic flex items-center pr-1">Immutable Master Pass 唯讀鎖定</span>
+                        {% endif %}
+                        <button onclick="document.getElementById('modal_{{ order.order_number }}').close()" class="btn btn-xs btn-neutral font-bold rounded-xl h-8 px-4 shadow-xs">
+                            Close 關閉
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </dialog>
+    </div>
+    {% empty %}
+    <div class="relative rounded-[24px] border border-info/20 bg-neutral-content/10 w-full min-h-[12rem] flex flex-col items-center justify-center text-center p-6 xl:col-span-2">
+        <i class="fa-solid fa-box-archive text-info-content/30 p-3 mb-2"></i>
+        <h2 class="text-info-content font-black text-xs">No Matching Order Records Found｜無符合條件的訂單</h2>
+    </div>
+    {% endfor %}
+</div>
+
+{% if show_expand_btn %}
+<div id="expand_action_panel" class="w-full flex justify-center pt-6 select-none col-span-1 xl:col-span-2">
+    <button hx-get="{% url 'dashboard' 'orders' %}?sort={{ current_sort }}&status={{ current_status }}&search_invoice={{ search_invoice }}&expand=true" hx-target="#orders_ledger_container" hx-swap="innerHTML" hx-indicator="#expand-loading-indicator" class="btn btn-md btn-wide btn-outline border-info/30 text-info-content hover:bg-info-content hover:text-white rounded-xl font-bold transition-all shadow-sm flex flex-col items-center justify-center h-auto py-2.5 leading-tight gap-0.5 group">
+        <div class="flex items-center gap-2 text-xs">
+            <span>Expand All Past Order Logs</span>
+            <i class="fa-solid fa-chevron-down text-[10px] transition-transform group-hover:translate-y-0.5"></i>
+        </div>
+        <span class="text-[10px] font-sans font-medium opacity-60">點擊此處以展開加載完整歷史訂單記錄</span>
+        <span id="expand-loading-indicator" class="loading loading-spinner loading-xs htmx-indicator mt-1"></span>
+    </button>
+</div>
+{% endif %}
