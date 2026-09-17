@@ -410,7 +410,8 @@ def artisan_blog_list(request):
             Q(creator__bio__icontains=q) |
             Q(creator__province__icontains=q) |
             Q(creator__city__icontains=q) |
-            Q(creator__craft_type__icontains=q) |
+            Q(creator__craft_types__name__icontains=q) |
+            Q(creator__craft_types__label__icontains=q) |
             Q(tags__name__icontains=q)
         ).distinct()
 
