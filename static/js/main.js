@@ -412,6 +412,84 @@ function setupProductGalleryBindings() {
     }
 }
 
+// ============================================
+// ARTISAN GALLERY LIGHTBOX
+// Mirrors the Product-page pattern: explicit elements array, no selector scan.
+// ============================================
+let artisanDynamicLightbox = null;
+
+function setupArtisanGalleryLightbox() {
+    const container = document.querySelector('[data-artisan-gallery]');
+    if (!container) return;
+
+    const tiles = container.querySelectorAll('.gallery-tile');
+    if (tiles.length === 0) return;
+
+    // Build slides array
+    const slides = [...tiles].map((tile) => {
+        const href = tile.getAttribute('href');
+        const descSelector = tile.getAttribute('data-desc-selector');
+        const descEl = descSelector ? document.querySelector(descSelector) : null;
+        return {
+            href,
+            type: 'image',
+            title: '',
+            description: descEl ? descEl.innerHTML.trim() : '',
+        };
+    });
+
+    // Destroy previous
+    if (artisanDynamicLightbox) {
+        try { artisanDynamicLightbox.destroy(); } catch (e) {}
+        artisanDynamicLightbox = null;
+    }
+
+    // Build fresh
+    artisanDynamicLightbox = GLightbox({
+        elements: slides,
+        autoplayVideos: false,
+        zoomable: true,
+        loop: false,
+        touchNavigation: true,
+        descPosition: 'bottom',
+    });
+
+    // Wire up click listeners
+    tiles.forEach((tile, index) => {
+        const fresh = tile.cloneNode(true);
+        tile.replaceWith(fresh);
+        fresh.addEventListener('click', (e) => {
+            e.preventDefault();
+            fresh.blur(); 
+            if (artisanDynamicLightbox) {
+                artisanDynamicLightbox.openAt(index);
+            }
+        });
+    });
+}
+
+// ── SINGLE set of listeners ──
+document.addEventListener('DOMContentLoaded', setupArtisanGalleryLightbox);
+
+document.addEventListener('htmx:afterSwap', (evt) => {
+    if (evt.detail.target && evt.detail.target.id === 'artisan-gallery-region') {
+        setupArtisanGalleryLightbox();
+    }
+});
+
+document.addEventListener('click', (e) => {
+    const productBtn = e.target.closest('.glightbox-view-product');
+    if (productBtn) {
+        e.preventDefault();
+        const url = productBtn.dataset.productUrl;
+        if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    }
+});
+
+window.setupArtisanGalleryLightbox = setupArtisanGalleryLightbox;
+window._artisanGalleryLightbox = artisanDynamicLightbox;
+
+
 // Initialize on baseline load entry
 setupProductGalleryBindings();
 document.addEventListener("DOMContentLoaded", setupProductGalleryBindings);

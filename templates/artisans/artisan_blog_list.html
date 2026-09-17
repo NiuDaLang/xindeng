@@ -1,0 +1,28 @@
+<!-- artisan_blog_list.html -->
+{% extends 'base.html' %}
+{% block content %}
+
+<!-- BANNER -->
+<div class="relative mt-[65px] lg:mt-[86px] w-full">
+    <div class="relative w-full bg-base-300 py-16 text-center border-b border-base-200 select-none">
+        <div class="max-w-xl mx-auto px-4">
+            <h1 class="text-2xl md:text-3xl font-serif tracking-widest text-base-content mb-3">
+                Artisan Notes <span class="font-sans font-light text-xl opacity-60 ml-2">/ 匠人筆記</span>
+            </h1>
+            <p class="text-xs md:text-sm tracking-wide text-base-content/70 leading-relaxed font-serif">
+                Stories, reflections, and process notes from the atelier.<br>
+                <span class="block mt-1 font-sans font-light text-[11px] md:text-xs opacity-60 italic">
+                    來自工坊的故事、思緒與創作歷程。
+                </span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN -->
+<main class="px-[max(1rem,4vw)] lg:px-[max(2rem,8vw)] py-16 min-h-[calc(100dvh-200px)]">
+    <div id="artisan-notes-region">
+        {% include 'artisans/partials/_artisan_notes_region.html' %}
+    </div>
+</main>
+{% endblock %}

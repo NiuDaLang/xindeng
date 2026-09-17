@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- 1. HERO — overridable by each layout                            -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+{% block hero %}
+    {# Each layout provides its own hero block. #}
+{% endblock %}
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- 2. BIO                                                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+{% if artisan.bio %}
+<section class="w-full bg-[#faf8f5] py-14 md:py-20 border-b border-base-200/40">
+    <div class="max-w-3xl mx-auto px-6 lg:px-12">
+        <p class="text-sm md:text-base text-base-content/70 leading-loose whitespace-pre-line font-serif">
+            {{ artisan.bio }}
+        </p>
+
+        {% if artisan.tags.all %}
+        <div class="mt-8 flex flex-wrap gap-2">
+            {% for tag in artisan.tags.all %}
+            <a href="{% url 'artisan_list' %}?q={{ tag.name }}"
+               class="text-[10px] uppercase tracking-wider px-3 py-1 rounded-full
+                      bg-white border border-base-200/60 text-base-content/50
+                      hover:border-primary/40 hover:text-primary transition-all">
+                #{{ tag.name }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- 3. WORKS                                                        -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+{% if products %}
+<section class="w-full bg-[#faf8f5] py-16 md:py-24 border-b border-base-200/40">
+    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+
+        <div class="flex items-baseline justify-between mb-10 border-b border-base-200 pb-4">
+            <h2 class="font-serif text-xl md:text-2xl tracking-[0.15em] text-base-content">
+                Works
+                <span class="font-sans font-light text-sm text-base-content/50 ml-3">作品</span>
+            </h2>
+
+            {% if has_more_products %}
+            <a href="{% url 'products' category_slug='all' %}?creator={{ artisan.slug }}"
+               class="text-xs tracking-[0.15em] text-primary/70 hover:text-primary transition-colors">
+                View all ({{ product_count }}) →
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {% for product in products %}
+                {% include 'artisans/partials/_product_card.html' with product=product %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- 4. RECENT NOTES                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+{% if blog_posts %}
+<section class="w-full bg-[#faf8f5] py-16 md:py-24 border-b border-base-200/40">
+    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+
+        <div class="flex items-baseline justify-between mb-10 border-b border-base-200 pb-4">
+            <h2 class="font-serif text-xl md:text-2xl tracking-[0.15em] text-base-content">
+                Notes from the Atelier
+                <span class="font-sans font-light text-sm text-base-content/50 ml-3">匠人筆記</span>
+            </h2>
+            <a href="{% url 'artisan_blog_list' %}?artisan={{ artisan.slug }}"
+               class="text-xs tracking-[0.15em] text-primary/70 hover:text-primary transition-colors">
+                Read all →
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for post in blog_posts %}
+                {% include 'artisans/partials/_note_card.html' with post=post %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- 5. GALLERY                                                      -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+{% if gallery_items %}
+<section class="w-full bg-[#faf8f5] py-16 md:py-24 border-b border-base-200/40">
+    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+
+        <div class="flex items-baseline justify-between mb-10 border-b border-base-200 pb-4">
+            <h2 class="font-serif text-xl md:text-2xl tracking-[0.15em] text-base-content">
+                Gallery
+                <span class="font-sans font-light text-sm text-base-content/50 ml-3">匠作</span>
+            </h2>
+            <a href="{% url 'artisan_gallery' %}"
+               class="text-xs tracking-[0.15em] text-primary/70 hover:text-primary transition-colors">
+                Full gallery →
+            </a>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {% for item in gallery_items %}
+            <a href="{{ item.product.get_url }}"
+               class="group relative rounded-xl overflow-hidden bg-base-200 aspect-square">
+                <img src="{{ item.image.url }}"
+                     alt="{{ item.gallery_caption|default:item.title|default:item.product.product_name }}"
+                     class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                     loading="lazy" />
+
+                {% if item.gallery_caption %}
+                <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent
+                            opacity-0 group-hover:opacity-100 transition-opacity duration-300
+                            flex items-end p-3">
+                    <p class="text-white text-[11px] font-serif leading-snug line-clamp-2">
+                        {{ item.gallery_caption }}
+                    </p>
+                </div>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- 6. MORE FROM THE COMMUNITY                                      -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+{% if other_artisans %}
+<section class="w-full bg-[#faf8f5] py-16 md:py-24">
+    <div class="max-w-5xl mx-auto px-6 lg:px-12">
+
+        <div class="flex items-baseline justify-between mb-10 border-b border-base-200 pb-4">
+            <h2 class="font-serif text-xl md:text-2xl tracking-[0.15em] text-base-content">
+                More from the Community
+                <span class="font-sans font-light text-sm text-base-content/50 ml-3">更多匠人</span>
+            </h2>
+            <a href="{% url 'artisan_list' %}"
+               class="text-xs tracking-[0.15em] text-primary/70 hover:text-primary transition-colors">
+                See all →
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {% for other in other_artisans %}
+                {% include 'artisans/partials/_artisan_mini_card.html' with artisan=other %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

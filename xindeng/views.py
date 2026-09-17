@@ -6,6 +6,8 @@ from django.contrib.sites.shortcuts import get_current_site
 from .utils import get_soul_number
 from django.db.models import Q, Min, Count
 from django.http import JsonResponse
+from creators.models import CreatorProfile
+from creators.utils import get_search_variants
 
 
 def test(request):
@@ -127,41 +129,99 @@ def error_500(request):
 
 
 def search(request):
+    keyword = ""
+    products = Product.objects.none()
+    posts = Post.objects.none()
+    creators = CreatorProfile.objects.none()
+    product_count = 0
+    post_count = 0
+    creator_count = 0
+    premium_creator_count = 0
+    total_count = 0
+
     if "keyword" in request.GET:
-        keyword = request.GET["keyword"]
+        keyword = request.GET["keyword"].strip()
         if keyword:
-            products = Product.objects.prefetch_related('variations', 'tags').select_related('category').filter(
-                (
-                    Q(product_name__icontains=keyword) |
-                    Q(details__icontains=keyword) |
-                    Q(description__icontains=keyword) |
-                    Q(brand__icontains=keyword) |
-                    Q(category__category_name__icontains=keyword) | 
-                    Q(origin__icontains=keyword) |
-                    Q(gender__icontains=keyword) |
-                    Q(blood__icontains=keyword) |
-                    Q(tags__name__icontains=keyword) |
-                    Q(color__icontains=keyword) & 
-                    Q(is_active=True)
-                ),
-                # The condition to ensure at least one variation exists
-                variations__isnull=False
-            ).distinct().order_by("-created_date")
+            # 🌟 Get simplified + traditional + original variants
+            variants = get_search_variants(keyword)
+
+            # ── PRODUCTS ──────────────────────────────────────────
+            product_q = Q()
+            for v in variants:
+                product_q |= (
+                    Q(product_name__icontains=v) |
+                    Q(details__icontains=v) |
+                    Q(description__icontains=v) |
+                    Q(brand__icontains=v) |
+                    Q(category__category_name__icontains=v) |
+                    Q(origin__icontains=v) |
+                    Q(gender__icontains=v) |
+                    Q(blood__icontains=v) |
+                    Q(tags__name__icontains=v) |
+                    Q(color__icontains=v) |
+                    Q(creator__display_name__icontains=v)
+                )
+
+            products = (
+                Product.objects
+                .prefetch_related('variations', 'tags')
+                .select_related('category', 'creator')
+                .filter(
+                    product_q & Q(is_active=True),
+                    variations__isnull=False
+                )
+                .distinct()
+                .order_by("-created_date")
+            )
             product_count = products.count()
 
-            posts = Post.objects.order_by("-created_at").filter(
-                Q(title__icontains=keyword) |
-                Q(short_description__icontains=keyword) |
-                Q(post_category__icontains=keyword) |
-                Q(author__username__icontains=keyword) |
-                Q(blog_body__icontains=keyword) |
-                Q(tags__name__icontains=keyword) |
-                Q(post_type__icontains=keyword) & 
-                Q(status="Published")
-            ).distinct()
+            # ── POSTS ─────────────────────────────────────────────
+            post_q = Q()
+            for v in variants:
+                post_q |= (
+                    Q(title__icontains=v) |
+                    Q(short_description__icontains=v) |
+                    Q(post_category__icontains=v) |
+                    Q(author__username__icontains=v) |
+                    Q(blog_body__icontains=v) |
+                    Q(tags__name__icontains=v) |
+                    Q(post_type__icontains=v) |
+                    Q(creator__display_name__icontains=v)
+                )
+
+            posts = (
+                Post.objects
+                .filter(post_q & Q(status="Published"))
+                .distinct()
+            )
             post_count = posts.count()
 
-            total_count = product_count + post_count
+            # ── CREATORS ──────────────────────────────────────────
+            creator_q = Q()
+            for v in variants:
+                creator_q |= (
+                    Q(display_name__icontains=v) |
+                    Q(tagline__icontains=v) |
+                    Q(bio__icontains=v) |
+                    Q(province__icontains=v) |
+                    Q(city__icontains=v) |
+                    Q(craft_types__name__icontains=v) |
+                    Q(craft_types__label__icontains=v) |
+                    Q(tags__name__icontains=v)
+                )
+
+            creators = (
+                CreatorProfile.objects
+                .filter(is_verified=True)
+                .filter(creator_q)
+                .prefetch_related('tags')
+                .distinct()
+                .order_by('-is_premium', 'display_name')
+            )
+            creator_count = creators.count()
+            premium_creator_count = creators.filter(is_premium=True).count()
+
+            total_count = product_count + post_count + creator_count
 
     context = {
         "total_count": total_count,
@@ -169,9 +229,12 @@ def search(request):
         "product_count": product_count,
         "posts": posts,
         "post_count": post_count,
-        "page_title": f"Search｜搜索 - {keyword}",
+        "creators": creators,
+        "creator_count": creator_count,
+        "premium_creator_count": premium_creator_count,
+        "page_title": f"Search｜搜索 - {keyword}" if keyword else "Search｜搜索",
         "search_keyword": keyword,
-        "main_title": f"Search Result｜搜尋結果",
+        "main_title": "Search Result｜搜尋結果",
         "sub_title_1": "",
         "bread_crumb_1": "Home｜首頁",
         "bread_crumb_2": "Search｜搜尋",

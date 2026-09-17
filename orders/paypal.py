@@ -1,4 +1,4 @@
-# paypal.py (Part 1 - Authentication and Item Breakdown Engines)
+# orders.paypal.py
 from django.http import JsonResponse
 from django.db import transaction
 import requests
@@ -445,7 +445,9 @@ def capture_paypal_order(request):
                             product_variation=variation,
                             quantity=item.quantity,
                             product_price=variation.price,
-                            ordered=True
+                            ordered=True,
+                            fulfilled_by=variation.product.creator,   # 🌟 NEW — auto-attributed
+                            fulfillment_started_at=timezone.now(),     # 🌟 NEW — payment just cleared
                         )
 
                         is_instant_eproduct = variation.product.is_digital and variation.product.digital_fulfillment_type == 'INSTANT' and not variation.product.is_voucher
@@ -481,7 +483,8 @@ def capture_paypal_order(request):
                                 created_vouchers.append(voucher)
 
                             order_prod.is_dispatched = True
-                            order_prod.save(update_fields=['is_dispatched'])
+                            order_prod.dispatched_at = timezone.now()   # 🌟 NEW
+                            order_prod.save(update_fields=['is_dispatched', 'dispatched_at'])
 
                         elif getattr(variation.product, 'is_digital', False) and getattr(variation.product, 'digital_fulfillment_type', 'INSTANT') == 'INSTANT':
                             # 1. Generate a cryptographically secure token valid for exactly 48 hours
@@ -497,7 +500,8 @@ def capture_paypal_order(request):
                             )
 
                             order_prod.is_dispatched = True
-                            order_prod.save(update_fields=['is_dispatched'])
+                            order_prod.dispatched_at = timezone.now()   # 🌟 NEW
+                            order_prod.save(update_fields=['is_dispatched', 'dispatched_at'])
                             
                     # After handling individual lines, automatically evaluate if order needs an upgraded order status!
                     order.update_fulfillment_status() # Covered in Step 4 below

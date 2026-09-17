@@ -1,3 +1,4 @@
+# orders.admin.py
 from datetime import timedelta
 from .models import Payment, OrderVoucherUsage, Order, OrderProduct, OrderInquiry
 from store.models import DigitalDownloadToken
@@ -7,7 +8,14 @@ from accounts.models import CustomerVoucher
 from django.contrib import admin, messages
 from django.db import transaction
 from django.utils import timezone
-from .tasks import send_order_confirmation_email_task, send_gift_voucher_email_task, send_e_product_email_task, send_inquiry_notification_email_task, send_cancellation_completion_email_task
+from .tasks import (
+    send_order_confirmation_email_task, 
+    send_gift_voucher_email_task, 
+    send_e_product_email_task, 
+    send_inquiry_notification_email_task, 
+    send_cancellation_completion_email_task, 
+    send_artisan_new_order_email_task
+)
 from django.urls import reverse
 import decimal
 
@@ -151,6 +159,20 @@ def confirm_bank_payment_admin_action(modeladmin, request, queryset):
                 order_products = OrderProduct.objects.filter(order=order_locked)
 
                 for prod in order_products:
+                    creator = prod.product.creator
+                    is_instant = (
+                        (prod.product.is_digital and prod.product.digital_fulfillment_type == 'INSTANT' and not prod.product.is_voucher)
+                        or prod.product.is_voucher
+                    )
+                    prod.fulfilled_by = creator
+                    prod.fulfillment_started_at = timezone.now()
+                    if is_instant:
+                        prod.dispatched_at = timezone.now()
+
+                    prod.ordered = True
+                    prod.payment = payment
+                    prod.save(update_fields=['ordered', 'payment', 'fulfilled_by', 'fulfillment_started_at', 'dispatched_at'])
+
                     variation = ProductVariation.objects.select_for_update().get(id=prod.product_variation.id)
                     
                     if variation.product.is_voucher:
@@ -175,7 +197,8 @@ def confirm_bank_payment_admin_action(modeladmin, request, queryset):
                         
                         # Mark instant voucher lines as fully dispatched
                         prod.is_dispatched = True
-                        prod.save(update_fields=['is_dispatched'])
+                        prod.dispatched_at = timezone.now()
+                        prod.save(update_fields=['is_dispatched', 'dispatched_at'])
 
                     elif getattr(variation.product, 'is_digital', False) and getattr(variation.product, 'digital_fulfillment_type', 'INSTANT') == 'INSTANT':
                         expiration_time = timezone.now() + timedelta(hours=168)
@@ -190,7 +213,18 @@ def confirm_bank_payment_admin_action(modeladmin, request, queryset):
                         
                         # Mark instant digital lines as fully dispatched
                         prod.is_dispatched = True
-                        prod.save(update_fields=['is_dispatched'])
+                        prod.dispatched_at = timezone.now()
+                        prod.save(update_fields=['is_dispatched', 'dispatched_at'])
+
+                artisan_ids_with_pending = order_products.filter(
+                    fulfilled_by__isnull=False,
+                    is_dispatched=False
+                ).values_list('fulfilled_by', flat=True).distinct()
+
+                for creator_id in artisan_ids_with_pending:
+                    transaction.on_commit(
+                        lambda cid=creator_id: send_artisan_new_order_email_task.delay(order_locked.id, cid)
+                    )
 
                 # 🌟 STEP 4: ELEVATE SNAPSHOT LINE RECORDS BEFORE FINAL CALCULATION
                 # This locks 'ordered=True' into the database, allowing your status engine to read them correctly!

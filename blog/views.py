@@ -15,7 +15,10 @@ from django.db.models.functions import TruncMonth
 def all_posts(request):
     # 1. Base query for all published logs
     all_published_posts = Post.objects.filter(status="Published").order_by("-created_at")
-    
+
+    # 🌟 NEW: separate query for the artisan tab
+    artisan_posts = (Post.objects.filter(status='Published', creator__isnull=False, creator__is_verified=True,).select_related('creator').order_by('-created_at')[:5])
+
     # 2. Intercept Sidebar & Search Filters (Tag, Month, and Keyword Search)
     search_query = request.GET.get('q')
     tag_slug = request.GET.get('tag')
@@ -74,7 +77,8 @@ def all_posts(request):
         "tags_with_counts": tags_with_counts,
         "archive_dates": archive_dates,
         "blog_posts": blog_posts,
-        "news_posts": news_posts
+        "news_posts": news_posts,
+        "artisan_posts": artisan_posts,
     }
 
     return render(request, 'blog/all_posts.html', context)

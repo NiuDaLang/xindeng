@@ -31,11 +31,6 @@ from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
 from paypalserversdk.models.item import Item
 from paypalserversdk.models.money import Money
 
-# from reportlab.lib.styles import ParagraphStyle
-# from reportlab.lib.enums import TA_LEFT
-# from reportlab.lib import colors
-
-
 
 def get_current_rate(base_currency_code="CNY", target_currency_code="HKD"):
     """
@@ -70,7 +65,9 @@ def register_multilingual_fonts():
     pdfmetrics.registerFont(TTFont('NotoSansTC-bold', os.path.join(font_dir, 'NotoSansTC-Bold.ttf')))
     pdfmetrics.registerFont(TTFont('NotoSansTC-light', os.path.join(font_dir, 'NotoSansTC-Light.ttf')))
     pdfmetrics.registerFont(TTFont('NotoSansTC-thin', os.path.join(font_dir, 'NotoSansTC-Thin.ttf')))
-    
+    pdfmetrics.registerFont(TTFont('NotoSansTC', os.path.join(font_dir, 'NotoSansTC-Regular.ttf')))
+    pdfmetrics.registerFont(TTFont('NotoSansSC', os.path.join(font_dir, 'NotoSansSC-Regular.ttf')))
+   
     # 2. Sanskrit Font: Devanagari + IAST Diacritics (Hṛdayadīpa)
     # Tiro Devanagari is excellent for Sanskrit
     pdfmetrics.registerFont(TTFont('SanskritFont', os.path.join(font_dir, 'TiroDevanagariSanskrit-Regular.ttf')))

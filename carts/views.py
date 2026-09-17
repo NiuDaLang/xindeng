@@ -1,3 +1,4 @@
+# carts.views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from store.models import ProductVariation
 from .models import Cart, CartItem, ShippingCharge, CheckoutInfo, ProformaInvoice
@@ -1071,70 +1072,6 @@ def reset_voucher(request):
 
         broadcast_cart_change(request)
         return HttpResponse(fallback_oob)   
-
-
-# @require_POST
-# def update_cart_item_qty(request, item_id):
-#     """
-#     Surgically updates a single cart item's quantity via HTMX POST.
-#     Enforces Ledger-First execution order to capture weight-based changes,
-#     while appending pre-built helper markup blocks to preserve structural layout styles.
-#     """
-#     htmx_htmls = []
-
-#     # 1. Update the Target Item's Quantity Natively
-#     cart_item = get_object_or_404(CartItem, id=item_id)
-#     new_qty = int(request.POST.get('quantity'))
-#     cart_item.quantity = new_qty
-#     cart_item.save()
-
-#     cart = cart_item.cart
-#     cart_items_quantity = cart.get_items_count()
-
-#     # Force session baseline synchronization before executing utility functions
-#     request.session["has_physical_items"] = cart.cartitem_set.filter(is_active=True, product_variation__product__is_physical=True).exists()
-#     request.session.modified = True
-
-#     # forex
-#     is_integer, foreign_currency_code = get_currency_format(request)
-#     foreign_currency_symbol = CURRENCY_SYMBOL.get(foreign_currency_code, '$')
-#     locked_rate = request.session.get('locked_rate', '1.0000')
-
-#     # costs updates
-#     oob_updates, triggers = update_costs_oobs(request, cart, is_integer, foreign_currency_code, foreign_currency_symbol, locked_rate)
-
-#     # quantity update
-#     subtotal = cart_item.subtotal
-#     formatted_subtotal = intcomma(f"{subtotal:.2f}")
-#     # subtotal_html = f'<div id="subtotal_{item_id}" hx-swap-oob="true" class="text-right w-[calc((50%-4rem)/2)] text-[0.8rem] text-base-content font-semibold pr-3">CNY {formatted_subtotal}</div>'
-#     subtotal_html = f'<div id="subtotal_{item_id}" hx-swap-oob="true" class="font-mono text-xs sm:text-sm font-extrabold text-base-content leading-tight">CNY {formatted_subtotal}</div>'
-#     oob_updates.append(subtotal_html)
-
-#     # updated_header_item_count_html = f'<span id="header_item_qty_{item_id}" hx-swap-oob="true" class="flex-grow-1">{ new_qty }</span>'
-#     updated_header_item_count_html = f'<span id="header_item_qty_{item_id}" hx-swap-oob="true" class="text-xs font-mono font-bold text-base-content/80 bg-base-200/60 px-1.5 py-0.5 rounded-md min-w-[1.25rem] text-center">{ new_qty }</span>'
-#     oob_updates.append(updated_header_item_count_html)
-
-#     row_context = {
-#         "formated_subtotal": formatted_subtotal,
-#         "new_cart_total_count": cart_items_quantity,
-#         "formatted_new_cart_grand_total": cart.get_cart_total(),
-#     }
-
-#     change_qty_result_html = render_to_string('store/partials/change_qty_result.html', row_context, request=request)
-#     htmx_htmls.append(change_qty_result_html)
-
-#     # COMPILE
-#     final_html = "".join(filter(None, htmx_htmls))
-#     final_oob = "".join(filter(None, oob_updates))
-
-#     response = HttpResponse(final_html)
-#     response.content += final_oob.encode()
-#     if triggers:
-#         response['HX-Trigger'] = json.dumps(triggers)
-
-#     broadcast_cart_change(request)
-#     return response
-
 
 
 # views.py

@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "blog",
     "category",
     "carts",
+    "creators",
     "dataentry",
     "emails",
     "orders",
@@ -72,9 +73,6 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google', # Google specific
 ]
-
-if DEBUG:
-    INSTALLED_APPS.append('dev_commands')
 
 SITE_ID = 1 # Matches the ID in the Django Admin 'Sites' section
 
@@ -123,14 +121,12 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
 ]
 
-
-
 ROOT_URLCONF = "xindeng.urls"
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": ["templates"],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

@@ -1,3 +1,4 @@
+# sotre.models.py
 from django.db import models
 from category.models import Category
 from taggit.managers import TaggableManager
@@ -98,6 +99,14 @@ class Product(models.Model):
     description     = models.TextField(max_length=500, blank=True)
     details         = CKEditor5Field(config_name='extends', blank=True, null=True)
     brand           = models.CharField(max_length=255, blank=True)
+    creator         = models.ForeignKey(
+                        'creators.CreatorProfile',
+                        on_delete=models.SET_NULL,       # If artisan leaves, product survives
+                        null=True,
+                        blank=True,                       # Platform-owned products allowed
+                        related_name='products',
+                        help_text="The artisan responsible for this piece. Leave blank for platform-owned items."
+                      )
     images          = models.ImageField(upload_to='images/products', null=True, blank=True)
     category        = models.ForeignKey(Category, on_delete=models.CASCADE)
     origin          = models.CharField(blank=True, max_length=50, choices=ORIGIN, default='DEFAULT')
@@ -119,6 +128,7 @@ class Product(models.Model):
         default='INSTANT'
     )
 
+    craft_types     = models.ManyToManyField('creators.CraftType', blank=True, related_name='products', help_text="Craft disciplines this specific object belongs to.",)
     is_active       = models.BooleanField(default=True)
     created_date    = models.DateTimeField(auto_now_add=True)
     modified_date   = models.DateTimeField(auto_now=True)
@@ -138,9 +148,9 @@ class Product(models.Model):
     
     def lowest_price(self):
         variations = self.variations.filter(is_available=True)
-        prices = []
-        for variation in variations:
-            prices.append(variation.price)       
+        prices = [v.price for v in variations]
+        if not prices:
+            return None
         return min(prices)
 
     @property
@@ -275,11 +285,25 @@ class ProductVariation(models.Model):
         super().save(*args, **kwargs)
 
 
-
 class ProductGallery(models.Model):
     product = models.ForeignKey(Product, default=None, on_delete=models.CASCADE)
     image = models.ImageField(upload_to='images/products/gallery', max_length=255)
     title = models.CharField(max_length=255, blank=True)
+
+    # 🌟 NEW: Gallery curation (for the 匠作 gallery page)
+    is_featured_in_gallery = models.BooleanField(
+        default=False,
+        help_text="Show this image in the 匠作 Artisans Gallery page."
+    )
+    gallery_caption = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Optional poetic caption shown in the gallery lightbox."
+    )
+    gallery_order = models.PositiveIntegerField(
+        default=0,
+        help_text="Lower numbers appear first. 0 = random order."
+    )
 
     def __str__(self):
         return self.product.product_name

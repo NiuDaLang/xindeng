@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex min-h-screen">
+    <!-- SIDEBAR -->
+    <aside class="w-56 border-r border-base-200 p-4 space-y-2">
+        <nav class="menu">
+            <li><a hx-get="{% url 'dashboard' %}" hx-target="#dashboard-main" hx-push-url="true">Overview｜工作台</a></li>
+            <li><a hx-get="{% url 'dashboard_orders' %}" hx-target="#dashboard-main" hx-push-url="true">Orders｜訂單{% if pending_dispatch_count %}<span class="badge badge-primary badge-xs">{{ pending_dispatch_count }}</span>{% endif %}</a></li>
+            <li><a hx-get="{% url 'dashboard_products' %}" hx-target="#dashboard-main" hx-push-url="true">Products｜寶貝</a></li>
+            <li><a hx-get="{% url 'dashboard_blog' %}" hx-target="#dashboard-main" hx-push-url="true">Blog｜筆記</a></li>
+            <li><a hx-get="{% url 'dashboard_profile' %}" hx-target="#dashboard-main" hx-push-url="true">Profile｜匠人檔案</a></li>
+        </nav>
+
+        {% if user.creator_profile.is_verified %}
+        <a href="{% url 'set_role' 'buyer' %}" class="btn btn-ghost btn-sm w-full mt-6">Switch to Buyer｜買家模式</a>
+        {% endif %}
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main id="dashboard-main" class="flex-1 p-6">
+        {% block dashboard_content %}{% endblock %}
+    </main>
+</div>
+{% endblock %}

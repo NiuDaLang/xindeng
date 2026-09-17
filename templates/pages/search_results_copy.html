@@ -1,0 +1,101 @@
+<!-- search_results.html -->
+{% extends 'base.html' %}
+{% load humanize %}
+{% block content %}
+
+    <!-- BANNER -->
+    <div class="relative mt-[65px] lg:mt-[86px] w-full">
+        {% include 'includes/banner.html' %}
+    </div>
+
+    <!-- MAIN -->
+    <main class="px-[max(1rem,5vw)] lg:px-[max(2rem,5vw)] xl:px-[max(3rem,10vw)] py-20 min-h-[calc(100dvh-200px)]">
+        <h1 class="w-full h-auto text-xl font-bold text-center mb-12">Found {{ total_count }} items | 找到{{ total_count }}個結果</h1>
+        <div class="grid grid-cols-3 gap-8">
+            <!-- LEFT: tabs - name of each tab group should be unique -->
+            <div class="col-span-3 relative">
+                <!-- tabs -->
+                <div class="tabs tabs-lift text-2xl">
+                    <!-- tab-1 products -->
+                    <label class="tab w-1/3 items-center">
+                        <input type="radio" name="blog_tab" checked="checked" />
+                        <i class="fa-solid fa-bag-shopping fa-lg"></i>
+                        <strong class="text-Md">&nbsp;{{product_count}}&nbsp;items｜件</strong>
+                    </label>
+                    <!-- products -->
+                    <div class="tab-content bg-base-100 border-base-300 p-6">
+                        <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-8 my-5">
+                            {% for product in products %}
+                                <div class="card bg-base-200 w-80 mx-auto shadow-sm">
+                                    <figure class="px-10 pt-10 relative">
+                                        <img
+                                        src="{{ product.images.url }}"
+                                        alt="{{ product.product_name }}"
+                                        class="rounded-xl" />
+                                        {% if product.category.category_name == "Voucher | 禮品券" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-ticket text-shadow-lg"></i>{% endif %}
+                                        {% if product.category.category_name == "Wall Paper | 手機牆紙" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-mobile-screen text-shadow-lg"></i>{% endif %}
+                                        {% if product.category.category_name == "Painting Workshop | 線上手繪課程" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-house-laptop text-shadow-lg"></i>{% endif %}
+                                        {% if product.category.category_name == "Healing Gems | 能量寶貝" %}<i class="absolute top-15 right-13 fa-sm text-white fa-regular fa-gem text-shadow-lg"></i>{% endif %}
+                                        {% if product.category.category_name == "Floral Theme | 花類產品" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-atom text-shadow-lg"></i>{% endif %}
+                                        {% if product.category.category_name == "Our Merch | 周邊產品" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-beer-mug-empty text-shadow-lg"></i>{% endif %}
+                                        {% if product.category.category_name == "Original Notebook | 特製筆記本" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-book text-shadow-lg"></i>{% endif %}
+                                        {% if product.category.category_name == "Drawing Kit | 手繪教材套餐" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-paintbrush text-shadow-lg"></i>{% endif %}
+                                        {% if product.category.category_name == "Picture Book | 翻翻樂繪本" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-book-open-reader text-shadow-lg"></i>{% endif %}
+                                        {% if product.category.category_name == "Oil Painting | 油畫" %}<i class="absolute top-15 right-13 fa-sm text-white fa-regular fa-image text-shadow-lg"></i>{% endif %}
+                                    </figure>
+                                    <div class="card-body items-center text-center">
+                                        <h2 class="card-title text-sm">{{ product.product_name }}</h2>
+                                        <p class="text-xs max-w-[14rem] text-justify">{{ product.description }}</p>
+                                        <p class="text-sm font-semibold">CNY {{ product.lowest_price|floatformat:2|intcomma }}~</p>
+                                        <a href="{{ product.get_url }}" class="card-actions">
+                                            <button class="btn btn-sm bg-[#003162] hover:text-[#78C8FF] border-none text-white">View Details｜詳情</button>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <!-- tab-2 posts -->
+                    <label class="tab w-1/3 items-center">
+                        <input type="radio" name="blog_tab"/>
+                        <i class="fa-solid fa-book fa-lg"></i>
+                        <strong class="text-md">&nbsp;{{ post_count}}&nbsp;post{% if posts|length > 1 %}s{% endif %}｜篇</strong>
+                    </label>
+                    <!-- posts -->
+                    <div class="tab-content bg-base-100 border-base-300 p-6">
+                        <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-8 my-5">
+                            {% for post in posts %}
+                                <div class="card bg-base-200 w-80 mx-auto shadow-sm">
+                                    <figure class="px-10 pt-10">
+                                        <img
+                                        src="{{ post.featured_image.url }}"
+                                        alt="{{ post.title }}"
+                                        class="rounded-xl" />
+                                        {% if post.post_category == "Art" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-icons text-shadow-lg"></i>{% endif %}
+                                        {% if post.post_category == "Photography" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-camera-retro text-shadow-lg"></i>{% endif %}
+                                        {% if post.post_category == "Design" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-pen-ruler text-shadow-lg"></i>{% endif %}
+                                        {% if post.post_category == "Music" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-music text-shadow-lg"></i>{% endif %}
+                                        {% if post.post_category == "Spirituality" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-hands-praying text-shadow-lg"></i>{% endif %}
+                                        {% if post.post_category == "Healing" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-hand-holding-medical text-shadow-lg"></i>{% endif %}
+                                        {% if post.post_category == "Promotion" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-rectangle-ad text-shadow-lg"></i>{% endif %}
+                                        {% if post.post_category == "Other" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-ellipsis text-shadow-lg"></i>{% endif %}
+                                    </figure>
+                                    <div class="card-body items-center text-center">
+                                        <h2 class="card-title text-sm">{{ post.title }}</h2>
+                                        <p class="text-xs">{{ post.short_description }}</p>
+                                        <p class="text-xs font-semibold">{{ post.created_at }}</p>
+                                        <a href="{{ post.get_url }}" class="card-actions">
+                                            <button class="btn btn-sm bg-[#052800] hover:text-[#A5D697] border-none text-white">Read｜閱讀</button>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+
+{% endblock %}

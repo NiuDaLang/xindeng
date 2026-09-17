@@ -37,9 +37,11 @@ urlpatterns = [
     path("accounts/", include('accounts.urls')),
     path('accounts/', include('allauth.urls')),
     path("carts/", include('carts.urls')),
+    path("creators/", include('creators.urls')),
     path("orders/", include('orders.urls')),
     path("store/", include('store.urls')),
-    path('reviews/', include('reviews.urls')), 
+    path('reviews/', include('reviews.urls')),
+    
     # pages
     path("contact/", views.contact, name="contact"),
     path("about/", views.about, name="about"),

@@ -1,3 +1,6 @@
+Hṛdayadīpa (हृदयदीप)｜心燈
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🚨 新顧客留言諮詢提醒｜NEW CUSTOMER INQUIRY LOGGED
 
 訂單編號｜Order Number: #{{ order.order_number }}

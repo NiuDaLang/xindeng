@@ -478,29 +478,63 @@ def send_cancellation_completion_email(order_id, user_type, voucher_id_str, net_
     return True
 
 
-# def send_cancellation_finalized_email(order_number, **kwargs):
-#     order = Order.objects.get(order_number=order_number)
-#     mail_subject = f"✅ Cancellation Complete & Refund Notice｜訂單取消與退款完成通知 [#{order.order_number}]"
-    
-#     current_site = Site.objects.get_current()
-#     site_domain = f"http://{current_site.domain}"
-    
-#     # 🌟 FIXED: Added safe fallback in case payment instance mapping fields are completely null
-#     is_offline_method = False
-#     if order.payment:
-#         is_offline_method = order.payment.payment_method in ['Bank Transfer', 'AliPay', 'WeChat', 'Cash On Delivery', 'Other']
-    
-#     context = {
-#         "order": order,
-#         "payment": order.payment, # Can evaluate to None safely in templates now
-#         "site_domain": site_domain,
-#         "is_offline_method": is_offline_method,
-#     }
-    
-#     html_message = render_to_string("emails/cancellation_finalized_email.html", context)
-#     plain_message = render_to_string("emails/cancellation_finalized_email.txt", context)
-    
-#     mail = EmailMultiAlternatives(subject=mail_subject, body=plain_message, from_email=settings.DEFAULT_FROM_EMAIL, to=[order.email])
-#     mail.attach_alternative(html_message, "text/html")
-#     mail.encoding = 'utf-8'
-#     mail.send()
+def send_artisan_new_order_email(order_id, creator_id):
+    """
+    Dispatches a 'new order to fulfill' notification to a single artisan.
+    Called by the Celery task `send_artisan_new_order_email_task` for each
+    artisan with pending (un-dispatched) lines in a given order.
+    """
+    from orders.models import Order, OrderProduct
+    from creators.models import CreatorProfile
+
+    order = Order.objects.get(id=order_id)
+    creator = CreatorProfile.objects.get(id=creator_id)
+
+    # Only pull lines this artisan is responsible for and that still need action
+    pending_lines = OrderProduct.objects.filter(
+        order=order,
+        fulfilled_by=creator,
+        is_dispatched=False,
+    ).select_related('product', 'product_variation')
+
+    if not pending_lines.exists():
+        # Nothing to notify about — silently exit
+        return False
+
+    mail_subject = (
+        f"🧑‍🎨 New Order to Fulfill｜待發貨訂單 "
+        f"[#{order.order_number}]"
+    )
+
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_email = [creator.user.email]
+
+    # Async-safe site domain lookup (matches your existing pattern)
+    current_site = Site.objects.get_current()
+    site_domain = f"http://{current_site.domain}"
+    dashboard_url = f"{site_domain}/artisans/dashboard/orders/"
+
+    context = {
+        "order": order,
+        "creator": creator,
+        "pending_lines": pending_lines,
+        "line_count": pending_lines.count(),
+        "dashboard_url": dashboard_url,
+        "site_domain": site_domain,
+    }
+
+    html_message = render_to_string("emails/artisan_new_order_email.html", context)
+    plain_message = render_to_string("emails/artisan_new_order_email.txt", context)
+
+    mail = EmailMultiAlternatives(
+        subject=mail_subject,
+        body=plain_message,
+        from_email=from_email,
+        to=to_email,
+        bcc=[from_email],
+    )
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = "utf-8"
+    mail.send()
+
+    return True

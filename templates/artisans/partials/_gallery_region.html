@@ -1,0 +1,143 @@
+<!-- _gallery_region.html -->
+
+<!-- Sticky filter bar -->
+<div class="sticky top-[65px] lg:top-[86px] z-30 bg-[#faf8f5]/95 backdrop-blur-sm
+            py-3 mb-8 border-b border-base-200/40">
+
+    <!-- Label -->
+    <div class="text-center mb-2">
+        <p class="text-[10px] uppercase tracking-[0.25em] text-base-content/40 font-sans">
+            Filter by Artisan's Expertise｜按匠人工藝
+        </p>
+    </div>
+
+    <!-- Desktop: chip row -->
+    <div class="hidden md:flex max-w-4xl mx-auto flex-wrap items-center justify-center gap-2 px-4">
+        <a href="{% url 'artisan_gallery' %}"
+           hx-get="{% url 'artisan_gallery' %}"
+           hx-target="#artisan-gallery-region"
+           hx-swap="innerHTML"
+           hx-push-url="true"
+           class="btn btn-sm {% if not current_craft %}btn-primary{% else %}btn-ghost{% endif %} rounded-xl text-[11px] tracking-wider">
+            All｜全部
+        </a>
+        {% for craft in craft_choices %}
+        <a href="?craft={{ craft.name }}"
+           hx-get="?craft={{ craft.name }}"
+           hx-target="#artisan-gallery-region"
+           hx-swap="innerHTML"
+           hx-push-url="true"
+           class="btn btn-sm {% if current_craft == craft.name %}btn-primary{% else %}btn-ghost{% endif %} rounded-xl text-[11px] tracking-wider">
+            {{ craft.label }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Mobile: dropdown -->
+    <div class="md:hidden max-w-sm mx-auto px-4">
+        <div class="dropdown dropdown-bottom w-full">
+            <div tabindex="0" role="button" class="btn btn-outline btn-sm w-full justify-between rounded-xl text-xs">
+                <span>
+                    {% if current_craft %}
+                        {% for craft in craft_choices %}{% if craft.name == current_craft %}{{ craft.label }}{% endif %}{% endfor %}
+                    {% else %}
+                        All Crafts｜全部工藝
+                    {% endif %}
+                </span>
+                <i class="fa-solid fa-chevron-down text-[9px] opacity-60"></i>
+            </div>
+            <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-50 w-full p-2 shadow-md border border-base-200/60 max-h-80 overflow-y-auto">
+                <li>
+                    <a href="{% url 'artisan_gallery' %}"
+                       hx-get="{% url 'artisan_gallery' %}"
+                       hx-target="#artisan-gallery-region"
+                       hx-swap="innerHTML"
+                       hx-push-url="true"
+                       class="text-xs">All Crafts｜全部工藝</a>
+                </li>
+                {% for craft in craft_choices %}
+                <li>
+                    <a href="?craft={{ craft.name }}"
+                       hx-get="?craft={{ craft.name }}"
+                       hx-target="#artisan-gallery-region"
+                       hx-swap="innerHTML"
+                       hx-push-url="true"
+                       class="text-xs {% if current_craft == craft.name %}text-primary font-bold{% endif %}">{{ craft.label }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Masonry grid -->
+{% if images %}
+<div data-artisan-gallery class="max-w-7xl mx-auto columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
+    {% for item in images %}
+    <a href="{{ item.image.url }}"
+    class="gallery-tile group relative block mb-4 rounded-xl overflow-hidden bg-base-200 break-inside-avoid"
+    data-desc-selector=".gallery-desc-{{ item.pk }}">
+
+        <img src="{{ item.image.url }}"
+            alt="{{ item.title|default:item.product.product_name }}"
+            class="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
+            loading="lazy" />
+
+        <!-- Hover overlay -->
+        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent
+                    opacity-0 group-hover:opacity-100 transition-opacity duration-300
+                    flex flex-col justify-end p-3">
+            <p class="text-[10px] uppercase tracking-wider text-white/70">
+                {{ item.product.creator.display_name }}
+            </p>
+            <p class="text-white text-xs font-serif truncate">
+                {{ item.title|default:item.product.product_name }}
+            </p>
+        </div>
+
+        <!-- Hidden lightbox description -->
+
+        <div class="hidden gallery-desc-{{ item.pk }}">
+            <div class="text-center">
+                <p class="text-[10px] uppercase tracking-wider opacity-60 mb-1">
+                    {{ item.product.creator.display_name }}
+                </p>
+                <p class="text-sm font-medium mb-1">
+                    {{ item.product.product_name }}
+                </p>
+                {% if item.gallery_caption %}
+                <p class="text-xs italic opacity-70 mb-3">
+                    {{ item.gallery_caption }}
+                </p>
+                {% endif %}
+                <button type="button"
+                        data-product-url="{{ item.product.get_url }}"
+                        class="btn btn-primary btn-xs rounded-xl tracking-wider glightbox-view-product">
+                    View Product｜查看作品 →
+                </button>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-32">
+    <p class="text-xs text-base-content/40 tracking-wider">
+        {% if current_craft %}
+            該工藝暫無匠作展示｜No gallery items for this craft yet.
+        {% else %}
+            匠作即將揭幕｜Gallery coming soon.
+        {% endif %}
+    </p>
+    {% if current_craft %}
+    <a href="{% url 'artisan_gallery' %}"
+       hx-get="{% url 'artisan_gallery' %}"
+       hx-target="#artisan-gallery-region"
+       hx-swap="innerHTML"
+       hx-push-url="true"
+       class="text-[11px] text-primary/70 hover:text-primary transition-colors mt-3 inline-block cursor-pointer">
+        Clear filter｜清除篩選
+    </a>
+    {% endif %}
+</div>
+{% endif %}

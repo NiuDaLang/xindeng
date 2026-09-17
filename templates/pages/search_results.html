@@ -1,3 +1,4 @@
+<!-- search_results.html -->
 {% extends 'base.html' %}
 {% load humanize %}
 {% block content %}
@@ -9,28 +10,32 @@
 
     <!-- MAIN -->
     <main class="px-[max(1rem,5vw)] lg:px-[max(2rem,5vw)] xl:px-[max(3rem,10vw)] py-20 min-h-[calc(100dvh-200px)]">
-        <h1 class="w-full h-auto text-xl font-bold text-center mb-12">Found {{ total_count }} items | 找到{{ total_count }}個結果</h1>
+        <h1 class="w-full h-auto text-xl font-bold text-center mb-12">
+            Found {{ total_count }} items | 找到{{ total_count }}個結果
+        </h1>
+
         <div class="grid grid-cols-3 gap-8">
             <!-- LEFT: tabs - name of each tab group should be unique -->
             <div class="col-span-3 relative">
                 <!-- tabs -->
                 <div class="tabs tabs-lift text-2xl">
-                    <!-- tab-1 products -->
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <!-- TAB 1 — PRODUCTS -->
+                    <!-- ═══════════════════════════════════════════════════════ -->
                     <label class="tab w-1/3 items-center">
-                        <input type="radio" name="blog_tab" checked="checked" />
+                        <input type="radio" name="search_tab" checked="checked" />
                         <i class="fa-solid fa-bag-shopping fa-lg"></i>
-                        <strong class="text-Md">&nbsp;{{product_count}}&nbsp;items｜件</strong>
+                        <strong class="text-md">&nbsp;{{ product_count }}&nbsp;item{% if product_count != 1 %}s{% endif %}｜件</strong>
                     </label>
-                    <!-- products -->
                     <div class="tab-content bg-base-100 border-base-300 p-6">
                         <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-8 my-5">
                             {% for product in products %}
                                 <div class="card bg-base-200 w-80 mx-auto shadow-sm">
                                     <figure class="px-10 pt-10 relative">
                                         <img
-                                        src="{{ product.images.url }}"
-                                        alt="{{ product.product_name }}"
-                                        class="rounded-xl" />
+                                            src="{{ product.images.url }}"
+                                            alt="{{ product.product_name }}"
+                                            class="rounded-xl" />
                                         {% if product.category.category_name == "Voucher | 禮品券" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-ticket text-shadow-lg"></i>{% endif %}
                                         {% if product.category.category_name == "Wall Paper | 手機牆紙" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-mobile-screen text-shadow-lg"></i>{% endif %}
                                         {% if product.category.category_name == "Painting Workshop | 線上手繪課程" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-house-laptop text-shadow-lg"></i>{% endif %}
@@ -51,25 +56,31 @@
                                         </a>
                                     </div>
                                 </div>
+                            {% empty %}
+                                <div class="col-span-full text-center py-12 text-xs opacity-50">
+                                    No products found｜未找到相關寶貝
+                                </div>
                             {% endfor %}
                         </div>
                     </div>
-                    <!-- tab-2 posts -->
+
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <!-- TAB 2 — POSTS -->
+                    <!-- ═══════════════════════════════════════════════════════ -->
                     <label class="tab w-1/3 items-center">
-                        <input type="radio" name="blog_tab"/>
+                        <input type="radio" name="search_tab" />
                         <i class="fa-solid fa-book fa-lg"></i>
-                        <strong class="text-md">&nbsp;{{ post_count}}&nbsp;post{% if posts|length > 1 %}s{% endif %}｜篇</strong>
+                        <strong class="text-md">&nbsp;{{ post_count }}&nbsp;post{% if post_count != 1 %}s{% endif %}｜篇</strong>
                     </label>
-                    <!-- posts -->
                     <div class="tab-content bg-base-100 border-base-300 p-6">
                         <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-8 my-5">
                             {% for post in posts %}
                                 <div class="card bg-base-200 w-80 mx-auto shadow-sm">
-                                    <figure class="px-10 pt-10">
+                                    <figure class="px-10 pt-10 relative">
                                         <img
-                                        src="{{ post.featured_image.url }}"
-                                        alt="{{ post.title }}"
-                                        class="rounded-xl" />
+                                            src="{{ post.featured_image.url }}"
+                                            alt="{{ post.title }}"
+                                            class="rounded-xl" />
                                         {% if post.post_category == "Art" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-icons text-shadow-lg"></i>{% endif %}
                                         {% if post.post_category == "Photography" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-camera-retro text-shadow-lg"></i>{% endif %}
                                         {% if post.post_category == "Design" %}<i class="absolute top-15 right-13 fa-sm text-white fa-solid fa-pen-ruler text-shadow-lg"></i>{% endif %}
@@ -82,11 +93,100 @@
                                     <div class="card-body items-center text-center">
                                         <h2 class="card-title text-sm">{{ post.title }}</h2>
                                         <p class="text-xs">{{ post.short_description }}</p>
+
+                                        <!-- 🌟 Artisan attribution (if applicable) -->
+                                        {% if post.creator %}
+                                        <p class="text-[10px] uppercase tracking-wider text-primary/80 font-semibold">
+                                            by {{ post.creator.display_name }}
+                                        </p>
+                                        {% endif %}
+
                                         <p class="text-xs font-semibold">{{ post.created_at }}</p>
                                         <a href="{{ post.get_url }}" class="card-actions">
                                             <button class="btn btn-sm bg-[#052800] hover:text-[#A5D697] border-none text-white">Read｜閱讀</button>
                                         </a>
                                     </div>
+                                </div>
+                            {% empty %}
+                                <div class="col-span-full text-center py-12 text-xs opacity-50">
+                                    No posts found｜未找到相關筆記
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <!-- TAB 3 — ARTISANS (NEW) -->
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <label class="tab w-1/3 items-center">
+                        <input type="radio" name="search_tab" />
+                        <i class="fa-solid fa-hands-holding-circle fa-lg"></i>
+                        <strong class="text-md">&nbsp;{{ creator_count }}&nbsp;artisan{% if creator_count != 1 %}s{% endif %}｜匠人</strong>
+                        {% if premium_creator_count %}
+                            <span class="badge badge-xs badge-warning ml-1">{{ premium_creator_count }} ★</span>
+                        {% endif %}
+                    </label>
+                    <div class="tab-content bg-base-100 border-base-300 p-6">
+                        <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-8 my-5">
+                            {% for artisan in creators %}
+                                <div class="card bg-base-200 w-80 mx-auto shadow-sm">
+                                    <!-- Avatar -->
+                                    <figure class="px-10 pt-10 relative">
+                                        {% if artisan.avatar %}
+                                            <img
+                                                src="{{ artisan.avatar.url }}"
+                                                alt="{{ artisan.display_name }}"
+                                                class="rounded-xl aspect-square object-cover" />
+                                        {% else %}
+                                            <div class="rounded-xl aspect-square w-full flex items-center justify-center bg-base-300 text-base-content/30 font-serif text-6xl">
+                                                {{ artisan.display_name|slice:":1" }}
+                                            </div>
+                                        {% endif %}
+
+                                        <!-- Premium badge -->
+                                        {% if artisan.is_premium %}
+                                            <i class="absolute top-13 right-13 fa-sm text-amber-400 fa-solid fa-crown text-shadow-lg" title="Premium Artisan｜精選匠人"></i>
+                                        {% endif %}
+                                    </figure>
+
+                                    <div class="card-body items-center text-center">
+                                        <h2 class="card-title text-sm">{{ artisan.display_name }}</h2>
+
+                                        {% if artisan.tagline %}
+                                            <p class="text-xs line-clamp-2 max-w-[14rem]">{{ artisan.tagline }}</p>
+                                        {% endif %}
+
+                                        <!-- Craft + location meta -->
+                                        <div class="flex flex-wrap justify-center gap-1 mt-1">
+                                            {% for craft in artisan.craft_types.all|slice:":2" %}
+                                            <span class="badge badge-sm badge-outline text-[10px] font-normal">
+                                                {{ craft.label }}
+                                            </span>
+                                            {% endfor %} 
+                                            
+                                            {% if artisan.craft_types.count > 2 %}
+                                            <span class="badge badge-sm badge-ghost text-[10px] font-normal">
+                                                +{{ artisan.craft_types.count|add:"-2" }}
+                                            </span>
+                                            {% endif %}                                           
+
+                                            {% if artisan.province %}
+                                                <span class="badge badge-sm badge-ghost text-[10px] font-normal">
+                                                    {{ artisan.province }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+
+                                        <a href="{{ artisan.get_absolute_url }}" class="card-actions mt-1">
+                                            <button class="btn btn-sm bg-[#4b3a1a] hover:text-[#e5c98a] border-none text-white">
+                                                Visit Studio｜探訪工坊
+                                            </button>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <div class="col-span-full text-center py-12 text-xs opacity-50">
+                                    No artisans found｜未找到相關匠人
                                 </div>
                             {% endfor %}
                         </div>
@@ -95,6 +195,5 @@
             </div>
         </div>
     </main>
-
 
 {% endblock %}

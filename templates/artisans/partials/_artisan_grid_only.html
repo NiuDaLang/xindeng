@@ -1,0 +1,133 @@
+<!-- _artisan_grid_only.html -->
+{% if artisans %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    {% for artisan in artisans %}
+<a href="{{ artisan.get_absolute_url }}"
+   class="group block bg-white hover:bg-[#fefdfb] border {% if artisan.is_premium %}border-amber-200/60{% else %}border-base-200/60{% endif %} rounded-2xl overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md">
+
+    <!-- Avatar (no craft badge here) -->
+    <div class="relative aspect-square bg-base-200 overflow-hidden">
+        {% if artisan.avatar %}
+        <img src="{{ artisan.avatar.url }}"
+             alt="{{ artisan.display_name }}"
+             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+             loading="lazy" />
+        {% else %}
+        <div class="w-full h-full flex items-center justify-center text-base-content/25 font-serif text-6xl">
+            {{ artisan.display_name|slice:":1" }}
+        </div>
+        {% endif %}
+
+        <!-- Premium crown (top-right) -->
+        {% if artisan.is_premium %}
+        <span class="absolute top-3 right-3 w-6 h-6 rounded-full bg-amber-100/90 backdrop-blur-sm
+                     flex items-center justify-center border border-amber-200/60 shadow-sm"
+              title="Premium Artisan｜精選匠人">
+            <i class="fa-solid fa-crown text-amber-600 text-[10px]"></i>
+        </span>
+        {% endif %}
+
+        <!-- Hover overlay -->
+        <div class="absolute inset-x-0 bottom-0 h-1/3
+                    bg-gradient-to-t from-black/50 to-transparent
+                    opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                    flex items-end justify-end p-3">
+            <span class="text-white text-[10px] tracking-[0.15em] uppercase font-sans
+                         translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                Enter Studio →
+            </span>
+        </div>
+    </div>
+
+    <!-- Info -->
+    <div class="p-4">
+        <h3 class="font-serif text-sm font-semibold text-base-content group-hover:text-primary transition-colors truncate">
+            {{ artisan.display_name }}
+        </h3>
+
+        {% if artisan.tagline %}
+        <p class="text-[11px] text-base-content/60 mt-2 line-clamp-2 leading-relaxed">
+            {{ artisan.tagline }}
+        </p>
+        {% endif %}
+
+        <!-- Craft chips (below name, replacing the top-left badge) -->
+        {% if artisan.craft_types.exists %}
+        <div class="flex flex-wrap gap-1 mt-1.5">
+            {% for craft in artisan.craft_types.all|slice:":2" %}
+            <span class="text-[9px] uppercase tracking-[0.1em] font-sans font-medium
+                         px-1.5 py-0.5 rounded
+                         bg-base-100 border border-base-200/70 text-base-content/50">
+                {{ craft.label }}
+            </span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if artisan.city or artisan.province %}
+        <p class="text-[9px] uppercase tracking-[0.15em] text-base-content/40 mt-2 flex items-center gap-1">
+            <i class="fa-solid fa-location-dot text-[7px] opacity-60"></i>
+            <span class="truncate">
+                {{ artisan.city }}{% if artisan.city and artisan.province %}, {% endif %}{{ artisan.province }}
+            </span>
+        </p>
+        {% endif %}
+    </div>
+</a>
+    {% endfor %}
+</div>
+
+<!-- PAGINATION -->
+{% if page_obj.has_other_pages %}
+<div class="mt-12 flex justify-center">
+    <nav class="join bg-base-100 border border-base-200/60 p-1 shadow-sm rounded-xl">
+        {% if page_obj.has_previous %}
+        <button
+            hx-get="?page={{ page_obj.previous_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}{% if current_craft %}&craft={{ current_craft }}{% endif %}{% if current_province %}&province={{ current_province }}{% endif %}"
+            hx-target="#artisan-filter-region"
+            hx-swap="innerHTML"
+            hx-push-url="true"
+            class="join-item btn btn-sm btn-ghost rounded-lg text-xs">« Prev</button>
+        {% else %}
+        <button class="join-item btn btn-sm btn-disabled bg-transparent border-none text-xs" disabled>« Prev</button>
+        {% endif %}
+
+        <span class="join-item btn btn-sm btn-disabled bg-transparent border-none text-xs">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+        <button
+            hx-get="?page={{ page_obj.next_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}{% if current_craft %}&craft={{ current_craft }}{% endif %}{% if current_province %}&province={{ current_province }}{% endif %}"
+            hx-target="#artisan-filter-region"
+            hx-swap="innerHTML"
+            hx-push-url="true"
+            class="join-item btn btn-sm btn-ghost rounded-lg text-xs">Next »</button>
+        {% else %}
+        <button class="join-item btn btn-sm btn-disabled bg-transparent border-none text-xs" disabled>Next »</button>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}
+
+{% else %}
+<div class="text-center py-20">
+    <p class="text-xs text-base-content/40 tracking-wider mb-2">
+        {% if current_q or current_craft or current_province %}
+            沒有符合條件的匠人｜No artisans match your search.
+        {% else %}
+            匠人名錄即將揭幕｜Artisan roster coming soon.
+        {% endif %}
+    </p>
+    {% if current_q or current_craft or current_province %}
+    <a href="{% url 'artisan_list' %}"
+        hx-get="{% url 'artisan_list' %}"
+        hx-target="#artisan-filter-region"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+        class="text-[11px] text-primary/70 hover:text-primary transition-colors cursor-pointer">
+        Clear filters｜清除篩選
+    </a>
+    {% endif %}
+</div>
+{% endif %}

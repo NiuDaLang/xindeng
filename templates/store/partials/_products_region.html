@@ -1,0 +1,137 @@
+{% load humanize %}
+<!-- 🌟 FILTERED BY ARTISAN BANNER -->
+{% if active_creator %}
+<!-- Banner -->
+<div class="flex items-center justify-between gap-4 px-4 py-3 mb-6
+            bg-[#faf8f5] border border-base-200/60 rounded-xl shadow-sm">
+    <div class="flex items-center gap-3 min-w-0">
+        <!-- Avatar -->
+        <div class="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-base-200 bg-base-200">
+            {% if active_creator.avatar %}
+            <img src="{{ active_creator.avatar.url }}"
+                alt="{{ active_creator.display_name }}"
+                class="w-full h-full object-cover" />
+            {% else %}
+            <div class="w-full h-full flex items-center justify-center text-base-content/40 font-serif text-sm">
+                {{ active_creator.display_name|slice:":1" }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Text -->
+        <div class="min-w-0">
+            <p class="text-[10px] uppercase tracking-[0.2em] text-base-content/40 font-sans">
+                Filtered by Artisan｜按匠人篩選
+            </p>
+            <a href="{{ active_creator.get_absolute_url }}"
+            class="text-sm font-serif font-semibold text-base-content hover:text-primary transition-colors truncate block">
+                {{ active_creator.display_name }}
+                {% if active_creator.craft_types.exists %}
+                <span class="text-[11px] font-sans font-normal text-base-content/50 ml-2">
+                    {% for craft in active_creator.craft_types.all %}
+                        {{ craft.label }}{% if not forloop.last %} · {% endif %}
+                    {% endfor %}
+                </span>
+                {% endif %}
+            </a>
+        </div>
+    </div>
+
+    <!-- Clear filter -->
+    <a href="{% url 'products' category_slug=category %}"
+        hx-get="{% url 'products' category_slug=category %}"
+        hx-target="#products-region"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+        class="flex-shrink-0 text-[10px] uppercase tracking-wider text-base-content/40 hover:text-primary transition-colors whitespace-nowrap cursor-pointer">
+        Clear ✕
+    </a>
+</div>
+{% endif %}
+
+<!-- Products Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-8 my-5">
+    {% for product in available_products %}
+    <article class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+        <figure class="relative">
+            <a href="{{ product.get_url }}">
+                <img src="{{ product.images.url }}" 
+                        alt="{{ product.name }}" 
+                        class="w-full h-56 sm:h-64 object-cover"
+                        loading="lazy" />
+            </a>
+        </figure>
+        <div class="card-body p-4 sm:p-6">
+            <h3 class="card-title text-base sm:text-lg">
+                <a href="{{ product.get_url }}" class="hover:text-primary">{{ product.product_name }}</a>
+            </h3>
+            <p class="text-xs sm:text-sm opacity-70 line-clamp-2 mb-3">{{ product.description }}</p>
+            <div class="card-actions justify-between items-center mt-auto">
+                <span class="text-lg sm:text-xl font-bold">CNY {{ product.lowest_price|floatformat:2|intcomma }} ~</span>
+                <a href="{{ product.get_url }}" class="btn btn-primary btn-sm">View｜查看</a>
+            </div>
+        </div>
+    </article>
+    {% empty %}
+    <div class="col-span-full text-center py-20 opacity-60">
+        <p class="text-lg">No products found｜暫無商品</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- pagination -->
+<div class="w-full text-center my-[5rem]">
+    {% if available_products.has_other_pages %}
+        <ul class="join">
+            {% if available_products.has_previous %}
+                <li class="join-item btn">
+                    <a href="?page={{ available_products.previous_page_number }}{% if active_creator %}&creator={{ active_creator.slug }}{% endif %}"
+                        hx-get="?page={{ available_products.previous_page_number }}{% if active_creator %}&creator={{ active_creator.slug }}{% endif %}"
+                        hx-target="#products-region"
+                        hx-swap="innerHTML"
+                        hx-push-url="true">
+                        «
+                    </a>
+                </li>
+            {% else %}
+                <li class="join-item btn btn-disabled">
+                    <a href="#">«</a>
+                </li>
+            {% endif %}
+
+            {% for i in available_products.paginator.page_range %}
+                {% if available_products.number == i %}
+                    <li class="join-item btn btn-active">
+                        <a href="#">{{i}}</a>
+                    </li>
+                {% else %}
+                    <li class="join-item btn">
+                        <a href="?page={{ i }}{% if active_creator %}&creator={{ active_creator.slug }}{% endif %}"
+                            hx-get="?page={{ i }}{% if active_creator %}&creator={{ active_creator.slug }}{% endif %}"
+                            hx-target="#products-region"
+                            hx-swap="innerHTML"
+                            hx-push-url="true">
+                            {{ i }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if available_products.has_next %}
+                <li class="join-item btn">
+                    <a href="?page={{ available_products.next_page_number }}{% if active_creator %}&creator={{ active_creator.slug }}{% endif %}"
+                        hx-get="?page={{ available_products.next_page_number }}{% if active_creator %}&creator={{ active_creator.slug }}{% endif %}"
+                        hx-target="#products-region"
+                        hx-swap="innerHTML"
+                        hx-push-url="true">
+                        »
+                    </a>
+                </li>
+            {% else %}
+                <li class="join-item btn btn-disabled">
+                    <a href="#">»</a>
+                </li>
+            {% endif %}
+        </ul>
+    {% endif %}
+</div>

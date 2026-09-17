@@ -1,3 +1,4 @@
+# orders.views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from carts.models import ProformaInvoice
 from carts.forms import ProformaInvoiceForm
@@ -270,7 +271,9 @@ def place_order(request, proforma_invoice_no):
                                 product_variation=item.product_variation,
                                 quantity=item.quantity,
                                 product_price=item.product_variation.price,
-                                ordered=False
+                                ordered=False,
+                                fulfilled_by=variation.product.creator,   # 🌟 NEW — auto-attributed
+                                fulfillment_started_at=timezone.now(),     # 🌟 NEW — payment just cleared
                             )
 
                         # 4. ADDRESS BOOK INJECTION
@@ -705,7 +708,9 @@ def complete_zero_due_voucher_order(request):
                     product_variation=variation,
                     quantity=item.quantity,
                     product_price=variation.price,
-                    ordered=True
+                    ordered=True,
+                    fulfilled_by=variation.product.creator,   # 🌟 NEW — auto-attributed
+                    fulfillment_started_at=timezone.now(),     # 🌟 NEW — payment just cleared
                 )
                 
                 is_instant_eproduct = variation.product.is_digital and variation.product.digital_fulfillment_type == 'INSTANT' and not variation.product.is_voucher
@@ -734,7 +739,8 @@ def complete_zero_due_voucher_order(request):
                             transaction.on_commit(lambda v_id=voucher.id, link=reg_link: send_gift_voucher_email_task.delay(v_id, link))
                         created_vouchers.append(voucher)
                     order_prod.is_dispatched = True
-                    order_prod.save(update_fields=['is_dispatched'])
+                    order_prod.dispatched_at = timezone.now()
+                    order_prod.save(update_fields=['is_dispatched', 'dispatched_at'])
                 
                 # Infinite Instant Digital Assets download token generation loops
                 elif getattr(variation.product, 'is_digital', False) and getattr(variation.product, 'digital_fulfillment_type', 'INSTANT') == 'INSTANT':
@@ -746,7 +752,8 @@ def complete_zero_due_voucher_order(request):
                     )
                     transaction.on_commit(lambda token_id=download_token.id: send_e_product_email_task.delay(str(token_id)))
                     order_prod.is_dispatched = True
-                    order_prod.save(update_fields=['is_dispatched'])
+                    order_prod.dispatched_at = timezone.now()
+                    order_prod.save(update_fields=['is_dispatched', 'dispatched_at'])
 
             # After handling individual lines, automatically evaluate final status
             order.update_fulfillment_status()
@@ -1391,13 +1398,4 @@ def process_order_cancellation(request, order_number):
             
         messages.error(request, f"系統因核心業務邏輯異常已安全撤回交易: {str(e)}")
         return redirect('dashboard', subpage='orders') if request.user.is_authenticated else redirect('home')
-
-
-# Can you write the cancellation complete function that can be operated from the database by admin staff? 
-# Along with a message to be added into the Order so that the next time when 
-# (a)  member logs in (b) guest user inquires via contact page's form, 
-# the status of cancellation complete can be displayed clearly (in addition to the 'status' label). 
-
-# Also, I think I need to send emails in (i) cancellation process begins, triggered by the cancel button activation, 
-# and (ii) cancellation completes. For (a), I will
 

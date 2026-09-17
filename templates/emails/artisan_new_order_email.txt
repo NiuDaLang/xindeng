@@ -1,0 +1,35 @@
+{% autoescape off %}
+🧑‍🎨 待發貨訂單通知｜NEW ORDER TO FULFILL
+
+Dear {{ creator.display_name }}｜{{ creator.display_name }} 您好:
+
+You have {{ line_count }} item{{ line_count|pluralize }} to dispatch.
+您有一筆新訂單，共 {{ line_count }} 件商品等待您安排發貨。
+
+============================================================
+📦 ORDER DETAIL｜訂單詳情
+============================================================
+訂單號｜Order Number: #{{ order.order_number }}
+買家｜Buyer: {{ order.recipient_first_name }} {{ order.recipient_last_name }}
+寄送至｜Ship To: {{ order.city }}, {{ order.state_province_region }}, {{ order.country }}
+{% if order.delivery_note %}備註｜Note: {{ order.delivery_note }}
+{% endif %}
+============================================================
+🛠️ ITEMS TO DISPATCH｜待發貨商品
+============================================================
+{% for line in pending_lines %}• {{ line.product.product_name }}
+  SKU: {{ line.product_variation.get_sku }}
+  Quantity｜數量: {{ line.quantity }}
+{% endfor %}
+============================================================
+
+Please log in to mark each item as dispatched and add the tracking number.
+請登入工作台，將商品標記為已發貨並填寫物流單號。
+
+→ {{ dashboard_url }}
+
+============================================================
+Hṛdayadīpa (हृदयदीप)｜心燈
+Automated notification — please do not reply directly.
+系統自動通知，請勿直接回覆。
+{% endautoescape %}

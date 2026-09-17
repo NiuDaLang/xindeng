@@ -51,6 +51,26 @@
                             {% endfor %}
                         </ul>
                     </li>
+                    <li>
+                        <a href="{% url 'artisan_landing' %}" class="text-primary font-bold">Artisans｜匠人</a>
+                        <ul class="p-2">
+                            <li class="text-xs">
+                                <a href="{% url 'artisan_list' %}" class="flex flex-col items-start p-2">
+                                    <span>Profiles｜匠人誌</span>
+                                </a>
+                            </li>
+                            <li class="text-xs">
+                                <a href="{% url 'artisan_gallery' %}" class="flex flex-col items-start p-2">
+                                    <span>Gallery｜匠物</span>
+                                </a>
+                            </li>
+                            <li class="text-xs">
+                                <a href="{% url 'artisan_join' %}" class="flex flex-col items-start p-2">
+                                    <span>Join Us｜結緣</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>                    
                     <li><a href="{% url 'all_posts' %}" class="font-bold">Blog｜筆記</a></li>
                     <li><a href="{% url 'collaboration' %}" class="font-bold">Collab｜合作</a></li>
                 </ul>
@@ -120,6 +140,21 @@
                     </ul>
                 </div>
             </li>
+
+<li>
+    <div class="dropdown dropdown-hover dropdown-center">
+        <a href="{% url 'artisan_landing' %}" role="button" class="inline-block text-center">
+            <strong>Artisans<br/>匠人</strong>
+        </a>
+        <ul tabindex="-1" class="dropdown-content menu w-[10rem] bg-base-100 rounded-box z-1 p-2 shadow-sm">
+            <li><a href="{% url 'artisan_list' %}" class="whitespace-nowrap">Profiles｜匠心</a></li>
+            <li><a href="{% url 'artisan_gallery' %}" class="whitespace-nowrap">Gallery｜匠作</a></li>
+            <li><a href="{% url 'artisan_blog_list' %}" class="whitespace-nowrap">Notes｜匠人筆記</a></li>
+            <li><a href="{% url 'artisan_join' %}" class="whitespace-nowrap">Join Us｜同匠</a></li>
+        </ul>
+    </div>
+</li>
+            
             <li><a href="{% url 'all_posts' %}" class="text-center"><strong>Blog<br/>筆記</strong></a></li>
             <li><a href="{% url 'collaboration' %}" class="text-center"><strong>Collab<br/>合作</strong></a></li>
             </ul>

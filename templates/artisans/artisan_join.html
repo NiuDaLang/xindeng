@@ -1,0 +1,236 @@
+<!-- artisan_join.html -->
+
+{% extends 'base.html' %}
+{% block content %}
+
+<!-- BANNER -->
+<div class="relative mt-[65px] lg:mt-[86px] w-full bg-base-300 py-16 text-center border-b border-base-200 select-none">
+    <div class="max-w-2xl mx-auto px-4">
+        <h1 class="text-3xl md:text-4xl font-serif tracking-widest text-base-content mb-4">
+            成為匠人 <span class="font-sans font-light text-xl opacity-60 ml-2">/ Become an Artisan</span>
+        </h1>
+        <p class="text-sm md:text-base tracking-wide text-base-content/70 leading-relaxed font-serif max-w-lg mx-auto">
+            海納百川，匠心無界。<br>
+            若您以雙手造物，我們願與您共赴遠方。<br>
+            <span class="block mt-2 font-sans font-light text-xs opacity-60 italic">
+                Where craft meets the horizon —<br>
+                if you shape things by hand, let's sail together.
+            </span>
+        </p>
+    </div>
+</div>
+
+<!-- MAIN -->
+<main class="px-[max(1rem,4vw)] lg:px-[max(2rem,8vw)] py-16 min-h-[calc(100dvh-200px)]">
+
+    <!-- PITCH -->
+    <section class="max-w-2xl mx-auto mb-20">
+        <h2 class="font-serif text-2xl md:text-3xl tracking-widest mb-8">
+            為何出海？<span class="font-sans font-light text-base opacity-60 ml-3">Why Set Sail?</span>
+        </h2>
+
+        <p class="text-sm text-base-content/70 leading-loose mb-10 max-w-2xl">
+            從前，匠人守著一方作坊，作品流傳於一城一鄉之間。<br>
+            如今，海洋不再是阻隔，而是通往世界的航道。<br>
+            我們希望成為您出海的那艘船——將您的匠心，帶到更遠的市集。
+        </p>
+
+        <ul class="space-y-6 text-sm text-base-content/70 leading-relaxed">
+            <li class="flex gap-4">
+                <span class="text-primary font-serif text-lg mt-0.5">一</span>
+                <div>
+                    <p class="font-medium text-base-content">向世界敞開的市集</p>
+                    <p class="text-xs opacity-70 mt-1 leading-relaxed">
+                        您的作品將與世界各地藏家相遇。我們手工審核每一位匠人——您的匠心不會淹沒在吵雜的市聲之中。
+                    </p>
+                </div>
+            </li>
+
+            <li class="flex gap-4">
+                <span class="text-primary font-serif text-lg mt-0.5">二</span>
+                <div>
+                    <p class="font-medium text-base-content">文字與影像的編輯支援</p>
+                    <p class="text-xs opacity-70 mt-1 leading-relaxed">
+                        從品牌故事、產品描述到攝影指導，我們協助您將工藝的細節，化成世界聽得懂的語言。
+                    </p>
+                </div>
+            </li>
+
+            <li class="flex gap-4">
+                <span class="text-primary font-serif text-lg mt-0.5">三</span>
+                <div>
+                    <p class="font-medium text-base-content">多語言支援</p>
+                    <p class="text-xs opacity-70 mt-1 leading-relaxed">
+                        繁體中文、簡體中文、英文——您的作品與故事將以多語呈現，跨越語言的疆界。
+                    </p>
+                </div>
+            </li>
+
+            <li class="flex gap-4">
+                <span class="text-primary font-serif text-lg mt-0.5">四</span>
+                <div>
+                    <p class="font-medium text-base-content">社群與線上策展</p>
+                    <p class="text-xs opacity-70 mt-1 leading-relaxed">
+                        我們透過社群媒體、專題策展與品牌合作，讓您的作品被更多人看見，被對的人收藏。
+                    </p>
+                </div>
+            </li>
+
+            <li class="flex gap-4">
+                <span class="text-primary font-serif text-lg mt-0.5">五</span>
+                <div>
+                    <p class="font-medium text-base-content">直接發貨工具</p>
+                    <p class="text-xs opacity-70 mt-1 leading-relaxed">
+                        您從自己的作坊直接發貨。客戶端的一切交給我們——您只需專注於手中的工藝。
+                    </p>
+                </div>
+            </li>
+
+            <li class="flex gap-4">
+                <span class="text-primary font-serif text-lg mt-0.5">六</span>
+                <div>
+                    <p class="font-medium text-base-content">匠人共同體</p>
+                    <p class="text-xs opacity-70 mt-1 leading-relaxed">
+                        與來自中國各地、專注於不同工藝的匠人，一同前行。
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </section>
+
+    <!-- FORM -->
+    <section class="max-w-2xl mx-auto">
+        <h2 class="font-serif text-xl md:text-2xl tracking-widest mb-6">
+            Apply to Join
+            <span class="font-sans font-light text-sm opacity-60 ml-2">申請加入</span>
+        </h2>
+
+        <form method="post" action="{% url 'artisan_join' %}" class="space-y-6"
+              onload="document.getElementById('render_ts').value = new Date().toISOString();">
+            {% csrf_token %}
+
+            <!-- Honeypot (off-screen) -->
+            {{ form.honeypot }}
+
+            <!-- Timestamp (filled on load) -->
+            <input type="hidden" id="render_ts" name="render_timestamp" value="">
+
+            <!-- Errors -->
+            {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <!-- Identity -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="label text-xs uppercase tracking-wider opacity-60">Public Display Name｜公開名稱</label>
+                    {{ form.display_name }}
+                    {{ form.display_name.errors }}
+                </div>
+                <div>
+                    <label class="label text-xs uppercase tracking-wider opacity-60">Full Name (private)｜真實姓名</label>
+                    {{ form.full_name }}
+                    {{ form.full_name.errors }}
+                </div>
+            </div>
+
+            <!-- Contact -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="label text-xs uppercase tracking-wider opacity-60">Email｜電郵</label>
+                    {{ form.email }}
+                    {{ form.email.errors }}
+                </div>
+                <div>
+                    <label class="label text-xs uppercase tracking-wider opacity-60">Phone｜電話（可選）</label>
+                    {{ form.phone }}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="label text-xs uppercase tracking-wider opacity-60">WeChat｜微信（可選）</label>
+                    {{ form.wechat }}
+                </div>
+                <div>
+                    <label class="label text-xs uppercase tracking-wider opacity-60">Portfolio URL｜作品集（可選）</label>
+                    {{ form.portfolio_url }}
+                </div>
+            </div>
+
+            <!-- Location -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="label text-xs uppercase tracking-wider opacity-60">Province｜省份</label>
+                    {{ form.province }}
+                    {{ form.province.errors }}
+                </div>
+                <div>
+                    <label class="label text-xs uppercase tracking-wider opacity-60">City｜城市</label>
+                    {{ form.city }}
+                </div>
+            </div>
+
+            <!-- Craft -->
+            <div>
+                <label class="label text-xs uppercase tracking-wider opacity-60">{{ form.craft_types.label }}</label>
+                <p class="text-xs opacity-60 mb-3">{{ form.craft_types.help_text }}</p>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {% for checkbox in form.craft_types %}
+                    <label class="flex items-center gap-2 p-2 border border-base-200/60 rounded-lg cursor-pointer hover:border-primary/40 transition-colors">
+                        {{ checkbox.tag }}
+                        <span class="text-xs">{{ checkbox.choice_label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {{ form.craft_types.errors }}
+            </div>
+
+            <!-- Bio -->
+            <div>
+                <label class="label text-xs uppercase tracking-wider opacity-60">{{ form.short_bio.label }}</label>
+                {{ form.short_bio }}
+                {{ form.short_bio.errors }}
+            </div>
+
+            <div>
+                <label class="label text-xs uppercase tracking-wider opacity-60">{{ form.reason_for_joining.label }}</label>
+                {{ form.reason_for_joining }}
+                {{ form.reason_for_joining.errors }}
+            </div>
+
+            <!-- Anti-bot -->
+            <div class="border-t border-base-200 pt-6">
+                <label class="label text-xs uppercase tracking-wider opacity-60">
+                    Verification｜驗證： {{ math_prompt }}
+                </label>
+                {{ form.math_answer }}
+                {{ form.math_answer.errors }}
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" class="btn btn-primary w-full rounded-xl tracking-widest">
+                    Submit Application｜提交申請
+                </button>
+            </div>
+
+            <p class="text-[10px] text-center text-base-content/40 mt-4 leading-relaxed">
+                After submitting, you'll receive a downloadable PDF. Please attach it to the email that opens.<br>
+                提交後將生成 PDF 檔案。請將該檔案附加至自動開啟的電郵中。
+            </p>
+        </form>
+    </section>
+
+</main>
+
+<script>
+    // Populate the render timestamp on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const el = document.getElementById('render_ts');
+        if (el) el.value = new Date().toISOString();
+    });
+</script>
+
+{% endblock %}

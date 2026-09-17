@@ -1,0 +1,64 @@
+<!-- role_select.html -->
+
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="relative mt-[65px] lg:mt-[86px] w-full min-h-[calc(100vh-86px)] flex items-center justify-center bg-[#faf8f5]">
+    <div class="max-w-2xl mx-auto px-6 py-20 text-center">
+
+        <div class="mb-12">
+            <p class="text-[10px] uppercase tracking-[0.3em] text-base-content/40 mb-3">
+                Welcome back
+            </p>
+            <h1 class="font-serif text-3xl md:text-4xl tracking-wider">
+                選擇您的視角
+                <span class="block font-sans font-light text-lg text-base-content/50 mt-2">
+                    Choose Your View
+                </span>
+            </h1>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Buyer -->
+            <a href="{% url 'set_role' 'buyer' %}"
+               class="group block p-8 bg-white border border-base-200/60 rounded-2xl hover:border-primary/40 hover:shadow-md transition-all">
+                <div class="w-14 h-14 mx-auto rounded-full bg-base-100 flex items-center justify-center mb-5">
+                    <i class="fa-solid fa-bag-shopping text-lg text-base-content/60 group-hover:text-primary transition-colors"></i>
+                </div>
+                <h2 class="font-serif text-lg mb-2">買家模式</h2>
+                <p class="text-xs uppercase tracking-wider text-base-content/40 mb-3">
+                    Continue as Buyer
+                </p>
+                <p class="text-xs text-base-content/60 leading-relaxed">
+                    繼續瀏覽平台、選購作品，查看您的訂單與收藏。
+                </p>
+            </a>
+
+            <!-- Creator -->
+            <a href="{% url 'set_role' 'creator' %}"
+               class="group block p-8 bg-white border border-primary/30 rounded-2xl hover:border-primary hover:shadow-md transition-all relative">
+                {% if request.user.creator_profile.is_premium %}
+                <span class="absolute top-4 right-4 text-amber-500">
+                    <i class="fa-solid fa-crown text-xs"></i>
+                </span>
+                {% endif %}
+                <div class="w-14 h-14 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-5">
+                    <i class="fa-solid fa-hands-holding-circle text-lg text-primary"></i>
+                </div>
+                <h2 class="font-serif text-lg mb-2">匠人工作台</h2>
+                <p class="text-xs uppercase tracking-wider text-base-content/40 mb-3">
+                    Enter Creator Studio
+                </p>
+                <p class="text-xs text-base-content/60 leading-relaxed">
+                    管理您的作品、訂單、筆記與匠人檔案。
+                </p>
+            </a>
+        </div>
+
+        <p class="text-[10px] text-base-content/30 mt-12">
+            您可以隨時切換視角。
+            <span class="block">You can switch views anytime.</span>
+        </p>
+    </div>
+</div>
+{% endblock %}

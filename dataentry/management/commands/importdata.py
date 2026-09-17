@@ -1,3 +1,5 @@
+# dataentry/management/commands/importdata.py
+
 from django.core.management.base import BaseCommand, CommandError
 from carts.models import ShippingCharge
 from django.apps import apps
@@ -18,10 +20,10 @@ class Command(BaseCommand):
 
         # Search for the model across all installed apps
         model = None
-        for app_conig in apps.get_app_configs():
+        for app_config in apps.get_app_configs():
             # Try to search for the model 
             try:
-                model = apps.get_model(app_conig.label, model_name)
+                model = apps.get_model(app_config.label, model_name)
                 break # stop searching once the model is found
             except LookupError:
                 continue # continue searching in the next app

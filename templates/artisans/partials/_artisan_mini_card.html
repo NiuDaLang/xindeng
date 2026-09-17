@@ -1,0 +1,34 @@
+<a href="{{ artisan.get_absolute_url }}"
+   class="group flex items-center gap-3 p-3 bg-white hover:bg-[#fefdfb] border border-base-200/60 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md">
+
+    <!-- Avatar -->
+    <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-base-200/80 bg-base-200">
+        {% if artisan.avatar %}
+        <img src="{{ artisan.avatar.url }}"
+             alt="{{ artisan.display_name }}"
+             class="w-full h-full object-cover"
+             loading="lazy" />
+        {% else %}
+        <div class="w-full h-full flex items-center justify-center text-base-content/40 font-serif text-base">
+            {{ artisan.display_name|slice:":1" }}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Info -->
+    <div class="min-w-0 flex-1">
+        <p class="text-sm font-serif font-semibold text-base-content group-hover:text-primary transition-colors truncate">
+            {{ artisan.display_name }}
+        </p>
+        {% if artisan.craft_types.exists %}
+        <p class="text-[10px] uppercase tracking-wider text-base-content/40 truncate">
+            {{ artisan.craft_types.first.label }}
+            {% if artisan.craft_types.count > 1 %}
+                +{{ artisan.craft_types.count|add:"-1" }}
+            {% endif %}
+        </p>
+        {% endif %}
+    </div>
+
+    <i class="fa-solid fa-arrow-right text-[10px] text-base-content/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all"></i>
+</a>

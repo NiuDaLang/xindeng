@@ -1,7 +1,6 @@
 from django.urls import path
 from . import views
 
-
 urlpatterns = [
     # Asynchronous HTMX processing endpoint rules
     path('htmx/submit-review/<int:product_id>/', views.submit_review_htmx, name='submit_review_htmx'),

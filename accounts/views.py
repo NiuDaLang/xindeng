@@ -1232,21 +1232,6 @@ def get_wishlist_item(request, item_id):
     return render(request, 'accounts/partials/wishlist_item.html', {'item': item})
 
 
-# def add_to_cart_qty(request, variation_id, source):
-#     # Get the variation and its related wishlist item for the current user
-#     variation = get_object_or_404(ProductVariation, id=variation_id, is_available=True)
-#     if source == "wishlist":
-#         list_item = variation.product_lists.filter(user=request.user, list_type="WISHLIST").first()
-#     elif source == "favorites":
-#         list_item = variation.product_lists.filter(user=request.user, list_type="FAVORITE").first()
-#     context = {
-#         'item': list_item,
-#         'variation': variation,
-#         'source': source,
-#     }
-#     return render(request, 'accounts/partials/item_qty_form.html', context)
-
-
 @login_required(login_url='login')
 def add_to_cart_qty(request, variation_id, source):
     """

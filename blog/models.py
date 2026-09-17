@@ -34,6 +34,14 @@ class Post(models.Model):
     short_description   = models.TextField(max_length=500)
     post_category       = models.CharField(max_length=100, choices=POST_CATEGORY, default="Other")
     author              = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='author')
+    creator             = models.ForeignKey(
+                            'creators.CreatorProfile',
+                            on_delete=models.SET_NULL,     # If artisan leaves, post survives as platform content
+                            null=True, blank=True,
+                            related_name='posts',
+                            help_text="If authored by an artisan, link to their CreatorProfile. "
+                                    "Leave blank for platform-authored posts."
+                          )
     location            = models.CharField(max_length=100, blank=True)
     featured_image      = models.ImageField(upload_to='blog/featured_images/%Y/%m/%d')
     blog_body           = CKEditor5Field(config_name='extends', blank=True, null=True)
@@ -67,3 +75,4 @@ class Post(models.Model):
 
     def get_url(self):
         return reverse("post", args=[self.slug])
+

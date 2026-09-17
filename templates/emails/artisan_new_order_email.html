@@ -1,0 +1,77 @@
+{% autoescape off %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Order to Fulfill</title>
+</head>
+<body style="font-family: sans-serif; background-color: #f7f5f3; padding: 20px; margin: 0;">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #cccccc; border-radius: 8px;">
+        <tr>
+            <td style="background-color: #4b9aaa; padding: 25px; text-align: center; color: white; font-size: 1.1rem; font-weight: bold;">
+                🧑‍🎨 New Order to Fulfill
+                <br><span style="font-size: 0.85rem; font-weight: normal; opacity: 0.9;">待發貨訂單通知</span>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="padding: 30px; font-size: 0.85rem; line-height: 1.5rem; color: #161616;">
+                <p style="margin: 0 0 14px 0;">
+                    Dear <strong>{{ creator.display_name }}</strong>,<br>
+                    親愛的 <strong>{{ creator.display_name }}</strong>，您好：
+                </p>
+
+                <p style="margin: 0 0 18px 0;">
+                    You have <strong>{{ line_count }}</strong> item{{ line_count|pluralize }} to dispatch for the order below.<br>
+                    您有一筆新訂單，共 <strong>{{ line_count }}</strong> 件商品等待您安排發貨。
+                </p>
+
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #f9f9f9; border-left: 4px solid #4b9aaa; padding: 15px; margin-bottom: 20px;">
+                    <tr>
+                        <td style="padding: 15px; font-size: 0.8rem; line-height: 1.4rem; color: #333333;">
+                            <strong>Order No.｜訂單號:</strong> #{{ order.order_number }}<br>
+                            <strong>Buyer｜買家:</strong> {{ order.recipient_first_name }} {{ order.recipient_last_name }}<br>
+                            <strong>Ship To｜寄送至:</strong> {{ order.city }}, {{ order.state_province_region }}, {{ order.country }}
+                            {% if order.delivery_note %}
+                            <br><strong>Note｜備註:</strong> {{ order.delivery_note }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+
+                <p style="margin: 0 0 10px 0; font-weight: bold; color: #161616;">
+                    Items to Dispatch｜待發貨商品
+                </p>
+
+                {% for line in pending_lines %}
+                <div style="background-color: #fefefd; border: 1px solid #ece7dd; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; font-size: 0.8rem; line-height: 1.4rem; color: #333333;">
+                    <strong style="color: #161616;">{{ line.product.product_name }}</strong><br>
+                    <span style="color: #8b8b8b;">SKU: {{ line.product_variation.get_sku }}</span><br>
+                    Quantity｜數量: {{ line.quantity }}
+                </div>
+                {% endfor %}
+
+                <div style="text-align: center; margin: 26px 0;">
+                    <a href="{{ dashboard_url }}" style="display: inline-block; padding: 12px 26px; background-color: #4b9aaa; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">
+                        Open Artisan Dashboard｜前往匠人工作台 →
+                    </a>
+                </div>
+
+                <p style="margin: 0; font-size: 0.75rem; line-height: 1.4rem; color: #8b8b8b; text-align: center;">
+                    Please log in to mark each item as dispatched and add the tracking number.<br>
+                    請登入工作台，將商品標記為已發貨並填寫物流單號。
+                </p>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="background-color: #333333; padding: 20px; text-align: center; color: white; font-size: 0.7rem; line-height: 1.4rem;">
+                Hṛdayadīpa (हृदयदीप)｜心燈<br>
+                <span style="opacity: 0.7;">Automated notification — please do not reply directly.｜系統自動通知，請勿直接回覆。</span>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+{% endautoescape %}

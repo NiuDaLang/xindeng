@@ -1,0 +1,426 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- HERO — Window into the Atelier                                  -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="relative mt-[65px] lg:mt-[86px] w-full min-h-[calc(100vh-86px)] overflow-hidden bg-[#faf8f5]">
+
+    <!-- Hero background -->
+    <div class="absolute inset-0 w-full h-full opacity-[0.35] pointer-events-none"
+         style="background-image: url('/media/artisans/hero/hero_bg.jpeg');
+                background-size: cover;
+                background-position: center right;
+                background-blend-mode: multiply;">
+    </div>
+
+    <!-- Hero content -->
+    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 py-16 lg:py-24 min-h-[calc(100vh-86px)] flex items-center">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-20 items-start w-full">
+
+            <!-- ─── LEFT COLUMN: Copy ─────────────────────────────── -->
+            <div class="lg:col-span-6 space-y-6 sm:ml-[4rem] lg:ml-0">
+                <!-- Decorative 回纹 motif -->
+                <div class="flex items-center gap-3">
+                    <svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <!-- Simple geometric 回纹 pattern in brand red -->
+                        <path d="M2 2 H40 V40 H2 Z M8 8 H34 V34 H8 Z M14 14 H28 V28 H14 Z"
+                              stroke="#a8362a" stroke-width="1.8" fill="none" stroke-linejoin="miter"/>
+                    </svg>
+                    <span class="text-[10px] uppercase tracking-[0.25em] text-base-content/50 font-sans">
+                        Heritage｜匠傳
+                    </span>
+                </div>
+
+                <!-- Main heading -->
+                <h1 class="font-serif text-4xl md:text-5xl lg:text-6xl leading-[1.1] tracking-wide text-base-content">
+                    Soul of Craft
+                    <span class="block mt-2 font-sans font-light text-2xl md:text-3xl lg:text-4xl text-base-content/60 tracking-[0.3em]">
+                        匠心之魂
+                    </span>
+                </h1>
+
+                <!-- Subheading -->
+                <p class="font-serif text-lg md:text-xl text-base-content/70 leading-relaxed">
+                    Where Ages of Craft Meet the Living Present
+                    <span class="block mt-1 font-sans font-light text-sm text-base-content/50 tracking-wider">
+                        华夏手藝，當代心燈
+                    </span>
+                </p>
+
+                <!-- Description -->
+                <p class="text-sm md:text-base text-base-content/60 leading-loose w-full sm:max-w-md md:max-w-lg lg:w-full">
+                    Discover handcrafted treasures from China's most talented makers — where living tradition meets restless creativity, and every piece tells its own story.
+                    <span class="block mt-2 font-sans font-light text-xs text-base-content/45 leading-relaxed">
+                        探索中國優秀匠人的手作珍寶——在傳承與創新之間，每一件作品都訴說著自己的故事。
+                    </span>
+                </p>
+
+                <!-- CTA -->
+                <div class="pt-4">
+                    <a href="{% url 'artisan_list' %}"
+                       class="inline-flex items-center gap-2 px-6 py-3 border border-base-content/30 hover:border-primary hover:text-primary rounded-xl text-xs uppercase tracking-[0.2em] font-sans transition-all duration-300 group">
+                        <span>Meet the Artisans｜遇見匠人</span>
+                        <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-0.5 transition-transform"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- ─── RIGHT COLUMN: The Window (pushed down) ────────── -->
+            <div class="lg:col-span-6 flex flex-col items-end lg:items-center lg:pt-32 sm:mr-[4rem] lg:mr-0">
+
+                <style>
+                    .hero-window-clip {
+                        clip-path: inset(14.25% 13.75% 14.25% 15%);
+                        filter: brightness(0.98) contrast(1.02);
+                    }
+                </style>
+
+                <!-- Window wrapper — the caption is anchored to this box -->
+                <div class="relative w-full max-w-[440px] lg:ml-auto"
+                    style="aspect-ratio: 570 / 979;">
+
+                    <!-- Video -->
+                    <video autoplay muted loop playsinline preload="auto"
+                        class="absolute inset-0 w-full h-full object-cover hero-window-clip">
+                        <source src="{{ current_clip.video_url }}" type="video/mp4">
+                    </video>
+
+                    <!-- Inner shadow -->
+                    <div class="absolute inset-0 pointer-events-none"
+                        style="clip-path: inset(9.25% 13.75% 9.17% 15%);
+                                box-shadow: inset 0 0 40px 20px rgba(0, 0, 0, 0.15);">
+                    </div>
+
+                    <!-- SVG frame -->
+                    <svg class="absolute inset-0 w-full h-full pointer-events-none z-10"
+                        viewBox="0 0 800 1200"
+                        preserveAspectRatio="xMidYMid meet"
+                        xmlns="http://www.w3.org/2000/svg">
+                        
+                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                            <path d="M73.8933505,82.0178345 C73.6539932,62.1701303 79.726433,46.5388282 92.1106701,35.1239282 C104.494907,23.7090282 116.828986,18.0015782 129.112908,18.0015782 L662.565794,18.0015782 C685.183369,18.0015782 701.693666,23.7090282 712.096687,35.1239282 C722.499707,46.5388282 727.22999,62.1701303 726.287534,82.0178345 C743.967187,82.0178345 757.043378,84.9186458 765.516107,90.7202685 C773.988836,96.5218912 780.461138,108.564619 784.933015,126.848451 L784.933015,1082.74716 C781.849769,1095.47938 775.377466,1105.56703 765.516107,1113.01011 C755.654748,1120.4532 743.278573,1125.27657 728.387582,1127.48024 C726.98755,1140.8751 721.557252,1153.42258 712.096687,1165.12265 C702.636122,1176.82273 686.125825,1182.188 662.565794,1181.21847 L159.18006,1181.21847 C134.544925,1180.07889 115.909502,1174.71362 103.273793,1165.12265 C90.6380835,1155.53169 80.8446027,1142.98421 73.8933505,1127.48024 C58.0634621,1123.97415 45.7274873,1119.15078 36.8854262,1113.01011 C28.0433651,1106.86945 21.0815564,1096.7818 16,1082.74716 L16,126.848451 C22.8646952,108.564619 31.48405,96.5218912 41.8580645,90.7202685 C52.2320791,84.9186458 62.9105077,82.0178345 73.8933505,82.0178345 Z"
+                                    stroke="#979797" stroke-width="11"></path>
+                            <path d="M87.9658337,95.4765932 C89.2034096,67.4655303 94.0526372,49.9936681 102.513516,43.0610067 C110.974396,36.1283453 120.55965,32.1080097 131.269281,31 L652.396288,31 C677.524668,30.8311293 694.273581,35.5007807 702.643027,45.0089544 C711.012474,54.517128 714.677288,71.3396743 713.637469,95.4765932 C735.149607,95.2871577 749.534017,97.8270333 756.7907,103.09622 C764.047382,108.365407 768.450482,119.607362 770,136.822085 L770,1077.05594 C770.671276,1085.10749 766.268176,1092.75139 756.7907,1099.98763 C747.313223,1107.22388 732.928813,1112.07392 713.637469,1114.53777 C712.46162,1132.05399 708.232453,1145.27473 700.949969,1154.19998 C693.667485,1163.12523 678.184162,1167.60772 654.5,1167.64745 L165.034638,1167.64745 C143.822039,1168.00691 127.143827,1163.52442 115,1154.19998 C102.856173,1144.87554 92.1966947,1131.6548 83.0215641,1114.53777 C66.1684226,1110.8077 53.4929232,1105.95765 44.9950658,1099.98763 C36.4972083,1094.01761 31.8321864,1086.37372 31,1077.05594 L31,130.304041 C36.3637825,117.245245 43.0545821,108.175971 51.0723986,103.09622 C59.0902152,98.0164688 71.3880269,95.4765932 87.9658337,95.4765932 Z"
+                                    stroke="#979797" stroke-width="6"></path>
+                            <polygon stroke="#979797" stroke-width="11"
+                                        points="115 111 685 111 685 1090 115 1090"></polygon>
+                            <line x1="115.5" y1="141.5" x2="685.5" y2="141.5" stroke="#979797" stroke-width="6"></line>
+                            <line x1="115.5" y1="1062.5" x2="685.5" y2="1062.5" stroke="#979797" stroke-width="6"></line>
+                            <line x1="654.5" y1="113.5" x2="654.5" y2="1090.5" stroke="#979797" stroke-width="6"></line>
+                            <line x1="145.5" y1="113.5" x2="145.5" y2="1090.5" stroke="#979797" stroke-width="6"></line>
+                        </g>
+
+                    </svg>
+
+                    <!-- 🌟 Caption — absolutely positioned near the frame's inner-bottom edge -->
+                    {% if current_clip.title_en %}
+                    <div class="absolute left-0 right-0 bottom-[3%] z-20 pointer-events-none">
+                        <p class="text-center text-[10px] uppercase tracking-[0.3em] text-base-content/40 font-sans">
+                            {{ current_clip.title_en }}
+                            <span class="mx-2 opacity-50">｜</span>
+                            <span class="opacity-70">{{ current_clip.title_cn }}</span>
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MANIFESTO STRIP                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="w-full bg-[#faf8f5] py-20 md:py-28 border-b border-base-200/40">
+    <div class="max-w-2xl mx-auto px-6 text-center">
+        <p class="font-serif text-sm md:text-base text-base-content/70 leading-loose">
+            We believe that true beauty is born from patience.
+            Every stitch, every glaze, every carved line is a quiet conversation between maker and material — preserved here for the world to hold.
+        </p>
+        <p class="mt-5 font-sans font-light text-xs md:text-sm text-base-content/50 leading-relaxed italic">
+            我們相信，真正的美，孕育於耐心之中。<br>
+            每一針、每一釉、每一刀，皆是匠人與材料之間的靜默對話——<br>
+            我們在此悉心留存，願世界得以觸摸。
+        </p>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FEATURE VIDEO EMBED                                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="w-full bg-[#faf8f5] py-20 md:py-28 border-b border-base-200/40">
+    <div class="max-w-5xl mx-auto px-6">
+        <div class="rounded-2xl overflow-hidden border border-base-200/60 shadow-sm aspect-video bg-base-200">
+            <iframe
+                src="https://www.youtube.com/embed/Q2x4iIIwv3w?si=kj7KQPK7DDV0SlOC"
+                title="YouTube video player"
+                class="w-full h-full"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FEATURED ARTISANS                                               -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FEATURED ARTISANS                                               -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="w-full bg-[#faf8f5] py-20 md:py-28 border-b border-base-200/40">
+    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+
+        <!-- Section header -->
+        <div class="flex items-baseline justify-between mb-10 border-b border-base-200 pb-4">
+            <h2 class="font-serif text-xl md:text-2xl tracking-[0.15em] text-base-content">
+                Featured Artisans
+                <span class="font-sans font-light text-sm text-base-content/50 ml-3">精選匠人</span>
+            </h2>
+            <a href="{% url 'artisan_list' %}"
+               class="text-xs tracking-[0.15em] text-primary/70 hover:text-primary transition-colors">
+                View All →
+            </a>
+        </div>
+
+        {% if featured_artisans %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for artisan in featured_artisans %}
+            <a href="{{ artisan.get_absolute_url }}"
+               class="group block bg-white hover:bg-[#fefdfb] border {% if artisan.is_premium %}border-amber-200/60{% else %}border-base-200/60{% endif %} rounded-2xl overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md">
+
+                <!-- Avatar with hover overlay + craft badge -->
+                <div class="relative aspect-square bg-base-200 overflow-hidden">
+
+                    {% if artisan.avatar %}
+                    <img src="{{ artisan.avatar.url }}"
+                         alt="{{ artisan.display_name }}"
+                         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                         loading="lazy" />
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-base-content/25 font-serif text-6xl">
+                        {{ artisan.display_name|slice:":1" }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Craft badge (top-left) -->
+                    {% if artisan.craft_types.exists %}
+                    <div class="flex flex-wrap gap-1">
+                        {% for craft in artisan.craft_types.all %}
+                        <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/90 border border-base-300/60">
+                            {{ craft.label }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+
+
+                    <!-- Premium marker (top-right) -->
+                    {% if artisan.is_premium %}
+                    <span class="absolute top-3 right-3 w-6 h-6 rounded-full bg-amber-100/90 backdrop-blur-sm
+                                 flex items-center justify-center border border-amber-200/60"
+                          title="Premium Artisan｜精選匠人">
+                        <i class="fa-solid fa-crown text-amber-600 text-[10px]"></i>
+                    </span>
+                    {% endif %}
+
+                    <!-- Hover overlay (bottom fade) -->
+                    <div class="absolute inset-x-0 bottom-0 h-1/3
+                                bg-gradient-to-t from-black/50 to-transparent
+                                opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                                flex items-end justify-end p-3">
+                        <span class="text-white text-[10px] tracking-[0.15em] uppercase font-sans
+                                     translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                            Enter Studio →
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Info block -->
+                <div class="p-5">
+                    <h3 class="font-serif text-base font-semibold text-base-content group-hover:text-primary transition-colors">
+                        {{ artisan.display_name }}
+                    </h3>
+
+                    {% if artisan.tagline %}
+                    <p class="text-xs text-base-content/60 mt-1.5 line-clamp-2 leading-relaxed">
+                        {{ artisan.tagline }}
+                    </p>
+                    {% endif %}
+
+                    <!-- Location line -->
+                    {% if artisan.city or artisan.province %}
+                    <p class="text-[10px] uppercase tracking-[0.15em] text-base-content/40 mt-3 flex items-center gap-1.5">
+                        <i class="fa-solid fa-location-dot text-[8px] opacity-60"></i>
+                        <span>
+                            {{ artisan.city }}{% if artisan.city and artisan.province %}, {% endif %}{{ artisan.province }}
+                        </span>
+                    </p>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <p class="text-center text-xs text-base-content/40 py-12 tracking-wider">
+            匠人名錄即將揭幕｜Artisan roster coming soon.
+        </p>
+        {% endif %}
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- RECENT WORKS                                                    -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="w-full bg-[#faf8f5] py-20 md:py-28 border-b border-base-200/40">
+    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+
+        <div class="flex items-baseline justify-between mb-10 border-b border-base-200 pb-4">
+            <h2 class="font-serif text-xl md:text-2xl tracking-[0.15em] text-base-content">
+                Recent Works
+                <span class="font-sans font-light text-sm text-base-content/50 ml-3">近期作品</span>
+            </h2>
+            <a href="{% url 'artisan_gallery' %}"
+               class="text-xs tracking-[0.15em] text-primary/70 hover:text-primary transition-colors">
+                Full Gallery →
+            </a>
+        </div>
+
+        {% if featured_products %}
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {% for product in featured_products %}
+            <a href="{{ product.get_url }}"
+               class="group block relative rounded-xl overflow-hidden bg-base-200 aspect-square">
+                {% if product.images %}
+                <img src="{{ product.images.url }}"
+                     alt="{{ product.product_name }}"
+                     class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                     loading="lazy" />
+                {% endif %}
+
+                <!-- Hover overlay with product name -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent
+                            opacity-0 group-hover:opacity-100 transition-opacity duration-300
+                            flex flex-col justify-end p-3">
+                    <p class="text-white text-xs font-medium truncate">
+                        {{ product.product_name }}
+                    </p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-center text-xs text-base-content/40 py-12 tracking-wider">
+            暫無作品展示｜No works available yet.
+        </p>
+        {% endif %}
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- RECENT NOTES (Artisan Blogs)                                    -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+{% if recent_artisan_posts %}
+<section class="w-full bg-[#faf8f5] py-20 md:py-28 border-b border-base-200/40">
+    <div class="max-w-7xl mx-auto px-6 lg:px-12">
+
+        <div class="flex items-baseline justify-between mb-10 border-b border-base-200 pb-4">
+            <h2 class="font-serif text-xl md:text-2xl tracking-[0.15em] text-base-content">
+                Recent Notes
+                <span class="font-sans font-light text-sm text-base-content/50 ml-3">匠人筆記</span>
+            </h2>
+            <a href="{% url 'artisan_blog_list' %}"
+               class="text-xs tracking-[0.15em] text-primary/70 hover:text-primary transition-colors">
+                Read All →
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for post in recent_artisan_posts %}
+            <a href="{{ post.get_url }}"
+               class="group block bg-white hover:bg-[#fefdfb] border border-base-200/60 rounded-2xl overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md">
+
+                <!-- Cover image -->
+                {% if post.featured_image %}
+                <div class="aspect-video bg-base-200 overflow-hidden">
+                    <img src="{{ post.featured_image.url }}"
+                         alt="{{ post.title }}"
+                         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                         loading="lazy" />
+                </div>
+                {% endif %}
+
+                <div class="p-5">
+                    <!-- Artisan attribution -->
+                    {% if post.creator %}
+                    <p class="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-semibold mb-2">
+                        {{ post.creator.display_name }}
+                    </p>
+                    {% endif %}
+
+                    <!-- Title -->
+                    <h3 class="font-serif text-base font-semibold text-base-content group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                        {{ post.title }}
+                    </h3>
+
+                    <!-- Short description -->
+                    {% if post.short_description %}
+                    <p class="text-xs text-base-content/60 mt-2 line-clamp-2 leading-relaxed">
+                        {{ post.short_description }}
+                    </p>
+                    {% endif %}
+
+                    <!-- Date + category -->
+                    <div class="mt-4 pt-3 border-t border-base-200/50 flex items-center justify-between text-[10px] text-base-content/40 font-light">
+                        <span>{{ post.created_at|date:"Y-m-d" }}</span>
+                        {% if post.post_category %}
+                        <span class="uppercase tracking-wider">{{ post.get_post_category_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- JOIN CTA                                                        -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="w-full bg-[#faf8f5] py-24 md:py-32">
+    <div class="max-w-2xl mx-auto px-6">
+        <div class="text-center border border-base-200/60 rounded-2xl py-14 px-8 bg-white/60">
+
+            <h2 class="font-serif text-2xl md:text-3xl tracking-[0.1em] text-base-content mb-4">
+                Are You an Artisan?
+                <span class="block mt-2 font-sans font-light text-lg text-base-content/60 tracking-[0.2em]">您是匠人嗎？</span>
+            </h2>
+
+            <p class="text-sm text-base-content/60 leading-relaxed mb-2 max-w-md mx-auto">
+                Share your craft with collectors worldwide. We help you tell your story, reach new audiences, and protect your work.
+            </p>
+            <p class="font-sans font-light text-xs text-base-content/45 leading-relaxed mb-8 max-w-md mx-auto">
+                與世界分享您的手藝。我們協助您述說故事、觸及知音，並守護您的作品。
+            </p>
+
+            <a href="{% url 'artisan_join' %}"
+               class="inline-flex items-center gap-2 px-6 py-3 border border-base-content/30 hover:border-primary hover:text-primary rounded-xl text-xs uppercase tracking-[0.2em] font-sans transition-all duration-300">
+                Apply to Join｜同匠
+            </a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

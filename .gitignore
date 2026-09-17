@@ -1,45 +1,36 @@
-.ebextensions/
-.elasticbeanstalk/
-env/
-venv/
-node_modules/
-media/
-private_digital_vault/
-staticfiles/
-vscode/
-.env
-accounts_errors.html
-db.sqlite3
-dump.rdb
-project_structure.txt
-.DS_Store
-__pycache__
-*.pem# 📂 File Location: .gitignore (Universal Production Safe Filter)
-
-# Development-only commands
-dev_commands/
-
-# ── 1. PROJECT DATA LAYERS & EMBEDDED DATABASE STORAGE ──────────────
-db.sqlite3
-private_digital_vault/
-media/
-staticfiles/
-
-# ── 2. SYSTEM ENVIRONMENT VARIABLES & KEY CREDENTIALS ───────────────
+# ══════════════════════════════════════════════════════════════
+# 1. ENVIRONMENT & CREDENTIALS
+# ══════════════════════════════════════════════════════════════
 .env
 local_settings.py
 *.pem
+.ebextensions/
+.elasticbeanstalk/
 
-# ── 3. ISOLATED RUNTIME RUN ENVIRONMENTS & DEPENDENCY COMPILERS ────
+# ══════════════════════════════════════════════════════════════
+# 2. DATA LAYERS & RUNTIME STORAGE
+# ══════════════════════════════════════════════════════════════
+db.sqlite3
+private_digital_vault/
+media/
+staticfiles/
+dump.rdb
+
+# ══════════════════════════════════════════════════════════════
+# 3. VIRTUAL ENVIRONMENTS & DEPENDENCIES
+# ══════════════════════════════════════════════════════════════
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
 node_modules/
+build/
+dist/
 
-# ── 4. BACKGROUND PROCESS LOGS & CACHE TRACKERS ─────────────────────
-dump.rdb
+# ══════════════════════════════════════════════════════════════
+# 4. BACKGROUND PROCESSES & CACHES
+# ══════════════════════════════════════════════════════════════
 celerybeat-schedule
 celerybeat.pid
 celerybeat-schedule-shm
@@ -47,25 +38,32 @@ celerybeat-schedule-wal
 *.log
 .cache/
 .pytest_cache/
+dump.rdb
 
-# ── 5. PYTHON COMPILED INTERMEDIATE RUNTIME CACHING ARTIFACTS ───────
+# ══════════════════════════════════════════════════════════════
+# 5. PYTHON COMPILED ARTIFACTS
+# ══════════════════════════════════════════════════════════════
 **/__pycache__/
 *.py[cod]
 *$py.class
 *.so
 
-# ── 6. WORKSPACE CONFIGURATIONS & TEMPORARY LOG FILES ───────────────
+# ══════════════════════════════════════════════════════════════
+# 6. WORKSPACE CONFIGURATION
+# ══════════════════════════════════════════════════════════════
 .vscode/
 .idea/
 .DS_Store
+
+# ══════════════════════════════════════════════════════════════
+# 7. LOCAL DEVELOPMENT SCRATCH FILES
+# ══════════════════════════════════════════════════════════════
 accounts_errors.html
 product_copy.html
 checkout_copy.html
 order_complete_copy.html
 place_order_copy.html
 banner_copy.html
-
+dashboard_sidebar_copy.html
 test.html
 project_structure.txt
-build/
-dist/

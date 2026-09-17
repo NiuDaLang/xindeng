@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="relative mt-[65px] lg:mt-[86px] w-full">
+    <div class="relative w-full bg-base-300 py-16 text-center border-b border-base-200 select-none">
+        <div class="max-w-xl mx-auto px-4">
+            <h1 class="text-2xl md:text-3xl font-serif tracking-widest text-base-content mb-3">
+                Gallery <span class="font-sans font-light text-xl opacity-60 ml-2">/ 匠作</span>
+            </h1>
+            <p class="text-xs md:text-sm tracking-wide text-base-content/70 leading-relaxed font-serif">
+                A visual stroll through the artisan market.<br>
+                <span class="block mt-1 font-sans font-light text-[11px] md:text-xs opacity-60 italic">
+                    漫步於匠人的市集之間。
+                </span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<main class="px-[max(1rem,4vw)] lg:px-[max(2rem,8vw)] py-16 min-h-[calc(100dvh-200px)]">
+    <div id="artisan-gallery-region">
+        {% include 'artisans/partials/_gallery_region.html' %}
+    </div>
+</main>
+{% endblock %}

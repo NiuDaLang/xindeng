@@ -1,3 +1,4 @@
+# orders.tasks.py
 from datetime import timedelta
 import requests
 import logging
@@ -6,12 +7,19 @@ from celery.signals import worker_ready
 from django.core.cache import cache
 from django.conf import settings
 from django.template.loader import render_to_string
-from emails.utils import send_order_confirmation_email, send_gift_voucher_email, send_secure_voucher_pin_email, send_cancellation_initiation_email, send_gift_voucher_revocation_email, send_cancellation_completion_email
+from emails.utils import (
+    send_order_confirmation_email, 
+    send_gift_voucher_email, 
+    send_secure_voucher_pin_email, 
+    send_cancellation_initiation_email, 
+    send_gift_voucher_revocation_email, 
+    send_cancellation_completion_email, 
+    send_artisan_new_order_email
+)
 from .utils import generate_order_confirmation_pdf, reverse_perk_usage_at_cancellation
-from orders.models import Order, OrderInquiry
+from orders.models import Order, OrderInquiry, Payment, OrderProduct
 from django.db import transaction
 from carts.models import ProformaInvoice
-from orders.models import Payment, OrderProduct
 from store.models import ProductVariation
 from django.core.mail import EmailMultiAlternatives
 from accounts.models import CustomerVoucher
@@ -24,6 +32,7 @@ import os
 import traceback
 from carts.models import Cart
 from django.core.exceptions import ObjectDoesNotExist
+from creators.models import CreatorProfile
 
 
 logger = logging.getLogger(__name__)
@@ -400,28 +409,6 @@ def send_inquiry_notification_email_task(inquiry_id):
         return f"Inquiry record tracker ID {inquiry_id} not found."
 
 
-# @shared_task(name="tasks.send_cancellation_initiation_email_task")
-# def send_cancellation_initiation_email_task(order_id, *args, **kwargs):
-#     """Safely handles single or multiple variables without breaking execution chains."""
-#     try:
-#         order = Order.objects.get(id=order_id)
-#         send_cancellation_initiation_email(order.order_number, **kwargs)
-#         return f"🔒 Safety warning sent down to customer: {order.email}"
-#     except Order.DoesNotExist:
-#         return f"Order record tracker ID {order_id} missing on system."
-
-
-# @shared_task(name="tasks.send_cancellation_completion_email_task")
-# def send_cancellation_completion_email_task(order_id, *args, **kwargs):
-#     """Processes final closure statements notifying clients that funds have been processed."""
-#     try:
-#         order = Order.objects.get(id=order_id)
-#         send_cancellation_finalized_email(order.order_number, **kwargs)
-#         return f"✉️ Final statement notice sent to user: {order.email}"
-#     except Order.DoesNotExist:
-#         return f"Order record tracker ID {order_id} missing on system."
-
-
 @shared_task(bind=True, name="tasks.send_cancellation_initiation_email_task")
 def send_cancellation_initiation_email_task(self, order_id, refund_type, user_type, is_online_gateway, currency_code, net_cash_payout_str, **kwargs):
     """
@@ -480,63 +467,19 @@ def send_cancellation_completion_email_task(self, order_id, refund_type, user_ty
         raise self.retry(exc=e, countdown=60, max_retries=3)
 
 
+@shared_task(name="tasks.send_artisan_new_order_email_task")
+def send_artisan_new_order_email_task(order_id, creator_id):
+    """
+    Celery wrapper: dispatches the artisan new-order notification email.
+    Thin — all heavy lifting lives in emails.utils.send_artisan_new_order_email.
+    """
 
-# For scheduled tasks to work, you must run two separate processes simultaneously: 
-# 1. The Worker: Executes the tasks.
-# [BASH]
-# celery -A your_project_name worker --loglevel=info
-
-
-# 2. The Beat Service: The "scheduler" that tells the worker when it's time to run the task.
-# [BASH]
-# celery -A your_project_name beat --loglevel=info
-
-# * For development only, you can run both in one command: celery -A xindeng worker --beat --loglevel=info
-
-
-# Production (Separate Processes)
-# In a production environment (on a real server), you should run them as separate processes. You don't necessarily "open windows," but you run them as background services (daemons) using tools like systemd, Supervisor, or Docker. 
-# Why separate them in production?
-# Scaling: You can have 10 worker servers but you must only have one beat instance. If you run -B on all 10 workers, your "hourly" task will trigger 10 times.
-# Stability: If a heavy task crashes a worker, a separate beat process will continue to schedule future tasks reliably. 
-# Production Service Pattern:
-# Service 1 (Worker): celery -A proj worker -l info
-# Service 2 (Beat): celery -A proj beat -l info
-
-# 6/7:
-# confirm_bank_payment_admin_action()
-# send_bank_hold_confirmation_email_task()
-# check_and_expire_hold()
-# send_gift_voucher_email_task()
-# send_order_confirmation_email_task()
-# send_gift_voucher_email()
-# send_order_confirmation_email()
-# execute_atomic_voucher_deduction()
-# generate_order_confirmation_pdf()
-# paypal_order_success()
-# order_complete()
-# place_order()
-# clear_expired_bank_holds --- stil need? 
-
-
-
-# [Buyer Completes Payment]
-#          │
-#          ▼
-# [Execute Order Finalization (Atomic Transaction)]
-#          │
-#          ├─► Generate Order & OrderProducts
-#          └─► Loop item.quantity: Create unclaimed CustomerVoucher records
-#                  │
-#                  ▼
-# [Dispatch Celery Notification Pipeline]
-#          │
-#          ├─► Send PDF Tax Invoice to Buyer (A-i)
-#          └─► Send Notification + Unique Claim Link to Recipient (A-ii)
-#                  │
-#                  ▼
-# [Recipient Clicks Link] ──► Not Logged In? ──► Redirect to Custom Registration Page
-#                  │
-#                  ▼ (Authenticated)
-# [Execute voucher.claim(user.email)] ──► Lock owner field ──► Done!
-
+    try:
+        sent = send_artisan_new_order_email(order_id, creator_id)
+        if sent:
+            return f"Artisan order notification sent (Order={order_id}, Creator={creator_id})."
+        return f"No pending lines to notify (Order={order_id}, Creator={creator_id})."
+    except Exception as e:
+        logger.exception(f"💥 Artisan new-order email failed: {e}")
+        # Retry safe — idempotent, artisan can be notified again if needed
+        raise

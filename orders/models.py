@@ -1,3 +1,4 @@
+# orders.models.py
 from django.db import models
 from accounts.models import Account
 from accounts.data import DESTINATIONS_FOR_INPUT
@@ -333,6 +334,15 @@ class OrderProduct(models.Model):
     quantity                = models.IntegerField(default=1)
     ordered                 = models.BooleanField(default=False)
     is_dispatched           = models.BooleanField(default=False)
+
+    fulfilled_by            = models.ForeignKey(
+                                'creators.CreatorProfile',
+                                on_delete=models.SET_NULL,
+                                null=True, blank=True,
+                                related_name='fulfilled_lines',
+                              )
+    fulfillment_started_at  = models.DateTimeField(null=True, blank=True)
+    dispatched_at           = models.DateTimeField(null=True, blank=True)
 
     # E-Product Specific Claim Safety Trackers
     is_claimed              = models.BooleanField(default=False)

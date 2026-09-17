@@ -1,0 +1,102 @@
+<!-- artisan_join_success.html -->
+
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="relative mt-[65px] lg:mt-[86px] w-full bg-base-300 py-20 text-center border-b border-base-200">
+    <div class="max-w-xl mx-auto px-4">
+        <i class="fa-solid fa-circle-check text-success text-4xl mb-6"></i>
+        <h1 class="text-2xl md:text-3xl font-serif tracking-widest mb-3">
+            Application Ready
+            <span class="font-sans font-light text-lg opacity-60 ml-2">申請已備妥</span>
+        </h1>
+    </div>
+</div>
+
+<main class="px-[max(1rem,4vw)] py-16 min-h-[calc(100dvh-200px)]">
+    <div class="max-w-2xl mx-auto space-y-8">
+
+        <!-- Step 1: Download -->
+        <div class="bg-white border border-base-200/60 rounded-2xl p-6">
+            <h2 class="font-serif text-lg mb-4">① 下載您的申請文件 | Download Your Application</h2>
+            <p class="text-sm text-base-content/70 mb-4 leading-relaxed">
+                您的申請已整理成一份 PDF 檔案。請先下載保存。
+            </p>
+            <a href="{% url 'artisan_join_pdf' %}" class="btn btn-outline btn-sm rounded-xl">
+                <i class="fa-solid fa-download mr-2"></i>
+                下載 PDF 檔案 | Download PDF
+            </a>
+        </div>
+
+        <!-- Step 2: Send -->
+        <div class="bg-white border border-base-200/60 rounded-2xl p-6">
+            <h2 class="font-serif text-lg mb-4">② 將檔案寄送至我們 | Send It to Us</h2>
+
+            <div class="space-y-4">
+
+                <!-- Path A — mail client -->
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-base-content/50 mb-2">若您使用郵件軟體 | If you use an email app</p>
+                    <a href="{{ mailto_url }}" class="btn btn-primary btn-sm rounded-xl">
+                        <i class="fa-solid fa-envelope mr-2"></i>
+                        開啟郵件軟體 | Open Email App
+                    </a>
+                </div>
+
+                <!-- Path B — webmail -->
+                <div class="pt-4 border-t border-dashed border-base-200">
+                    <p class="text-xs uppercase tracking-wider text-base-content/50 mb-2">若您使用網頁信箱（Gmail、163、QQ、Outlook 等）| If you use webmail</p>
+                    <p class="text-xs text-base-content/60 mb-3 leading-relaxed">
+                        請登入您的網頁信箱，新增一封郵件，複製以下資訊，並將剛才下載的 PDF 附加至郵件。
+                    </p>
+
+                    <div class="bg-base-100 border border-base-200/60 rounded-xl p-4 space-y-3 font-mono text-xs">
+                        <div>
+                            <p class="text-[10px] uppercase tracking-wider text-base-content/40 mb-1">Recipient｜收件人</p>
+                            <p class="select-all">{{ recipient_email }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase tracking-wider text-base-content/40 mb-1">Subject｜主旨</p>
+                            <p class="select-all">{{ subject }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase tracking-wider text-base-content/40 mb-1">Body｜內文</p>
+                            <pre class="whitespace-pre-wrap select-all text-[11px] font-sans">{{ plain_body }}</pre>
+                        </div>
+                    </div>
+
+                    <button onclick="copyToClipboard(this)" class="btn btn-outline btn-xs rounded-xl mt-3">
+                        <i class="fa-solid fa-copy mr-1"></i>
+                        複製全部資訊 | Copy All
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Note -->
+        <div class="text-center">
+            <p class="text-xs text-base-content/50 leading-relaxed">
+                我們將於 5–7 個工作日內回覆您的申請。<br>
+                We review applications within 5–7 business days.
+            </p>
+        </div>
+    </div>
+</main>
+
+<script>
+function copyToClipboard(btn) {
+    const recipient = `{{ recipient_email|escapejs }}`;
+    const subject = `{{ subject|escapejs }}`;
+    const body = document.querySelector('pre').innerText;
+
+    const fullText = `To: ${recipient}\nSubject: ${subject}\n\n${body}`;
+
+    navigator.clipboard.writeText(fullText).then(() => {
+        btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>已複製 | Copied';
+        setTimeout(() => {
+            btn.innerHTML = '<i class="fa-solid fa-copy mr-1"></i>複製全部資訊 | Copy All';
+        }, 2000);
+    });
+}
+</script>
+{% endblock %}

@@ -24,9 +24,9 @@ from django.utils import timezone
 from django.contrib import messages
 from django.db import transaction
 from orders.models import OrderProduct
+from creators.models import CreatorProfile
 
 
-# Create your views here.
 def products(request, category_slug=None):
     try:
         if category_slug == "all":
@@ -54,6 +54,23 @@ def products(request, category_slug=None):
     except Product.DoesNotExist or Category.DoesNotExist:
         raise Http404("No products found")
 
+    # ────────────────────────────────────────────────────────────
+    # 🌟 INSERT CREATOR FILTER HERE
+    # ────────────────────────────────────────────────────────────
+    creator_slug = request.GET.get('creator', '').strip()
+    active_creator = None
+    if creator_slug:
+        active_creator = CreatorProfile.objects.filter(
+            slug=creator_slug,
+            is_verified=True,
+        ).first()
+        if active_creator:
+            available_products = available_products.filter(creator=active_creator)
+            available_products_with_stock = available_products_with_stock.filter(creator=active_creator)
+
+    # ────────────────────────────────────────────────────────────
+    # Continue with the existing pipeline
+    # ────────────────────────────────────────────────────────────
     available_products_with_lowest_prices = Product.products.lowest_prices(available_products)
 
     # pagination
@@ -90,11 +107,12 @@ def products(request, category_slug=None):
         "available_products": paged_products,
         "product_count": product_count,
         "available_products_with_stock": available_products_with_stock,
+        "active_creator": active_creator,
         "page_title": "寶貝們｜Products", 
-        "main_title": "寶貝們 | Products",
+        "main_title": "寶貝們｜Products",
         "sub_title_1": "海闊天空 尋覓您的摯愛",
-        "bread_crumb_1": "首頁 | Home",
-        "bread_crumb_2": "寶貝們 | Products",
+        "bread_crumb_1": "首頁｜Home",
+        "bread_crumb_2": "寶貝們｜Products",
         "bread_crumb_3": crumb_3,
         "bread_crumb_1_url": "/",
         "bread_crumb_2_url": "/store/products/all",
@@ -102,6 +120,10 @@ def products(request, category_slug=None):
         "available_tags": available_tags,
         "product_reviews": product_reviews,
     }
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'store/partials/_products_region.html', context)
+
     return render(request,'store/products.html', context)
 
 

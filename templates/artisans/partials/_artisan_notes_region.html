@@ -1,0 +1,90 @@
+<!-- templates/artisans/partials/_artisan_notes_region.html -->
+
+<!-- SEARCH + CRAFT FILTER -->
+<div class="max-w-3xl mx-auto mb-12">
+
+    <!-- Search input + Search button -->
+    <form
+        hx-get="{% url 'artisan_blog_list' %}"
+        hx-target="#artisan-notes-region"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+        hx-trigger="submit"
+        class="flex gap-2 items-stretch">
+
+        <label class="input input-bordered flex items-center gap-2 grow rounded-xl bg-white border-base-200/60 h-11 focus-within:border-primary">
+            <i class="fa-solid fa-magnifying-glass text-base-content/40 text-sm"></i>
+            <input type="search" name="q" value="{{ current_q }}" class="grow font-sans text-sm bg-transparent" placeholder="Search artisan notes...｜搜尋匠人筆記..." />
+            {% if current_q %}
+            <button type="button"
+                    hx-get="{% url 'artisan_blog_list' %}{% if current_craft %}?craft={{ current_craft }}{% endif %}"
+                    hx-target="#artisan-notes-region"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                    class="text-base-content/40 hover:text-base-content text-xs cursor-pointer bg-transparent border-none p-0"
+                    title="Clear search｜清除搜尋">✕</button>
+            {% endif %}
+        </label>
+
+        <button type="submit" class="btn btn-primary rounded-xl text-xs font-normal tracking-wider px-5 h-11">
+            Search｜搜尋
+        </button>
+
+        {% if current_craft %}<input type="hidden" name="craft" value="{{ current_craft }}" />{% endif %}
+    </form>
+
+    <!-- Craft filter -->
+    <div class="mt-4 flex items-center justify-center gap-3">
+        <span class="text-[10px] uppercase tracking-[0.2em] text-base-content/40 font-sans">
+            Filter by Craft｜按工藝
+        </span>
+        <div class="dropdown dropdown-hover">
+            <div tabindex="0" role="button" class="btn btn-sm btn-ghost rounded-xl text-xs font-normal">
+                {% if current_craft %}
+                    {% for craft in craft_choices %}{% if craft.name == current_craft %}{{ craft.label }}{% endif %}{% endfor %}
+                {% else %}
+                    All Crafts｜全部
+                {% endif %}
+                <i class="fa-solid fa-chevron-down text-[9px] opacity-60 ml-1"></i>
+            </div>
+            <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-md border border-base-200/60">
+                <li>
+                    <a
+                    href="{% url 'artisan_blog_list' %}{% if current_q %}?q={{ current_q }}{% endif %}"
+                    hx-get="{% url 'artisan_blog_list' %}{% if current_q %}?q={{ current_q }}{% endif %}"
+                    hx-target="#artisan-notes-region"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                    class="text-xs">All Crafts｜全部</a>
+                </li>
+                {% for craft in craft_choices %}
+                <li>
+                    <a
+                    href="{% url 'artisan_blog_list' %}?craft={{ craft.name }}{% if current_q %}&q={{ current_q }}{% endif %}"
+                    hx-get="{% url 'artisan_blog_list' %}?craft={{ craft.name }}{% if current_q %}&q={{ current_q }}{% endif %}"
+                    hx-target="#artisan-notes-region"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                    class="text-xs {% if current_craft == craft.name %}text-primary font-bold{% endif %}">{{ craft.label }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        {% if current_q or current_craft %}
+        <a href="{% url 'artisan_blog_list' %}"
+        hx-get="{% url 'artisan_blog_list' %}"
+        hx-target="#artisan-notes-region"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+        class="text-[10px] text-base-content/40 hover:text-primary transition-colors">
+            Reset｜重置
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Grid -->
+<div class="max-w-7xl mx-auto">
+    {% include 'artisans/partials/_artisan_notes_grid_only.html' %}
+</div>

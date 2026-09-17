@@ -2161,3 +2161,18 @@ gmp-place-autocomplete::part(clear-button):hover {
     inset: calc(50% - var(--thickness) / 2);
     transform: rotate(calc(var(--value) * 3.6deg - 90deg)) translate(calc(var(--size) / 2 - 50%));
 }
+
+
+/**
+* ARTISAN pages
+*/
+/* search field close button */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+input[type="search"]::-moz-search-clear {
+    display: none;
+}
