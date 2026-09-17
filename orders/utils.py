@@ -63,20 +63,17 @@ def register_multilingual_fonts():
     # 1. Main Font: Chinese + English
     pdfmetrics.registerFont(TTFont('NotoSansTC-regular', os.path.join(font_dir, 'NotoSansTC-Regular.ttf')))
     pdfmetrics.registerFont(TTFont('NotoSansTC-bold', os.path.join(font_dir, 'NotoSansTC-Bold.ttf')))
-    pdfmetrics.registerFont(TTFont('NotoSansTC-light', os.path.join(font_dir, 'NotoSansTC-Light.ttf')))
-    pdfmetrics.registerFont(TTFont('NotoSansTC-thin', os.path.join(font_dir, 'NotoSansTC-Thin.ttf')))
-    pdfmetrics.registerFont(TTFont('NotoSansTC', os.path.join(font_dir, 'NotoSansTC-Regular.ttf')))
-    pdfmetrics.registerFont(TTFont('NotoSansSC', os.path.join(font_dir, 'NotoSansSC-Regular.ttf')))
-   
-    # 2. Sanskrit Font: Devanagari + IAST Diacritics (Hṛdayadīpa)
-    # Tiro Devanagari is excellent for Sanskrit
+    pdfmetrics.registerFont(TTFont('NotoSansTC-light', os.path.join(font_dir, 'NotoSansTC-Light.ttf')))   # ← remove
+    pdfmetrics.registerFont(TTFont('NotoSansTC-thin', os.path.join(font_dir, 'NotoSansTC-Thin.ttf')))     # ← remove
+    
+    # 2. Sanskrit font
     pdfmetrics.registerFont(TTFont('SanskritFont', os.path.join(font_dir, 'TiroDevanagariSanskrit-Regular.ttf')))
 
-    # 3. Dejavu Sans: Symbols
+    # 3. DejaVu Sans: Latin diacritics + symbols
     pdfmetrics.registerFont(TTFont('DejaVuSans-regular', os.path.join(font_dir, 'DejaVuSans-Regular.ttf')))
     pdfmetrics.registerFont(TTFont('DejaVuSans-bold', os.path.join(font_dir, 'DejaVuSans-Bold.ttf')))
 
-    # 4, Barcode
+    # 4. Barcode
     pdfmetrics.registerFont(TTFont('Barcode128', os.path.join(font_dir, 'LibreBarcode128-Regular.ttf')))
 
 
