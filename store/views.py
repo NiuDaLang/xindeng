@@ -1,3 +1,4 @@
+# store/views.py
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Exists, OuterRef, Q, Min
 from .models import Product, ProductVariation, ProductGallery
@@ -25,6 +26,12 @@ from django.contrib import messages
 from django.db import transaction
 from orders.models import OrderProduct
 from creators.models import CreatorProfile
+
+from django.views.decorators.http import require_POST
+from accounts.decorators import superuser_required
+from .tasks import send_product_review_result_email_task
+from .models import ProductReviewLog
+
 
 
 def products(request, category_slug=None):
@@ -129,7 +136,12 @@ def products(request, category_slug=None):
 
 # htmx
 def product(request, category_slug, product_slug):
-    single_product = get_object_or_404(Product, slug=product_slug, is_active=True)
+    # Superusers can preview non-published / soft-deleted products
+    if request.user.is_authenticated and getattr(request.user, "is_superadmin", False):
+        single_product = get_object_or_404(Product, slug=product_slug)
+    else:
+        single_product = get_object_or_404(Product, slug=product_slug, is_active=True)
+
     single_product.tags_string = ",".join(single_product.tags.names())
     variations = single_product.variations.filter(is_available=True)
     min_price = min([v.price for v in variations]) if variations.exists() else 0.00
@@ -343,3 +355,68 @@ def secure_file_download_gate(request, token_id):
     response['Content-Type'] = mime_type or 'application/octet-stream'
     
     return response
+
+
+# ═══════════════════════════════════════════════════════════════
+# SUPERUSER PRODUCT REVIEW — Stage P-C
+# ═══════════════════════════════════════════════════════════════
+
+@require_POST
+@superuser_required
+def review_product_approve(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    if product.status != "Pending":
+        messages.error(request, "此作品不在待審核狀態。｜Product is not pending review.")
+        return redirect("dashboard", subpage="product_review")
+
+    with transaction.atomic():
+        product.status = "Published"
+        product.is_active = True
+        product.save(update_fields=["status", "is_active", "modified_date"])
+
+        ProductReviewLog.objects.create(
+            product=product,
+            action="approved",
+            actor=request.user,
+            note="",
+        )
+
+    transaction.on_commit(
+        lambda: send_product_review_result_email_task.delay(product.id, True, "")
+    )
+    messages.success(request, f"已通過：{product.product_name}｜Approved.")
+    return redirect("dashboard", subpage="product_review")
+
+
+@require_POST
+@superuser_required
+def review_product_reject(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    if product.status != "Pending":
+        messages.error(request, "此作品不在待審核狀態。｜Product is not pending review.")
+        return redirect("dashboard", subpage="product_review")
+
+    note = request.POST.get("note", "").strip()
+    if not note:
+        messages.error(request, "拒絕時必須填寫理由。｜A reason is required when rejecting.")
+        return redirect("dashboard", subpage="product_review")
+
+    with transaction.atomic():
+        product.status = "Rejected"
+        product.is_active = False
+        product.save(update_fields=["status", "is_active", "modified_date"])
+
+        ProductReviewLog.objects.create(
+            product=product,
+            action="rejected",
+            actor=request.user,
+            note=note,
+        )
+
+    transaction.on_commit(
+        lambda: send_product_review_result_email_task.delay(product.id, False, note)
+    )
+    messages.success(request, f"已拒絕：{product.product_name}｜Rejected.")
+    return redirect("dashboard", subpage="product_review")

@@ -1,0 +1,98 @@
+<!-- dashboard/partials/_overview_pannel.html -->
+
+<div class="mb-8">
+    <h1 class="font-serif text-2xl tracking-wide">
+        您好，{{ profile.display_name }}
+    </h1>
+    <p class="text-sm text-base-content/50 mt-1">
+        以下是您工作坊的最新狀況。
+    </p>
+</div>
+{% include 'includes/alerts.html' %}
+
+<!-- Stats grid -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+
+    <div class="bg-white border border-base-200/60 rounded-2xl p-5">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-base-content/40 mb-2">
+            Pending｜待發貨
+        </p>
+        <p class="text-3xl font-serif">{{ pending_dispatch_count }}</p>
+        {% if pending_dispatch_count %}
+        <a hx-get="{% url 'a_dashboard_orders' %}"
+           hx-target="#dashboard-main"
+           hx-push-url="true"
+           class="text-[10px] text-primary hover:underline mt-2 inline-block cursor-pointer">
+            前往處理 →
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="bg-white border border-base-200/60 rounded-2xl p-5">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-base-content/40 mb-2">
+            This Week｜本週已發
+        </p>
+        <p class="text-3xl font-serif">{{ dispatched_this_week }}</p>
+    </div>
+
+    <div class="bg-white border border-base-200/60 rounded-2xl p-5">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-base-content/40 mb-2">
+            Products｜上架作品
+        </p>
+        <p class="text-3xl font-serif">{{ total_products }}</p>
+    </div>
+
+    <div class="bg-white border border-base-200/60 rounded-2xl p-5">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-base-content/40 mb-2">
+            Messages｜未讀訊息
+        </p>
+        <p class="text-3xl font-serif">{{ unread_messages_count }}</p>
+    </div>
+</div>
+
+<!-- Recent pending orders -->
+{% if pending_lines_preview %}
+<section class="mb-10">
+    <h2 class="font-serif text-lg tracking-wide mb-4">近期訂單｜Recent Orders</h2>
+    <div class="space-y-3">
+        {% for line in pending_lines_preview %}
+        <div class="bg-white border border-base-200/60 rounded-xl p-4 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg overflow-hidden bg-base-200 flex-shrink-0">
+                {% if line.product.images %}
+                <img src="{{ line.product.images.url }}" class="w-full h-full object-cover" />
+                {% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">{{ line.product.product_name }}</p>
+                <p class="text-xs text-base-content/50">
+                    Order #{{ line.order.order_number }} · Qty: {{ line.quantity }}
+                </p>
+            </div>
+            <a hx-get="{% url 'a_dashboard_orders' %}"
+               hx-target="#dashboard-main"
+               hx-push-url="true"
+               class="btn btn-xs btn-outline rounded-lg cursor-pointer">
+                處理
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Recent posts -->
+{% if recent_posts %}
+<section>
+    <h2 class="font-serif text-lg tracking-wide mb-4">近期筆記｜Recent Notes</h2>
+    <div class="space-y-2">
+        {% for post in recent_posts %}
+        <a href="{{ post.get_url }}" target="_blank"
+           class="flex items-center gap-3 p-3 bg-white border border-base-200/60 rounded-xl hover:border-primary/40 transition-colors">
+            <i class="fa-solid fa-file-lines text-xs opacity-40"></i>
+            <span class="text-sm flex-1 truncate">{{ post.title }}</span>
+            <span class="text-[10px] text-base-content/40">{{ post.created_at|date:"Y-m-d" }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}

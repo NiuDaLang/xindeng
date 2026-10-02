@@ -1,0 +1,29 @@
+Hṛdayadīpa (हृदयदीप)｜心燈
+New Blog Submission｜匠人筆記提交待審
+
+管理員您好｜Hi Admin,
+
+{{ author_label }} 已提交了一篇新筆記，等待您的審核。
+{{ author_label }} has submitted a new post for review.
+
+============================================================
+📄 提交詳情｜SUBMISSION DETAILS
+============================================================
+標題｜Title:       {{ post.title }}
+作者｜Author:      {{ author_label }}
+分類｜Category:    {{ post.get_post_category_display }}
+提交時間｜Submitted: {{ post.updated_at|date:"Y-m-d H:i" }}
+
+簡介｜Short Description:
+{{ post.short_description }}
+
+============================================================
+請前往審核頁面處理：
+Open the review queue to approve or reject:
+{{ review_url }}
+============================================================
+
+這是來自心燈審核系統的自動通知。
+This is an automated notification from the Hṛdayadīpa review system.
+
+Copyright (c) {{ year }} | xindeng.art

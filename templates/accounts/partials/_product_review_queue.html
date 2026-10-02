@@ -1,0 +1,105 @@
+<!-- accounts/partials/_product_review_queue.html -->
+{% load humanize %}
+
+{% if pending_products %}
+  <div class="flex flex-col gap-3">
+    {% for product in pending_products %}
+      <article class="border border-base-200 rounded-xl p-4 bg-base-100 flex flex-col gap-3">
+
+        <!-- Header row: thumb + title + meta -->
+        <div class="flex items-start gap-4">
+          {% if product.images %}
+            <img src="{{ product.images.url }}" alt="{{ product.product_name }}"
+                 class="w-20 h-20 object-cover rounded-lg border border-base-200 flex-shrink-0">
+          {% else %}
+            <div class="w-20 h-20 rounded-lg bg-base-200 flex items-center justify-center flex-shrink-0">
+              <i class="fa-regular fa-image text-base-content/30"></i>
+            </div>
+          {% endif %}
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <h3 class="font-medium text-sm truncate">{{ product.product_name }}</h3>
+                <p class="text-[11px] text-base-content/50 mt-0.5">
+                  {{ product.creator.display_name|default:"Platform｜平台" }}
+                  ·
+                  {{ product.category.category_name }}
+                </p>
+              </div>
+              <span class="badge badge-sm badge-ghost font-mono flex-shrink-0">
+                #{{ product.id }}
+              </span>
+            </div>
+
+            <p class="text-xs text-base-content/70 mt-2 line-clamp-2">
+              {{ product.description|default:"—" }}
+            </p>
+
+            <div class="flex flex-wrap gap-3 mt-2 text-[11px] text-base-content/50 font-mono">
+              <span>Submitted｜提交：{{ product.submitted_at|date:"Y-m-d H:i"|default:"—" }}</span>
+              <span>Variations｜款式：{{ product.variations.count }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Artisan submission note -->
+        {% if product.latest_submission_log.note %}
+          <div class="text-[11px] text-base-content/60 bg-base-200/50 rounded-md px-3 py-2 border-l-2 border-info/50">
+            <span class="font-semibold">Submission note｜提交備註：</span>
+            {{ product.latest_submission_log.note }}
+          </div>
+        {% endif %}
+
+        <!-- Actions row -->
+        <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-base-200/60">
+          <a href="{{ product.get_url }}?preview=1" target="_blank"
+             class="btn btn-xs btn-ghost gap-1">
+            <i class="fa-regular fa-eye text-[10px]"></i>
+            Preview｜前台預覽
+          </a>
+
+          <a href="{{ product.get_admin_url }}" target="_blank"
+             class="btn btn-xs btn-ghost gap-1">
+            <i class="fa-solid fa-shield-halved text-[10px]"></i>
+            Admin｜後台
+          </a>
+
+          <div class="flex-1"></div>
+
+          <form method="post"
+                action="{% url 'review_product_approve' product.id %}"
+                class="inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-xs btn-success gap-1">
+              <i class="fa-solid fa-check text-[10px]"></i>
+              Approve｜通過
+            </button>
+          </form>
+
+          <button type="button"
+                  class="btn btn-xs btn-error gap-1"
+                  onclick="openProductRejectModal('{% url 'review_product_reject' product.id %}')">
+            <i class="fa-solid fa-xmark text-[10px]"></i>
+            Reject｜拒絕
+          </button>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="text-center text-xs text-base-content/40 py-10 border border-dashed border-base-200 rounded-xl">
+    No pending products｜目前沒有待審作品
+  </div>
+{% endif %}
+
+<script>
+  function openProductRejectModal(actionUrl) {
+    const modal = document.getElementById('product_reject_modal');
+    const form = document.getElementById('product_reject_form');
+    form.setAttribute('action', actionUrl);
+    form.querySelector('textarea[name="note"]').value = '';
+    modal.showModal();
+  }
+</script>
+

@@ -1,3 +1,4 @@
+# accounts.models.py
 import uuid
 from django.db import models, transaction
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
@@ -90,6 +91,49 @@ class Account(AbstractBaseUser):
     def default_address(self):
         return self.profile.addresses.filter(is_default=True).first()
 
+
+class LoginEvent(models.Model):
+    """Successful storefront login events, for audit/anomaly review."""
+    user = models.ForeignKey(
+        "accounts.Account",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="login_events",
+    )
+    email_attempted = models.CharField(max_length=254, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=300, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Login event"
+        verbose_name_plural = "Login events"
+        indexes = [models.Index(fields=["created_at"])]
+
+    def __str__(self):
+        return f"{self.created_at:%Y-%m-%d %H:%M} — {self.email_attempted or self.user_id} from {self.ip or '—'}"
+
+
+class AdminTrapHit(models.Model):
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=300, blank=True)
+    path = models.CharField(max_length=255, blank=True)
+    method = models.CharField(max_length=10, blank=True)
+    submitted_username = models.CharField(max_length=100, blank=True)
+    submitted_password_present = models.BooleanField(default=False)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Admin trap hit"
+        verbose_name_plural = "Admin trap hits"
+        indexes = [models.Index(fields=["created_at"])]
+
+    def __str__(self):
+        return f"{self.created_at:%Y-%m-%d %H:%M} — {self.ip or '—'} — {self.submitted_username or '(no username)'}"
+    
 
 class UserProfile(models.Model):
     user                = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
@@ -522,22 +566,25 @@ class ChatMessage(models.Model):
         """
         if len(self.content) > 1000:
             raise ValidationError("Content cannot exceed 255 characters.")
-        if self.image:
-            # 1. Open the image directly from the field
-            img = Image.open(self.image)
-            # Check if resizing is needed
-            if img.height > 800 or img.width > 800:
-                # 2. Resize
-                img.thumbnail((800, 800))
-                # 3. Prepare the buffer (RAM)
-                buffer = io.BytesIO()
-                # Get original format (JPEG, PNG, etc.) to maintain consistency
-                img_format = img.format if img.format else 'JPEG'
-                img.save(buffer, format=img_format, quality=85)
-                # 4. Point the field to the new resized data
-                # Use save=False here to prevent the model from saving itself again
-                # and creating an infinite loop.
-                filename = self.image.name
-                self.image.save(filename, ContentFile(buffer.getvalue()), save=False)
+        
+        # ⇩ REMOVED the image resize block. The core pipeline handles it now.
+        # if self.image:
+        #     # 1. Open the image directly from the field
+        #     img = Image.open(self.image)
+        #     # Check if resizing is needed
+        #     if img.height > 800 or img.width > 800:
+        #         # 2. Resize
+        #         img.thumbnail((800, 800))
+        #         # 3. Prepare the buffer (RAM)
+        #         buffer = io.BytesIO()
+        #         # Get original format (JPEG, PNG, etc.) to maintain consistency
+        #         img_format = img.format if img.format else 'JPEG'
+        #         img.save(buffer, format=img_format, quality=85)
+        #         # 4. Point the field to the new resized data
+        #         # Use save=False here to prevent the model from saving itself again
+        #         # and creating an infinite loop.
+        #         filename = self.image.name
+        #         self.image.save(filename, ContentFile(buffer.getvalue()), save=False)
+
         # 5. Call the 'real' save method to write to the database
         super().save(*args, **kwargs)

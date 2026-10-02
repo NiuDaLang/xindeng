@@ -1,3 +1,4 @@
+# accounts.views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib import messages
@@ -9,7 +10,7 @@ import json
 from django.contrib import auth
 from django.views.decorators.debug import sensitive_post_parameters
 from.models import CustomerVoucher, ChatMessage
-from store.models import ProductVariation
+from store.models import ProductVariation, ProductReviewLog
 from carts.models import Cart, CartItem
 from orders.models import Order, OrderProduct
 from carts.views import _cart_id
@@ -57,12 +58,17 @@ from asgiref.sync import async_to_sync
 from django.utils.timesince import timesince
 
 import random
-from django.db.models import Sum
+from django.db.models import Sum, OuterRef, Subquery
 from decimal import Decimal
 from orders.models import OrderVoucherUsage
 from django.core.exceptions import ObjectDoesNotExist
 
 from django.conf import settings
+from blog.models import Post
+
+from .models import LoginEvent
+from .views_admin_trap import client_ip
+
 
 NUM_MSG_PER_LOAD = 10
 
@@ -280,6 +286,13 @@ def login(request, user=None):
             # Django securely cycles the session token keys right here
             auth.login(request, user)
 
+            LoginEvent.objects.create(
+                user=user,
+                email_attempted=email[:254],
+                ip=client_ip(request),
+                user_agent=request.META.get("HTTP_USER_AGENT", "")[:300],
+            )
+
             # 🔒 SANITATION ACTION: Clear applied pricing codes during login transitions
             # This prevents guest code values from carrying over into authenticated user states
             if "offer_applied" in request.session:
@@ -346,7 +359,9 @@ def login(request, user=None):
                     response["HX-Redirect"] = next_url
                     return response
                     
-                return redirect(next_url)               
+                return redirect(next_url)     
+
+
         
             return redirect("dashboard", subpage="main")
         else:
@@ -524,6 +539,8 @@ def dashboard(request, subpage):
         'favorites': 'accounts/dashboard_favorites.html',
         'help': 'accounts/dashboard_help.html',
         'threed': 'accounts/dashboard_threed.html',
+        'blog_review': 'accounts/dashboard_blog_review.html',
+        'product_review': 'accounts/dashboard_product_review.html',
     }
     page_title = {
         'main': 'Main｜管理主頁',
@@ -536,6 +553,8 @@ def dashboard(request, subpage):
         'favorites': 'Favorites｜收藏',
         'help': 'Help｜客服熱線',
         'threed': '3D Scenes｜三維場景',
+        'blog_review': 'Blog Review｜筆記審核',
+        'product_review': 'Product Review｜作品審核',
     }
     template_name = templates.get(subpage, 'accounts/dashboard_main.html')
     subpage_title = page_title.get(subpage, 'Main｜管理主頁')
@@ -1005,6 +1024,73 @@ def dashboard(request, subpage):
             "other_user": other_user,
             "first_unread_id": first_unread.id if first_unread else None,
             "search_query": search_query,
+        })
+
+    # blog_review — superuser only
+    if subpage == "blog_review":
+        if not getattr(request.user, "is_superadmin", False):
+            # Non-superuser trying to peek — redirect to main
+            messages.error(request, "Access denied.｜無權限訪問。")
+            return redirect("dashboard", subpage="main")
+
+        pending_posts = (
+            Post.objects
+            .filter(status="Pending")
+            .select_related("creator", "author")
+            .order_by("updated_at")
+        )
+        reviewed_posts = (
+            Post.objects
+            .exclude(status__in=("Pending", "Draft"))
+            .select_related("creator", "author")
+            .order_by("-updated_at")[:20]
+        )
+        context.update({
+            "pending_posts": pending_posts,
+            "reviewed_posts": reviewed_posts,
+        })
+
+    # product_review — superuser only
+    if subpage == "product_review":
+        if not getattr(request.user, "is_superadmin", False):
+            messages.error(request, "Access denied.｜無權限訪問。")
+            return redirect("dashboard", subpage="main")
+
+        from store.models import Product  # local import to avoid circularity
+
+        pending_products = (
+            Product.objects
+            .filter(status="Pending", is_deleted=False)
+            .select_related("creator", "category")
+            .order_by("submitted_at", "modified_date")
+        )
+
+        # History: exclude Draft/Pending, keep soft-deleted for audit clarity
+        latest_action_sq = (
+            ProductReviewLog.objects
+            .filter(product=OuterRef("pk"))
+            .order_by("-created_at")
+            .values("action")[:1]
+        )
+
+        reviewed_products = (
+            Product.objects
+            .exclude(status__in=("Pending", "Draft"))
+            .select_related("creator", "category")
+            .annotate(latest_action=Subquery(latest_action_sq))
+            .order_by("-modified_date")[:20]
+        )
+
+        for p in reviewed_products:
+            p.pending_delist_badge = (
+                p.latest_action == "deactivation_requested"
+                and p.status == "Published"
+                and p.is_active
+            )
+
+        context.update({
+            "pending_products": pending_products,
+            "reviewed_products": reviewed_products,
         })
 
     # Global layout branding strings
@@ -2029,9 +2115,6 @@ def get_message_fragment(request, member_id):
     return render(request, "accounts/partials/admin_chat_messages_only.html", context)
 
 
-
-
-
 def wishlist(request):
     user = request.user
     wishlist = UserProductList.objects.filter(user=user, list_type="WISHLIST").order_by("-added_date")
@@ -2182,3 +2265,6 @@ def claim_voucher_routing_view(request, voucher_id):
         "page_title": "Claim Your Voucher｜領取您的電子禮卡"
     }
     return render(request, "pages/claim_voucher.html", context)
+
+
+

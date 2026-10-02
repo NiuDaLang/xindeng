@@ -1442,6 +1442,17 @@ function getCookie(name) {
     return cookieValue;
 }
 
+// Blog review: wire reject buttons to the modal
+document.body.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-reject-url]');
+    if (!btn) return;
+    const form = document.getElementById('blog_reject_form');
+    if (!form) return;
+    form.action = btn.dataset.rejectUrl;
+    form.querySelector('textarea').value = '';
+    document.getElementById('blog_reject_modal').showModal();
+});
+
 // Expose to window
 window.getCookie = getCookie;
 

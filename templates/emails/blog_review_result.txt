@@ -1,0 +1,45 @@
+Hṛdayadīpa (हृदयदीप)｜心燈
+{% if approved %}Blog Approved｜筆記已通過審核{% else %}Blog Revision Needed｜筆記需要修改{% endif %}
+
+親愛的 {{ author_label }}｜Dear {{ author_label }},
+
+{% if approved %}
+好消息！您提交的筆記已通過審核。
+Great news — your submission has been reviewed and approved.
+{% else %}
+感謝您的提交。經審核後，管理員留下了以下說明。
+Thank you for your submission. After review, the following note was left for you.
+{% endif %}
+
+============================================================
+📄 筆記詳情｜POST DETAILS
+============================================================
+標題｜Title:       {{ post.title }}
+分類｜Category:    {{ post.get_post_category_display }}
+審核時間｜Reviewed: {{ post.updated_at|date:"Y-m-d H:i" }}
+
+{% if not approved and note %}
+============================================================
+✏️ 審核說明｜REVIEW NOTE
+============================================================
+{{ note }}
+{% endif %}
+
+============================================================
+{% if approved %}
+查看文章｜View Published Post:
+{{ public_url }}
+
+或前往匠人工作台：
+Or open your artisan dashboard:
+{{ dashboard_url }}
+{% else %}
+編輯並重新提交｜Edit & Resubmit:
+{{ dashboard_url }}
+{% endif %}
+============================================================
+
+若您對本次審核結果有疑問，請聯繫平台團隊。
+If you have questions about this decision, please contact the platform team.
+
+Copyright (c) {{ year }} | xindeng.art

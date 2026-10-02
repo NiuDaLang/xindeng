@@ -1,0 +1,147 @@
+<!-- blog_review_result.html -->
+{% autoescape off %}
+<!DOCTYPE html>
+<html lang="en" style="padding:0;margin:0;box-sizing:border-box;">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% if approved %}Blog Approved｜筆記已通過{% else %}Blog Revision Needed｜筆記需要修改{% endif %}</title>
+    </head>
+    <body style="font-family: 'Noto Sans TC', sans-serif; margin:0; background-color:#f9f9f9; padding: 20px 0;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+                <td align="center">
+                    <table class="content" width="600" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse; border: 1px solid #e5e5e5; background-color:#ffffff;">
+                        <!-- Logo -->
+                        <tr>
+                            <td align="center" style="padding: 24px 0 10px 0; background-color: #ffffff;">
+                                <img src="https://i.postimg.cc/m2KRQgKs/logo-rectangle.png" width="259" height="44" alt="Hṛdayadīpa Logo" style="display: block; border: 0; outline: none;">
+                            </td>
+                        </tr>
+                        <!-- Header -->
+                        <tr>
+                            <td class="header" style="background-color: #ffffff; padding: 10px 40px 30px 40px; text-align: center; color:#161616;">
+                                <span style="font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 5px;">Hṛdayadīpa (हृदयदीप)｜心燈</span>
+                                <span style="font-size: 1rem; line-height: 1.4rem; display: block; opacity: 0.9; color: #555555;">
+                                    {% if approved %}
+                                        Blog Approved<br/>筆記已通過審核
+                                    {% else %}
+                                        Blog Revision Needed<br/>筆記需要修改
+                                    {% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                        <!-- Status Banner -->
+                        <tr>
+                            <td style="padding: 20px 40px; background-color: {% if approved %}#d1e7dd{% else %}#fff3cd{% endif %}; border-bottom: 1px solid {% if approved %}#badbcc{% else %}#ffeeba{% endif %}; color: {% if approved %}#0f5132{% else %}#856404{% endif %}; font-size: 0.85rem; line-height: 1.3rem; text-align: center;">
+                                {% if approved %}
+                                    ✅ <strong>Congratulations!</strong> Your post has been approved and published.<br>
+                                    ✅ <strong>恭喜！</strong>您的筆記已通過審核並發布。
+                                {% else %}
+                                    📝 <strong>Revisions Requested</strong><br>
+                                    Your post needs some adjustments before it can be published. Please see the note below.<br>
+                                    📝 <strong>需要修改</strong><br>
+                                    您的筆記需要調整後才能發布，請參考下方審核說明。
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <!-- Greeting -->
+                        <tr>
+                            <td class="body" style="padding: 40px 40px 20px 40px; text-align: left; font-size: 0.9rem; line-height: 1.4rem; color: #333333;">
+                                Dear <strong>{{ author_label }}</strong>｜親愛的 <strong>{{ author_label }}</strong>，<br><br>
+                                {% if approved %}
+                                    Great news — your submission has been reviewed and approved.<br>
+                                    好消息！您提交的筆記已通過審核。
+                                {% else %}
+                                    Thank you for your submission. After review, the following note was left for you.<br>
+                                    感謝您的提交。經審核後，管理員留下了以下說明。
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        <!-- Post Card -->
+                        <tr>
+                            <td style="padding: 0 40px 20px 40px;">
+                                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f7f5f3; border: 1px solid #cccccc; border-radius: 8px;">
+                                    <tr>
+                                        <td style="padding: 25px; font-size: 0.85rem; line-height: 1.5rem; color: #444444;">
+                                            <strong style="font-size: 0.95rem; color: #161616; display: block; border-bottom: 1px solid #cccccc; padding-bottom: 8px; margin-bottom: 12px;">
+                                                📄 Post Details｜筆記詳情
+                                            </strong>
+                                            <strong>Title｜標題:</strong> {{ post.title }}<br>
+                                            <strong>Category｜分類:</strong> {{ post.get_post_category_display }}<br>
+                                            <strong>Reviewed｜審核時間:</strong> {{ post.updated_at|date:"Y-m-d H:i" }}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        {% if not approved and note %}
+                        <!-- Rejection Note -->
+                        <tr>
+                            <td style="padding: 0 40px 20px 40px;">
+                                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #fff8f0; border: 1px solid #f5d0b0; border-radius: 8px;">
+                                    <tr>
+                                        <td style="padding: 20px; font-size: 0.85rem; line-height: 1.5rem; color: #6b3a1a;">
+                                            <strong style="font-size: 0.9rem; color: #8b4513; display: block; margin-bottom: 8px;">
+                                                ✏️ Review Note｜審核說明
+                                            </strong>
+                                            {{ note }}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        {% endif %}
+
+                        <!-- CTA -->
+                        <tr>
+                            <td style="padding: 0 40px 40px 40px; text-align: center;">
+                                {% if approved %}
+                                    <a href="{{ public_url }}" style="display: inline-block; background-color: #4b9aaa; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 0.95rem; padding: 14px 32px; border-radius: 6px; letter-spacing: 0.5px;">
+                                        View Published Post｜查看文章
+                                    </a>
+                                    <div style="margin-top: 12px;">
+                                        <a href="{{ dashboard_url }}" style="color: #4b9aaa; font-size: 0.8rem; text-decoration: none;">
+                                            Or open your artisan dashboard｜或前往匠人工作台
+                                        </a>
+                                    </div>
+                                {% else %}
+                                    <a href="{{ dashboard_url }}" style="display: inline-block; background-color: #4b9aaa; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 0.95rem; padding: 14px 32px; border-radius: 6px; letter-spacing: 0.5px;">
+                                        Edit & Resubmit｜編輯並重新提交
+                                    </a>
+                                    <div style="margin-top: 12px; font-size: 0.75rem; color: #999999; line-height: 1.3rem;">
+                                        修改完成後，可於匠人工作台再次提交審核。<br>
+                                        After editing, you can resubmit from your dashboard.
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        <!-- Footer Notification -->
+                        <tr>
+                            <td class="body" style="padding: 20px 40px; text-align: left; font-size:0.75rem; line-height: 1.1rem; border-top: 1px solid #e5e5e5; background-color: #fafafa; color: #777777;">
+                                If you have questions about this decision, please contact the platform team.<br>
+                                若您對本次審核結果有疑問，請聯繫平台團隊。
+                            </td>
+                        </tr>
+                        <!-- Corporate Footer -->
+                        <tr>
+                            <td class="footer" style="background-color: #333333; padding: 30px; text-align: center; color: #ffffff; font-size: 0.8rem; letter-spacing: 0.5px;">
+                                Copyright &copy; {{ year }} | xindeng.art
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
+<style>
+@media screen and (max-width: 600px) {
+    .content { width: 100% !important; border: none !important; }
+    .header, .body, .footer { padding: 25px 20px !important; }
+}
+</style>
+{% endautoescape %}

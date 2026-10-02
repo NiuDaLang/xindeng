@@ -1,0 +1,23 @@
+<!-- creators/templates/widgets/clearable_file_input.html -->
+{% if widget.is_initial %}
+    <div class="flex items-center justify-between gap-3 mb-2 text-xs">
+        <a href="{{ widget.value.url }}" target="_blank"
+           class="inline-flex items-center gap-1.5 text-primary hover:underline">
+            <i class="fa-solid fa-eye text-[10px]"></i>
+            查看已上傳檔案｜View uploaded file
+        </a>
+        {% if not widget.required %}
+            <label class="inline-flex items-center gap-1.5 cursor-pointer text-base-content/60 hover:text-error select-none">
+                <input type="checkbox"
+                       name="{{ widget.checkbox_name }}"
+                       id="{{ widget.checkbox_id }}"
+                       class="checkbox checkbox-xs checkbox-error">
+                <span>移除｜Remove</span>
+            </label>
+        {% endif %}
+    </div>
+{% endif %}
+
+<input type="file"
+       name="{{ widget.name }}"
+       {% for name, value in widget.attrs.items %}{{ name }}="{{ value }}" {% endfor %}>

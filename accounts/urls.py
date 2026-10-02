@@ -1,3 +1,4 @@
+# accounts.url.py
 from django.urls import path, re_path
 from . import views
 
@@ -12,7 +13,7 @@ urlpatterns = [
     path("forgot_password/", views.forgot_password, name="forgot_password"),
     path("reset_password_validate/<uidb64>/<token>/", views.reset_password_validate, name="reset_password_validate"),
     path("reset_password/", views.reset_password, name="reset_password"),
-    
+
     # dashboard
     path("dashboard/<str:subpage>/", views.dashboard, name="dashboard"),
     path("get_profile_strength/", views.get_profile_strength, name="get_profile_strength"),
@@ -48,13 +49,8 @@ urlpatterns = [
     # Mark as read
     path('mark_read/<int:msg_id>', views.mark_read, name='mark_read'),
 
-
-
     # dashboard - threed
     path("dashboard/threed/firework", views.firework, name="firework"),
 
     path("vouchers/claim/<str:voucher_id>/", views.claim_voucher_routing_view, name="claim_voucher_url"),
-
-
-
 ] 

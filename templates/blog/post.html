@@ -1,3 +1,4 @@
+<!-- blog/post.html -->
 {% extends 'base.html' %}
 {% load humanize %}
 
@@ -58,7 +59,8 @@
             </h1>
 
             <!-- Modern Curated Hero Display Module Container -->
-            <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-base-200 border border-base-200/50 shadow-inner group mb-6">
+            <div class="relative w-full rounded-xl overflow-hidden bg-base-100 border border-base-200/50 shadow-inner group mb-6"
+                style="{{ post.hero_container_style }} max-height: 70vh;">
                 <img src="{{ post.featured_image.url }}" alt="{{ post.title }}" class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.01]" loading="lazy" />
                 <!-- Editorial Absolute Caption Capsule Block overlay -->
                 <div class="absolute left-3 bottom-3 right-3 sm:left-auto sm:max-w-md bg-base-100/20 sm:bg-base-100/80 backdrop-blur-md p-1 sm:p-4 rounded-xl border border-base-200/40 text-[0.5rem] xs:text-[0.6rem] sm:text-xs text-base-content/70 leading-3 xs:leading-4 sm:leading-relaxed shadow-md line-clamp-4 sm:line-clamp-none">
@@ -78,7 +80,7 @@
             </div>
 
             <!-- Rendered CKEditor Rich-Text Paragraph Content Engine Frame -->
-            <div class="py-2 flex flex-col gap-5 text-sm sm:text-base text-base-content/80 leading-relaxed font-sans break-words border-b border-base-100 pb-8 unreset-ckeditor-prose">
+            <div class="blog-body py-2 text-sm sm:text-base text-base-content/80 leading-relaxed font-sans break-words border-b border-base-100 pb-8">
                 {{ post.blog_body|safe }}
             </div>
 
@@ -261,3 +263,18 @@
 </article> <!-- Left Article Column Closed safely here -->
 </main>
 {% endblock %}
+
+
+>>> from creators.utils import clean_blog_body
+>>> 
+>>> test = '<p class="text-center pull-quote text-red-500">Hello <script>alert(1)</script><a href="javascript:evil()">click</a></p>'
+>>> print(clean_blog_body(test))
+Traceback (most recent call last):
+  File "<console>", line 1, in <module>
+  File "/Users/project/creators/utils.py", line 70, in clean_blog_body
+    cleaned = nh3.clean(
+        html,
+    ...<3 lines>...
+        link_rel="noopener noreferrer",
+    )
+ValueError: "rel" attribute is not allowed for tag "a" when link_rel is set; pass link_rel=None to manage the "rel" attribute directly

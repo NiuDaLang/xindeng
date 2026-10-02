@@ -1,3 +1,4 @@
+<!-- templates/store/product.html -->
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
@@ -34,7 +35,87 @@
     </div>
 </div>
 
-<main class="px-[max(1rem,5vw)] py-3 xs:py-12 md:py-16 glight_main font-sans bg-base-50/30">
+<main class="px-[max(1rem,5vw)] py-3 xs:py-12 md:py-16 glight_main font-sans bg-base-50/30"> 
+    <!-- 🌟 SUPERUSER PREVIEW BANNER — non-Published or inactive products -->
+    {% if request.user.is_authenticated and request.user.is_superadmin %}
+    {% if single_product.status != 'Published' or not single_product.is_active or single_product.is_deleted %}
+        <div class="mb-6 rounded-xl border-2 border-dashed p-4 font-sans
+        {% if single_product.status == 'Pending' %}border-warning/60 bg-warning/5
+        {% elif single_product.status == 'Rejected' %}border-error/60 bg-error/5
+        {% elif single_product.is_deleted %}border-error/60 bg-error/5
+        {% else %}border-base-300 bg-base-200/40{% endif %}">
+
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div class="flex items-start gap-3 min-w-0">
+            <i class="fa-solid fa-eye text-lg mt-0.5
+                {% if single_product.status == 'Pending' %}text-warning
+                {% elif single_product.status == 'Rejected' or single_product.is_deleted %}text-error
+                {% else %}text-base-content/50{% endif %}"></i>
+            <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-bold uppercase tracking-widest opacity-70">
+                    Superuser Preview｜管理員預覽
+                </span>
+                {% if single_product.is_deleted %}
+                    <span class="badge badge-sm badge-error">Soft-deleted｜已刪除</span>
+                {% endif %}
+                <span class="badge badge-sm
+                    {% if single_product.status == 'Pending' %}badge-warning
+                    {% elif single_product.status == 'Rejected' %}badge-error
+                    {% elif single_product.status == 'Published' %}badge-success
+                    {% else %}badge-ghost{% endif %}">
+                    {{ single_product.get_status_display }}
+                </span>
+                {% if not single_product.is_active %}
+                    <span class="badge badge-sm badge-ghost">Inactive｜未上架</span>
+                {% endif %}
+                </div>
+
+                <p class="text-[11px] text-base-content/60 mt-1.5">
+                {% if single_product.status == 'Pending' %}
+                    此作品正在審核佇列中，尚未對外公開。
+                    <span class="opacity-60">｜This product is pending review and not publicly visible.</span>
+                {% elif single_product.status == 'Rejected' %}
+                    此作品已被拒絕，匠人可修改後重新提交。
+                    <span class="opacity-60">｜This product was rejected; the artisan can revise and resubmit.</span>
+                {% elif single_product.is_deleted %}
+                    此作品已被匠人刪除，僅保留供審計查看。
+                    <span class="opacity-60">｜This product was soft-deleted and is retained for audit only.</span>
+                {% else %}
+                    此作品目前未上架。
+                    <span class="opacity-60">｜This product is currently not published.</span>
+                {% endif %}
+                </p>
+
+                <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-base-content/50 font-mono">
+                <span>ID: #{{ single_product.id }}</span>
+                {% if single_product.submitted_at %}
+                    <span>Submitted: {{ single_product.submitted_at|date:"Y-m-d H:i" }}</span>
+                {% endif %}
+                <span>Updated: {{ single_product.modified_date|date:"Y-m-d H:i" }}</span>
+                </div>
+
+                {% with log=single_product.latest_review_log %}
+                {% if log and log.note %}
+                    <div class="mt-2 text-[11px] bg-base-100/60 rounded-md px-3 py-2 border-l-2 border-error/50">
+                    <span class="font-semibold">Last note｜最近備註：</span>
+                    {{ log.note }}
+                    </div>
+                {% endif %}
+                {% endwith %}
+            </div>
+            </div>
+
+            <a href="{% url 'dashboard' 'product_review' %}"
+            class="btn btn-xs btn-outline gap-1 flex-shrink-0">
+            <i class="fa-solid fa-clipboard-check text-[10px]"></i>
+            Review Queue｜審核佇列
+            </a>
+        </div>
+        </div>
+    {% endif %}
+    {% endif %}
+
     <div class="grid grid-cols-1 md:grid-cols-8 gap-0 md:gap-8 lg:gap-12 items-start relative w-full">
         
         <!-- LEFT COLUMN: DISPLAY MEDIA CORE -->
@@ -43,7 +124,9 @@
             <!-- Product Images Display Module -->
             <div id="product_images" class="group">
                 <a id="open-product-gallery" href="#" class="block focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-2xl">
-                    <figure class="md:w-full mx-auto aspect-[4/3] max-h-[30vh] md:max-h-none rounded-2xl overflow-hidden shadow-sm border border-base-200 bg-base-200 relative">
+                    <figure class="md:w-full mx-auto 
+                        max-h-[30vh] md:max-h-none rounded-2xl overflow-hidden shadow-sm border border-base-200 bg-base-100 relative"
+                        style="{{ single_product.hero_container_style }} max-height: 70vh;">
                         <img id="main_thumbnail" 
                             src="{{ single_product.images.url }}" 
                             class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" 
@@ -65,7 +148,11 @@
                             data-index="{{ forloop.counter0 }}"
                             data-src="{{ cell.href }}"
                         >
-                            <img id="product_gallery_image_{{ forloop.counter0 }}" src="{{ cell.href }}" class="w-full h-full object-cover" alt="Thumbnail"/>
+                            <img id="product_gallery_image_{{ forloop.counter0 }}"
+                                src="{{ cell.href }}"
+                                class="w-full h-full object-cover"
+                                alt="{{ cell.title|default:single_product.product_name|escape }}"
+                                data-gallery-title="{{ cell.title|default:single_product.product_name|escape }}"/>
                         </div>
                     {% endfor %}
                 </div>

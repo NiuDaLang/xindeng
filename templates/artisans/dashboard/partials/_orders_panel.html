@@ -1,0 +1,133 @@
+<!-- artisans/dashboard/partials/_orders_panel.html -->
+
+<div class="mb-8">
+    <h1 class="font-serif text-2xl tracking-wide">Orders｜訂單</h1>
+    <p class="text-sm text-base-content/50 mt-1">
+        處理待發貨訂單，並填寫物流資訊。
+    </p>
+</div>
+{% include 'includes/alerts.html' %}
+
+<!-- Tabs -->
+<div role="tablist" class="tabs tabs-lifted mb-6">
+    <a role="tab" class="tab tab-active" data-tab="pending">
+        Pending <span class="badge badge-xs badge-primary ml-1">{{ pending_lines.count }}</span>
+    </a>
+    <a role="tab" class="tab" data-tab="dispatched">Dispatched</a>
+    <a role="tab" class="tab" data-tab="delivered">Delivered</a>
+</div>
+
+<!-- Pending tab -->
+<div class="tab-panel" data-panel="pending">
+    <div class="space-y-4">
+        {% for line in pending_lines %}
+        <div class="bg-white border border-base-200/60 rounded-2xl p-5">
+            <div class="flex items-start gap-4">
+                <div class="w-16 h-16 rounded-xl overflow-hidden bg-base-200 flex-shrink-0">
+                    {% if line.product.images %}
+                    <img src="{{ line.product.images.url }}" class="w-full h-full object-cover" />
+                    {% endif %}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium">{{ line.product.product_name }}</p>
+                    <p class="text-xs text-base-content/50 mt-1">
+                        {{ line.product_variation.get_sku }} · Qty: {{ line.quantity }}
+                    </p>
+                    <p class="text-xs text-base-content/50 mt-1">
+                        Order #{{ line.order.order_number }}
+                    </p>
+                    <p class="text-xs text-base-content/60 mt-2 leading-relaxed">
+                        <strong>Ship to:</strong><br>
+                        {{ line.order.recipient_first_name }} {{ line.order.recipient_last_name }}<br>
+                        {{ line.order.address_line_1 }}<br>
+                        {% if line.order.address_line_2 %}{{ line.order.address_line_2 }}<br>{% endif %}
+                        {{ line.order.city }}{% if line.order.city and line.order.state_province_region %}, {% endif %}{{ line.order.state_province_region }}<br>
+                        {{ line.order.country }} {{ line.order.postal_code }}
+                    </p>
+                    {% if line.order.delivery_note %}
+                    <p class="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg p-2 mt-3">
+                        <strong>Buyer note:</strong> {{ line.order.delivery_note }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <form hx-post="{% url 'a_dashboard_dispatch_line' line.id %}"
+                  hx-target="#dashboard-main"
+                  hx-swap="innerHTML"
+                  class="mt-4 pt-4 border-t border-base-200/60 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {% csrf_token %}
+                <input type="text" name="tracking_code" placeholder="Tracking number｜物流單號" required
+                       class="input input-bordered input-sm w-full" />
+                <input type="text" name="carrier" placeholder="Carrier｜快遞公司 (e.g. SF Express)"
+                       class="input input-bordered input-sm w-full" />
+                <button type="submit" class="btn btn-primary btn-sm rounded-lg">
+                    <i class="fa-solid fa-paper-plane text-xs mr-1"></i>
+                    Mark as Dispatched
+                </button>
+            </form>
+        </div>
+        {% empty %}
+        <p class="text-center text-sm text-base-content/40 py-16">
+            暫無待發貨訂單。｜No pending orders.
+        </p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Dispatched tab -->
+<div class="tab-panel hidden" data-panel="dispatched">
+    <div class="space-y-3">
+        {% for line in dispatched_lines %}
+        <div class="bg-white border border-base-200/60 rounded-xl p-4">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-truck text-xs text-success"></i>
+                <p class="text-sm flex-1">{{ line.product.product_name }}</p>
+                <p class="text-xs text-base-content/50">
+                    {{ line.dispatched_at|date:"Y-m-d" }}
+                </p>
+            </div>
+            {% with tracking=line.tracking_assignments.first %}
+            {% if tracking %}
+            <p class="text-xs text-base-content/60 mt-2 ml-6 font-mono">
+                {{ tracking.carrier_name }} · {{ tracking.tracking_code }}
+            </p>
+            {% endif %}
+            {% endwith %}
+        </div>
+        {% empty %}
+        <p class="text-center text-sm text-base-content/40 py-16">No dispatched orders yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Delivered tab -->
+<div class="tab-panel hidden" data-panel="delivered">
+    <div class="space-y-3">
+        {% for line in delivered_lines %}
+        <div class="bg-white border border-base-200/60 rounded-xl p-4">
+            <p class="text-sm">{{ line.product.product_name }}</p>
+            <p class="text-xs text-base-content/50 mt-1">Delivered</p>
+        </div>
+        {% empty %}
+        <p class="text-center text-sm text-base-content/40 py-16">No delivered orders yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    (function() {
+        const tabs = document.querySelectorAll('[data-tab]');
+        const panels = document.querySelectorAll('.tab-panel');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('tab-active'));
+                tab.classList.add('tab-active');
+                panels.forEach(p => p.classList.add('hidden'));
+                const name = tab.getAttribute('data-tab');
+                const panel = document.querySelector(`[data-panel="${name}"]`);
+                if (panel) panel.classList.remove('hidden');
+            });
+        });
+    })();
+</script>

@@ -1,3 +1,5 @@
+<!-- ptemplates/store/partials/roduct_form.html -->
+{% load static %}
 {% load humanize %}
 <div id="product-purchase-panel" 
      class="w-full h-full transition-all duration-300"
@@ -39,7 +41,11 @@
                             hx-swap="outerHTML"
                             {% endif %}>
                             <input type="radio" name="selected_variation" value="{{ var.id }}" {% if selected_var_id == var.id %}checked{% endif %} {% if var.available_production_stock == 0 %}disabled{% endif %} class="hidden">
-                            <img src="{{ var.images.url }}" id="var_img_{{ var.pk }}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-xl transition-all duration-300 bg-base-100 block bg-clip-padding {% if selected_var_id == var.id %}border-primary/60 ring-2 ring-primary/40 ring-offset-2 z-10 scale-[1.03]{% else %}border-base-200 opacity-60 group-hover:opacity-100 group-hover:border-base-300{% endif %}">
+                            {% if var.images %}
+                                <img src="{{ var.images.url }}" id="var_img_{{ var.pk }}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-xl transition-all duration-300 bg-base-100 block bg-clip-padding {% if selected_var_id == var.id %}border-primary/60 ring-2 ring-primary/40 ring-offset-2 z-10 scale-[1.03]{% else %}border-base-200 opacity-60 group-hover:opacity-100 group-hover:border-base-300{% endif %}">
+                            {% else %}
+                                <img src="{% static 'images/products/variations/pattern1.png' %}" class="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-xl transition-all duration-300 bg-base-100 block bg-clip-padding {% if selected_var_id == var.id %}border-primary/60 ring-2 ring-primary/40 ring-offset-2 z-10 scale-[1.03]{% else %}border-base-200 opacity-60 group-hover:opacity-100 group-hover:border-base-300{% endif %}">
+                            {% endif %}
                         </label>
                         <span class="text-[9px] text-base-content/30 truncate w-full tracking-tight font-mono block leading-none mt-2 select-none">
                             {{ var.get_sku }}

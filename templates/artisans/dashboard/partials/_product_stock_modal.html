@@ -1,0 +1,39 @@
+<!-- templates/artisans/dashboard/partials/_product_stock_modal.html -->
+ 
+<form method="post" action="{% url 'a_dashboard_product_stock_edit' product.id %}">
+    {% csrf_token %}
+    <h3 class="font-serif text-lg mb-2">Adjust Stock｜調整庫存</h3>
+    <p class="text-xs text-base-content/60 mb-4">{{ product.product_name }}</p>
+
+    {% if product.is_digital and product.digital_fulfillment_type == "INSTANT" %}
+    <p class="text-xs text-info bg-info/10 p-3 rounded-lg mb-4">
+        <i class="fa-solid fa-info-circle mr-1"></i>
+        即時電子產品庫存固定為 1。｜Instant digital products always have stock = 1.
+    </p>
+    {% endif %}
+
+    <div class="space-y-3 max-h-[50vh] overflow-y-auto">
+        {% for v in variations %}
+        <div class="flex items-center gap-3 bg-base-50 p-3 rounded-lg">
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-medium truncate">{{ v.get_sku }}</p>
+                <p class="text-[10px] opacity-50">¥{{ v.price }}</p>
+            </div>
+            <label class="flex items-center gap-2">
+                <span class="text-xs opacity-60">Stock:</span>
+                <input type="number"
+                       name="stock_{{ v.id }}"
+                       value="{{ v.stock }}"
+                       min="0"
+                       class="input input-bordered input-sm w-24"
+                       {% if product.is_digital and product.digital_fulfillment_type == "INSTANT" %}disabled{% endif %}>
+            </label>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="modal-action">
+        <button type="button" onclick="this.closest('dialog').close()" class="btn btn-ghost btn-sm">Cancel｜取消</button>
+        <button type="submit" class="btn btn-primary btn-sm">Save｜儲存</button>
+    </div>
+</form>

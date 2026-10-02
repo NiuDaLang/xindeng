@@ -154,12 +154,14 @@ import "cally"
 import Swal from 'sweetalert2'
 
 import { firework } from "./firework"
+import './crop_tool.js'
 
 import 'glightbox/dist/css/glightbox.min.css';
 import GLightbox from 'glightbox';
 
 import 'sharer.js'; 
 import htmx from 'htmx.org';
+
 
 // // HTMX
 // // 1. Capture a clean reference to HTMX's internal logger
@@ -190,6 +192,15 @@ import htmx from 'htmx.org';
 //     console.error("Target ID:", evt.detail.targetId);
 //     console.error("Content:", evt.detail.content);
 // });
+
+// Messages
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.dismissAlertButton');
+    if (!btn) return;
+    e.preventDefault();
+    const container = btn.closest('.message_container');
+    if (container) container.classList.add('hidden');
+});
 
 // Listen for the native popstate event (fires the instant a user hits the back button)
 window.addEventListener('popstate', function() {
@@ -362,7 +373,16 @@ function updateThumbnailBorderHighlight(clickedIndex) {
 
 function handleThumbnailClickInteraction(clickedIndex, targetMainThumbnail, targetImgSrc, e) {
     if (e) e.preventDefault();
-    if (targetMainThumbnail) targetMainThumbnail.src = targetImgSrc;
+    if (targetMainThumbnail) {
+        targetMainThumbnail.src = targetImgSrc;
+        // Preserve caption/alt on the main image
+        const clickedImg = document.querySelector(
+            `#product_gallery_images .thumbnail-item[data-index="${clickedIndex}"] img`
+        );
+        if (clickedImg) {
+            targetMainThumbnail.alt = clickedImg.dataset.galleryTitle || clickedImg.alt || "";
+        }
+    }
     updateThumbnailBorderHighlight(clickedIndex);
 
     if (base_data && base_data.length > 0) {
@@ -370,6 +390,7 @@ function handleThumbnailClickInteraction(clickedIndex, targetMainThumbnail, targ
         init_glightbox(slides_data);
     }
 }
+
 
 function setupProductGalleryBindings() {
     console.log("Synchronizing interactive behaviors over fresh server template layers...");
@@ -395,7 +416,8 @@ function setupProductGalleryBindings() {
         const img_el = container.querySelector("img");
         if (!img_el) return;
 
-        base_data.push({ href: img_el.src, title: img_el.alt || "" });
+        const titleText = img_el.dataset.galleryTitle || img_el.alt || "";
+        base_data.push({ href: img_el.src, title: titleText });
 
         // Wipe away stale listeners to prevent stacked background triggers
         container.replaceWith(container.cloneNode(true));
@@ -1880,81 +1902,6 @@ function executeSecurePostCancellation(orderNumber, refundType) {
 
 
 // Update sidebar active visual borders
-// function updateActiveLink(element) {
-//     console.log("update activate link")
-//     if (!element) return;
-//     const items = document.querySelectorAll('.dashboard-item');
-//     items.forEach(li => li.classList.remove("is-active"));
-//     if (!element.classList.contains('sidebar_link')) {
-//         let link_type = element.id
-//         console.log("link type: ", link_type)
-//         switch (link_type) {
-//             case "profile_header":
-//             case "complete_profile":
-//             case "edit_profile_label":
-//             case "profile_faq_en":
-//             case "profile_faq_cn":
-//                 const edit_profile_li = document.querySelector("#edit_profile_li")
-//                 edit_profile_li.classList.add("is-active")
-//                 break;
-//             case "addresses_header":
-//             case "addresses":
-//             case "address_book_label":
-//                 const addresses_li = document.querySelector("#addresses_li")
-//                 addresses_li.classList.add("is-active")
-//                 break;
-//             case "orders_header":
-//             case "works_owned":
-//                 const orders_li = document.querySelector("#orders_li")
-//                 orders_li.classList.add("is-active")
-//                 break;
-//             case "offers_header":
-//             case "perks_label":
-//                 const perks_li = document.querySelector("#perks_li")
-//                 perks_li.classList.add("is-active")
-//                 break;
-//             case "vouchers_header":
-//             case "my_vouchers":
-//                 const vouchers_li = document.querySelector("#vouchers_li")
-//                 vouchers_li.classList.add("is-active")
-//                 break;
-//             case "wishlist_header":
-//             case "wishlist_label":
-//                 const wishlist_li = document.querySelector("#wishlist_li")
-//                 wishlist_li.classList.add("is-active")
-//                 break;
-//             case "favorites_header":
-//             case "favorites_label":
-//                 const favorites_li = document.querySelector("#favorites_li")
-//                 favorites_li.classList.add("is-active")
-//                 break;
-//             case "help_header":
-//             case "helpdesk":
-//             case "help_faq_en1":
-//             case "help_faq_cn1":
-//             case "help_faq_en2":
-//             case "help_faq_cn2":
-//             case (link_type.startsWith("order_")):
-//                 const help_li = document.querySelector("#help_li")
-//                 help_li.classList.add("is-active")
-//                 break;
-//             case "threed_header":
-//             case "threed_label":
-//                 const threed_li = document.querySelector("#threed_li")
-//                 threed_li.classList.add("is-active")
-//                 break;
-//             default:
-//                 const main_li = document.querySelector("#main_li")
-//                 main_li.classList.add("is-active")
-//         }
-//     } else {
-//         const parentLi = element.closest("li");
-//         if (parentLi) {
-//             parentLi.classList.add("is-active");
-//         }
-//     }
-// }
-
 function updateActiveLink(element) {
     console.log("update activate link");
     if (!element) return;
@@ -2154,6 +2101,79 @@ window.addEventListener('pageshow', function(event) {
 });
 
 
+/**
+ * Artisan Dashboard
+ */
+
+// ============================================
+// ARTISAN DASHBOARD SIDEBAR HIGHLIGHTING
+// ============================================
+function updateArtisanSidebarActive(clickedLink) {
+    // Only operate if we're in the artisan dashboard context
+    const artisanSidebar = clickedLink.closest('aside');
+    if (!artisanSidebar) return;
+
+    // Remove active state from all sidebar links
+    artisanSidebar.querySelectorAll('nav a').forEach(a => {
+        a.classList.remove('bg-base-200', 'text-primary', 'font-semibold');
+    });
+
+    // Apply active state to the clicked one
+    clickedLink.classList.add('bg-base-200', 'text-primary', 'font-semibold');
+}
+
+// Attach to any artisan sidebar link click
+document.addEventListener('click', (e) => {
+    const sidebarLink = e.target.closest('aside a[hx-get]');
+    if (sidebarLink && sidebarLink.closest('aside')?.querySelector('nav')) {
+        updateArtisanSidebarActive(sidebarLink);
+    }
+});
+
+// ── CKEditor orphan cleanup after HTMX swaps ──
+// CKEditor 5 sometimes leaves behind a "body wrapper" div appended to <body>
+// when its host element is removed during an HTMX swap. These accumulate and
+// appear as a huge blank block after the footer. This handler removes them.
+// ── Post-swap cleanup + scroll ──
+document.addEventListener('htmx:afterSwap', function (evt) {
+    const target = evt.detail.target;
+    if (!target) return;
+
+    // 1. Remove orphaned CKEditor body wrappers left behind in <body>.
+    document.querySelectorAll(
+        'body > .ck-body-wrapper, body > .ck.ck-body, body > .ck-balloon-panel'
+    ).forEach(el => el.remove());
+
+    // 2. Destroy any CKEditor instances whose host element no longer exists.
+    if (window.ClassicEditor && window.ClassicEditor.instances) {
+        for (const editor of Object.values(window.ClassicEditor.instances)) {
+            if (editor.sourceElement && !document.body.contains(editor.sourceElement)) {
+                try { editor.destroy(); } catch (e) {}
+            }
+        }
+    }
+
+    // 3. Scroll to the top of the swapped content.
+    // Only scroll if the swap happened inside #dashboard-main (or whichever
+    // container you want to "reset" after the swap).
+    if (target.id === 'dashboard-main' || target.closest('#dashboard-main')) {
+        const container = document.getElementById('dashboard-main');
+        if (container) {
+            // Scroll the window to bring the container's top edge into view.
+            // Using scrollIntoView with a small offset avoids the sticky navbar
+            // overlapping the first heading.
+            const yOffset = -90; // adjust for your fixed navbar height (~86px) + breathing room
+            const y = container.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+        } else {
+            // Fallback: just go to top.
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+});
+
+
+
 window.confirmSweetAlertDelete = confirmSweetAlertDelete;
 window.daysBetween = daysBetween;
 window.datePicker = datePicker;
@@ -2185,3 +2205,5 @@ window.triggerOrderCancellation = triggerOrderCancellation;
 
 window.updateActiveLink = updateActiveLink;
 window.updateNotificationEnvelope = updateNotificationEnvelope;
+
+window.updateArtisanSidebarActive = updateArtisanSidebarActive;

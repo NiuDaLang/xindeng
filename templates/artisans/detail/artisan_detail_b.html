@@ -89,12 +89,30 @@
                 </a>
                 {% endif %}
 
-                {% if artisan.wechat %}
-                <span class="inline-flex items-center gap-1.5">
-                    <i class="fa-brands fa-weixin text-[10px] opacity-60"></i>
-                    {{ artisan.wechat }}
-                </span>
-                {% endif %}
+{% if artisan.wechat_qr %}
+<div class="dropdown dropdown-hover dropdown-top dropdown-center">
+    <div tabindex="0" role="button"
+         class="inline-flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer">
+        <i class="fa-brands fa-weixin text-[10px] opacity-60"></i>
+        <span>WeChat｜微信</span>
+    </div>
+
+    <div tabindex="0"
+         class="dropdown-content z-50 bg-white rounded-xl shadow-lg border border-base-200/60 mb-2">
+        <div class="flex flex-col items-center bg-white rounded-xl p-2 max-w-[85vw]"
+             style="width: 15rem;">
+            <img src="{{ artisan.wechat_qr.url }}"
+                 alt="WeChat QR"
+                 class="block rounded-md"
+                 style="width: 13rem; height: 13rem; object-fit: contain;" />
+            <p class="text-[10px] text-center text-base-content/60 mt-1 whitespace-nowrap"
+               style="width: 13rem;">
+                掃碼聯絡｜Scan to connect
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
             </div>
         </div>
     </div>

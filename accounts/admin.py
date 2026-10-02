@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import UserProfile, UserProductList, Perk, CustomerVoucher, Address, Perk, UserPerk, ChatMessage
+from .models import UserProfile, UserProductList, Perk, CustomerVoucher, Address, Perk, UserPerk, ChatMessage, AdminTrapHit, LoginEvent
 from django.utils.html import format_html
 from .evaluators import PerkEvaluator
 
@@ -99,3 +99,34 @@ admin.site.register(CustomerVoucher, CustomerVoucherAdmin)
 admin.site.register(Address, AddressAdmin)
 admin.site.register(UserPerk, UserPerkAdmin)
 admin.site.register(ChatMessage, ChatMessageAdmin)
+
+
+@admin.register(AdminTrapHit)
+class AdminTrapHitAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "ip", "method", "path", "submitted_username", "submitted_password_present")
+    list_filter = ("method", "created_at")
+    search_fields = ("ip", "user_agent", "submitted_username", "path")
+    readonly_fields = ("ip", "user_agent", "path", "method", "submitted_username", "submitted_password_present", "created_at")
+    date_hierarchy = "created_at"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(LoginEvent)
+class LoginEventAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "user", "email_attempted", "ip")
+    list_filter = ("created_at",)
+    search_fields = ("email_attempted", "ip", "user_agent", "user__email", "user__username")
+    readonly_fields = ("user", "email_attempted", "ip", "user_agent", "created_at")
+    date_hierarchy = "created_at"
+    raw_id_fields = ("user",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

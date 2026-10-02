@@ -2176,3 +2176,22 @@ input[type="search"]::-webkit-search-decoration {
 input[type="search"]::-moz-search-clear {
     display: none;
 }
+
+/* Hide CKEditor's orphaned off-screen containers.
+   These are meant to be position:fixed off-screen, but when CKEditor
+   re-mounts after an HTMX swap, an old wrapper can be left in the DOM
+   without proper positioning and appears as a huge blank block. */
+body > .ck-body-wrapper,
+body > .ck.ck-body,
+body > .ck-balloon-panel,
+body > .ck-powered-by-balloon {
+    position: fixed !important;
+    top: -99999px !important;
+    left: -99999px !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    z-index: -1 !important;
+}

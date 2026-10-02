@@ -1,0 +1,14 @@
+⚠️ Deactivation Requested｜申請下架
+
+匠人 {{ artisan_label }} 為以下作品申請下架：
+
+{{ product.product_name }}
+
+{% if reason %}下架原因｜Reason:
+{{ reason }}
+{% endif %}
+
+處理入口｜Review queue:
+{{ review_url }}
+
+Hṛdayadīpa 心燈之屋 · {{ year }}

@@ -22,6 +22,75 @@ import os
 from django.conf import settings
 from xml.sax.saxutils import escape
 
+import nh3
+from bs4 import BeautifulSoup
+
+# ── Tags we allow in artisan-authored blog content ─────────────
+ALLOWED_TAGS = {
+    "p", "br", "hr",
+    "h1", "h2", "h3", "h4",
+    "strong", "b", "em", "i", "u", "s", "sub", "sup",
+    "code", "pre",
+    "a",
+    "ul", "ol", "li",
+    "blockquote",
+    "img", "figure", "figcaption",
+    "table", "thead", "tbody", "tr", "th", "td",
+    "div", "span", "section",
+}
+
+# ── Attributes we allow, per tag ('*' = all tags) ─────────────
+ALLOWED_ATTRS = {
+    "*": {"class"},
+    "a": {"href", "title", "target"},
+    "img": {"src", "alt", "title", "width", "height"},
+}
+
+# ── Classes artisans may use (the curated escape hatch) ───────
+APPROVED_CLASSES = {
+    "text-center", "text-right",
+    "pull-quote", "artisan-note", "artisan-highlight",
+    "drop-cap", "muted", "caption",
+}
+
+
+def clean_blog_body(html: str) -> str:
+    """
+    Sanitize artisan-authored HTML for safe storage and rendering.
+
+    Two stages:
+      1. nh3 strips disallowed tags/attributes/schemes.
+      2. Approved-class filter removes any class not on APPROVED_CLASSES,
+         so the front-end only ever receives classes we control and ship.
+    """
+    if not html:
+        return html
+
+    # Stage 1 — structural + attribute sanitization
+    cleaned = nh3.clean(
+        html,
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRS,
+        url_schemes={"http", "https", "mailto"},
+        link_rel="noopener noreferrer",
+    )
+
+    # Stage 2 — class allow-list enforcement
+    soup = BeautifulSoup(cleaned, "html.parser")
+    for el in soup.find_all(class_=True):
+        keep = [c for c in el.get("class", []) if c in APPROVED_CLASSES]
+        if keep:
+            el["class"] = keep
+        else:
+            del el["class"]
+
+    # Stage 3 — remove dead anchors (no href), keep their text
+    for a in soup.find_all("a"):
+        if not a.get("href"):
+            a.unwrap()
+
+    return str(soup)
+
 
 # Font registry — maps ReportLab font name → file path
 # Adjust paths to match your static/fonts directory

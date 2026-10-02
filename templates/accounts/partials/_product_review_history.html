@@ -1,0 +1,78 @@
+<!-- accounts/partials/_product_review_history.html -->
+{% load humanize %}
+
+{% if reviewed_products %}
+  <div class="overflow-x-auto border border-base-200 rounded-xl">
+    <table class="table table-sm w-full">
+      <thead class="bg-base-200/40 text-[10px] uppercase tracking-wider">
+        <tr>
+          <th>Product｜作品</th>
+          <th>Artisan｜匠人</th>
+          <th>Status｜狀態</th>
+          <th>Last Note｜最近備註</th>
+          <th class="text-right">Updated｜更新</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for product in reviewed_products %}
+          <tr class="hover:bg-base-200/30">
+            <td>
+              <div class="flex items-center gap-2">
+                <a href="{{ product.get_url }}" target="_blank"
+                   class="font-medium text-xs hover:text-primary truncate max-w-[180px]">
+                  {{ product.product_name }}
+                </a>
+                {% if product.is_deleted %}
+                  <span class="badge badge-xs badge-error">deleted</span>
+                {% endif %}
+              </div>
+              <div class="text-[10px] font-mono text-base-content/40">#{{ product.id }}</div>
+            </td>
+            <td class="text-xs">
+              {{ product.creator.display_name|default:"Platform" }}
+            </td>
+            <td>
+              <div class="flex flex-wrap items-center gap-1">
+                {% if product.status == 'Published' %}
+                  <span class="badge badge-xs badge-success">Published</span>
+                {% elif product.status == 'Rejected' %}
+                  <span class="badge badge-xs badge-error">Rejected</span>
+                {% elif product.status == 'Unpublished' %}
+                  <span class="badge badge-xs badge-warning">Unpublished</span>
+                {% else %}
+                  <span class="badge badge-xs badge-ghost">{{ product.status }}</span>
+                {% endif %}
+
+                {% if product.pending_delist_badge %}
+                  <a href="{{ product.get_admin_url }}"
+                     class="tooltip tooltip-top"
+                     data-tip="Click to review in admin.｜點擊前往後台處理。">
+                    <span class="badge badge-xs badge-warning gap-1 animate-pulse cursor-pointer hover:badge-error transition-colors">
+                      <i class="fa-solid fa-triangle-exclamation text-[8px]"></i>
+                      De-list Requested
+                    </span>
+                  </a>
+                {% endif %}
+              </div>
+            </td>
+            <td class="text-[11px] text-base-content/60 max-w-[260px] truncate">
+              {% with log=product.latest_review_log %}
+                {% if log %}
+                  <span class="font-mono text-[10px] opacity-70">{{ log.action }}</span>
+                  {% if log.note %}· {{ log.note|truncatechars:60 }}{% endif %}
+                {% else %}—{% endif %}
+              {% endwith %}
+            </td>
+            <td class="text-[11px] font-mono text-right text-base-content/50">
+              {{ product.modified_date|date:"Y-m-d H:i" }}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="text-center text-xs text-base-content/40 py-10 border border-dashed border-base-200 rounded-xl">
+    No review history｜尚無審核記錄
+  </div>
+{% endif %}

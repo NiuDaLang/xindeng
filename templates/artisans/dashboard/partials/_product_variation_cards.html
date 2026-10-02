@@ -1,0 +1,75 @@
+<!-- artisans/dashboard/partials/_product_variation_cards.html -->
+
+{% if variations %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for v in variations %}
+    <div class="border border-base-200/60 rounded-xl p-4 bg-base-50/50">
+        <div class="flex items-start gap-3">
+            {% if v.images %}
+            <div class="w-16 h-16 rounded-lg overflow-hidden bg-base-200 flex-shrink-0">
+                <img src="{{ v.images.url }}" class="w-full h-full object-cover">
+            </div>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold truncate">{{ v.get_sku }}</p>
+                <p class="text-[11px] opacity-60 mt-0.5">
+                    Price｜售價: <span class="font-mono">¥{{ v.price }}</span>
+                </p>
+                <p class="text-[11px] opacity-60">
+                    Stock｜庫存: <span class="font-mono">{{ v.stock }}</span>
+                </p>
+                <div class="flex flex-wrap gap-1 mt-1">
+                    {% if v.with_shipping %}
+                    <span class="badge badge-xs badge-info">含運費</span>
+                    {% endif %}
+                    {% if v.single_pack %}
+                    <span class="badge badge-xs badge-neutral">單件</span>
+                    {% endif %}
+                    {% if v.pending_color or v.pending_size or v.pending_type %}
+                    <span class="badge badge-xs badge-warning">
+                        <i class="fa-solid fa-clock text-[8px]"></i> 新值待審
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-3 pt-3 border-t border-base-200/60">
+            <button type="button"
+                    class="btn btn-xs btn-ghost rounded-lg edit-variation-btn"
+                    data-variation-id="{{ v.id }}"
+                    data-price="{{ v.price }}"
+                    data-original-price="{{ v.original_price|default_if_none:'' }}"
+                    data-stock="{{ v.stock }}"
+                    data-weight="{{ v.weight }}"
+                    data-with-shipping="{{ v.with_shipping|yesno:'1,0' }}"
+                    data-single-pack="{{ v.single_pack|yesno:'1,0' }}"
+                    data-color="{{ v.color_id|default_if_none:'' }}"
+                    data-size="{{ v.size_id|default_if_none:'' }}"
+                    data-type="{{ v.type_id|default_if_none:'' }}"
+                    data-pending-color="{{ v.pending_color }}"
+                    data-pending-size="{{ v.pending_size }}"
+                    data-pending-type="{{ v.pending_type }}"
+                    data-edit-url="{% url 'a_dashboard_product_variation_edit' product.id v.id %}">
+                <i class="fa-solid fa-pen text-[10px] mr-1"></i> Edit
+            </button>
+            <button type="button"
+                    class="btn btn-xs btn-ghost text-error rounded-lg"
+                    hx-post="{% url 'a_dashboard_product_variation_remove' product.id v.id %}"
+                    hx-target="#variation-cards-container"
+                    hx-swap="innerHTML"
+                    hx-confirm="確定移除此款式？｜Remove this variation?">
+                <i class="fa-solid fa-trash text-[10px] mr-1"></i> Remove
+            </button>
+        </div>
+
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-8 border-2 border-dashed border-base-200 rounded-xl">
+    <p class="text-xs text-base-content/40">
+        尚未新增任何款式。點擊「Add Variation」開始。｜No variations yet. Click "Add Variation" to start.
+    </p>
+</div>
+{% endif %}

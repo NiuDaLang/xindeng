@@ -1,0 +1,60 @@
+<!-- accounts/dashboard_blog_review.html -->
+{% load humanize %}
+<title>{{ page_title }}</title>
+
+<div id="dashboard_blog_review" class="subpage flex flex-col gap-6 animate-fade-in w-full text-neutral font-sans select-none">
+
+    <div class="flex items-end justify-between gap-4 border-b border-base-200 pb-4">
+        <div>
+            <h1 class="font-serif text-2xl tracking-wide">Blog Review｜筆記審核</h1>
+            <p class="text-xs text-base-content/50 mt-1">
+                審核匠人提交的筆記。通過後將發布至公開頁面。
+                <span class="opacity-60">｜Approve or reject artisan submissions.</span>
+            </p>
+        </div>
+        <span class="badge badge-warning badge-lg font-mono">
+            {{ pending_posts|length }} pending
+        </span>
+    </div>
+
+    <!-- PENDING QUEUE -->
+    <section>
+        <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40 mb-3">
+            Pending Queue｜待審佇列
+        </h2>
+        {% include 'accounts/partials/_blog_review_queue.html' %}
+    </section>
+
+    <!-- REVIEW HISTORY -->
+    <section>
+        <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40 mb-3">
+            Recent Decisions｜近期審核記錄
+        </h2>
+        {% include 'accounts/partials/_blog_review_history.html' %}
+    </section>
+</div>
+
+<!-- REJECT NOTE MODAL — single reusable modal -->
+<dialog id="blog_reject_modal" class="modal">
+    <div class="modal-box max-w-md">
+        <h3 class="font-serif text-lg mb-2">Reject with Reason｜拒絕並說明</h3>
+        <p class="text-xs text-base-content/60 mb-4">
+            匠人將收到您的理由。請具體說明需要修改之處。
+        </p>
+        <form id="blog_reject_form" method="post" action="">
+            {% csrf_token %}
+            <textarea name="note"
+                      class="textarea textarea-bordered w-full h-32 text-sm"
+                      placeholder="請說明拒絕原因…" required></textarea>
+            <div class="modal-action">
+                <button type="button"
+                        onclick="document.getElementById('blog_reject_modal').close()"
+                        class="btn btn-ghost btn-sm">Cancel｜取消</button>
+                <button type="submit" class="btn btn-error btn-sm">
+                    Reject｜拒絕
+                </button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>

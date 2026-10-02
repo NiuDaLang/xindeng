@@ -1,0 +1,148 @@
+<!-- artisans/dashboard/partials/_blog_panel.html -->
+<div class="mb-8 flex items-center justify-between">
+    <div>
+        <h1 class="font-serif text-2xl tracking-wide">Blog｜筆記</h1>
+        <p class="text-sm text-base-content/50 mt-1">
+            撰寫與管理您的匠人筆記。
+        </p>
+    </div>
+    <div class="flex items-center gap-2">
+        {# 🌟 Bulk clear drafts — only show if at least one draft exists #}
+        {% if posts %}
+            {% with draft_count=posts|length %}
+                {# cheap heuristic: always render, JS confirms; server ignores if none #}
+                <form hx-post="{% url 'a_dashboard_blog_bulk_delete_drafts' %}"
+                      hx-target="#dashboard-main"
+                      hx-swap="innerHTML"
+                      hx-confirm="Clear all drafts?｜確定清除所有草稿？此操作不會刪除已提交或已發布的筆記。"
+                      class="inline">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn btn-ghost btn-sm rounded-lg text-error gap-1 cursor-pointer">
+                        <i class="fa-solid fa-broom text-xs"></i>
+                        Clear Drafts｜清除草稿
+                    </button>
+                </form>
+
+            {% endwith %}
+        {% endif %}
+
+        <a href="{% url 'a_dashboard_blog_new' %}"
+            class="btn btn-primary btn-sm rounded-lg cursor-pointer">
+            <i class="fa-solid fa-plus text-xs mr-1"></i> New Post
+        </a>
+    </div>
+</div>
+{% include 'includes/alerts.html' %}
+
+{% if posts %}
+<div class="space-y-3">
+    {% for post in posts %}
+    <div class="bg-white border border-base-200/60 rounded-xl p-4">
+
+        <!-- Row 1: status badge + title + actions -->
+        <div class="flex items-center gap-3">
+            {% if post.status == 'Draft' %}
+            <span class="badge badge-neutral badge-sm">Draft｜草稿</span>
+            {% elif post.status == 'Pending' %}
+            <span class="badge badge-warning badge-sm">Pending｜待審核</span>
+            {% elif post.status == 'Published' %}
+            <span class="badge badge-success badge-sm">Published｜已發布</span>
+            {% elif post.status == 'Rejected' %}
+            <span class="badge badge-error badge-sm">Rejected｜未通過</span>
+            {% elif post.status == 'Unpublished' %}
+            <span class="badge badge-xs badge-neutral">Unpublished｜已下架</span>
+            {% else %}
+            <span class="badge badge-xs badge-ghost">{{ post.status }}</span>
+            {% endif %}
+
+            {% if post.is_deleted %}
+            <span class="badge badge-xs badge-error">deleted</span>
+            {% endif %}
+
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">{{ post.title }}</p>
+                <p class="text-xs text-base-content/50">
+                    {{ post.updated_at|date:"Y-m-d H:i" }}
+                    {% if post.post_category %}
+                        · {{ post.get_post_category_display }}
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="flex gap-1">
+                {% if post.status == 'Published' %}
+                <a href="{{ post.get_url }}" target="_blank"
+                   class="btn btn-xs btn-ghost rounded-lg" title="View public page">
+                    <i class="fa-solid fa-eye text-xs"></i>
+                </a>
+                {% endif %}
+
+                {% if post.status == 'Draft' or post.status == 'Rejected' %}
+                <a href="{% url 'a_dashboard_blog_edit' post.id %}"
+                    class="btn btn-xs btn-ghost rounded-lg" title="Edit">
+                        <i class="fa-solid fa-pen text-xs"></i>
+                    </a>
+                {% endif %}
+
+                {# 🌟 Soft-delete: only for Draft / Rejected / Unpublished #}
+                {% if post.can_be_deleted_by_artisan %}
+                <form hx-post="{% url 'a_dashboard_blog_delete' post.id %}"
+                      hx-target="#dashboard-main"
+                      hx-swap="innerHTML"
+                      hx-confirm="Delete this post?｜確定刪除此筆記？已刪除的筆記不會再顯示於此列表。"
+                      class="inline">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn btn-xs btn-ghost rounded-lg text-error"
+                            title="Delete｜刪除">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Row 2: Rejection note if applicable -->
+        {% if post.status == 'Rejected' and post.latest_review_log %}
+        <div class="mt-3 pt-3 border-t border-base-200/60 text-xs text-error">
+            <i class="fa-solid fa-circle-exclamation mr-1"></i>
+            {{ post.latest_review_log.note|default:"審核未通過，請修改後再提交。" }}
+        </div>
+        {% endif %}
+
+        <!-- Row 3: Submit / Withdraw buttons -->
+        <div class="mt-3 pt-3 border-t border-base-200/60 flex justify-end gap-2">
+            {% if post.status == 'Draft' or post.status == 'Rejected' %}
+            <form hx-post="{% url 'a_dashboard_blog_submit' post.id %}"
+                  hx-target="#dashboard-main"
+                  hx-swap="innerHTML"
+                  class="inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-xs btn-primary rounded-lg">
+                    提交審核｜Submit
+                </button>
+            </form>
+            {% elif post.status == 'Pending' %}
+            <form hx-post="{% url 'a_dashboard_blog_withdraw' post.id %}"
+                  hx-target="#dashboard-main"
+                  hx-swap="innerHTML"
+                  class="inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-xs btn-ghost rounded-lg">
+                    撤回｜Withdraw
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="bg-white border border-base-200/60 rounded-2xl p-12 text-center">
+    <i class="fa-solid fa-pen-fancy text-3xl text-base-content/20 mb-3"></i>
+    <p class="text-sm text-base-content/50 mb-1">尚未發表任何筆記</p>
+    <p class="text-xs text-base-content/30">No posts yet. Start writing.</p>
+</div>
+{% endif %}

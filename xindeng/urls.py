@@ -1,3 +1,4 @@
+# xindeng/urls.py
 """
 URL configuration for xindeng project.
 
@@ -16,19 +17,26 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from . import views
 from django.conf.urls.static import static
 from django.conf import settings
 from django.conf.urls import handler404, handler500
 from django.http import HttpResponse
+from accounts import views as account_views
+from accounts.views_admin_trap import fake_admin_login
 
 # Map global system error loops directly to your root views namespace strings
 handler404 = 'xindeng.views.error_404'
 handler500 = 'xindeng.views.error_500'
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    # path("admin/", admin.site.urls),
+    # Honeypot for the real admin — every hit is logged
+    path("admin/", fake_admin_login, name="fake_admin_login"),
+    # Real admin, hidden behind a secret path
+    path(f"{settings.ADMIN_SECRET_PATH}/", admin.site.urls),
+    
     path("", views.home, name="home"),
     path("ckeditor5/", include('django_ckeditor_5.urls')),
 
@@ -67,6 +75,8 @@ urlpatterns = [
     path("error/404/", views.error_404, name="error_404"),
     path("error/500/", views.error_500, name="error_500"),
     path('.well-known/appspecific/com.chrome.devtools.json', lambda r: HttpResponse('{}', content_type='application/json')),
+
+    path('taggit/', include('taggit_selectize.urls')),
 
     path("test/", views.test, name="test")
 

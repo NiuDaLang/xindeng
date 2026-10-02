@@ -1,3 +1,4 @@
+<!-- templates/store/partials/_products_region.html -->
 {% load humanize %}
 <!-- 🌟 FILTERED BY ARTISAN BANNER -->
 {% if active_creator %}
@@ -53,14 +54,35 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 my-5">
     {% for product in available_products %}
     <article class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
-        <figure class="relative">
+        <!-- <figure class="relative">
             <a href="{{ product.get_url }}">
                 <img src="{{ product.images.url }}" 
                         alt="{{ product.name }}" 
                         class="w-full h-56 sm:h-64 object-cover"
                         loading="lazy" />
             </a>
+        </figure> -->
+
+        <!-- <figure class="relative aspect-[4/3]">
+            <a href="{{ product.get_url }}">
+                <img src="{{ product.images.url }}" 
+                    alt="{{ product.name }}" 
+                    class="w-full h-full object-cover"
+                    loading="lazy" 
+                    decoding="async" />
+            </a>
+        </figure> -->
+
+        <figure class="relative aspect-[4/3] bg-base-100">
+            <a href="{{ product.get_url }}">
+                <img src="{{ product.images.url }}" 
+                    alt="{{ product.name }}" 
+                    class="w-full h-full {% if product.is_portrait %}object-contain p-2{% else %}object-cover{% endif %}"
+                    loading="lazy" />
+            </a>
         </figure>
+
+
         <div class="card-body p-4 sm:p-6">
             <h3 class="card-title text-base sm:text-lg">
                 <a href="{{ product.get_url }}" class="hover:text-primary">{{ product.product_name }}</a>

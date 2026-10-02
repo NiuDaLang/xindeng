@@ -1,0 +1,493 @@
+<!-- artisans/dashboard/partials/_product_editor_panel.html -->
+<div class="mb-8">
+    <h1 class="font-serif text-2xl tracking-wide">
+        {% if is_editing %}Edit Product｜編輯作品{% else %}New Product｜新作品{% endif %}
+    </h1>
+    <p class="text-sm text-base-content/50 mt-1">
+        {% if is_editing %}
+        完成基本資料後，於下方新增作品款式。
+        {% else %}
+        填寫基本資料後即可建立草稿，隨後新增款式。
+        {% endif %}
+    </p>
+</div>
+{% include 'includes/alerts.html' %}
+
+<form method="post" enctype="multipart/form-data"
+      action="{% if is_editing %}{% url 'a_dashboard_product_edit' product.id %}{% else %}{% url 'a_dashboard_product_new' %}{% endif %}"
+      class="space-y-8">
+
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-error text-xs">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <!-- SECTION 1: Featured Image -->
+    <section class="bg-white border border-base-200/60 rounded-2xl p-6">
+        <h2 class="font-serif text-lg tracking-wide mb-4 pb-3 border-b border-base-200/60">
+            Featured Image｜主視覺
+        </h2>
+        <div class="flex items-start gap-4">
+            {% if is_editing and product.images %}
+            <img src="{{ product.images.url }}" class="w-32 h-32 object-cover rounded-lg border border-base-200">
+            {% else %}
+            <div class="w-32 h-32 rounded-lg border-2 border-dashed border-base-200 flex items-center justify-center text-base-content/30 flex-shrink-0">
+                <i class="fa-solid fa-image text-3xl"></i>
+            </div>
+            {% endif %}
+            <div class="flex-1">
+                {{ form.images }}
+                <p class="text-[10px] opacity-50 mt-2">
+                    建議 4:3 比例。選擇檔案後可進行裁剪。
+                    4:3 recommended. You'll be able to crop after selecting.<br>
+                </p>
+                <p class="text-[10px] text-base-content/40 italic mt-1">
+                    預覽將於儲存後更新。｜Preview updates after saving.
+                </p>
+                {% if form.hero_ratio_hint %}
+                <div class="alert alert-info text-xs">{{ form.hero_ratio_hint }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: Gallery Images -->
+    <section class="bg-white border border-base-200/60 rounded-2xl p-6">
+        <h2 class="font-serif text-lg tracking-wide mb-4 pb-3 border-b border-base-200/60">
+            Gallery Images｜作品相簿
+        </h2>
+        <p class="text-xs text-base-content/50 mb-3">
+            Upload 1–5 images. These appear in the product page carousel.<br>
+            可上傳多張相片，顯示於商品頁輪播。
+        </p>
+        <input type="file" name="gallery_images" multiple accept="image/*"
+               class="file-input file-input-bordered w-full">
+        {% if is_editing %}
+            {% include 'artisans/dashboard/partials/_product_gallery_grid.html' %}
+        {% endif %}
+    </section>
+
+    <!-- SECTION 3: Product Details -->
+    <section class="bg-white border border-base-200/60 rounded-2xl p-6 space-y-6">
+        <h2 class="font-serif text-lg tracking-wide pb-3 border-b border-base-200/60">
+            Product Details｜作品資訊
+        </h2>
+
+        <div>
+            <label class="label text-xs uppercase tracking-wider opacity-60">
+                Title｜作品名稱 <span class="text-error">*</span>
+            </label>
+            {{ form.product_name }}
+            {% if form.product_name.errors %}<p class="text-xs text-error mt-1">{{ form.product_name.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+            <label class="label text-xs uppercase tracking-wider opacity-60">
+                Short Description｜簡介 <span class="text-error">*</span>
+            </label>
+            {{ form.description }}
+            {% if form.description.errors %}<p class="text-xs text-error mt-1">{{ form.description.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+            <label class="label text-xs uppercase tracking-wider opacity-60">
+                Category｜分類 <span class="text-error">*</span>
+            </label>
+            {{ form.category }}
+            {% if form.category.errors %}<p class="text-xs text-error mt-1">{{ form.category.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+            <label class="label text-xs uppercase tracking-wider opacity-60">
+                Craft Types｜工藝類型
+            </label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {% for checkbox in form.craft_types %}
+                <label class="flex items-center gap-2 text-xs">
+                    {{ checkbox.tag }} <span>{{ checkbox.choice_label }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div>
+            <label class="label text-xs uppercase tracking-wider opacity-60">
+                Tags｜標籤
+            </label>
+            <p class="text-[10px] opacity-50 mb-2">
+                從現有標籤中挑選；如需新增請聯繫後台。<br>
+                Pick from existing tags. To request a new one, contact the platform.
+            </p>
+            {% if form.tags_choices.field.queryset.exists %}
+            <div class="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-2">
+                {% for checkbox in form.tags_choices %}
+                <label class="flex items-center gap-2 px-3 py-1.5 border border-base-200/60 rounded-full cursor-pointer hover:border-primary/40 hover:bg-base-50/50 transition-colors">
+                    {{ checkbox.tag }}
+                    <span class="text-xs"># {{ checkbox.choice_label }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-xs text-base-content/40 italic">
+                目前無標籤可選。｜No tags available yet.
+            </p>
+            {% endif %}
+            {% if form.tags_choices.errors %}
+            <p class="text-xs text-error mt-2">{{ form.tags_choices.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+    </section>
+
+    <!-- SECTION 4: Full Description -->
+    <section class="bg-white border border-base-200/60 rounded-2xl p-6">
+        <h2 class="font-serif text-lg tracking-wide mb-4 pb-3 border-b border-base-200/60">
+            Full Description｜作品詳情
+        </h2>
+        {{ form.media }}   <!-- boots CKEditor -->
+        {{ form.details }}
+        {% if form.details.errors %}<p class="text-xs text-error mt-1">{{ form.details.errors.0 }}</p>{% endif %}
+    </section>
+
+    <!-- SECTION 5: Product Type -->
+    <section class="bg-white border border-base-200/60 rounded-2xl p-6 space-y-4">
+        <h2 class="font-serif text-lg tracking-wide pb-3 border-b border-base-200/60">
+            Product Type｜產品類型
+        </h2>
+
+        <div class="flex flex-col gap-2">
+            {% for radio in form.product_kind %}
+            <label class="flex items-center gap-2 text-sm">
+                {{ radio.tag }} <span>{{ radio.choice_label }}</span>
+            </label>
+            {% endfor %}
+        </div>
+        {% if form.product_kind.errors %}<p class="text-xs text-error mt-1">{{ form.product_kind.errors.0 }}</p>{% endif %}
+
+        <!-- Digital Fulfillment (only relevant to digital products) -->
+        <div id="digital-fulfillment-field" class="pt-3 border-t border-base-200/60">
+            <label class="label text-xs uppercase tracking-wider opacity-60">
+                Digital Fulfillment｜電子交付方式
+            </label>
+            {{ form.digital_fulfillment_type }}
+            <p class="text-[10px] opacity-50 mt-1">
+                For online workshops or commissions, choose "Custom / Manual".<br>
+                線上工作坊或訂製品，請選擇「人工交付」。
+            </p>
+        </div>
+    </section>
+
+    <!-- SECTION 6: Recommendation Metadata -->
+    <section class="bg-white border border-base-200/60 rounded-2xl p-6 space-y-4">
+        <div class="pb-3 border-b border-base-200/60">
+            <h2 class="font-serif text-lg tracking-wide">Recommendation Metadata｜推薦標籤（可選）</h2>
+            <p class="text-xs text-base-content/50 mt-1">
+                這些標籤會用於平台的推薦系統，若無想法可保持預設。<br>
+                These tags help our recommendation engine match this piece with visitors.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+                <label class="label text-xs uppercase tracking-wider opacity-60">Color Energy｜色彩能量</label>
+                {{ form.color }}
+            </div>
+            <div>
+                <label class="label text-xs uppercase tracking-wider opacity-60">Gender Resonance｜性別共振</label>
+                {{ form.gender }}
+            </div>
+            <div>
+                <label class="label text-xs uppercase tracking-wider opacity-60">Blood Affinity｜血型共鳴</label>
+                {{ form.blood }}
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 7: Variations (edit-only) -->
+    {% if is_editing %}
+    <section class="bg-white border border-base-200/60 rounded-2xl p-6">
+        <div class="flex items-center justify-between pb-3 border-b border-base-200/60 mb-4">
+            <h2 class="font-serif text-lg tracking-wide">Variations｜款式與價格</h2>
+            <button type="button" id="open-variation-modal"
+                    class="btn btn-xs btn-primary rounded-lg">
+                <i class="fa-solid fa-plus text-xs mr-1"></i> Add Variation
+            </button>
+        </div>
+
+        <p class="text-xs text-base-content/50 mb-4">
+            價格以人民幣（CNY ¥）計價。｜Prices are denominated in CNY.
+        </p>
+
+        <div id="variation-cards-container">
+            {% include 'artisans/dashboard/partials/_product_variation_cards.html' %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ACTIONS -->
+    <div class="flex justify-end gap-3 flex-wrap">
+        <a href="{% url 'a_dashboard_products' %}" class="btn btn-ghost btn-sm rounded-lg">
+            返回｜Cancel
+        </a>
+
+        {% if is_editing %}
+            <button type="submit"
+                    name="action"
+                    value="save_draft"
+                    class="btn btn-ghost btn-sm rounded-lg">
+                <i class="fa-regular fa-floppy-disk text-xs mr-1"></i>
+                Save Draft｜儲存草稿
+            </button>
+
+            {% if product.status == 'Draft' %}
+                <button type="submit"
+                        name="action"
+                        value="save_and_submit"
+                        class="btn btn-primary rounded-lg px-6">
+                    <i class="fa-solid fa-check text-xs mr-1"></i>
+                    提交審核｜Submit for Review
+                </button>
+            {% elif product.status == 'Rejected' %}
+                <button type="submit"
+                        name="action"
+                        value="save_and_submit"
+                        class="btn btn-primary rounded-lg px-6">
+                    <i class="fa-solid fa-rotate-right text-xs mr-1"></i>
+                    儲存並重新提交｜Save & Resubmit
+                </button>
+            {% elif product.status == 'Unpublished' %}
+                <button type="submit"
+                        name="action"
+                        value="save_and_submit"
+                        class="btn btn-primary rounded-lg px-6">
+                    <i class="fa-solid fa-arrow-up-from-bracket text-xs mr-1"></i>
+                    儲存並重新上架｜Save & Relist
+                </button>
+            {% endif %}
+        {% else %}
+            <button type="submit" class="btn btn-primary rounded-lg px-6">
+                <i class="fa-solid fa-check text-xs mr-1"></i>
+                Continue｜下一步
+            </button>
+        {% endif %}
+    </div>
+</form>
+
+<!-- MODAL: Add Variation -->
+{% if is_editing %}
+<dialog id="variation-modal" class="modal">
+    <div class="modal-box max-w-2xl">
+        <h3 class="font-serif text-lg mb-4">Add Variation｜新增款式</h3>
+
+        <form id="variation-form"
+                data-add-url="{% url 'a_dashboard_product_variation_add' product.id %}"
+                hx-post="{% url 'a_dashboard_product_variation_add' product.id %}"
+                hx-target="#variation-cards-container"
+                hx-swap="innerHTML"
+                hx-encoding="multipart/form-data"
+                hx-on::after-request="handleVariationAddResponse(event)">
+        
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="label text-xs">Color｜顏色</label>
+                    {{ variation_form.color }}
+                    {{ variation_form.color_custom }}
+                </div>
+                <div>
+                    <label class="label text-xs">Size｜尺寸 <span class="text-[10px] opacity-60">(含尺寸，如 60×80cm)</span></label>
+                    {{ variation_form.size }}
+                    {{ variation_form.size_custom }}
+                </div>
+                <div>
+                    <label class="label text-xs">Type｜款式</label>
+                    {{ variation_form.type }}
+                    {{ variation_form.type_custom }}
+                </div>
+                <div>
+                    <label class="label text-xs">Price｜售價 (CNY ¥) <span class="text-error">*</span></label>
+                    {{ variation_form.price }}
+                </div>
+                <div>
+                    <label class="label text-xs">Original Price｜原價 (CNY ¥)</label>
+                    {{ variation_form.original_price }}
+                </div>
+                <div>
+                    <label class="label text-xs">Stock｜庫存 <span class="text-error">*</span></label>
+                    {{ variation_form.stock }}
+                    <p class="text-[10px] opacity-50 mt-1">
+                        即時電子產品庫存永遠為 1。｜Instant digital products always stock = 1.
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2 pt-4">
+                    {{ variation_form.with_shipping }}
+                    <label class="text-xs">Shipping included｜含運費</label>
+                </div>
+
+                <div class="flex items-center gap-2 pt-4">
+                    {{ variation_form.single_pack }}
+                    <label class="text-xs">Single Pack｜單件包裝</label>
+                </div>
+
+                <p class="text-[10px] opacity-50 sm:col-span-2">
+                    <strong>含運費</strong>：運費已包含在售價中（適合平價小物）。<br>
+                    <strong>單件包裝</strong>：每件單獨計運費（如畫作）。若不勾選，多件可合併計算運費。<br>
+                    <span class="italic">
+                        <strong>Shipping included</strong>: cost is baked into the price. |
+                        <strong>Single Pack</strong>: each unit ships separately. Leave unchecked to combine shipping.
+                    </span>
+                </p>
+
+                <div>
+                    <label class="label text-xs">Weight｜重量(g)</label>
+                    {{ variation_form.weight }}
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="label text-xs">
+                        Variation Image｜款式圖片
+                        <span class="text-error">*</span>
+                    </label>
+                    {{ variation_form.images }}
+                    {% if variation_form.images.errors %}
+                    <p class="text-xs text-error mt-1">{{ variation_form.images.errors.0 }}</p>
+                    {% endif %}
+                    {% if variation_form.image_ratio_hint %}
+                    <p class="text-[10px] text-info mt-1">{{ variation_form.image_ratio_hint }}</p>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <div id="variation-form-errors" class="text-xs text-error mt-3"></div>
+
+            <div class="modal-action">
+                <button type="button"
+                        onclick="document.getElementById('variation-modal').close()"
+                        class="btn btn-ghost btn-sm">
+                    Cancel｜取消
+                </button>
+                <button type="submit" id="variation-modal-submit" class="btn btn-primary btn-sm">
+                    Add｜新增
+                </button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<script>
+    // ---------- Delegated events ----------
+    // Attach once; survives HTMX swaps of the card container.
+
+    document.addEventListener('click', function(e) {
+        // Edit button
+        const editBtn = e.target.closest('.edit-variation-btn');
+        if (editBtn) {
+            e.preventDefault();
+            openVariationModalForEdit(editBtn);
+            return;
+        }
+
+        // Open Add modal
+        if (e.target.closest('#open-variation-modal')) {
+            e.preventDefault();
+            openVariationModalForAdd();
+            return;
+        }
+    });
+
+    // ---------- Modal helpers ----------
+    function openVariationModalForAdd() {
+        const form = document.getElementById('variation-form');
+        if (!form) return;
+
+        form.reset();
+        form.setAttribute('hx-post', form.dataset.addUrl);
+        htmx.process(form);
+
+        // Reset modal title
+        const titleEl = document.querySelector('#variation-modal h3');
+        if (titleEl) titleEl.textContent = 'Add Variation｜新增款式';
+
+        const submitBtn = document.getElementById('variation-modal-submit');
+        if (submitBtn) submitBtn.textContent = 'Add｜新增';
+
+        document.getElementById('variation-form-errors').innerHTML = '';
+        document.getElementById('variation-modal').showModal();
+    }
+
+    function openVariationModalForEdit(btn) {
+        const form = document.getElementById('variation-form');
+        if (!form || !btn) return;
+
+        form.querySelector('[name="color"]').value = btn.dataset.color || '';
+        form.querySelector('[name="size"]').value = btn.dataset.size || '';
+        form.querySelector('[name="type"]').value = btn.dataset.type || '';
+        form.querySelector('[name="color_custom"]').value = btn.dataset.pendingColor || '';
+        form.querySelector('[name="size_custom"]').value = btn.dataset.pendingSize || '';
+        form.querySelector('[name="type_custom"]').value = btn.dataset.pendingType || '';
+        form.querySelector('[name="price"]').value = btn.dataset.price || '';
+        form.querySelector('[name="original_price"]').value = btn.dataset.originalPrice || '';
+        form.querySelector('[name="stock"]').value = btn.dataset.stock || '';
+        form.querySelector('[name="weight"]').value = btn.dataset.weight || '';
+        form.querySelector('[name="with_shipping"]').checked = btn.dataset.withShipping === '1';
+        form.querySelector('[name="single_pack"]').checked = btn.dataset.singlePack === '1';
+
+        form.setAttribute('hx-post', btn.dataset.editUrl);
+        htmx.process(form);
+
+        // Update modal title
+        const titleEl = document.querySelector('#variation-modal h3');
+        if (titleEl) titleEl.textContent = 'Edit Variation｜編輯款式';
+
+        const submitBtn = document.getElementById('variation-modal-submit');
+        if (submitBtn) submitBtn.textContent = 'Save｜儲存';
+
+        document.getElementById('variation-form-errors').innerHTML = '';
+        document.getElementById('variation-modal').showModal();
+    }
+
+    // ---------- HTMX response handler ----------
+
+    function handleVariationAddResponse(evt) {
+        const xhr = evt.detail.xhr;
+        if (xhr.status === 200) {
+            document.getElementById('variation-modal').close();
+        } else {
+            try {
+                const data = JSON.parse(xhr.responseText);
+                const errBox = document.getElementById('variation-form-errors');
+                if (data.error) {
+                    errBox.innerHTML = data.error;
+                } else if (data.errors) {
+                    errBox.innerHTML = Object.values(data.errors).flat().join('<br>');
+                }
+            } catch (e) {
+                document.getElementById('variation-form-errors').innerHTML = 'Submission failed.｜提交失敗。';
+            }
+        }
+    }
+
+    // ---------- Conditional Digital Fulfillment ----------
+    (function() {
+        const field = document.getElementById('digital-fulfillment-field');
+        if (!field) return;
+        const radios = document.querySelectorAll('input[name="product_kind"]');
+        function toggle() {
+            const digital = [...radios].some(r => r.checked && r.value === 'digital');
+            field.style.display = digital ? '' : 'none';
+        }
+        radios.forEach(r => r.addEventListener('change', toggle));
+        toggle();
+    })();
+
+</script>
+
+{% endif %}
+
+<!-- ADD: crop modal is always present -->
+{% include 'includes/crop_modal.html' %}

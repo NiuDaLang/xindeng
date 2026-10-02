@@ -1,3 +1,5 @@
+# emails.utils.py
+
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -15,6 +17,8 @@ from pathlib import Path
 import logging
 from accounts.models import CustomerVoucher
 from django.contrib.sites.models import Site # 🌟 IMPORT THE DATABASE SITE CONFIG
+from blog.models import Post
+from django.utils import timezone
 
 
 logger = logging.getLogger(__name__)
@@ -478,6 +482,7 @@ def send_cancellation_completion_email(order_id, user_type, voucher_id_str, net_
     return True
 
 
+# ARTISAN related
 def send_artisan_new_order_email(order_id, creator_id):
     """
     Dispatches a 'new order to fulfill' notification to a single artisan.
@@ -538,3 +543,201 @@ def send_artisan_new_order_email(order_id, creator_id):
     mail.send()
 
     return True
+
+
+def send_blog_submission_notification(post_id):
+    """Notify the platform admin that a new blog post was submitted for review."""
+    post = Post.objects.get(id=post_id)
+
+    author_label = (
+        post.creator.display_name if post.creator
+        else post.author.username
+    )
+
+    mail_subject = f"📝 [Blog Review] New submission｜新筆記待審 — {post.title}"
+
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_email = [settings.ADMIN_EMAIL]
+
+    context = {
+        "post": post,
+        "author_label": author_label,
+        "review_url": f"{settings.SITE_DOMAIN}/accounts/dashboard/blog_review/",
+        "year": timezone.now().year,
+    }
+    html_message = render_to_string("emails/blog_submission_notification.html", context)
+    plain_message = render_to_string("emails/blog_submission_notification.txt", context)
+
+    mail = EmailMultiAlternatives(
+        subject=mail_subject,
+        body=plain_message,
+        from_email=from_email,
+        to=to_email,
+        bcc=[from_email],
+    )
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = "utf-8"
+    mail.send()
+
+
+def send_blog_review_result_notification(post_id, approved, note=""):
+    """Notify the artisan that their blog post was approved or rejected."""
+    post = Post.objects.get(id=post_id)
+
+    # Editorial posts (creator is None) should never reach the artisan
+    if not post.creator:
+        return
+
+    author_label = post.creator.display_name
+
+    if approved:
+        mail_subject = f"✅ [Blog] Approved｜筆記已通過 — {post.title}"
+    else:
+        mail_subject = f"📝 [Blog] Revision Needed｜筆記需要修改 — {post.title}"
+
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_email = [post.creator.user.email]
+
+    context = {
+        "post": post,
+        "author_label": author_label,
+        "approved": approved,
+        "note": note,
+        "public_url": f"{settings.SITE_DOMAIN}{post.get_url()}" if approved else None,
+        "dashboard_url": f"{settings.SITE_DOMAIN}/creators/dashboard/blog/",
+        "year": timezone.now().year,
+    }
+    html_message = render_to_string("emails/blog_review_result.html", context)
+    plain_message = render_to_string("emails/blog_review_result.txt", context)
+
+    mail = EmailMultiAlternatives(
+        subject=mail_subject,
+        body=plain_message,
+        from_email=from_email,
+        to=to_email,
+        bcc=[from_email],
+    )
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = "utf-8"
+    mail.send()    
+
+
+def send_product_submission_notification(product_id):
+    """Notify the platform admin that a new product was submitted for review."""
+    from store.models import Product
+
+    product = Product.objects.get(id=product_id)
+
+    artisan_label = (
+        product.creator.display_name if product.creator
+        else "Platform｜平台"
+    )
+
+    mail_subject = f"🛍️ [Product Review] New submission｜新作品待審 — {product.product_name}"
+
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_email = [settings.ADMIN_EMAIL]
+
+    context = {
+        "product": product,
+        "artisan_label": artisan_label,
+        "review_url": f"{settings.SITE_DOMAIN}/accounts/dashboard/product_review/",
+        "year": timezone.now().year,
+    }
+    html_message = render_to_string("emails/product_submission_notification.html", context)
+    plain_message = render_to_string("emails/product_submission_notification.txt", context)
+
+    mail = EmailMultiAlternatives(
+        subject=mail_subject,
+        body=plain_message,
+        from_email=from_email,
+        to=to_email,
+        bcc=[from_email],
+    )
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = "utf-8"
+    mail.send()
+
+
+def send_product_review_result_notification(product_id, approved, note=""):
+    """Notify the artisan that their product was approved or rejected."""
+    from store.models import Product
+
+    product = Product.objects.get(id=product_id)
+
+    # Platform-owned products have no artisan to notify
+    if not product.creator:
+        return
+
+    artisan_label = product.creator.display_name
+
+    if approved:
+        mail_subject = f"✅ [Product] Approved｜作品已通過 — {product.product_name}"
+    else:
+        mail_subject = f"📝 [Product] Revision Needed｜作品需要修改 — {product.product_name}"
+
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_email = [product.creator.user.email]
+
+    context = {
+        "product": product,
+        "artisan_label": artisan_label,
+        "approved": approved,
+        "note": note,
+        "public_url": f"{settings.SITE_DOMAIN}{product.get_url()}" if approved else None,
+        "dashboard_url": f"{settings.SITE_DOMAIN}/artisans/dashboard/products/",
+        "year": timezone.now().year,
+    }
+    html_message = render_to_string("emails/product_review_result.html", context)
+    plain_message = render_to_string("emails/product_review_result.txt", context)
+
+    mail = EmailMultiAlternatives(
+        subject=mail_subject,
+        body=plain_message,
+        from_email=from_email,
+        to=to_email,
+        bcc=[from_email],
+    )
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = "utf-8"
+    mail.send()
+
+
+def send_product_deactivation_request_notification(product_id):
+    """Notify the platform admin that an artisan requested a product deactivation."""
+    from store.models import Product
+
+    product = Product.objects.get(id=product_id)
+    latest_log = product.review_logs.order_by('-created_at').first()
+    reason = latest_log.note if latest_log else ""
+
+    artisan_label = (
+        product.creator.display_name if product.creator
+        else "Platform｜平台"
+    )
+
+    mail_subject = f"⚠️ [Product] Deactivation Requested｜申請下架 — {product.product_name}"
+
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_email = [settings.ADMIN_EMAIL]
+
+    context = {
+        "product": product,
+        "artisan_label": artisan_label,
+        "reason": reason,
+        "review_url": f"{settings.SITE_DOMAIN}/accounts/dashboard/product_review/",
+        "year": timezone.now().year,
+    }
+    html_message = render_to_string("emails/product_deactivation_request.html", context)
+    plain_message = render_to_string("emails/product_deactivation_request.txt", context)
+
+    mail = EmailMultiAlternatives(
+        subject=mail_subject,
+        body=plain_message,
+        from_email=from_email,
+        to=to_email,
+        bcc=[from_email],
+    )
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = "utf-8"
+    mail.send()

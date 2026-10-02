@@ -1,0 +1,216 @@
+<!-- artisans/dashboard/partials/_products_panel.html -->
+<div class="mb-8 flex items-center justify-between">
+    <div>
+        <h1 class="font-serif text-2xl tracking-wide">Products｜作品</h1>
+        <p class="text-sm text-base-content/50 mt-1">管理您的作品清單。</p>
+    </div>
+    <a href="{% url 'a_dashboard_product_new' %}"
+       class="btn btn-primary btn-sm rounded-lg cursor-pointer">
+        <i class="fa-solid fa-plus text-xs mr-1"></i> New Product
+    </a>
+</div>
+{% include 'includes/alerts.html' %}
+
+{% if products %}
+<div class="space-y-3">
+    {% for product in products %}
+    <div class="bg-white border border-base-200/60 rounded-xl p-4">
+        <div class="flex items-center gap-3">
+
+            <!-- Status badge -->
+            {% if product.status == 'Draft' %}
+            <span class="badge badge-neutral badge-sm">Draft｜草稿</span>
+            {% elif product.status == 'Pending' %}
+            <span class="badge badge-warning badge-sm">Pending｜待審核</span>
+            {% elif product.status == 'Published' %}
+            <span class="badge badge-success badge-sm">Published｜已發布</span>
+            {% elif product.status == 'Rejected' %}
+            <span class="badge badge-error badge-sm">Rejected｜未通過</span>
+            {% elif product.status == 'Unpublished' %}
+            <span class="badge badge-ghost badge-sm">Unpublished｜已下架</span>
+            {% endif %}
+
+            {% if product.has_pending_deactivation_request %}
+            <span class="badge badge-xs badge-warning">下架請求待處理</span>
+            {% endif %}
+
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">{{ product.product_name }}</p>
+                <p class="text-xs text-base-content/50">
+                    {{ product.modified_date|date:"Y-m-d H:i" }}
+                    · {{ product.category.category_name }}
+                    · {{ product.variations.count }} variation{{ product.variations.count|pluralize }}
+                </p>
+            </div>
+
+            <div class="flex gap-1">
+                {% if product.status == 'Published' %}
+                <button type="button"
+                        class="tooltip tooltip-top btn btn-xs btn-ghost rounded-lg"
+                        data-tip="Change Stock｜修改庫存"
+                        hx-get="{% url 'a_dashboard_product_stock_edit' product.id %}"
+                        hx-target="#stock-modal-content"
+                        hx-swap="innerHTML"
+                        hx-on::after-request="if(event.detail.successful) document.getElementById('stock-edit-modal').showModal()">
+                    <i class="fa-solid fa-boxes-stacked text-xs"></i>
+                </button>
+
+                <button type="button"
+                        class="tooltip tooltip-top btn btn-xs btn-ghost text-warning rounded-lg"
+                        data-tip="Deactivate｜下架"
+                        data-deactivate-url="{% url 'a_dashboard_product_request_deactivation' product.id %}"
+                        onclick="openDeactivationModal(this)">
+                    <i class="fa-solid fa-eye-slash text-xs"></i>
+                </button>
+
+                {% endif %}
+
+                {% if product.status == 'Published' %}
+                <a href="{{ product.get_url }}" target="_blank" rel="noopener"
+                   class="tooltip tooltip-top btn btn-xs btn-ghost rounded-lg"
+                   data-tip="View｜遊覽"
+                   title="View public page"
+                >
+                    <i class="fa-solid fa-eye text-xs"></i>
+                </a>
+                {% endif %}
+
+                {% if product.is_editable_by_artisan %}
+                <a href="{% url 'a_dashboard_product_edit' product.id %}"
+                   class="tooltip tooltip-left btn btn-xs btn-ghost rounded-lg"
+                   data-tip="Edit｜編輯"
+                   title="Edit"
+                >
+                    <i class="fa-solid fa-pen text-xs"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if product.status == 'Rejected' and product.latest_review_log %}
+        <div class="mt-3 pt-3 border-t border-base-200/60 text-xs text-error">
+            <i class="fa-solid fa-circle-exclamation mr-1"></i>
+            {{ product.latest_review_log.note|default:"審核未通過，請修改後再提交。" }}
+        </div>
+        {% endif %}
+
+        <!-- Submit / Withdraw buttons -->
+        <div class="mt-3 pt-3 border-t border-base-200/60 flex justify-end gap-2">
+            {% if product.status == 'Draft' or product.status == 'Rejected' or product.status == 'Unpublished' %}
+
+            <button type="button"
+                    class="tooltip tooltip-left btn btn-xs btn-ghost text-error rounded-lg"
+                    data-tip="Delete｜刪除"
+                    onclick="confirmProductDelete('{{ product.id }}', '{{ product.product_name|escapejs }}')">
+                <i class="fa-solid fa-trash text-xs"></i>
+            </button>
+            <form id="delete-form-{{ product.id }}"
+                method="post"
+                action="{% url 'a_dashboard_product_delete' product.id %}"
+                class="hidden">
+                {% csrf_token %}
+            </form>
+
+            <form method="post"
+                  action="{% url 'a_dashboard_product_submit' product.id %}"
+                  class="inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-xs btn-primary rounded-lg">
+                    {% if product.status == 'Draft' %}
+                        提交審核｜Submit for Review
+                    {% elif product.status == 'Rejected' %}
+                        重新提交｜Resubmit for Review
+                    {% elif product.status == 'Unpublished' %}
+                        重新上架｜Relist
+                    {% endif %}
+                </button>
+            </form>
+
+            {% elif product.status == 'Pending' %}
+            <form method="post"
+                  action="{% url 'a_dashboard_product_withdraw' product.id %}"
+                  class="inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-xs btn-ghost rounded-lg">
+                    撤回｜Withdraw
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="bg-white border border-base-200/60 rounded-2xl p-12 text-center">
+    <i class="fa-solid fa-box-open text-3xl text-base-content/20 mb-3"></i>
+    <p class="text-sm text-base-content/50 mb-1">尚未新增任何作品</p>
+    <p class="text-xs text-base-content/30">No products yet. Start by creating your first piece.</p>
+</div>
+{% endif %}
+
+
+<dialog id="stock-edit-modal" class="modal">
+    <div class="modal-box max-w-lg">
+        <div id="stock-modal-content">
+            <!-- populated via HTMX fetch -->
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<dialog id="deactivation-request-modal" class="modal">
+    <div class="modal-box max-w-md">
+        <h3 class="font-serif text-lg mb-2">Request Deactivation｜申請下架</h3>
+        <p class="text-xs text-base-content/60 mb-4">
+            請簡述下架原因，管理員將盡快處理。<br>
+            Please provide a reason for deactivation. An admin will review your request.
+        </p>
+        <form id="deactivation-request-form" method="post" action="">
+            {% csrf_token %}
+            <textarea name="reason"
+                      class="textarea textarea-bordered w-full h-32 text-sm"
+                      placeholder="請說明下架原因…"
+                      required></textarea>
+            <div class="modal-action">
+                <button type="button"
+                        onclick="document.getElementById('deactivation-request-modal').close()"
+                        class="btn btn-ghost btn-sm">Cancel｜取消</button>
+                <button type="submit" class="btn btn-warning btn-sm">Submit Request｜提交請求</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<script>
+function confirmProductDelete(productId, productName) {
+    Swal.fire({
+        title: "Delete this product?｜確定刪除此作品？",
+        html: `
+            <div class="text-left text-xs space-y-2 mt-2">
+                <p class="font-bold text-error">${productName}</p>
+                <p class="opacity-70">This will permanently delete the product, its variations, and gallery images. This cannot be undone.</p>
+                <p class="opacity-70">此操作將永久刪除作品、款式及相簿相片，無法復原。</p>
+            </div>
+        `,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Yes, Delete｜確定刪除",
+        cancelButtonText: "Cancel｜取消",
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById(`delete-form-${productId}`).submit();
+        }
+    });
+}
+
+function openDeactivationModal(btn) {
+    const form = document.getElementById('deactivation-request-form');
+    form.action = btn.dataset.deactivateUrl;
+    form.querySelector('textarea').value = '';
+    document.getElementById('deactivation-request-modal').showModal();
+}
+
+</script>

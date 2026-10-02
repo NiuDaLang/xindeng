@@ -1,0 +1,11 @@
+🛍️ New Product Submission｜新作品待審
+
+匠人 {{ artisan_label }} 提交了新作品，等待審核：
+
+{{ product.product_name }}
+{{ product.description|truncatechars:140 }}
+
+審核入口｜Review queue:
+{{ review_url }}
+
+Hṛdayadīpa 心燈之屋 · {{ year }}

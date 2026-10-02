@@ -1,9 +1,13 @@
+# accounts.utils.py
 import datetime
 from borax.calendars.lunardate import LunarDate
 from .data import SOLAR
 from django.shortcuts import render
 import json
 from django.http import HttpResponse
+from django.urls import reverse
+from django.conf import settings
+import ipaddress
 
 
 def check_today_is_solar_term(today):
@@ -55,3 +59,34 @@ def htmx_unavailable_response(request, title, text, icon="error"):
         }
     })
     return response
+
+
+def client_ip(request):
+    """
+    Return a validated client IP string, or None if unavailable/invalid.
+    Prefers X-Forwarded-For (proxy deployments) but validates each candidate.
+    """
+    candidates = []
+    xff = request.META.get("HTTP_X_FORWARDED_FOR")
+    if xff:
+        candidates.extend([p.strip() for p in xff.split(",") if p.strip()])
+    remote = request.META.get("REMOTE_ADDR")
+    if remote:
+        candidates.append(remote)
+
+    for candidate in candidates:
+        try:
+            return str(ipaddress.ip_address(candidate))
+        except ValueError:
+            continue
+    return None
+
+def get_admin_trap_url():
+    """URL of the honeypot admin page. Safe to link publicly."""
+    return reverse("fake_admin_login")
+
+
+def get_real_admin_url():
+    """URL prefix of the real Django admin. Only safe for verified superusers."""
+    # Prefer a settings-level constant so it's not duplicated.
+    return f"/{settings.ADMIN_SECRET_PATH}/"

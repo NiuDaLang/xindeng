@@ -1,0 +1,66 @@
+{% comment %}
+templates/includes/crop_modal.html
+
+Reusable crop-tool modal. Include once per page that has crop-tool inputs.
+
+The ratio preset bar is populated by JS from the triggering input's
+data-crop-presets attribute, so this template does not hard-code them.
+
+Cropper.js CSS is imported via JS (see static/js/crop_tool.js) so no
+<link> is needed here.
+{% endcomment %}
+
+<dialog id="crop-modal" class="modal">
+    <div class="modal-box max-w-3xl p-0 overflow-hidden">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-base-200/60">
+            <div>
+                <h3 class="font-serif text-base tracking-wide">
+                    裁剪圖片｜Crop Image
+                </h3>
+                <p class="text-[11px] opacity-60 mt-0.5" id="crop-modal-filename"></p>
+            </div>
+            <button type="button"
+                    data-crop-action="cancel"
+                    class="btn btn-xs btn-circle btn-ghost"
+                    aria-label="Close">✕</button>
+        </div>
+
+        <!-- Ratio preset bar (populated by JS) -->
+        <div class="px-6 py-3 border-b border-base-200/60 bg-base-50/50">
+            <div class="flex items-center gap-2 flex-wrap" id="crop-ratio-bar">
+                <!-- JS injects buttons here -->
+            </div>
+        </div>
+
+        <!-- Cropper mount point -->
+        <div class="bg-base-200" style="max-height: 60vh; min-height: 320px;">
+            <img id="crop-image" alt="" style="display:block; max-width:100%;">
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-2 px-6 py-4 border-t border-base-200/60 bg-base-50/50 flex-wrap">
+            <button type="button"
+                    data-crop-action="cancel"
+                    class="btn btn-ghost btn-sm">
+                取消｜Cancel
+            </button>
+            <button type="button"
+                    data-crop-action="original"
+                    class="btn btn-outline btn-sm">
+                跳過裁剪｜Skip Crop
+            </button>
+            <button type="button"
+                    data-crop-action="confirm"
+                    class="btn btn-primary btn-sm"
+                    id="crop-confirm-btn">
+                裁剪並使用｜Crop &amp; Use
+            </button>
+        </div>
+
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>

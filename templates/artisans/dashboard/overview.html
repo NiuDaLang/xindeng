@@ -1,8 +1,6 @@
-{% extends 'base.html' %}
+<!-- artisans/dashboard/overview.html -->
 
-{% block content %}
-
-<h1>Role Select</h1>
-
-
+{% extends 'artisans/dashboard/base_dashboard.html' %}
+{% block dashboard_content %}
+    {% include 'artisans/dashboard/partials/_overview_panel.html' %}
 {% endblock %}

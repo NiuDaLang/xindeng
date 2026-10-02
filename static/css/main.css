@@ -1,3 +1,4 @@
+/* main.css */
 /* @theme
 @utility
 @variant
@@ -59,6 +60,8 @@
   --font-serif-tc: "Noto Serif TC", serif; 
   --breakpoint-xs: 36rem; /* 576px = 36rem */
   --breakpoint-xxs: 20rem; /* 320px = 20rem */
+  --font-sans: "Zalando Sans", "Noto Sans TC", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Noto Serif TC", "Noto Serif SC", serif;
 }
 
 /* turn OFF "Text Size Adjust" */
@@ -296,4 +299,105 @@ figure > img {
     overflow-x: hidden !important;
     overflow-y: visible !important;
   }
+}
+/* ============================================================
+   BLOG PROSE — semantic rendering for artisan-authored content
+   Target: any element with .blog-body class (your public template wrapper)
+   ============================================================ */
+@layer components {
+  .blog-body {
+    @apply text-base leading-relaxed text-base-content/90;
+    font-weight: 300;
+  }
+  .blog-body > * + * {
+    @apply mt-4;
+  }
+  .blog-body h1 {
+    @apply font-serif text-3xl font-bold tracking-wide mt-10 mb-4;
+  }
+  .blog-body h2 {
+    @apply font-serif text-2xl font-bold tracking-wide mt-8 mb-3;
+  }
+  .blog-body h3 {
+    @apply font-serif text-xl font-semibold tracking-wide mt-6 mb-2;
+  }
+  .blog-body p {
+    @apply text-base leading-7;
+  }
+  .blog-body a {
+    @apply text-primary underline underline-offset-2 hover:text-primary/80;
+  }
+  .blog-body strong { @apply font-bold; }
+  .blog-body em     { @apply italic; }
+  .blog-body ul,
+  .blog-body ol {
+    @apply pl-6 space-y-1;
+  }
+  .blog-body ul { @apply list-disc; }
+  .blog-body ol { @apply list-decimal; }
+
+  .blog-body blockquote {
+    @apply border-l-4 border-primary/40 pl-4 py-1 italic
+           text-base-content/70 bg-base-200/40 rounded-r-lg;
+  }
+  .blog-body code {
+    @apply font-mono text-sm bg-base-200 px-1.5 py-0.5 rounded;
+  }
+  .blog-body pre {
+    @apply bg-base-300/50 p-4 rounded-lg overflow-x-auto text-sm;
+  }
+  .blog-body pre code {
+    @apply bg-transparent p-0;
+  }
+
+  .blog-body img {
+    @apply rounded-lg shadow-sm mx-auto my-6 max-w-full h-auto;
+  }
+  .blog-body figure {
+    @apply my-6;
+  }
+  .blog-body figcaption {
+    @apply text-center text-sm text-base-content/60 mt-2 italic;
+  }
+
+  .blog-body hr {
+    @apply my-8 border-base-300;
+  }
+
+  .blog-body table {
+    @apply w-full border-collapse my-6 text-sm;
+  }
+  .blog-body th,
+  .blog-body td {
+    @apply border border-base-300 px-3 py-2 text-left;
+  }
+  .blog-body th {
+    @apply bg-base-200 font-semibold;
+  }
+
+  /* escape hatch class set */
+  .blog-body .text-center { @apply text-center; }
+  .blog-body .text-right  { @apply text-right; }
+
+  .blog-body .pull-quote {
+    @apply font-serif text-2xl italic text-primary
+           border-none pl-0 py-4 text-center my-8 leading-snug;
+  }
+  .blog-body .artisan-note {
+    @apply bg-base-200/60 border-l-4 border-secondary
+           p-4 rounded-r-lg text-sm text-base-content/80 my-6;
+  }
+  .blog-body .artisan-highlight {
+    @apply bg-warning/20 px-1 rounded;
+  }
+  .blog-body .drop-cap::first-letter {
+    @apply font-serif text-5xl font-bold float-left mr-2 mt-1 leading-none text-primary;
+  }
+  .blog-body .muted {
+    @apply text-base-content/50 text-sm;
+  }
+  .blog-body .caption {
+    @apply block text-center text-xs text-base-content/50 mt-1;
+  }
+
 }

@@ -1,0 +1,47 @@
+{% comment %}
+templates/artisans/dashboard/partials/_product_gallery_grid.html
+
+Renders the current ProductGallery thumbnails for a product, with
+per-tile delete buttons. Rendered:
+  * inline from _product_editor_panel.html on page load
+  * by dashboard_product_gallery_delete on successful delete (HTMX swap)
+{% endcomment %}
+
+{% if gallery_images %}
+<div id="gallery-grid" class="flex flex-wrap gap-3 mt-4">
+    {% for img in gallery_images %}
+    <div class="relative group w-24 h-24 rounded-lg overflow-hidden border border-base-200
+                flex items-center justify-center bg-base-100">
+
+        {% with ext=img.image.name|lower %}
+            {% if ext|slice:"-5:" == ".webp" %}
+                <img src="{{ img.image.url }}" class="w-full h-full object-cover">
+            {% else %}
+                <div class="text-[9px] text-base-content/50 text-center leading-tight px-1">
+                    Optimising…<br>優化中…
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {# ── Delete button (only when the product is editable) ── #}
+        {% if product.is_editable_by_artisan %}
+        <button type="button"
+                hx-post="{% url 'a_dashboard_product_gallery_delete' product.id img.id %}"
+                hx-target="#gallery-grid"
+                hx-swap="outerHTML"
+                hx-confirm="Delete this gallery image?｜確定刪除此相片？"
+                class="absolute top-1 right-1 w-5 h-5 rounded-full bg-base-100/90 border border-base-200
+                       flex items-center justify-center text-error text-[10px] leading-none
+                       opacity-0 group-hover:opacity-100 transition-opacity hover:bg-error hover:text-white"
+                title="Delete｜刪除">
+            <i class="fa-solid fa-times"></i>
+        </button>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div id="gallery-grid" class="mt-4 text-[10px] text-base-content/40 italic">
+    No gallery images yet.｜暫無相簿相片。
+</div>
+{% endif %}

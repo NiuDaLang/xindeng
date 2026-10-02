@@ -1,3 +1,5 @@
+# xindeng/ckeditorconfig.py
+
 import os
 from urllib.parse import urljoin
 
@@ -88,25 +90,76 @@ CKEDITOR_5_CONFIGS = {
                 { 'model': 'heading2', 'view': 'h2', 'title': 'Heading 2', 'class': 'ck-heading_heading2' },
                 { 'model': 'heading3', 'view': 'h3', 'title': 'Heading 3', 'class': 'ck-heading_heading3' }
             ]
-        }
-    },
-    'list': {
-        'properties': {
-            'styles': 'true',
-            'startIndex': 'true',
-            'reversed': 'true',
-        }
-    },
-    "htmlSupport": {
-            "allow": [
+        },
+        'list': {
+            'properties': {
+                'styles': 'true',
+                'startIndex': 'true',
+                'reversed': 'true',
+            }
+        },
+        # "htmlSupport": {
+        #         "allow": [
+        #             {
+        #                 "name": "/.*/", 
+        #                 "attributes": True, 
+        #                 "classes": True, 
+        #                 "styles": True
+        #             }
+        #         ]
+        # },
+        'htmlSupport': {
+            'allow': [
                 {
-                    "name": "/.*/", 
-                    "attributes": True, 
-                    "classes": True, 
-                    "styles": True
-                }
-            ]
+                    'name': 'div',
+                    'attributes': True,
+                    'classes': True,
+                    'styles': True,
+                },
+                {
+                    'name': 'span',
+                    'attributes': True,
+                    'classes': True,
+                    'styles': True,
+                },
+                {
+                    'name': 'section',
+                    'attributes': True,
+                    'classes': True,
+                    'styles': True,
+                },
+                {
+                    'name': 'figure',
+                    'attributes': True,
+                    'classes': True,
+                    'styles': True,
+                },
+                {
+                    'name': 'figcaption',
+                    'attributes': True,
+                    'classes': True,
+                    'styles': True,
+                },
+            ],
+        },
+
     },
+    # 'htmlSupport': {
+    #     'allow': [
+    #         {
+    #             'name': 'div',
+    #             'attributes': True,
+    #             'classes': True,
+    #             'styles': True,
+    #         },
+    #         {
+    #             'name': 'span',
+    #             'attributes': True,
+    #             'classes': True,
+    #             'styles': True,
+    #         },
+    #     ],
+    # },
 }
 
 CKEDITOR_5_FILE_UPLOAD_PERMISSION = "authenticated"

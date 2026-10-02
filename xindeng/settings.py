@@ -1,3 +1,4 @@
+# xindeng/settings.py
 """
 Django settings for xindeng project.
 
@@ -13,6 +14,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+from django.core.exceptions import ImproperlyConfigured
+
 
 load_dotenv()
 
@@ -38,6 +41,9 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', '52.62.142.183']
 # 🌟 THE CORRECT SITE_DOMAIN FORMAT: Full valid URL string prefix used for link rendering.
 SITE_DOMAIN = os.environ.get("SITE_DOMAIN", "http://localhost:8000")
 
+# Admin notification email (for review queue, alerts, etc.)
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "gogocfa@yahoo.co.jp")
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -58,11 +64,13 @@ INSTALLED_APPS = [
     "category",
     "carts",
     "creators",
+    "core.apps.CoreConfig",
     "dataentry",
     "emails",
     "orders",
     "store",
     "taggit",
+    "taggit_selectize",
     "django_ckeditor_5",
     "django.contrib.humanize",
     "sekizai",
@@ -73,6 +81,15 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google', # Google specific
 ]
+
+STORAGES = {
+    "default": {
+        "BACKEND": "core.storage.SafeFileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 
 SITE_ID = 1 # Matches the ID in the Django Admin 'Sites' section
 
@@ -137,7 +154,9 @@ TEMPLATES = [
                 "category.context_processors.cart_item_count",
                 "sekizai.context_processors.sekizai",
                 "blog.context_processors.blog_sidebar",
+                "blog.context_processors.blog_review_count",
                 "accounts.context_processors.get_google_api",
+                "accounts.context_processors.product_review_count",
                 # "carts.context_processors.counter",
                 # "carts.context_processors.cart_items",
             ],
@@ -150,6 +169,27 @@ WSGI_APPLICATION = "xindeng.wsgi.application"
 ASGI_APPLICATION = "xindeng.asgi.application"
 
 AUTH_USER_MODEL = "accounts.Account"
+
+ADMIN_SECRET_PATH = os.environ.get("ADMIN_SECRET_PATH", "").strip("/")
+
+if not ADMIN_SECRET_PATH:
+    # Refuse to start if the secret path is not configured.
+    # This is fail-closed: better to crash than to silently expose the admin.
+    raise ImproperlyConfigured(
+        "ADMIN_SECRET_PATH environment variable is not set. "
+        "Add it to your .env file (local) or your deployment environment."
+    )
+
+if len(ADMIN_SECRET_PATH) < 12:
+    raise ImproperlyConfigured(
+        "ADMIN_SECRET_PATH must be at least 12 characters. "
+        "Shorter paths are guessable."
+    )
+
+if ADMIN_SECRET_PATH.lower() in {"admin", "administrator", "backend", "dashboard", "secret"}:
+    raise ImproperlyConfigured(
+        "ADMIN_SECRET_PATH is too common. Choose something less guessable."
+    )
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -320,7 +360,16 @@ CELERY_BEAT_SCHEDULE = {
         # 'schedule': crontab(minute='*') ,# Runs this at the start of every minute (e.g., 0:01, 0:02)
         'schedule': crontab(minute=0, hour=0), # Runs this once a day (e.g., at midnight)
     },
+    'purge-old-admin-trap-hits-daily': {
+        'task': 'accounts.tasks.purge_old_admin_trap_hits',
+        'schedule': crontab(minute=30, hour=3),  # 03:30 daily
+    },
+    'purge-old-login-events-daily': {  # optional, if you add a matching task
+        'task': 'accounts.tasks.purge_old_login_events',
+        'schedule': crontab(minute=45, hour=3),
+    },
 }
+
 
 STRIPE_SECRET_KEY_TEST = os.environ.get("STRIPE_SECRET_KEY_TEST")
 

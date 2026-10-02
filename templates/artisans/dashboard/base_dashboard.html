@@ -1,24 +1,143 @@
+<!-- artisans/dashboard/base_dashboard.html -->
+
 {% extends 'base.html' %}
 {% block content %}
-<div class="flex min-h-screen">
-    <!-- SIDEBAR -->
-    <aside class="w-56 border-r border-base-200 p-4 space-y-2">
-        <nav class="menu">
-            <li><a hx-get="{% url 'dashboard' %}" hx-target="#dashboard-main" hx-push-url="true">Overview｜工作台</a></li>
-            <li><a hx-get="{% url 'dashboard_orders' %}" hx-target="#dashboard-main" hx-push-url="true">Orders｜訂單{% if pending_dispatch_count %}<span class="badge badge-primary badge-xs">{{ pending_dispatch_count }}</span>{% endif %}</a></li>
-            <li><a hx-get="{% url 'dashboard_products' %}" hx-target="#dashboard-main" hx-push-url="true">Products｜寶貝</a></li>
-            <li><a hx-get="{% url 'dashboard_blog' %}" hx-target="#dashboard-main" hx-push-url="true">Blog｜筆記</a></li>
-            <li><a hx-get="{% url 'dashboard_profile' %}" hx-target="#dashboard-main" hx-push-url="true">Profile｜匠人檔案</a></li>
+<div class="flex min-h-[calc(100vh-86px)] mt-[65px] lg:mt-[86px] max-w-[1380px] mx-auto w-full">
+
+    <!-- SIDEBAR (desktop) -->
+    <aside class="hidden lg:flex flex-col w-60 border-r border-base-200/60 bg-base-50/40">
+
+        <!-- Artisan header -->
+        <div class="px-5 py-6 border-b border-base-200/60">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-base-200 shadow-sm flex-shrink-0">
+                    {% if profile.avatar %}
+                    <img src="{{ profile.avatar.url }}" class="w-full h-full object-cover" />
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-base-content/40 font-serif text-lg">
+                        {{ profile.display_name|slice:":1" }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="min-w-0">
+                    <p class="text-sm font-serif font-semibold truncate">
+                        {{ profile.display_name }}
+                    </p>
+                    {% if profile.is_premium %}
+                    <p class="text-[9px] uppercase tracking-wider text-amber-600 font-sans">
+                        <i class="fa-solid fa-crown text-[8px]"></i> Premium
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 px-2 py-4 space-y-1 text-sm">
+
+            <a hx-get="{% url 'a_dashboard' %}"
+               hx-target="#dashboard-main"
+               hx-push-url="true"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors
+                      {% if active_section == 'overview' %}bg-base-200 text-primary font-semibold{% endif %}">
+                <i class="fa-solid fa-gauge text-xs w-4 text-center"></i>
+                <span>Overview｜總覽</span>
+            </a>
+
+            <a hx-get="{% url 'a_dashboard_orders' %}"
+               hx-target="#dashboard-main"
+               hx-push-url="true"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors
+                      {% if active_section == 'orders' %}bg-base-200 text-primary font-semibold{% endif %}">
+                <i class="fa-solid fa-bag-shopping text-xs w-4 text-center"></i>
+                <span class="flex-1">Orders｜訂單</span>
+                {% if pending_dispatch_count %}
+                <span class="badge badge-primary badge-xs">{{ pending_dispatch_count }}</span>
+                {% endif %}
+            </a>
+
+            <a hx-get="{% url 'a_dashboard_products' %}"
+               hx-target="#dashboard-main"
+               hx-push-url="true"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors
+                      {% if active_section == 'products' %}bg-base-200 text-primary font-semibold{% endif %}">
+                <i class="fa-solid fa-box text-xs w-4 text-center"></i>
+                <span>Products｜作品</span>
+            </a>
+
+            <a hx-get="{% url 'a_dashboard_blog' %}"
+               hx-target="#dashboard-main"
+               hx-push-url="true"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors
+                      {% if active_section == 'blog' %}bg-base-200 text-primary font-semibold{% endif %}">
+                <i class="fa-solid fa-pen-fancy text-xs w-4 text-center"></i>
+                <span>Blog｜筆記</span>
+            </a>
+
+            <a hx-get="{% url 'a_dashboard_profile' %}"
+               hx-target="#dashboard-main"
+               hx-push-url="true"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors
+                      {% if active_section == 'profile' %}bg-base-200 text-primary font-semibold{% endif %}">
+                <i class="fa-solid fa-id-badge text-xs w-4 text-center"></i>
+                <span>Profile｜匠人檔案</span>
+            </a>
+
+            <a hx-get="{% url 'a_dashboard_messages' %}"
+               hx-target="#dashboard-main"
+               hx-push-url="true"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors
+                      {% if active_section == 'messages' %}bg-base-200 text-primary font-semibold{% endif %}">
+                <i class="fa-solid fa-comments text-xs w-4 text-center"></i>
+                <span class="flex-1">Messages｜訊息</span>
+                {% if unread_messages_count %}
+                <span class="badge badge-primary badge-xs">{{ unread_messages_count }}</span>
+                {% endif %}
+            </a>
         </nav>
 
-        {% if user.creator_profile.is_verified %}
-        <a href="{% url 'set_role' 'buyer' %}" class="btn btn-ghost btn-sm w-full mt-6">Switch to Buyer｜買家模式</a>
-        {% endif %}
+        <!-- Bottom actions -->
+        <div class="p-4 border-t border-base-200/60 space-y-2">
+            <a href="{{ profile.get_absolute_url }}" target="_blank"
+               class="flex items-center gap-2 text-[11px] text-base-content/50 hover:text-primary transition-colors">
+                <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                <span>View public page｜查看公開頁</span>
+            </a>
+            <a href="{% url 'set_role' 'buyer' %}"
+               class="flex items-center gap-2 text-[11px] text-base-content/50 hover:text-primary transition-colors">
+                <i class="fa-solid fa-right-left text-[9px]"></i>
+                <span>Switch to Buyer｜切換買家</span>
+            </a>
+        </div>
     </aside>
 
+    <!-- MOBILE TOP BAR -->
+    <div class="lg:hidden fixed top-[65px] left-0 right-0 z-20 bg-base-100 border-b border-base-200/60 px-4 py-2 flex justify-between items-center">
+        <p class="text-sm font-serif">Artisan Studio｜匠人工作台</p>
+        <button class="btn btn-xs btn-ghost" onclick="document.getElementById('mobile-nav').showModal()">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+    </div>
+
     <!-- MAIN CONTENT -->
-    <main id="dashboard-main" class="flex-1 p-6">
+    <main id="dashboard-main" class="flex-1 min-w-0 p-6 lg:p-10 pt-16 lg:pt-10">
         {% block dashboard_content %}{% endblock %}
     </main>
 </div>
+
+<!-- MOBILE NAV MODAL -->
+<dialog id="mobile-nav" class="modal">
+    <div class="modal-box">
+        <h3 class="font-serif text-lg mb-4">Menu｜選單</h3>
+        <ul class="menu gap-1">
+            <li><a hx-get="{% url 'a_dashboard' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Overview｜總覽</a></li>
+            <li><a hx-get="{% url 'a_dashboard_orders' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Orders｜訂單</a></li>
+            <li><a hx-get="{% url 'a_dashboard_products' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Products｜作品</a></li>
+            <li><a hx-get="{% url 'a_dashboard_blog' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Blog｜筆記</a></li>
+            <li><a hx-get="{% url 'a_dashboard_profile' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Profile｜匠人檔案</a></li>
+            <li><a hx-get="{% url 'a_dashboard_messages' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Messages｜訊息</a></li>
+        </ul>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
 {% endblock %}

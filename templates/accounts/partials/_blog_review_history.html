@@ -1,0 +1,37 @@
+<!-- accounts/partials/_blog_review_history.html -->
+
+{% if reviewed_posts %}
+<div class="space-y-2">
+    {% for post in reviewed_posts %}
+    <div class="bg-base-100 border border-base-200/60 rounded-xl p-3 flex items-center gap-3">
+
+        {% if post.status == 'Published' %}
+        <span class="badge badge-success badge-sm flex-shrink-0">Published</span>
+        {% elif post.status == 'Rejected' %}
+        <span class="badge badge-error badge-sm flex-shrink-0">Rejected</span>
+        {% elif post.status == 'Unpublished' %}
+        <span class="badge badge-neutral badge-sm flex-shrink-0">Unpublished</span>
+        {% else %}
+        <span class="badge badge-ghost badge-sm flex-shrink-0">{{ post.status }}</span>
+        {% endif %}
+
+        <div class="flex-1 min-w-0">
+            <p class="text-sm truncate">{{ post.title }}</p>
+            <p class="text-[11px] text-base-content/50 truncate">
+                {{ post.creator.display_name|default:post.author.username }}
+                · {{ post.updated_at|date:"Y-m-d H:i" }}
+            </p>
+        </div>
+
+        <a href="{{ post.get_url }}" target="_blank" rel="noopener"
+           class="btn btn-xs btn-ghost rounded-lg flex-shrink-0">
+            <i class="fa-solid fa-eye text-[10px]"></i>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="bg-base-100 border border-base-200/60 rounded-xl p-8 text-center">
+    <p class="text-sm text-base-content/40">No review history yet｜暫無審核記錄</p>
+</div>
+{% endif %}

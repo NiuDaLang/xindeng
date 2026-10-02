@@ -1,4 +1,7 @@
+<!-- templates/includes/about_section.html -->
+{% load static %}
 {% block content %}
+
 <!-- TITLE SEGMENT -->
 <div class="flex justify-center mb-6 md:mb-12">
     <h2 class="text-base-content text-sm xs:text-base sm:text-[1.15rem] md:text-[1.25rem] lg:text-xl font-light tracking-wide text-shadow-lg text-shadow-stone-300">
@@ -14,7 +17,7 @@
         <figure class="relative aspect-square md:aspect-video h-full w-full rounded-box shadow-md overflow-hidden select-none diff" tabindex="0">
             <!-- LAYER 1 (FRONT ARTWORK) -->
             <div class="diff-item-1" role="img" tabindex="0">
-                <img class="w-full h-full object-cover" alt="The Kṣaṇa" src="/media/images/about/gold_fish-ezgif.com-optiwebp.webp" />
+                <img class="w-full h-full object-cover" alt="The Kṣaṇa" src="{% static 'images/about/gold_fish-ezgif.com-optiwebp.webp' %}" />
                 <!-- Floating Foreground Label -->
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div class="flex w-48 xs:w-64 text-center bg-white/90 text-black text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
@@ -134,7 +137,7 @@
         <figure class="relative aspect-square md:aspect-video h-full w-full rounded-box shadow-md overflow-hidden select-none diff" tabindex="0">
             <!-- LAYER 1 (FRONT ARTWORK) -->
             <div class="diff-item-1" role="img" tabindex="0">
-                <img class="w-full h-full object-cover" alt="POLARIS｜北極星" src="/media/images/about/cherry_blossoms-ezgif.com-optiwebp.webp" />
+                <img class="w-full h-full object-cover" alt="POLARIS｜北極星" src="{% static 'images/about/cherry_blossoms-ezgif.com-optiwebp.webp' %}" />
                 <!-- Floating Foreground Label -->
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div class="flex w-48 xs:w-64 text-center bg-white/90 text-black text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
@@ -261,7 +264,7 @@
         <figure class="relative aspect-square md:aspect-video h-full w-full rounded-box shadow-md overflow-hidden select-none diff" tabindex="0">
             <!-- LAYER 1 (FRONT ARTWORK) -->
             <div class="diff-item-1" role="img" tabindex="0">
-                <img class="w-full h-full object-cover" alt="The Souls" src="/media/images/about/boats-ezgif.com-optiwebp.webp" />
+                <img class="w-full h-full object-cover" alt="The Souls" src="{% static 'images/about/boats-ezgif.com-optiwebp.webp' %}" />
                 <!-- Floating Foreground Label -->
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div class="flex w-48 xs:w-64 text-center bg-white/90 text-black text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">
@@ -407,7 +410,7 @@
         <figure class="relative aspect-square md:aspect-video h-full w-full rounded-box shadow-md overflow-hidden select-none diff" tabindex="0">
             <!-- LAYER 1 (FRONT ARTWORK) -->
             <div class="diff-item-1" role="img" tabindex="0">
-                <img class="w-full h-full object-cover" alt="The Souls" src="/media/images/about/blossoms-ezgif.com-optiwebp.webp" />
+                <img class="w-full h-full object-cover" alt="The Souls" src="{% static 'images/about/blossoms-ezgif.com-optiwebp.webp' %}" />
                 <!-- Floating Foreground Label -->
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div class="flex w-48 xs:w-64 text-center bg-white/90 text-black text-xs xs:text-sm font-bold p-3 rounded-xl shadow backdrop-blur-sm">

@@ -1,7 +1,8 @@
 # sotre.models.py
 from django.db import models
+from django.db.models import Q
 from category.models import Category
-from taggit.managers import TaggableManager
+from taggit_selectize.managers import TaggableManager
 from .managers import ProductManager
 from django.urls import reverse
 from django_ckeditor_5.fields import CKEditor5Field
@@ -11,6 +12,10 @@ from django.utils import timezone
 from django.core.validators import MaxValueValidator, MinValueValidator
 import uuid
 import decimal
+from django.core.exceptions import ValidationError
+from accounts.utils import get_real_admin_url
+from django.utils.text import slugify
+
 
 # Create your models here.
 # Model for global color options
@@ -91,11 +96,35 @@ COLOR = [
     ('GRAY', 'White｜白色'),
     ('GREYBLACK', 'Grey/Black｜灰/黑色'),
 ]
+PRODUCT_STATUS_CHOICES = (
+    ("Draft",       "Draft｜草稿"),
+    ("Pending",     "Pending Review｜待審核"),
+    ("Published",   "Published｜已發布"),
+    ("Rejected",    "Rejected｜未通過"),
+    ("Unpublished", "Unpublished｜已下架"),
+)
+ACTION_CHOICES = (
+    ("submitted", "Submitted for Review｜提交審核"),
+    ("approved",  "Approved｜審核通過"),
+    ("rejected",  "Rejected｜審核未通過"),
+    ("withdrawn", "Withdrawn｜作者撤回"),
+    ("published", "Published Directly｜直接發布"),
+    ("unpublished", "Unpublished｜下架"),
+    ("deactivation_requested", "Deactivation Requested｜申請下架"),
+    ("deletion_approved", "Deletion Approved｜已核准下架"),
+    ("deletion_rejected", "Deletion Declined｜下架請求被拒"),
+    ("deleted_by_author", "Deleted by Author｜作者刪除"),
+)
 
 
 class Product(models.Model):
-    product_name    = models.CharField(max_length=255, unique=True)
-    slug            = models.SlugField(unique=True)
+    # Note: uniqueness for product_name and slug is enforced conditionally
+    # via Meta.constraints (only among is_deleted=False rows). This lets
+    # artisans re-use the name/slug of a soft-deleted product.
+    product_name    = models.CharField(max_length=255)
+    slug            = models.SlugField(allow_unicode=True, blank=True)
+    # product_name    = models.CharField(max_length=255, unique=True)
+    # slug            = models.SlugField(unique=True, allow_unicode=True)
     description     = models.TextField(max_length=500, blank=True)
     details         = CKEditor5Field(config_name='extends', blank=True, null=True)
     brand           = models.CharField(max_length=255, blank=True)
@@ -132,13 +161,37 @@ class Product(models.Model):
     is_active       = models.BooleanField(default=True)
     created_date    = models.DateTimeField(auto_now_add=True)
     modified_date   = models.DateTimeField(auto_now=True)
+    submitted_at = models.DateTimeField(null=True, blank=True, help_text="Last time this product was submitted for review.")
 
-    tags = TaggableManager()
+    tags            = TaggableManager(blank=True)
 
-    products = ProductManager()
-    objects = models.Manager()
+    products        = ProductManager()
+    objects         = models.Manager()
 
-    comments = GenericRelation('reviews.Comment', related_query_name='product')
+    comments        = GenericRelation('reviews.Comment', related_query_name='product')
+    status          = models.CharField(max_length=20, choices=PRODUCT_STATUS_CHOICES, default="Draft")
+    is_deleted      = models.BooleanField(default=False, help_text="Soft delete flag. Deleted products are hidden from artisan and storefront views but preserved for audit.")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['creator', 'status', 'is_deleted']),
+            models.Index(fields=['status', 'submitted_at']),
+        ]
+        constraints = [
+            # Only enforce name/slug uniqueness among ACTIVE (non-deleted) products.
+            # Soft-deleted products may share a name/slug with a live product,
+            # which lets artisans re-use a name they've previously soft-deleted.
+            models.UniqueConstraint(
+                fields=['product_name'],
+                condition=Q(is_deleted=False),
+                name='unique_active_product_name',
+            ),
+            models.UniqueConstraint(
+                fields=['slug'],
+                condition=Q(is_deleted=False),
+                name='unique_active_product_slug',
+            ),
+        ]
 
     def __str__(self):
         return self.product_name
@@ -153,6 +206,14 @@ class Product(models.Model):
             return None
         return min(prices)
 
+    def get_admin_url(self):
+        """
+        Return the admin-facing detail URL for this product.
+        Centralised so we can repoint to a custom review-detail view later
+        without touching templates.
+        """
+        return f"{get_real_admin_url()}store/product/{self.pk}/change/"
+
     @property
     def effective_lowest_price(self):
         # If we annotated the queryset (fast), use that
@@ -164,21 +225,137 @@ class Product(models.Model):
     @property
     def reviews(self):
         return self.comments.exclude(rating__isnull=True) #get only reviews that have a rating
+
+    @property
+    def is_editable_by_artisan(self):
+        return self.status in ("Draft", "Rejected", "Unpublished")
+
+    @property
+    def is_under_review(self):
+        return self.status == "Pending"
+
+    @property
+    def latest_review_log(self):
+        return self.review_logs.order_by('-created_at').first()
+
+    @property
+    def has_pending_deactivation_request(self):
+        latest = self.review_logs.order_by('-created_at').first()
+        return latest is not None and latest.action == 'deactivation_requested'
     
+    @property
+    def image_dimensions(self):
+        """Return (width, height) of the hero image, or None."""
+        if not self.images:
+            return None
+        from core.image_utils import get_image_dimensions
+        return get_image_dimensions(self.images.name)
+
+    @property
+    def is_portrait(self):
+        dims = self.image_dimensions
+        if not dims:
+            return False
+        w, h = dims
+        return h > w
+
+    @property
+    def is_landscape(self):
+        dims = self.image_dimensions
+        if not dims:
+            return False
+        w, h = dims
+        return w > h
+
+    @property
+    def is_square(self):
+        dims = self.image_dimensions
+        if not dims:
+            return False
+        w, h = dims
+        return w == h
+
+    @property
+    def hero_container_style(self):
+        """
+        Inline style for the hero container.
+        
+        Returns something like 'aspect-ratio: 1600 / 900;' — matching the
+        source image's natural ratio, but clamped to [4/5, 16/9] so no
+        single image can distort the layout.
+        """
+        dims = self.image_dimensions
+        if not dims:
+            return "aspect-ratio: 4 / 3;"
+        
+        w, h = dims
+        ratio = w / h
+        
+        # Clamp
+        if ratio > 16 / 9:
+            return "aspect-ratio: 16 / 9;"
+        if ratio < 1 / 2:                   # was 4/5
+            return "aspect-ratio: 1 / 2;"
+        
+        return f"aspect-ratio: {w} / {h};"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.product_name, allow_unicode=True) or "product"
+            base = base[:250]
+            slug = base
+            n = 1
+            while Product.objects.filter(slug=slug, is_deleted=False).exclude(pk=self.pk).exists():
+                suffix = f"-{n}"
+                slug = f"{base[:250 - len(suffix)]}{suffix}"
+                n += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        if self.creator_id and self.is_voucher:
+            raise ValidationError({
+                "is_voucher": "Artisans cannot create voucher products. Vouchers are platform-level."
+            })
+
+        # Conditional uniqueness for product_name (mirrors the DB constraint).
+        if self.product_name:
+            qs = Product.objects.filter(product_name=self.product_name, is_deleted=False)
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            if qs.exists():
+                raise ValidationError({
+                    "product_name": "此作品名稱已被使用。｜This product name is already in use."
+                })
+
+        # Conditional uniqueness for slug (mirrors the DB constraint).
+        if self.slug:
+            qs = Product.objects.filter(slug=self.slug, is_deleted=False)
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            if qs.exists():
+                raise ValidationError({
+                    "slug": "此網址代稱已被使用。｜This URL slug is already in use."
+                })
+
 
 class ProductVariation(models.Model):
     product         = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variations')
     color           = models.ForeignKey(Color, on_delete=models.SET_NULL, null=True)
     size            = models.ForeignKey(Size, on_delete=models.SET_NULL, null=True)
     type            = models.ForeignKey(Type, on_delete=models.SET_NULL, null=True)
-    images          = models.ImageField(upload_to='images/products/variations', default="images/products/variations/pattern1.png")
+    pending_color   = models.CharField(max_length=50, blank=True, default="")
+    pending_size    = models.CharField(max_length=100, blank=True, default="")
+    pending_type    = models.CharField(max_length=100, blank=True, default="")
+    # images          = models.ImageField(upload_to='images/products/variations', default="images/products/variations/pattern1.png")
+    images          = models.ImageField(upload_to='images/products/variations', null=True, blank=True)
     stock           = models.PositiveIntegerField(default=0)
     is_available    = models.BooleanField(default=True)
     price           = models.DecimalField(max_digits=10, decimal_places=2) # Use DecimalField for money
     original_price  = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True) # Use DecimalField for money
 
     cancellation_fee_pct = models.DecimalField(
-        max_length=5,
         max_digits=5, 
         decimal_places=2, 
         default=decimal.Decimal('0.00'),
@@ -206,6 +383,47 @@ class ProductVariation(models.Model):
             )
         ]
 
+    @property
+    def image_dimensions(self):
+        if not self.images:
+            return None
+        from core.image_utils import get_image_dimensions
+        return get_image_dimensions(self.images.name)
+
+    @property
+    def is_portrait(self):
+        dims = self.image_dimensions
+        return bool(dims and dims[1] > dims[0])
+
+    @property
+    def is_landscape(self):
+        dims = self.image_dimensions
+        return bool(dims and dims[0] > dims[1])
+
+    @property
+    def hero_container_style(self):
+        """
+        Inline style for the hero container.
+        
+        Returns something like 'aspect-ratio: 1600 / 900;' — matching the
+        source image's natural ratio, but clamped to [4/5, 16/9] so no
+        single image can distort the layout.
+        """
+        dims = self.image_dimensions
+        if not dims:
+            return "aspect-ratio: 4 / 3;"
+        
+        w, h = dims
+        ratio = w / h
+        
+        # Clamp
+        if ratio > 16 / 9:
+            return "aspect-ratio: 16 / 9;"
+        if ratio < 1 / 2:                   # was 4/5
+            return "aspect-ratio: 1 / 2;"
+        
+        return f"aspect-ratio: {w} / {h};"
+
     def __str__(self):
         # 1. Cleanly extract and fallback text strings from parent relation rows safely
         product_name = str(self.product.product_name).strip() if self.product else ""
@@ -230,28 +448,21 @@ class ProductVariation(models.Model):
         return " - ".join(filtered_sku) or f"Variation #{self.pk}"
         
     def get_sku(self):
-        """
-        Generates a clean, compact SKU identification string by filtering out
-        empty values, placeholder objects, and 'N/A' language tags.
-        """
-        # 1. Safely extract the inner string values from the foreign relations
-        color_val = str(self.color.color_name).strip() if self.color else ""
-        size_val = str(self.size.size_name).strip() if self.size else ""
-        type_val = str(self.type.type_name).strip() if self.type else ""
+        # Prefer FK value; fall back to pending; else empty
+        color_val = str(self.color.color_name).strip() if self.color else self.pending_color.strip()
+        size_val = str(self.size.size_name).strip() if self.size else self.pending_size.strip()
+        type_val = str(self.type.type_name).strip() if self.type else self.pending_type.strip()
 
-        # 2. Establish our comprehensive exclusion blacklist matrix
-        exclusion_blacklist = ["", "NONE", "N/A", "N/A｜不適用", "N/A｜不適用"]
+        exclusion_blacklist = ["", "NONE", "N/A", "N/A｜不適用"]
 
-        # 3. Filter the values against the blacklist
         color_name = color_val if color_val not in exclusion_blacklist else ""
         size_name = size_val if size_val not in exclusion_blacklist else ""
         type_name = type_val if type_val not in exclusion_blacklist else ""
 
-        # 4. Gather, clean, and join your structured parameters
         sku_parts = [size_name, color_name, type_name]
-        filtered_sku = [part for part in sku_parts if part.strip()]
-        
-        return "-".join(filtered_sku) or f"SKU-VAR-{self.pk}"
+        filtered = [p for p in sku_parts if p.strip()]
+
+        return "-".join(filtered) or f"SKU-VAR-{self.pk}"
 
     def save(self, *args, **kwargs):
         """
@@ -311,6 +522,47 @@ class ProductGallery(models.Model):
     class Meta:
         verbose_name = 'ProductGallery'
         verbose_name_plural = 'Product Gallery'
+
+    @property
+    def image_dimensions(self):
+        if not self.image:
+            return None
+        from core.image_utils import get_image_dimensions
+        return get_image_dimensions(self.image.name)
+
+    @property
+    def is_portrait(self):
+        dims = self.image_dimensions
+        return bool(dims and dims[1] > dims[0])
+
+    @property
+    def is_landscape(self):
+        dims = self.image_dimensions
+        return bool(dims and dims[0] > dims[1])
+
+    @property
+    def hero_container_style(self):
+        """
+        Inline style for the hero container.
+        
+        Returns something like 'aspect-ratio: 1600 / 900;' — matching the
+        source image's natural ratio, but clamped to [4/5, 16/9] so no
+        single image can distort the layout.
+        """
+        dims = self.image_dimensions
+        if not dims:
+            return "aspect-ratio: 4 / 3;"
+        
+        w, h = dims
+        ratio = w / h
+        
+        # Clamp
+        if ratio > 16 / 9:
+            return "aspect-ratio: 16 / 9;"
+        if ratio < 1 / 2:                   # was 4/5
+            return "aspect-ratio: 1 / 2;"
+        
+        return f"aspect-ratio: {w} / {h};"
     
 
 class ProductVariationGallery(models.Model):
@@ -325,6 +577,47 @@ class ProductVariationGallery(models.Model):
     class Meta:
         verbose_name = 'ProductVariationGallery'
         verbose_name_plural = 'ProductVariation Gallery'
+
+    @property
+    def image_dimensions(self):
+        if not self.image:
+            return None
+        from core.image_utils import get_image_dimensions
+        return get_image_dimensions(self.image.name)
+
+    @property
+    def is_portrait(self):
+        dims = self.image_dimensions
+        return bool(dims and dims[1] > dims[0])
+
+    @property
+    def is_landscape(self):
+        dims = self.image_dimensions
+        return bool(dims and dims[0] > dims[1])
+
+    @property
+    def hero_container_style(self):
+        """
+        Inline style for the hero container.
+        
+        Returns something like 'aspect-ratio: 1600 / 900;' — matching the
+        source image's natural ratio, but clamped to [4/5, 16/9] so no
+        single image can distort the layout.
+        """
+        dims = self.image_dimensions
+        if not dims:
+            return "aspect-ratio: 4 / 3;"
+        
+        w, h = dims
+        ratio = w / h
+        
+        # Clamp
+        if ratio > 16 / 9:
+            return "aspect-ratio: 16 / 9;"
+        if ratio < 1 / 2:                   # was 4/5
+            return "aspect-ratio: 1 / 2;"
+        
+        return f"aspect-ratio: {w} / {h};"
 
 
 class DigitalDownloadToken(models.Model):
@@ -343,4 +636,19 @@ class DigitalDownloadToken(models.Model):
         # By referencing the properties natively, Python maps them lazily 
         # at runtime without causing any top-level module load clashes!
         return f"Token for Order {self.order_product.order.order_number} - Exp: {self.expires_at}"
-        
+
+
+class ProductReviewLog(models.Model):
+    product         = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='review_logs')
+    action          = models.CharField(max_length=30, choices=ACTION_CHOICES)
+    actor           = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,related_name='product_review_actions')
+    note            = models.TextField(blank=True)
+    created_at      = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Product Review Log'
+        verbose_name_plural = 'Product Review Logs'
+
+    def __str__(self):
+        return f"{self.product.product_name} — {self.get_action_display()} @ {self.created_at:%Y-%m-%d %H:%M}"

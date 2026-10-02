@@ -1,4 +1,4 @@
-<!-- dashbaord_sidebar.html -->
+<!-- dashbaord_sidebar.html (member) -->
 <div class="w-full h-full bg-base-100 flex flex-col justify-between select-none">
   
   <!-- TOP WRAPPER TRACK: PROFILE & LINKS CONTENT -->
@@ -253,6 +253,49 @@
         </a>
       </li>
     </ul>
+
+    {% if user.is_superadmin %}
+    <div class="px-4 py-3 border-b border-base-200/60">
+        <a href="{% url 'dashboard' 'blog_review' %}"
+          hx-get="{% url 'dashboard' 'blog_review' %}"
+          hx-target="#dashboard-content"
+          hx-push-url="true"
+          class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-warning/30 hover:border-warning/60 hover:bg-warning/5 transition-all duration-200 group">
+            <div class="flex items-center gap-3 min-w-0">
+                <i class="fa-solid fa-clipboard-check text-warning text-sm"></i>
+                <div class="flex flex-col min-w-0">
+                    <span class="text-xs font-semibold text-warning tracking-wide">Blog Review</span>
+                    <span class="text-[10px] text-base-content/50 font-sans">筆記審核</span>
+                </div>
+            </div>
+            {% if pending_blog_count %}
+            <span class="badge badge-warning badge-sm font-mono">{{ pending_blog_count }}</span>
+            {% endif %}
+        </a>
+    </div>
+    {% endif %}
+
+  {% if user.is_superadmin %}
+  <div class="px-4 pb-3 border-b border-base-200/60">
+      <a href="{% url 'dashboard' 'product_review' %}"
+        hx-get="{% url 'dashboard' 'product_review' %}"
+        hx-target="#dashboard-content"
+        hx-push-url="true"
+        class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-info/30 hover:border-info/60 hover:bg-info/5 transition-all duration-200 group">
+          <div class="flex items-center gap-3 min-w-0">
+              <i class="fa-solid fa-box-open text-info text-sm"></i>
+              <div class="flex flex-col min-w-0">
+                  <span class="text-xs font-semibold text-info tracking-wide">Product Review</span>
+                  <span class="text-[10px] text-base-content/50 font-sans">作品審核</span>
+              </div>
+          </div>
+          {% if pending_product_count %}
+          <span class="badge badge-info badge-sm font-mono">{{ pending_product_count }}</span>
+          {% endif %}
+      </a>
+  </div>
+  {% endif %}
+
   </div>
 
   <!-- BOTTOM FOOTER ASSET BLOCK -->

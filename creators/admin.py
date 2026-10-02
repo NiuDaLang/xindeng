@@ -22,16 +22,11 @@ class CreatorProfileAdmin(admin.ModelAdmin):
         'craft_list',
         'province',
         'is_premium',
-        'page_template',       # 🌟 NEW
+        'page_template',
         'is_verified',
-        'tag_list',            # 🌟 Re-add this
-        'preview_page_link',   # 🌟 NEW
+        'preview_page_link',
         'created_at',
     )
-    def tag_list(self, obj):
-        return ", ".join(o.name for o in obj.tags.all())
-    tag_list.short_description = "Tags"
-
     list_editable = ('is_verified', 'is_premium', 'page_template')
     list_filter = (
         'is_verified',
@@ -56,10 +51,10 @@ class CreatorProfileAdmin(admin.ModelAdmin):
             'fields': ('user', 'display_name', 'slug', 'tagline', 'bio')
         }),
         ("Location & Craft｜地域與工藝", {
-            'fields': ('province', 'city', 'craft_types', 'dispatch_address')
+            'fields': ('province', 'city', 'craft_types', 'tags')
         }),
         ("Media｜影像", {
-            'fields': ('avatar', 'banner')
+            'fields': ('avatar', 'banner', 'wechat_qr')
         }),
         ("Status｜狀態", {
             'fields': ('is_verified', 'is_premium')
@@ -70,15 +65,9 @@ class CreatorProfileAdmin(admin.ModelAdmin):
                 'premium_page_slug',
                 'premium_page_published',
             ),
-            'description': (
-                "Layouts A/B/C are standard; D is reserved for premium "
-                "artisans. The custom template file is named "
-                "<code>&lt;pk&gt;_premium_page.html</code> and lives under "
-                "<code>templates/artisans/premium/</code>."
-            ),
         }),
         ("Contact & Social｜聯絡與社交", {
-            'fields': ('website', 'instagram', 'wechat'),
+            'fields': ('website', 'instagram'),
             'classes': ('collapse',)
         }),
         ("Timestamps｜時間戳", {
@@ -89,20 +78,19 @@ class CreatorProfileAdmin(admin.ModelAdmin):
 
     actions = ['approve_artisans', 'unverify_artisans']
 
-    def craft_list(self, obj):
-        return ", ".join(ct.label for ct in obj.craft_types.all())
-    craft_list.short_description = "Crafts"
-
     def preview_page_link(self, obj):
         if obj.pk and obj.is_verified:
             url = reverse('artisan_detail', kwargs={'slug': obj.slug})
             return format_html(
-                '<a href="{}" target="_blank" rel="noopener">'
-                'View page ↗</a>',
+                '<a href="{}" target="_blank" rel="noopener">View page ↗</a>',
                 url
             )
         return "—"
     preview_page_link.short_description = "Preview"
+
+    def craft_list(self, obj):
+        return ", ".join(ct.label for ct in obj.craft_types.all())
+    craft_list.short_description = "Crafts"
 
     @admin.action(description="✅ Approve selected artisans (is_verified=True)")
     def approve_artisans(self, request, queryset):
@@ -113,3 +101,4 @@ class CreatorProfileAdmin(admin.ModelAdmin):
     def unverify_artisans(self, request, queryset):
         updated = queryset.update(is_verified=False)
         self.message_user(request, f"{updated} artisan(s) un-verified.")
+

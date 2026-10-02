@@ -1,3 +1,4 @@
+# xindeng(root)/views.py
 from django.shortcuts import render
 from store.models import Product
 from blog.models import Post
@@ -284,7 +285,7 @@ def find_destined_work(request):
     blood = request.GET.get("blood")
     color = request.GET.get("color")
     
-    painting_products = Product.objects.filter(category__category_name="Oil Painting | 油畫")
+    painting_products = Product.objects.filter(category__category_name="Oil Painting | 油畫", status='Published')
 
     soul_num = get_soul_number(dob)
 

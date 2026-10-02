@@ -1,0 +1,15 @@
+{% if approved %}✅ Approved｜作品已通過{% else %}📝 Revision Needed｜作品需要修改{% endif %}
+
+{{ artisan_label }} 您好，
+
+{% if approved %}您的作品 {{ product.product_name }} 已審核通過，並已上架至前台。{% else %}您的作品 {{ product.product_name }} 尚未通過審核。{% endif %}
+
+{% if not approved and note %}審核意見｜Reviewer note:
+{{ note }}
+{% endif %}
+
+{% if approved %}前台連結｜View on storefront:
+{{ public_url }}{% else %}工作台連結｜Edit in studio:
+{{ dashboard_url }}{% endif %}
+
+Hṛdayadīpa 心燈之屋 · {{ year }}

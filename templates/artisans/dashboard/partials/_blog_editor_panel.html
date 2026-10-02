@@ -1,0 +1,171 @@
+<!-- artisans/dashboard/partials/_blog_editor_panel.html -->
+
+<div class="mb-8">
+    <h1 class="font-serif text-2xl tracking-wide">
+        {% if is_editing %}Edit Post｜編輯筆記{% else %}New Post｜新筆記{% endif %}
+    </h1>
+    <p class="text-sm text-base-content/50 mt-1">
+        撰寫您的匠人筆記。儲存後可繼續編輯；提交審核後由管理員審閱。
+    </p>
+</div>
+{% include 'includes/alerts.html' %}
+
+<form method="post"
+      action="{% if is_editing %}{% url 'a_dashboard_blog_edit' post.id %}{% else %}{% url 'a_dashboard_blog_new' %}{% endif %}"
+      enctype="multipart/form-data"
+      hx-post="{% if is_editing %}{% url 'a_dashboard_blog_edit' post.id %}{% else %}{% url 'a_dashboard_blog_new' %}{% endif %}"
+      hx-encoding="multipart/form-data"
+      hx-target="#dashboard-main"
+      hx-swap="innerHTML"
+      class="space-y-8">
+
+    {% csrf_token %}
+    {{ form.media }}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-error">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <!-- SECTION 1: Main Content -->
+    <section class="bg-white border border-base-200/60 rounded-2xl p-6 space-y-6">
+
+        <!-- Title -->
+        <div>
+            <label class="label text-xs uppercase tracking-wider opacity-60">
+                標題｜Title <span class="text-error">*</span>
+            </label>
+            {{ form.title }}
+            {% if form.title.errors %}
+            <p class="text-xs text-error mt-1">{{ form.title.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Category -->
+        <div>
+            <label class="label text-xs uppercase tracking-wider opacity-60">
+                分類｜Category
+            </label>
+            {{ form.post_category }}
+            {% if form.post_category.errors %}
+            <p class="text-xs text-error mt-1">{{ form.post_category.errors.0 }}</p>
+            {% endif %}
+            <p class="text-[10px] opacity-50 mt-1">
+                若無合適分類，請選 Other｜若需新增分類請聯繫後台。
+            </p>
+        </div>
+
+        <!-- Short Description -->
+        <div>
+            <label class="label text-xs uppercase tracking-wider opacity-60">
+                簡介｜Short Description <span class="text-error">*</span>
+            </label>
+            {{ form.short_description }}
+            {% if form.short_description.errors %}
+            <p class="text-xs text-error mt-1">{{ form.short_description.errors.0 }}</p>
+            {% endif %}
+            <p class="text-[10px] opacity-50 mt-1">
+                會顯示在列表頁與社群分享。｜Shown in lists and social previews.
+            </p>
+        </div>
+
+        <!-- Featured Image -->
+        <div>
+            <h2 class="font-serif text-lg tracking-wide mb-4 pb-3 border-b border-base-200/60">
+                封面圖｜Featured Image
+            </h2>
+            <div class="flex items-start gap-4 mb-3">
+                {% if is_editing and post.featured_image %}
+                <div class="w-32 h-24 rounded-lg overflow-hidden border border-base-200 bg-base-100 flex-shrink-0">
+                    <img src="{{ post.featured_image.url }}" class="w-full h-full object-cover" />
+                </div>
+                {% else %}
+                <div class="w-32 h-24 rounded-lg border-2 border-dashed border-base-200 bg-base-100 flex items-center justify-center text-base-content/30 flex-shrink-0">
+                    <i class="fa-solid fa-image text-2xl"></i>
+                </div>
+                {% endif %}
+                <div class="flex-1 min-w-0">
+                    {{ form.featured_image }}
+                    <p class="text-[10px] opacity-50 mt-2">
+                        建議 4:3 比例。選擇檔案後可進行裁剪。
+                        4:3 recommended. You'll be able to crop after selecting.<br>
+                    </p>
+                    <p class="text-[10px] text-base-content/40 italic mt-1">
+                        預覽將於儲存後更新。｜Preview updates after saving.
+                    </p>
+                </div>
+            </div>
+            {% if form.featured_image.errors %}
+            <p class="text-xs text-error mt-1">{{ form.featured_image.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Location (optional) -->
+        <div>
+            <label class="label text-xs uppercase tracking-wider opacity-60">
+                地點｜Location（可選）
+            </label>
+            {{ form.location }}
+            {% if form.location.errors %}
+            <p class="text-xs text-error mt-1">{{ form.location.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+    </section>
+
+    <!-- SECTION 2: Body -->
+    <section class="bg-white border border-base-200/60 rounded-2xl p-6">
+        <h2 class="font-serif text-lg tracking-wide mb-4 pb-3 border-b border-base-200/60">
+            內文｜Body
+        </h2>
+        {{ form.blog_body }}
+        {% if form.blog_body.errors %}
+        <p class="text-xs text-error mt-1">{{ form.blog_body.errors.0 }}</p>
+        {% endif %}
+    </section>
+
+    <!-- SECTION 3: Tags -->
+    {% if form.tags_choices.field.queryset %}
+    <section class="bg-white border border-base-200/60 rounded-2xl p-6">
+        <h2 class="font-serif text-lg tracking-wide mb-4 pb-3 border-b border-base-200/60">
+            標籤｜Tags
+        </h2>
+        <p class="text-xs opacity-60 mb-4">
+            從現有標籤中挑選；如需新增請聯繫後台。<br>
+            Pick from existing tags. To request a new one, contact the platform.
+        </p>
+        <div class="flex flex-wrap gap-2 max-h-64 overflow-y-auto pr-2">
+            {% for checkbox in form.tags_choices %}
+            <label class="flex items-center gap-2 px-3 py-1.5 border border-base-200/60 rounded-full cursor-pointer
+                          hover:border-primary/40 hover:bg-base-50/50 transition-colors">
+                {{ checkbox.tag }}
+                <span class="text-xs">#{{ checkbox.choice_label }}</span>
+            </label>
+            {% endfor %}
+        </div>
+        {% if form.tags_choices.errors %}
+        <p class="text-xs text-error mt-2">{{ form.tags_choices.errors.0 }}</p>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="flex justify-end gap-3 pt-2">
+        <a href="{% url 'a_dashboard_blog' %}"
+           class="btn btn-ghost btn-sm rounded-lg cursor-pointer">
+            返回｜Cancel
+        </a>
+        <button type="submit" class="btn btn-primary rounded-lg px-6">
+            <i class="fa-solid fa-check text-xs mr-1"></i>
+            儲存草稿｜Save Draft
+        </button>
+    </div>
+
+    <p class="text-[10px] opacity-50 text-right">
+        儲存後可在列表中點「提交審核」送審。
+    </p>
+
+</form>
+
+{% include 'includes/crop_modal.html' %}

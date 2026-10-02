@@ -1,0 +1,109 @@
+<!-- blog_submission_notification.html -->
+{% autoescape off %}
+<!DOCTYPE html>
+<html lang="en" style="padding:0;margin:0;box-sizing:border-box;">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New Blog Submission｜新筆記待審</title>
+    </head>
+    <body style="font-family: 'Noto Sans TC', sans-serif; margin:0; background-color:#f9f9f9; padding: 20px 0;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+                <td align="center">
+                    <table class="content" width="600" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse; border: 1px solid #e5e5e5; background-color:#ffffff;">
+                        <!-- Logo -->
+                        <tr>
+                            <td align="center" style="padding: 24px 0 10px 0; background-color: #ffffff;">
+                                <img src="https://i.postimg.cc/m2KRQgKs/logo-rectangle.png" width="259" height="44" alt="Hṛdayadīpa Logo" style="display: block; border: 0; outline: none;">
+                            </td>
+                        </tr>
+                        <!-- Header -->
+                        <tr>
+                            <td class="header" style="background-color: #ffffff; padding: 10px 40px 30px 40px; text-align: center; color:#161616;">
+                                <span style="font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 5px;">Hṛdayadīpa (हृदयदीप)｜心燈</span>
+                                <span style="font-size: 1rem; line-height: 1.4rem; display: block; opacity: 0.9; color: #555555;">
+                                    New Blog Submission<br/>匠人筆記提交待審
+                                </span>
+                            </td>
+                        </tr>
+                        <!-- Info Banner -->
+                        <tr>
+                            <td style="padding: 20px 40px; background-color: #e7f3ff; border-bottom: 1px solid #cfe2ff; color: #084298; font-size: 0.85rem; line-height: 1.3rem; text-align: center;">
+                                📝 <strong>Action Required</strong><br>
+                                A new artisan post is awaiting your review.<br>
+                                📝 <strong>待處理事項</strong><br>
+                                有一篇新的匠人筆記等待您的審核。
+                            </td>
+                        </tr>
+                        <!-- Greeting -->
+                        <tr>
+                            <td class="body" style="padding: 40px 40px 20px 40px; text-align: left; font-size: 0.9rem; line-height: 1.4rem; color: #333333;">
+                                Hi <strong>Admin</strong>｜管理員您好，<br><br>
+                                <strong>{{ author_label }}</strong> has submitted a new post for review on Hṛdayadīpa.<br>
+                                <strong>{{ author_label }}</strong> 已提交了一篇新筆記，等待您的審核。
+                            </td>
+                        </tr>
+
+                        <!-- Post Preview Card -->
+                        <tr>
+                            <td style="padding: 0 40px 20px 40px;">
+                                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f7f5f3; border: 1px solid #cccccc; border-radius: 8px;">
+                                    <tr>
+                                        <td style="padding: 25px; font-size: 0.85rem; line-height: 1.5rem; color: #444444;">
+                                            <strong style="font-size: 0.95rem; color: #161616; display: block; border-bottom: 1px solid #cccccc; padding-bottom: 8px; margin-bottom: 12px;">
+                                                📄 Submission Details｜提交詳情
+                                            </strong>
+                                            <strong>Title｜標題:</strong> {{ post.title }}<br>
+                                            <strong>Author｜作者:</strong> {{ author_label }}<br>
+                                            <strong>Category｜分類:</strong> {{ post.get_post_category_display }}<br>
+                                            <strong>Submitted｜提交時間:</strong> {{ post.updated_at|date:"Y-m-d H:i" }}<br>
+                                            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #cccccc; font-size: 0.8rem; color: #666666; line-height: 1.4rem;">
+                                                <strong style="color: #161616;">Short Description｜簡介:</strong><br>
+                                                {{ post.short_description }}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <!-- CTA Button -->
+                        <tr>
+                            <td style="padding: 0 40px 40px 40px; text-align: center;">
+                                <a href="{{ review_url }}" style="display: inline-block; background-color: #4b9aaa; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 0.95rem; padding: 14px 32px; border-radius: 6px; letter-spacing: 0.5px;">
+                                    Open Review Queue｜開啟審核佇列
+                                </a>
+                                <div style="margin-top: 12px; font-size: 0.75rem; color: #999999; line-height: 1.3rem;">
+                                    點擊上方按鈕前往審核頁面，通過或拒絕這篇筆記。<br>
+                                    Click the button above to approve or reject this submission.
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Footer Notification -->
+                        <tr>
+                            <td class="body" style="padding: 20px 40px; text-align: left; font-size:0.75rem; line-height: 1.1rem; border-top: 1px solid #e5e5e5; background-color: #fafafa; color: #777777;">
+                                This is an automated notification from the Hṛdayadīpa review system.<br>
+                                這是來自心燈審核系統的自動通知。
+                            </td>
+                        </tr>
+                        <!-- Corporate Footer -->
+                        <tr>
+                            <td class="footer" style="background-color: #333333; padding: 30px; text-align: center; color: #ffffff; font-size: 0.8rem; letter-spacing: 0.5px;">
+                                Copyright &copy; {{ year }} | xindeng.art
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
+<style>
+@media screen and (max-width: 600px) {
+    .content { width: 100% !important; border: none !important; }
+    .header, .body, .footer { padding: 25px 20px !important; }
+}
+</style>
+{% endautoescape %}
