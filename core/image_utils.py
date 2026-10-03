@@ -382,6 +382,12 @@ def sanitize_filename(name: str) -> str:
 
     Returns a sanitized name; may return an empty string if the input
     is entirely illegal (caller should then fall back to a default).
+
+    the three B1/B2/B3 behaviours we decided to keep:
+    - \ is treated as a path separator before illegal-char stripping
+    - \t/\n vanish (control-char strip runs before whitespace collapse)
+    - .gitignore → gitignore (leading dot lost)
+
     """
     if not name:
         return ""
