@@ -24,25 +24,20 @@ def home(request):
 
     # 2. Extract the safe ID list directly from the cleaned queryset pool
     product_ids = list(valid_products.values_list('id', flat=True))
-
     # 3. Handle a potential fallback safety guard if your active catalog drops below 6 items
     sample_size = min(len(product_ids), 6)
-    if sample_size > 0:
-        random_ids = random.sample(product_ids, sample_size)
-    else:
-        random_ids = []
+    random_ids = random.sample(product_ids, sample_size) if sample_size else []
 
     # 4. Pull the 6 random featured products AND aggregate their lowest price right inside the DB
     featured_products = Product.products.filter(id__in=random_ids).annotate(
         min_price=Min(
-            'variations__price', 
-            filter=Q(variations__is_available=True)
+            "variations__price",
+            filter=Q(variations__is_available=True),
         ),
-        # Generates a 'total_variations' integer attribute for each product row
         total_variations=Count(
-            'variations',
-            filter=Q(variations__is_available=True)
-        )
+            "variations",
+            filter=Q(variations__is_available=True),
+        ),
     )
 
     # Attach your formatting parameters onto the object records
@@ -54,20 +49,33 @@ def home(request):
         else:
             product.formatted_price = "0.00"
 
-
     domain = get_current_site(request).domain
     absolute_url = f"https://{domain}"
 
-    posts = Post.objects.all().order_by('-created_at')[:4]
+    # ── Recent posts ──
+    # Only published, non-deleted posts belong on the public homepage.
+    # This also fixes the crash below: drafts (which are now allowed to
+    # have no featured_image) can no longer reach the template.
+    posts = (
+        Post.objects
+        .filter(status="Published", is_deleted=False)
+        .order_by("-created_at")[:4]
+    )
+
     posts_json = {}
     for i, post in enumerate(posts):
+        # featured_image is nullable (migration 0010). Even a Published
+        # post may have no image if it was published before the guard
+        # was added, or if an admin cleared it. Use a safe accessor and
+        # fall back to None.
+        image_url = post.featured_image.url if post.featured_image else None
+
         posts_json[i] = {
             "title": post.title,
             "short_description": post.short_description,
-            "featured_image": post.featured_image.url,
+            "featured_image": image_url,
             "url": post.get_url(),
-        }    
-        
+        }
     context = {
         "page_title": "Home｜首頁",
         "featured_products": featured_products,
