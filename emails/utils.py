@@ -6,12 +6,6 @@ from django.template.loader import render_to_string
 from orders.models import Order, Payment, OrderProduct
 from carts.models import ProformaInvoice
 from accounts.data import CURRENCY_SYMBOL, INTEGER_CURRENCIES
-import weasyprint
-# find url for weasyprint
-from django.contrib.staticfiles import finders
-import os
-from urllib.parse import unquote
-import mimetypes
 from pathlib import Path
 import logging
 from accounts.models import CustomerVoucher
@@ -106,64 +100,6 @@ def send_password_reset_completion(mail_subject, user, to_email, current_site):
 
     except Exception as e:
         raise e
-
-
-def django_url_fetcher(url, timeout=10, ssl_context=None):
-    # 1. Decode %20 (spaces) and Chinese characters
-    # This turns 'projects%20django' into 'projects django'
-    decoded_url = unquote(url)
-    
-    # 2. Convert to a Path object and remove the 'file:' protocol if present
-    if decoded_url.startswith('file://'):
-        # On macOS/Linux, file:///path/to/file becomes /path/to/file
-        clean_path = decoded_url.replace('file://', '')
-    else:
-        clean_path = decoded_url
-
-    # 3. Resolve Static Files
-    if 'static/' in clean_path:
-        relative_path = clean_path.split('static/')[-1]
-        # Use / operator with Path objects for space-safe joining
-        full_path = Path(settings.STATIC_ROOT) / relative_path
-        
-        # This will show up in your Celery logs
-        logger.error(f"PDF FETCH ATTEMPT (static): {full_path}") 
-        
-        if full_path.exists():
-            return {'file_obj': open(full_path, 'rb'), 'mime_type': 'image/png'}
-        
-
-        # if full_path.exists():
-        #     with open(full_path, 'rb') as f:
-        #         return {
-        #             'string': f.read(),
-        #             'mime_type': 'image/png' # or use mimetypes.guess_type(str(full_path))[0]
-        #         }        
-        
-        # Fallback to App static directories
-        found_path = finders.find(relative_path)
-        if found_path:
-            return {'file_obj': open(found_path, 'rb'), 'mime_type': 'image/png'}
-
-    # 4. Resolve Media Files
-    if 'media/' in clean_path:
-        relative_path = clean_path.split('media/')[-1]
-        full_path = Path(settings.MEDIA_ROOT) / relative_path
-
-        # This will show up in your Celery logs
-        logger.error(f"PDF FETCH ATTEMPT (media): {full_path}") 
-        
-        if full_path.exists():
-            return {'file_obj': open(full_path, 'rb'), 'mime_type': 'image/png'}
-        
-        # if full_path.exists():
-        #     with open(full_path, 'rb') as f:
-        #         return {
-        #             'string': f.read(),
-        #             'mime_type': 'image/png' # or use mimetypes.guess_type(str(full_path))[0]
-        #         }
-
-    return weasyprint.default_url_fetcher(url, timeout, ssl_context)
 
 
 def send_order_confirmation_email(order_id, pdf_buffer):
