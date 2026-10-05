@@ -1,3 +1,4 @@
+{% load static %}
 <div class="dashboard_hero lg:col-span-2 w-full min-h-[14rem] sm:min-h-[16rem] rounded-[28px] text-white border border-info relative flex flex-col justify-between overflow-hidden shadow-lg shadow-neutral/40 bg-neutral order-1 lg:order-2">
     <div class="flex flex-col z-10 p-6 md:pl-[20%] space-y-4">
         <!-- Solar Term Badges Container -->
@@ -31,6 +32,5 @@
     <div class="standard_horizontal profile_clock absolute right-6 md:right-[20%] bottom-2.5 xxs:bottom-6 z-10 scale-75 sm:scale-90 md:scale-100 origin-bottom-right">
         {% include 'accounts/partials/clock_analog.html' %}
     </div>               
-    <img src="{{ solar_term_bg_url }}" alt="Seasonal Red Leaves background" class="absolute left-0 top-0 w-full h-full object-cover object-top select-none pointer-events-none filter brightness-[0.8] contrast-[1.05]">
-    <!-- <img src="{{ solar_term_bg_url }}" alt="Seasonal Red Leaves background" class="absolute left-0 top-0 w-full h-full object-cover object-top select-none pointer-events-none filter brightness-[0.8] contrast-[1.05]" -->
+    <img src="{% static current_term_img %}" alt="{{ solar_term_en }}｜{{ solar_term }} image" class="absolute left-0 top-0 w-full h-full object-cover object-top select-none pointer-events-none filter brightness-[0.8] contrast-[1.05]">
 </div>

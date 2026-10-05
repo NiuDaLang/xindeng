@@ -34,16 +34,6 @@
 
 
 /* fixed backdrop */
-/* .section { */
-    /* background-image: url("/static/hero/home_bg.webp");
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center; */
-    /* Other styling for height, padding, etc. */
-    /* height: auto;  */
-    /* padding: 20px; */
-/* } */
-
 .normal-bg {
     /* Default behavior: background scrolls with the content (same as 'scroll' or 'local') */
     background-attachment: scroll; 

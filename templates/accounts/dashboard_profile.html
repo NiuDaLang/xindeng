@@ -1,3 +1,4 @@
+<!-- dashboard_profile.html -->
 <title>{{ page_title }}</title>
 
 {% load static %}
@@ -23,7 +24,7 @@
         <div class="avatar placeholder flex-shrink-0 w-24 h-24 sm:w-28 sm:h-28 mx-auto">
           <div class="w-full h-full aspect-square rounded-full ring-4 ring-info/20 ring-offset-base-100 ring-offset-2 overflow-hidden bg-base-200">
             <img class="w-full h-full object-cover" 
-                 src="{% if user_profile.profile_picture %}{{ user_profile.profile_picture.url }}{% else %}/static/userprofile/default.png{% endif %}" 
+                 src="{% if user_profile.profile_picture %}{{ user_profile.profile_picture_url }}{% else %}{% static 'userprofile/default.png' %}{% endif %}" 
                  alt="Profile Picture" />
           </div>
         </div>
@@ -94,7 +95,7 @@
           <div class="profile_clock absolute right-6 md:right-[20%] lg:right-12 bottom-2.5 xxs:bottom-6 z-10 scale-75 sm:scale-90 md:scale-100 origin-bottom-right">
               {% include 'accounts/partials/clock_analog.html' %}
           </div>               
-          <img src="{{ solar_term_bg_url }}" alt="Seasonal Red Leaves background" class="absolute left-0 top-0 w-full h-full object-cover select-none pointer-events-none filter brightness-[0.8] contrast-[1.05]">
+          <img src="{% static current_term_img %}" alt="{{ solar_term_en }}｜{{ solar_term }} image" class="absolute left-0 top-0 w-full h-full object-cover select-none pointer-events-none filter brightness-[0.8] contrast-[1.05]">
       </div>
     </div>
     <!-- =========================================================================

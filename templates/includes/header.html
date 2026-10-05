@@ -1,6 +1,7 @@
 <!-- header.html -->
 {% block content %}
 {% load humanize %}
+{% load static %}
 <div class="relative glight_main">
     <div id="navbar" class="fixed top-0 right-0 left-0 z-100 navbar flex justify-between bg-base-100 shadow-sm px-[max(1rem,5vw)] ">
       <!-- LEFT -->
@@ -81,10 +82,10 @@
                 <a href="{% url 'home' %}" class="">
                     <!-- Hṛdayadīpa (हृदयदीप) -->
                     <img id="logo_landscape" class="hidden lg:block h-[2.25rem]" 
-                    src="/media/images/logos/logo_full_landscape.svg"
+                    src="{% static 'images/logos/logo_full_landscape.svg' %}"
                     alt="logo landscape">
                     <img id="logo_landscape" class="block sm:hidden h-[2rem]" 
-                    src="/media/images/logos/logo_transparent.svg"
+                    src="{% static 'images/logos/logo_transparent.svg' %}"
                     alt="logo square">
                 </a>
             </div>
@@ -94,7 +95,7 @@
         <div class="h-[2.25rem] hidden sm:block lg:hidden">
             <a href="{% url 'home' %}" class="">
                 <img id="logo_square" class="h-[2.25rem] lg:hidden mr-1" 
-                src="/media/images/logos/logo_transparent.svg" 
+                src="{% static 'images/logos/logo_transparent.svg' %}" 
                 alt="logo square">
             </a>
         </div>
@@ -249,7 +250,7 @@
                     <!-- Avatar Button Frame -->
                     <div class="btn btn-ghost btn-circle avatar pointer-events-none peer-checked:bg-base-200/60 transition-colors relative">
                         <div class="w-8 lg:w-10 rounded-full">
-                            <img class="w-full" alt="User Picture" src="{% if request.user.profile %}{{ request.user.profile.profile_picture.url }} {% else %} /static/userprofile/default.png {% endif %}" />
+                            <img class="w-full" alt="User Picture" src="{% if request.user.profile %}{{ request.user.profile.profile_picture_url }} {% else %} {% static 'userprofile/default.png' %} {% endif %}" />
                         </div>
                     </div>
                     

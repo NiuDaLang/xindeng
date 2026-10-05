@@ -1,5 +1,6 @@
 <!-- all_posts_display.html -->
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
 <!-- BANNER -->
 <div class="relative mt-[65px] lg:mt-[86px] w-full">
@@ -367,7 +368,7 @@
                 border-image-outset: 0;
                 border-image-repeat: stretch repeat;
                 border-left: 10px solid transparent; 
-                border-image-source: url('/media/images/miscellaneous/string.png');
+                border-image-source: url(/static/images/miscellaneous/string.png);
             }
         }
         @media screen and (max-width: 639px){
@@ -377,7 +378,7 @@
                 border-image-outset: 0;
                 border-image-repeat: stretch repeat;
                 border-left: 10px solid transparent; 
-                border-image-source: url('/media/images/miscellaneous/string.png');
+                border-image-source: url(/static/images/miscellaneous/string.png);
             }
         }
         .post_card {
@@ -386,7 +387,7 @@
             border-image-outset: 0;
             border-image-repeat: stretch repeat;
             border-left: 10px solid transparent; 
-            border-image-source: url('/media/images/miscellaneous/string.png');
+            border-image-source: url(/static/images/miscellaneous/string.png);
         }
     </style>
 

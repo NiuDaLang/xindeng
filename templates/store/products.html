@@ -223,7 +223,7 @@
                     <!-- User Avatar -->
                     <div class="avatar flex-shrink-0">
                         <div class="mask mask-squircle w-11 h-11 sm:w-12 sm:h-12 bg-base-200">
-                            <img src="{% if review.user.profile and review.user.profile.profile_picture %}{{ review.user.profile.profile_picture.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}" 
+                            <img src="{% if review.user.profile and review.user.profile.profile_picture %}{{ review.user.profile.profile_picture_url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}" 
                                 alt="{{ review.user.username }}" 
                                 loading="lazy" />
                         </div>
@@ -374,7 +374,7 @@ document.getElementById('filter').addEventListener('submit', async (e) => {
                     return `
                         <a href="${product.url}" class="group flex flex-col bg-base-50 hover:bg-base-100 border border-base-200/50 hover:border-primary/30 rounded-xl overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/20" tabindex="0">
                             <div class="relative aspect-square w-full bg-base-200 overflow-hidden">
-                                <img src="${product.image_url || '/static/images/default-product.png'}" 
+                                <img src="${product.image_url || '/static/images/default-product.webp'}" 
                                      alt="${product.product_name}" 
                                      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                      loading="lazy" />

@@ -105,14 +105,14 @@ const firework = () => {
      * Firework
      */
     const textures = [
-        textureLoader.load('/media/three/firework/1.png'),
-        textureLoader.load('/media/three/firework/2.png'),
-        textureLoader.load('/media/three/firework/3.png'),
-        textureLoader.load('/media/three/firework/4.png'),
-        textureLoader.load('/media/three/firework/5.png'),
-        textureLoader.load('/media/three/firework/6.png'),
-        textureLoader.load('/media/three/firework/7.png'),
-        textureLoader.load('/media/three/firework/8.png'),
+        textureLoader.load('/static/three/firework/1.png'),
+        textureLoader.load('/static/three/firework/2.png'),
+        textureLoader.load('/static/three/firework/3.png'),
+        textureLoader.load('/static/three/firework/4.png'),
+        textureLoader.load('/static/three/firework/5.png'),
+        textureLoader.load('/static/three/firework/6.png'),
+        textureLoader.load('/static/three/firework/7.png'),
+        textureLoader.load('/static/three/firework/8.png'),        
     ]
 
     const createFirework = (count, position, size, texture, radius, color) => {

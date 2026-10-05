@@ -263,7 +263,7 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles" # "collectstatic"
 STATICFILES_DIRS = [
     BASE_DIR / "assets",
-    BASE_DIR / "media",
+    # BASE_DIR / "media",
     BASE_DIR / "static",
 ]
 

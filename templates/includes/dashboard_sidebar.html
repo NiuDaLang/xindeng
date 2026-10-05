@@ -1,3 +1,4 @@
+{% load static %}
 <!-- dashbaord_sidebar.html (member) -->
 <div class="w-full h-full bg-base-100 flex flex-col justify-between select-none">
   
@@ -10,7 +11,7 @@
         <!-- Avatar Ring Display Element Frame -->
         <div class="ring-primary/20 ring-offset-base-100 w-16 h-16 sm:w-20 sm:h-20 rounded-full ring-4 ring-offset-2 overflow-hidden bg-base-200 flex-shrink-0 shadow-sm">
           <img class="w-full h-full object-cover" 
-               src="{% if request.user.profile %}{{ request.user.profile.profile_picture.url }}{% elif user.socialaccount_set.all.0.get_avatar_url %}{{ user.socialaccount_set.all.0.get_avatar_url }}{% else %}/static/userprofile/default.png{% endif %}" 
+               src="{% if request.user.profile %}{{ request.user.profile.profile_picture_url }}{% elif user.socialaccount_set.all.0.get_avatar_url %}{{ user.socialaccount_set.all.0.get_avatar_url }}{% else %}{% static 'userprofile/default.png' %}{% endif %}" 
                alt="{{ request.user.username }}'s Avatar" />
         </div>
         

@@ -1,5 +1,6 @@
 <!-- dashboard_main.html -->
 {% load humanize %}
+{% load static %}
 <title>{{ page_title }}</title>
 <!-- contents -->
 <div id="dashboard_main" class="subpage flex flex-col gap-6 animate-fade-in w-full text-neutral font-sans select-none">
@@ -526,7 +527,7 @@
                     {% include 'accounts/partials/clock_analog.html' %}
                 </div>
                 
-                <img src="{{ solar_term_bg_url }}" alt="Seasonal Red Leaves background" class="absolute left-0 top-0 w-full h-full object-cover select-none pointer-events-none filter brightness-[0.8]">
+                <img src="{% static current_term_img %}" alt="{{ solar_term_en }}｜{{ solar_term }} image" class="absolute left-0 top-0 w-full h-full object-cover select-none pointer-events-none filter brightness-[0.8]">
             </div>
 
             <!-- B. SYSTEM ACCORDION COLLAPSE SELF-HELP DESK -->

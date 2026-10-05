@@ -1,5 +1,6 @@
 <!-- dashboard_orders.html (Segment 1: Restructured Grid Engine Layout) -->
 {% load humanize %}
+{% load static %}
 <title>{{ page_title }}</title>
 
 <div id="dashboard_orders" class="subpage flex flex-col gap-6 animate-fade-in w-full text-neutral font-sans select-none">
@@ -78,8 +79,8 @@
             <div class="orders_clock absolute right-[5%] bottom-[5%] sm:right-[10%] md:right-[20%] lg:right-3 lg:bottom-[5%] z-10 scale-[0.62] lg:scale-[0.58] origin-bottom-right pointer-events-none opacity-85 group-hover:opacity-100 transition-opacity">
                 {% include 'accounts/partials/clock_analog.html' %}
             </div>
-            <img src="{{ solar_term_bg_url }}" 
-                alt="Seasonal {{ solar_term }} Background Backdrop" 
+            <img src="{% static current_term_img %}" 
+                alt="Seasonal {{ solar_term_en }}｜{{ solar_term }} Background Backdrop" 
                 class="absolute left-0 top-0 w-full h-full object-cover select-none pointer-events-none filter brightness-[0.8]" />
         </div>
 

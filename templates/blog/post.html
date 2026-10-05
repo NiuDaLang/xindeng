@@ -1,7 +1,7 @@
 <!-- blog/post.html -->
 {% extends 'base.html' %}
 {% load humanize %}
-
+{% load static %}
 {% block content %}
 <!-- LOW-PROFILE SILK THEME BANNER (Maintains complete structural cross-page visual brand cohesion) -->
 <div class="relative mt-[65px] lg:mt-[86px] w-full bg-base-300 py-5 sm:py-6 border-b border-base-200 select-none">
@@ -253,7 +253,7 @@
                     
                     <!-- Artisan Editorial Portrait Image Capsule Display Slot -->
                     <div class="hidden md:block md:w-[30%] aspect-[3/4] rounded-xl overflow-hidden shadow-sm border border-base-200 bg-base-200 flex-shrink-0 relative group">
-                        <img src="{{ random_img_path }}" alt="Artistic Capture Piece" class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" loading="lazy">
+                        <img src="{% static random_img_path %}" alt="Artistic Capture Piece" class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" loading="lazy">
                     </div>
                 </div>
             </div>

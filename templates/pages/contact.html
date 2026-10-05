@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% load static %}
-
 {% block content %}
 <!-- BANNER -->
 <div class="relative mt-[65px] lg:mt-[86px] w-full">
@@ -44,7 +43,7 @@
         <!-- CARD-1: Member Hotline -->
         <div class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
             <figure class="pt-6 max-w-[160px] mx-auto">
-                <img src="/media/hero/lavendar.svg" alt="Lavender" class="rounded-xl w-full h-auto object-contain" />
+                <img src="{% static 'hero/lavendar.svg' %}" alt="Lavender" class="rounded-xl w-full h-auto object-contain" />
             </figure>
             <div class="flex flex-col flex-grow justify-between gap-3 items-center text-center p-6 md:px-3 lg:p-6">
                 <div class="flex flex-col gap-3 text-left">
@@ -69,7 +68,7 @@
         <!-- CARD-2: Guest Inquiries -->
         <div class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
             <figure class="pt-6 max-w-[160px] mx-auto">
-                <img src="/media/hero/purpleFlower.svg" alt="Purple Flower" class="rounded-xl w-full h-auto object-contain" />
+                <img src="{% static 'hero/purpleFlower.svg' %}" alt="Purple Flower" class="rounded-xl w-full h-auto object-contain" />
             </figure>
             <div class="flex flex-col flex-grow justify-between gap-3 items-center text-center p-6 md:px-3 lg:p-6">
                 <div class="flex flex-col gap-3 text-left">
@@ -115,7 +114,7 @@
         <!-- CARD-3: General Consultation -->
         <div class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
             <figure class="pt-6 max-w-[160px] mx-auto">
-                <img src="/media/hero/tulip.svg" alt="Tulip" class="rounded-xl w-full h-auto object-contain" />
+                <img src="{% static 'hero/tulip.svg' %}" alt="Tulip" class="rounded-xl w-full h-auto object-contain" />
             </figure>
             <div class="flex flex-col flex-grow justify-between gap-3 items-center text-center p-6 md:px-3 lg:p-6">
                 <div class="flex flex-col gap-3 text-left">

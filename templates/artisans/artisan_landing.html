@@ -9,11 +9,11 @@
 <section class="relative mt-[65px] lg:mt-[86px] w-full min-h-[calc(100vh-86px)] overflow-hidden bg-[#faf8f5]">
 
     <!-- Hero background -->
-    <div class="absolute inset-0 w-full h-full opacity-[0.35] pointer-events-none"
-         style="background-image: url('/media/artisans/hero/hero_bg.jpeg');
-                background-size: cover;
-                background-position: center right;
-                background-blend-mode: multiply;">
+    <div class="absolute inset-0 w-full h-full opacity-[0.35] pointer-events-none" 
+        style="background-image: url(/static/artisans/hero/hero_bg.jpeg);
+               background-size: cover;
+               background-position: center right;
+               background-blend-mode: multiply;">
     </div>
 
     <!-- Hero content -->
@@ -85,7 +85,7 @@
                     <!-- Video -->
                     <video autoplay muted loop playsinline preload="auto"
                         class="absolute inset-0 w-full h-full object-cover hero-window-clip">
-                        <source src="{{ current_clip.video_url }}" type="video/mp4">
+                        <source src="{{ current_clip_url }}" type="video/mp4">
                     </video>
 
                     <!-- Inner shadow -->

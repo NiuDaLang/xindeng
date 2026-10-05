@@ -1,4 +1,4 @@
-<!-- new_chat_mssg.html -->
+<!-- templates/accounts/partials/new_chat_mssg.html -->
 {% load chat_extras %}
 {% if new_message %}
 <div id="msg-{{ new_message.id }}" 
@@ -6,10 +6,10 @@
     
     {% if new_message.sender != request.user %}
     <div class="message-avatar">
-        <img src="{{ new_message.sender.profile.profile_picture.url }}" 
-             alt="{{ new_message.sender.username }}"
-             loading="lazy"
-             decoding="async">
+        <img src="{{ new_message.sender.profile.profile_picture_url }}" 
+            alt="{{ new_message.sender.username }}"
+            loading="lazy"
+            decoding="async">
     </div>
     {% endif %}
     
@@ -38,10 +38,10 @@
     
     {% if new_message.sender == request.user %}
     <div class="message-avatar">
-        <img src="{{ new_message.sender.profile.profile_picture.url }}" 
-             alt="{{ new_message.sender.username }}"
-             loading="lazy"
-             decoding="async">
+        <img src="{{ new_message.sender.profile.profile_picture_url }}" 
+            alt="{{ new_message.sender.username }}"
+            loading="lazy"
+            decoding="async">
     </div>
     {% endif %}
 </div>
