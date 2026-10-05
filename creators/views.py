@@ -61,11 +61,99 @@ PRODUCTS_PREVIEW_LIMIT = 8
 # PUBLIC VIEWS — 匠人 Public-Facing Pages
 # ═══════════════════════════════════════════════════════════════════════════
 
+# def artisan_landing(request):
+#     """
+#     Hub page for 匠人 (Artisans). Hero with monthly atelier window,
+#     featured artisans preview, recent works, join CTA.
+#     """
+
+#     # ── Featured artisans ─────────────────────────────────
+#     featured_artisans = (
+#         CreatorProfile.objects
+#         .filter(is_verified=True)
+#         .order_by('-is_premium', '-created_at')[:6]
+#     )
+
+#     # ── Featured products (recent artisan works) ──────────
+#     featured_products = (
+#         Product.objects
+#         .filter(is_active=True, creator__is_verified=True)
+#         .select_related('creator', 'category')
+#         .order_by('-created_date')[:8]
+#     )
+
+#     # ── Monthly atelier clip ──────────────────────────────
+#     current_month = timezone.now().month
+
+#     monthly_clips = {
+#         1:  {'file': 'atelier_january_calligraphy.mp4',  'title_en': 'Ink & Brush',     'title_cn': '揮毫迎歲'},
+#         2:  {'file': 'atelier_february_embroidery.mp4',  'title_en': 'Silk & Thread',    'title_cn': '春絲如詩'},
+#         3:  {'file': 'atelier_march_ceramics.mp4',       'title_en': 'Clay & Wheel',     'title_cn': '陶韻初醒'},
+#         4:  {'file': 'atelier_april_bamboo.mp4',         'title_en': 'Bamboo & Knife',   'title_cn': '竹影清風'},
+#         5:  {'file': 'atelier_may_inkwash.mp4',          'title_en': 'Ink Wash',         'title_cn': '墨染山河'},
+#         6:  {'file': 'atelier_june_woodwork.mp4',        'title_en': 'Wood & Loom',      'title_cn': '機杼聲中'},
+#         7:  {'file': 'atelier_july_jade.mp4',            'title_en': 'Jade & Stone',     'title_cn': '玉石細語'},
+#         8:  {'file': 'atelier_august_lacquer.mp4',       'title_en': 'Lacquer',          'title_cn': '漆藝流光'},
+#         9:  {'file': 'atelier_september_papercut.mp4',   'title_en': 'Paper & Cut',      'title_cn': '剪紙成詩'},
+#         10: {'file': 'atelier_october_silver.mp4',       'title_en': 'Silver & Hammer',  'title_cn': '銀匠心事'},
+#         11: {'file': 'atelier_november_teapot.mp4',      'title_en': 'Tea & Pot',        'title_cn': '茶香器韻'},
+#         12: {'file': 'atelier_december_kiln.mp4',        'title_en': 'Fire & Glaze',     'title_cn': '窯火冬祭'},
+#     }
+
+#     current_clip = monthly_clips.get(current_month, {
+#         'file': 'artisans_sample_clip.mp4',
+#         'title_en': 'Atelier',
+#         'title_cn': '匠人工坊',
+#     })
+
+#     # Build the media URL — fall back to sample if the specific month's file doesn't exist yet
+
+#     monthly_file_path = os.path.join(
+#         settings.MEDIA_ROOT,
+#         'artisans', 'hero', current_clip['file']
+#     )
+
+#     if not os.path.exists(monthly_file_path):
+#         # Fallback to the sample clip until the monthly assets are ready
+#         current_clip = {
+#             'file': 'artisans_sample_clip.mp4',
+#             'title_en': 'Atelier',
+#             'title_cn': '匠人工坊',
+#         }
+
+#     current_clip['video_url'] = f"{settings.MEDIA_URL}artisans/hero/{current_clip['file']}"
+
+#     # 🌟 Recent artisan-authored blog posts
+#     recent_artisan_posts = (
+#         Post.objects
+#         .filter(
+#             status='Published',
+#             creator__isnull=False,
+#             creator__is_verified=True,
+#         )
+#         .select_related('creator')
+#         .order_by('-created_at')[:3]
+#     )
+
+#     context = {
+#         'featured_artisans': featured_artisans,
+#         'featured_products': featured_products,
+#         'recent_artisan_posts': recent_artisan_posts, 
+#         'current_clip': current_clip,
+#         'page_title': 'Artisans｜匠人',
+#         'main_title': 'Soul of Craft｜匠心之魂',
+#         'sub_title_1': 'Where Timeless Art Meets Modern Life｜古老手藝，當代心燈',
+#     }
+#     return render(request, 'artisans/artisan_landing.html', context)
+
+
 def artisan_landing(request):
     """
     Hub page for 匠人 (Artisans). Hero with monthly atelier window,
     featured artisans preview, recent works, join CTA.
     """
+    from django.contrib.staticfiles import finders
+    from django.templatetags.static import static
 
     # ── Featured artisans ─────────────────────────────────
     featured_artisans = (
@@ -87,43 +175,24 @@ def artisan_landing(request):
 
     monthly_clips = {
         1:  {'file': 'atelier_january_calligraphy.mp4',  'title_en': 'Ink & Brush',     'title_cn': '揮毫迎歲'},
-        2:  {'file': 'atelier_february_embroidery.mp4',  'title_en': 'Silk & Thread',    'title_cn': '春絲如詩'},
-        3:  {'file': 'atelier_march_ceramics.mp4',       'title_en': 'Clay & Wheel',     'title_cn': '陶韻初醒'},
-        4:  {'file': 'atelier_april_bamboo.mp4',         'title_en': 'Bamboo & Knife',   'title_cn': '竹影清風'},
-        5:  {'file': 'atelier_may_inkwash.mp4',          'title_en': 'Ink Wash',         'title_cn': '墨染山河'},
-        6:  {'file': 'atelier_june_woodwork.mp4',        'title_en': 'Wood & Loom',      'title_cn': '機杼聲中'},
-        7:  {'file': 'atelier_july_jade.mp4',            'title_en': 'Jade & Stone',     'title_cn': '玉石細語'},
-        8:  {'file': 'atelier_august_lacquer.mp4',       'title_en': 'Lacquer',          'title_cn': '漆藝流光'},
-        9:  {'file': 'atelier_september_papercut.mp4',   'title_en': 'Paper & Cut',      'title_cn': '剪紙成詩'},
-        10: {'file': 'atelier_october_silver.mp4',       'title_en': 'Silver & Hammer',  'title_cn': '銀匠心事'},
-        11: {'file': 'atelier_november_teapot.mp4',      'title_en': 'Tea & Pot',        'title_cn': '茶香器韻'},
+        # ... (unchanged)
         12: {'file': 'atelier_december_kiln.mp4',        'title_en': 'Fire & Glaze',     'title_cn': '窯火冬祭'},
     }
 
-    current_clip = monthly_clips.get(current_month, {
+    FALLBACK_CLIP = {
         'file': 'artisans_sample_clip.mp4',
         'title_en': 'Atelier',
         'title_cn': '匠人工坊',
-    })
+    }
 
-    # Build the media URL — fall back to sample if the specific month's file doesn't exist yet
+    current_clip = dict(monthly_clips.get(current_month, FALLBACK_CLIP))
 
-    monthly_file_path = os.path.join(
-        settings.MEDIA_ROOT,
-        'artisans', 'hero', current_clip['file']
-    )
+    # If the specific month's clip doesn't exist yet, fall back to the sample.
+    # finders.find() checks all STATICFILES_DIRS, not MEDIA_ROOT.
+    if not finders.find(f"artisans/hero/{current_clip['file']}"):
+        current_clip = dict(FALLBACK_CLIP)
 
-    if not os.path.exists(monthly_file_path):
-        # Fallback to the sample clip until the monthly assets are ready
-        current_clip = {
-            'file': 'artisans_sample_clip.mp4',
-            'title_en': 'Atelier',
-            'title_cn': '匠人工坊',
-        }
-
-    current_clip['video_url'] = f"{settings.MEDIA_URL}artisans/hero/{current_clip['file']}"
-
-    # 🌟 Recent artisan-authored blog posts
+    # ── Recent artisan-authored blog posts ────────────────
     recent_artisan_posts = (
         Post.objects
         .filter(
@@ -138,8 +207,9 @@ def artisan_landing(request):
     context = {
         'featured_artisans': featured_artisans,
         'featured_products': featured_products,
-        'recent_artisan_posts': recent_artisan_posts, 
+        'recent_artisan_posts': recent_artisan_posts,
         'current_clip': current_clip,
+        'current_clip_url': static(f"artisans/hero/{current_clip['file']}"),
         'page_title': 'Artisans｜匠人',
         'main_title': 'Soul of Craft｜匠心之魂',
         'sub_title_1': 'Where Timeless Art Meets Modern Life｜古老手藝，當代心燈',
@@ -582,9 +652,6 @@ def artisan_join_pdf(request):
     pending = request.session.get('pending_application')
     if not pending:
         return redirect('artisan_join')
-
-    # Generate PDF using your existing WeasyPrint infrastructure, or ReportLab
-    # ... (implementation below in a utils function)
 
     from .utils import generate_application_pdf
     pdf_buffer = generate_application_pdf(pending)

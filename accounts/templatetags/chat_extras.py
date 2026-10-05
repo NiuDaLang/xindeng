@@ -3,6 +3,8 @@ import re
 from django import template
 from django.utils.safestring import mark_safe
 from django.core.cache import cache
+from store.models import Product  # Adjust import based on your app structure
+
 
 register = template.Library()
 
@@ -58,7 +60,6 @@ def get_product_info_from_url(url):
         if cached_info:
             return cached_info
         
-        from store.models import Product  # Adjust import based on your app structure
         
         # Parse URL to get product slug
         # Expected format: /store/product/<category_slug>/<product_slug>/
@@ -74,11 +75,11 @@ def get_product_info_from_url(url):
                 
                 # Get product from database
                 product = Product.objects.filter(slug=product_slug, is_active=True).first()
-                
+                from django.templatetags.static import static
                 if product:
                     product_info = {
                         'name': product.product_name,
-                        'image_url': product.images.url if product.images else '/static/images/default-product.png',
+                        'image_url': product.images.url if product.images else static('images/default-product.webp'),
                     }
                     
                     # Cache for 1 hour

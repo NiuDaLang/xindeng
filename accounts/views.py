@@ -600,14 +600,16 @@ def dashboard(request, subpage):
     }
 
     # 🔒 ROBUST FAILSAFE EVALUATION ROUTER
-    current_term_img = "hero/red_leaves.jpeg"  # Fallback to default asset if lookups omit keys
+    current_term_img = "solar_terms/minor_cold.webp"
 
     if current_term:
         trad_term = translator.convert(current_term)
         term_en = SOLAR[current_term]
         
         # Extract the matching image file name. Adjust folders string safely to match media directories
-        if current_term in solar_term_imgs:
+        # if current_term in solar_term_imgs:
+        #     current_term_img = f"solar_terms/{solar_term_imgs[current_term]}"
+        if current_term and current_term in solar_term_imgs:
             current_term_img = f"solar_terms/{solar_term_imgs[current_term]}"
             
     if not today_is_solar_term:
@@ -624,7 +626,7 @@ def dashboard(request, subpage):
         "solar_term_en": term_en,
         "next_solar_term": trad_next_term,
         "next_solar_term_en": next_term_en,
-        "solar_term_bg_url": f"{settings.MEDIA_URL}{current_term_img}",
+        "current_term_img": current_term_img,
     })
 
     # main
@@ -1488,7 +1490,7 @@ def send_message(request):
             "receiver_id": new_message.receiver.id,
             "sender_id": request.user.id,
             "sender_name": request.user.username,
-            "sender_avatar_url": request.user.profile.profile_picture.url,
+            "sender_avatar_url": request.user.profile.profile_picture_url,
             "msg_content": new_message.content,
             "msg_img_url": new_message.image.url if new_message.image else None,
             "msg_timestamp": new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
@@ -1502,7 +1504,7 @@ def send_message(request):
             'id': new_message.id,
             'sender_id': new_message.sender.id,
             'sender_name': new_message.sender.username,
-            'sender_avatar': new_message.sender.profile.profile_picture.url,
+            'sender_avatar': new_message.sender.profile.profile_picture_url,
             'content': format_chat(new_message.content),
             'image_url': new_message.image.url if new_message.image else None,
             'timestamp': new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
@@ -1738,7 +1740,7 @@ def api_conversation(request, member_id):
         'id': msg.id,
         'sender_id': msg.sender.id,
         'sender_name': msg.sender.username,
-        'sender_avatar': msg.sender.profile.profile_picture.url,
+        'sender_avatar': msg.sender.profile.profile_picture_url,
         'content': format_chat(msg.content),
         'image_url': msg.image.url if msg.image else None,
         'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
@@ -1796,7 +1798,7 @@ def api_search_messages(request):
         'id': msg.id,
         'sender_id': msg.sender.id,
         'sender_name': msg.sender.username,
-        'sender_avatar': msg.sender.profile.profile_picture.url,
+        'sender_avatar': msg.sender.profile.profile_picture_url,
         'content': format_chat(msg.content),
         'image_url': msg.image.url if msg.image else None,
         'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
@@ -1845,7 +1847,7 @@ def api_my_conversation(request):
         'id': msg.id,
         'sender_id': msg.sender.id,
         'sender_name': msg.sender.username,
-        'sender_avatar': msg.sender.profile.profile_picture.url,
+        'sender_avatar': msg.sender.profile.profile_picture_url,
         'content': format_chat(msg.content),
         'image_url': msg.image.url if msg.image else None,
         'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
@@ -2265,6 +2267,3 @@ def claim_voucher_routing_view(request, voucher_id):
         "page_title": "Claim Your Voucher｜領取您的電子禮卡"
     }
     return render(request, "pages/claim_voucher.html", context)
-
-
-

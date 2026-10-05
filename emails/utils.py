@@ -6,7 +6,6 @@ from django.template.loader import render_to_string
 from orders.models import Order, Payment, OrderProduct
 from carts.models import ProformaInvoice
 from accounts.data import CURRENCY_SYMBOL, INTEGER_CURRENCIES
-from weasyprint import HTML
 import weasyprint
 # find url for weasyprint
 from django.contrib.staticfiles import finders

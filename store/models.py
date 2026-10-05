@@ -348,7 +348,6 @@ class ProductVariation(models.Model):
     pending_color   = models.CharField(max_length=50, blank=True, default="")
     pending_size    = models.CharField(max_length=100, blank=True, default="")
     pending_type    = models.CharField(max_length=100, blank=True, default="")
-    # images          = models.ImageField(upload_to='images/products/variations', default="images/products/variations/pattern1.png")
     images          = models.ImageField(upload_to='images/products/variations', null=True, blank=True)
     stock           = models.PositiveIntegerField(default=0)
     is_available    = models.BooleanField(default=True)

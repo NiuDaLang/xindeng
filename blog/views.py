@@ -156,7 +156,7 @@ def post(request, post_slug):
 
     # Maintain your baseline randomized background asset index mappings
     random_img_num = random.randint(0, 4)
-    random_img_path = f"/static/images/post/img_{random_img_num}.JPG"
+    random_img_path = f"images/post/img_{random_img_num}.JPG"
 
     if current_post.creator:
         artisan_related_posts = (

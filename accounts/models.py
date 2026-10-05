@@ -137,7 +137,7 @@ class AdminTrapHit(models.Model):
 
 class UserProfile(models.Model):
     user                = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
-    profile_picture     = models.ImageField(default="userprofile/default.png", blank=True, upload_to="userprofile")
+    profile_picture     = models.ImageField(upload_to='userprofile/', blank=True, null=True)
     dob                 = models.DateField(blank=True, null=True)
     gender              = models.CharField(blank=True, max_length=10, choices=GENDER)
     blood_type          = models.CharField(blank=True, max_length=15, choices=BLOOD)
@@ -161,8 +161,9 @@ class UserProfile(models.Model):
 
         for field in profile_fields:
             val = getattr(self, field)
-            if val: # Checks if it's not None, empty string, or default image
-                if field == 'profile_picture' and "default.png" in val.url:
+            if val:
+                # Legacy rows may still store the default path as their value.
+                if field == 'profile_picture' and 'default.png' in str(val):
                     continue
                 filled_count += 1
 
@@ -175,6 +176,13 @@ class UserProfile(models.Model):
         if total_fields == 0: return 0
 
         return int((filled_count / total_fields) * 100)
+
+    @property
+    def profile_picture_url(self):
+        if self.profile_picture:
+            return self.profile_picture.url     # .url on the FIELD, not the property
+        from django.templatetags.static import static
+        return static('userprofile/default.png')    
 
 
 class Address(models.Model):
