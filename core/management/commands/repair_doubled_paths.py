@@ -12,6 +12,16 @@ Strategy:
   3. If the file exists at the corrected path already, just update the DB.
   4. Otherwise, move the file on disk (rename) and update the DB.
   5. Optionally, delete the leftover original file if it still exists.
+
+⚠️  KNOWN LIMITATION: This command matches the literal `upload_to` template
+against file paths. Fields whose `upload_to` contains strftime directives
+(e.g. 'blog/featured_images/%Y/%m/%d') will never match, because the
+interpolated path contains real dates, not '%Y/%m/%d'. Such fields are
+skipped with a warning.
+
+For those cases, use a one-off script that strips the known doubled prefix,
+as was done for Post.featured_image on 2026-10-05 (see /tmp/fix_doubled_blog_paths_v3.py
+if still present, or replicate its structure).
 """
 
 import os
@@ -29,12 +39,24 @@ def _resolve_upload_to_prefix(model, field_name):
     """
     Return the *string* upload_to prefix for a field, or None if it's
     a callable (in which case we can't safely compute a static prefix).
+
+    Raises NotImplementedError if the prefix contains strftime directives
+    (%Y, %m, %d, etc.), because _find_doubled_prefix matches the literal
+    template string against the file path and can't handle interpolated
+    dates. See module docstring.
     """
+
     field = model._meta.get_field(field_name)
     upload_to = getattr(field, "upload_to", None)
     if not upload_to or callable(upload_to):
         return None
     prefix = str(upload_to).rstrip("/")
+    if "%" in prefix:
+        raise NotImplementedError(
+            f"upload_to contains strftime directives: {prefix!r}. "
+            f"The current implementation can't detect doublings for "
+            f"this field. Repair manually — see module docstring."
+        )
     return prefix
 
 
@@ -97,9 +119,15 @@ class Command(BaseCommand):
             except LookupError:
                 continue
 
-            prefix = _resolve_upload_to_prefix(model, field_name)
+            try:
+                prefix = _resolve_upload_to_prefix(model, field_name)
+            except NotImplementedError as exc:
+                self.stderr.write(self.style.WARNING(
+                    f"⚠ {app_label}.{model_name}.{field_name}: {exc}"
+                ))
+                continue
+
             if not prefix:
-                # Callable upload_to — skip (manual repair needed)
                 continue
 
             self.stdout.write(f"\n▶ {app_label}.{model_name}.{field_name}")
