@@ -78,6 +78,4 @@ urlpatterns = [
 
     path('taggit/', include('taggit_selectize.urls')),
 
-    path("test/", views.test, name="test")
-
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

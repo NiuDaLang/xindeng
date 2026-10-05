@@ -11,10 +11,6 @@ from creators.models import CreatorProfile
 from creators.utils import get_search_variants
 
 
-def test(request):
-    return render(request, 'pages/test.html')
-
-
 def home(request):
     valid_products = Product.products.filter(
         is_active=True,
