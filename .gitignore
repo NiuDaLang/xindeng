@@ -58,13 +58,8 @@ dump.rdb
 # ══════════════════════════════════════════════════════════════
 # 7. LOCAL DEVELOPMENT SCRATCH FILES
 # ══════════════════════════════════════════════════════════════
-accounts_errors.html
-product_copy.html
-checkout_copy.html
-order_complete_copy.html
-place_order_copy.html
-banner_copy.html
-test.html
-project_structure.txt
+# Handoff docs — kept local, not published to the repo yet.
 /docs
-README.md
+
+# Dev notes — to be rewritten for public release post-production.
+/README.md
