@@ -1,3 +1,4 @@
+# orders/utils.py
 from django.core.cache import cache
 from accounts.data import DEFAULT_EXCHANGE_RATE_VS_CNY, INTERNAL_CURRENCY_ADJUSTMENT, CURRENCY_SYMBOL, INTEGER_CURRENCIES
 from decimal import Decimal, ROUND_HALF_UP
@@ -63,8 +64,8 @@ def register_multilingual_fonts():
     # 1. Main Font: Chinese + English
     pdfmetrics.registerFont(TTFont('NotoSansTC-regular', os.path.join(font_dir, 'NotoSansTC-Regular.ttf')))
     pdfmetrics.registerFont(TTFont('NotoSansTC-bold', os.path.join(font_dir, 'NotoSansTC-Bold.ttf')))
-    pdfmetrics.registerFont(TTFont('NotoSansTC-light', os.path.join(font_dir, 'NotoSansTC-Light.ttf')))   # ← remove
-    pdfmetrics.registerFont(TTFont('NotoSansTC-thin', os.path.join(font_dir, 'NotoSansTC-Thin.ttf')))     # ← remove
+    # pdfmetrics.registerFont(TTFont('NotoSansTC-light', os.path.join(font_dir, 'NotoSansTC-Light.ttf')))   # ← remove
+    # pdfmetrics.registerFont(TTFont('NotoSansTC-thin', os.path.join(font_dir, 'NotoSansTC-Thin.ttf')))     # ← remove
     
     # 2. Sanskrit font
     pdfmetrics.registerFont(TTFont('SanskritFont', os.path.join(font_dir, 'TiroDevanagariSanskrit-Regular.ttf')))

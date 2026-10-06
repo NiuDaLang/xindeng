@@ -1,3 +1,4 @@
+# carts/models.py
 from django.db import models
 from accounts.models import Account, Perk
 from accounts.data import DESTINATIONS_INCL_DIGITAL, INTEGER_CURRENCIES

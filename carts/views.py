@@ -584,10 +584,6 @@ def cart(request):
             cart, created = Cart.objects.get_or_create(cart_id=cart_id, user=None)
             cash_voucher_balance = None
 
-        if created:
-            print("created")
-            cart.saved()
-  
         cart_items = CartItem.objects.filter(cart=cart, is_active=True).order_by(
             '-product_variation__product__is_physical', 
             'product_variation__product__is_voucher',  
