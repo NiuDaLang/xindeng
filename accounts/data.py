@@ -1,3 +1,4 @@
+# accounts/data.py
 # https://www.att.com/support_media/images/pdf/Country_Code_List.pdf
 # https://my.ems.com.cn/pcp-web/f/pcp/indexController/quotequery
 AREA_CODE = [

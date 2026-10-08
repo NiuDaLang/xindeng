@@ -52,11 +52,11 @@
          Offer<br><span class="text-[10px] text-base-content/40">優惠折抵</span>
      </td>
      <td class="py-2 text-right font-mono text-[10px] min-[576px]:max-[767px]:text-[12px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[10px] text-error/50 tracking-tight pr-1">
-         <span id="summary-discount">¥ ({{ offer_applied }})</span>
+         <span id="summary-discount">¥ {{ offer_applied }}</span>
      </td>
      <td class="py-2 text-right font-mono text-xs min-[576px]:max-[767px]:text-[13.5px] min-[768px]:max-[960px]:text-[10px] min-[961px]:text-xs font-semibold text-error">
          <span id="discount_amount_foreign">
-             {{ foreign_currency_symbol }} ({{ offer_applied_foreign }})
+             {{ foreign_currency_symbol }} {{ offer_applied_foreign }}
          </span>
      </td>
  </tr>
@@ -67,11 +67,11 @@
          Voucher Applied<br><span class="text-[10px] text-base-content/40">現金券扣抵</span>
      </td>
      <td class="py-2 text-right font-mono text-[10px] min-[576px]:max-[767px]:text-[12px] min-[768px]:max-[960px]:text-[9px] min-[961px]:text-[10px] text-info/50 tracking-tight pr-1">
-         <span id="summary_voucher_applied">¥ ({{ voucher_applied }})</span>
+         <span id="summary_voucher_applied">¥ {{ voucher_applied }}</span>
      </td>
      <td class="py-2 text-right font-mono text-xs min-[576px]:max-[767px]:text-[13.5px] min-[768px]:max-[960px]:text-[10px] min-[961px]:text-xs font-semibold text-info">
          <span id="summary_voucher_applied_foreign">
-             {{ foreign_currency_symbol }} ({{ voucher_applied_foreign }})
+             {{ foreign_currency_symbol }} {{ voucher_applied_foreign }}
          </span>
      </td>
  </tr>

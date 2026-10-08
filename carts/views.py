@@ -121,7 +121,7 @@ def update_exchange_rate_api(request):
     offer_applied_foreign_two_digit = Decimal(str(offer_applied_foreign).replace(",", ""))
     fmt_offer = intcomma(f"{offer_applied_foreign_two_digit:.0f}") if is_integer else intcomma(f"{offer_applied_foreign_two_digit:.2f}")
     display_offer = f"({fmt_offer})" if offer_applied_foreign_two_digit > 0 else fmt_offer
-    offer_applied_foreign_html = f'<span id="discount_amount_foreign" hx-swap-oob="true">{ foreign_currency_symbol } ({ display_offer })</span>'
+    offer_applied_foreign_html = f'<span id="discount_amount_foreign" hx-swap-oob="true">{ foreign_currency_symbol } { display_offer }</span>'
 
     # 5. Voucher
     voucher_data = request.session.get("applied_voucher", {})
@@ -130,7 +130,7 @@ def update_exchange_rate_api(request):
     voucher_applied_foreign_two_digit = Decimal(str(voucher_applied_foreign).replace(",", ""))
     fmt_voucher_applied_foreign = intcomma(f"{voucher_applied_foreign_two_digit:.0f}") if is_integer else intcomma(f"{voucher_applied_foreign_two_digit:.2f}")
     display_voucher_applied_foreign = f"({fmt_voucher_applied_foreign})" if voucher_applied_foreign_two_digit > 0 else fmt_voucher_applied_foreign
-    voucher_applied_foreign_html = f'<span id="summary_voucher_applied_foreign" hx-swap-oob="true">{ foreign_currency_symbol } ({ display_voucher_applied_foreign })</span>'
+    voucher_applied_foreign_html = f'<span id="summary_voucher_applied_foreign" hx-swap-oob="true">{ foreign_currency_symbol } { display_voucher_applied_foreign }</span>'
 
     # 6. Total Payable
     total_payables_html, amount, amount_foreign = update_total_payable(request, cart)
@@ -879,6 +879,7 @@ def apply_offer(request):
 
     # 3. Execute full lifecycle condition validation pass
     status = PerkEvaluator.get_eligibility_status(user, perk_target)
+    print("status: ", status)
     if status != "VALID":
         return htmx_invalid_offer_response(request, f"Ineligible: {status}｜條件不符，無法套用。", "")
     formatted_min_spend = intcomma(f"{perk_target.safe_min_spending:.2f}")

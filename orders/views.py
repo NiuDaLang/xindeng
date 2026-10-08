@@ -98,6 +98,29 @@ def place_order(request, proforma_invoice_no):
         if request.method == "POST":
             action_method = request.POST.get("payment_method")
             if action_method == "BANK_TRANSFER":
+                # ── Currency gate: bank transfer is only offered for HKD/CNY ──
+                # The template already restricts the option, but this is a
+                # defensive check in case a user forges the POST or a stale
+                # tab submits with the wrong currency.
+                if foreign_currency_code.upper() not in ("HKD", "CNY"):
+                    if request.headers.get("HX-Request"):
+                        response = HttpResponse("&nbsp;", content_type="text/html", status=200)
+                        response["HX-Reswap"] = "none"
+                        response["HX-Trigger"] = json.dumps({
+                            "errorMssg": {
+                                "title": "Payment Method Unavailable｜付款方式不可用",
+                                "text": (
+                                    "Bank transfer is only available for HKD and CNY "
+                                    "settlements. Please choose another payment method.<br>"
+                                    "銀行轉帳僅支援港幣與人民幣結算，請選擇其他付款方式。"
+                                ),
+                                "redirect_url": "/carts/place_order/" + proforma_invoice_no + "/",
+                            }
+                        })
+                        return response
+                    messages.error(request, "Bank transfer is only available for HKD/CNY.｜銀行轉帳僅支援港幣與人民幣。")
+                    return redirect("place_order", proforma_invoice_no=proforma_invoice_no)
+
                 expiry_time = timezone.now() + timedelta(hours=72)
                 # expiry_time = timezone.now() + timedelta(minutes=60)
                 # expiry_time = timezone.now() + timedelta(seconds=30)

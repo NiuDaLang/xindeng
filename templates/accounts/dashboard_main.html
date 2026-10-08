@@ -73,11 +73,11 @@
                                 <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-warning"></span>
                             </span>
                             <span class="truncate opacity-80" title="Held for pending transfers｜待轉帳鎖定金額">
-                                Reserved Funds｜銀行匯款在途鎖定
+                                Pending Holds｜未結匯款鎖定
                             </span>
                         </div>
                         <span class="font-mono font-bold text-warning whitespace-nowrap bg-warning/10 px-1.5 py-0.5 rounded">
-                            -¥{{ pending_holds_total|floatformat:2|intcomma }}
+                            ¥{{ pending_holds_total|floatformat:2|intcomma }}
                         </span>
                     </div>
                 {% else %}

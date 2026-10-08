@@ -26,6 +26,8 @@ from accounts.evaluators import PerkEvaluator
 from django.db import transaction
 import socket
 from django.core.exceptions import ValidationError
+import logging
+logger = logging.getLogger(__name__)
 
 
 def clean_decimal(val):
@@ -481,12 +483,20 @@ def get_cash_voucher_detailed_balance(request):
     ).aggregate(total_allocated=Sum('voucher_applied'))['total_allocated'] or Decimal('0.00')
 
     # 3. True available balance is total funds minus pending commitments
-    true_available_balance = total_wallet_funds - pending_holds_total
+    # The voucher rows are ALREADY debited at bank-transfer hold time
+    # (see place_order -> execute_atomic_voucher_deduction). So the
+    # remaining wallet funds already reflect any active holds; subtracting
+    # pending_holds_total again would double-count them.
+    #
+    # pending_holds_total is now purely informational — it tells the UI
+    # how much of the member's historical wallet value is currently tied
+    # up in unconfirmed holds. It is NOT subtracted from the balance.
+    true_available_balance = total_wallet_funds
 
     return {
-        "true_available_balance": max(true_available_balance, Decimal('0.00')), 
-        "total_wallet_funds": total_wallet_funds, 
-        "pending_holds_total": pending_holds_total
+        "true_available_balance": max(true_available_balance, Decimal('0.00')),
+        "total_wallet_funds": total_wallet_funds,
+        "pending_holds_total": pending_holds_total,
     }
 
 
@@ -718,17 +728,41 @@ def get_or_lock_checkout_rate(request, currency_code):
             refresh_needed = True
 
     if refresh_needed:
-        new_rate = get_current_rate(base_currency_code="CNY", target_currency_code=currency_code)
+        new_rate = get_current_rate(
+            base_currency_code="CNY", target_currency_code=currency_code
+        )
+        # Defensive: get_current_rate should never return None after the fix,
+        # but if it does, don't take the whole page down.
+        if new_rate is None or new_rate <= 0:
+            logger.error(
+                "get_or_lock_checkout_rate: invalid rate %r for %s; using 1.0",
+                new_rate, currency_code,
+            )
+            new_rate = 1.0
+
         request.session['locked_rate'] = str(new_rate)
         request.session['locked_at'] = timezone.now().isoformat()
         request.session['locked_currency_code'] = currency_code
-        
+
         current_time_ms = int(time.time() * 1000)
         request.session['rate_expiry_timestamp'] = current_time_ms + (24 * 60 * 60 * 1000)
         request.session.modified = True
-        locked_rate = Decimal(new_rate).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+        locked_rate = Decimal(str(new_rate)).quantize(
+            Decimal('0.0001'), rounding=ROUND_HALF_UP
+        )
     else:
-        locked_rate = Decimal(locked_rate).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+        try:
+            locked_rate = Decimal(str(locked_rate)).quantize(
+                Decimal('0.0001'), rounding=ROUND_HALF_UP
+            )
+        except (InvalidOperation, TypeError, ValueError):
+            logger.error(
+                "get_or_lock_checkout_rate: bad session rate %r; resetting to 1.0",
+                locked_rate,
+            )
+            request.session['locked_rate'] = "1.0"
+            request.session.modified = True
+            locked_rate = Decimal("1.0")
 
     return locked_rate
 

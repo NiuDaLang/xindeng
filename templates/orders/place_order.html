@@ -152,9 +152,9 @@
                     <td class="py-2 text-right font-mono text-[10px] opacity-70 pr-1">¥({{ proforma_invoice.discount|floatformat:2|intcomma }})</td>
                     <td class="py-2 text-right font-mono text-xs font-semibold">
                       {% if is_integer %}
-                        {{ foreign_currency_symbol }}&nbsp;({{ proforma_invoice.discount_amount_foreign|floatformat:0|intcomma })})
+                        {{ foreign_currency_symbol }}&nbsp;({{ proforma_invoice.discount_amount_foreign|floatformat:0|intcomma }})
                       {% else %}
-                        {{ foreign_currency_symbol }}&nbsp;({{ proforma_invoice.discount_amount_foreign|floatformat:2|intcomma })})
+                        {{ foreign_currency_symbol }}&nbsp;({{ proforma_invoice.discount_amount_foreign|floatformat:2|intcomma }})
                       {% endif %}
                     </td>
                   </tr>

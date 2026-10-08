@@ -6,6 +6,7 @@ from .models import Order, OrderProduct
 from carts.models import ProformaInvoice
 import io
 import os
+import logging
 from django.conf import settings
 from accounts.models import Perk, UserPerk
 from accounts.evaluators import PerkEvaluator
@@ -21,124 +22,147 @@ from django.db.models import F
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image, Spacer, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image, Spacer, PageBreak, KeepTogether
 from reportlab.platypus.flowables import HRFlowable
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.units import cm, mm
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
+from core.pdf_utils import (
+    ensure_fonts_registered,
+    wrap_font, 
+    safe_paragraph,
+    safe_image,
+    safe_decimal,
+    format_currency,
+    escape_for_pdf
+)
 
 # paypal
 from paypalserversdk.models.item import Item
 from paypalserversdk.models.money import Money
 
+from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
+
+logger = logging.getLogger(__name__)
+
 
 def get_current_rate(base_currency_code="CNY", target_currency_code="HKD"):
     """
-    Retrieves the rate from Redis cache. 
-    If cache is empty, returns a fallback or triggers a manual fetch.
+    Retrieves the rate from Redis cache.
+    If cache is empty or the target currency is missing from the snapshot,
+    falls back to DEFAULT_EXCHANGE_RATE_VS_CNY.
+
+    Always returns a positive float. Never returns None.
     """
+    all_rates = cache.get('exchange_rates') or {}
+
     try:
-        all_rates = cache.get('exchange_rates')
-        if all_rates:
-            if all_rates[base_currency_code] is not None:
-                usd_base_currency = all_rates.get(base_currency_code)
-            else:
-                usd_base_currency = all_rates.get("CNH")
-            usd_target_currency = all_rates.get(target_currency_code)
-            target_base_exchange_rate = (usd_target_currency / usd_base_currency) * INTERNAL_CURRENCY_ADJUSTMENT
-            target_base_exchange_rate = Decimal(str(target_base_exchange_rate).replace(",", "")).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
-            
-            return float(target_base_exchange_rate)
-    except:
-    # Fallback: You can manually call the task or return a default value
-        fallback_rate = DEFAULT_EXCHANGE_RATE_VS_CNY[target_currency_code] * INTERNAL_CURRENCY_ADJUSTMENT
-        fallback_rate = Decimal(str(fallback_rate).replace(",", "")).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
-        
-        return float(fallback_rate)
+        # CNY has no self-pair; the rate against the USD base is stored
+        # under "CNH" (offshore yuan). Fall back to that when CNY is missing.
+        base_key = base_currency_code if all_rates.get(base_currency_code) is not None else "CNH"
+        usd_base_currency = all_rates.get(base_key)
+        usd_target_currency = all_rates.get(target_currency_code)
 
+        if usd_base_currency is not None and usd_target_currency is not None:
+            raw = (usd_target_currency / usd_base_currency) * INTERNAL_CURRENCY_ADJUSTMENT
+            quantized = Decimal(str(raw).replace(",", "")).quantize(
+                Decimal('0.0001'), rounding=ROUND_HALF_UP
+            )
+            return float(quantized)
 
-def register_multilingual_fonts():
-    font_dir = os.path.join(settings.BASE_DIR, 'static/fonts')
-    
-    # 1. Main Font: Chinese + English
-    pdfmetrics.registerFont(TTFont('NotoSansTC-regular', os.path.join(font_dir, 'NotoSansTC-Regular.ttf')))
-    pdfmetrics.registerFont(TTFont('NotoSansTC-bold', os.path.join(font_dir, 'NotoSansTC-Bold.ttf')))
-    # pdfmetrics.registerFont(TTFont('NotoSansTC-light', os.path.join(font_dir, 'NotoSansTC-Light.ttf')))   # ← remove
-    # pdfmetrics.registerFont(TTFont('NotoSansTC-thin', os.path.join(font_dir, 'NotoSansTC-Thin.ttf')))     # ← remove
-    
-    # 2. Sanskrit font
-    pdfmetrics.registerFont(TTFont('SanskritFont', os.path.join(font_dir, 'TiroDevanagariSanskrit-Regular.ttf')))
+        logger.warning(
+            "get_current_rate: cache miss for %s->%s; using static fallback",
+            base_currency_code, target_currency_code,
+        )
+    except (KeyError, TypeError, ValueError, ZeroDivisionError, InvalidOperation) as exc:
+        logger.warning(
+            "get_current_rate: cache read failed for %s->%s (%s); using static fallback",
+            base_currency_code, target_currency_code, exc,
+        )
 
-    # 3. DejaVu Sans: Latin diacritics + symbols
-    pdfmetrics.registerFont(TTFont('DejaVuSans-regular', os.path.join(font_dir, 'DejaVuSans-Regular.ttf')))
-    pdfmetrics.registerFont(TTFont('DejaVuSans-bold', os.path.join(font_dir, 'DejaVuSans-Bold.ttf')))
+    # Static fallback path — reached on cache miss, or on any of the above errors.
+    fallback_rate = DEFAULT_EXCHANGE_RATE_VS_CNY.get(target_currency_code)
+    if fallback_rate is None:
+        logger.error(
+            "get_current_rate: no fallback rate for %s; returning 1.0",
+            target_currency_code,
+        )
+        return 1.0
 
-    # 4. Barcode
-    pdfmetrics.registerFont(TTFont('Barcode128', os.path.join(font_dir, 'LibreBarcode128-Regular.ttf')))
+    fallback_rate = (
+        Decimal(str(fallback_rate).replace(",", ""))
+        * Decimal(str(INTERNAL_CURRENCY_ADJUSTMENT))
+    ).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+    return float(fallback_rate)
 
 
 def get_pdf_styles():
     styles = getSampleStyleSheet()
-    font_dir = os.path.join(settings.BASE_DIR, 'static', 'fonts')
 
-    # register various fonts
-    register_multilingual_fonts()
+    # Register all fonts (idempotent — safe to call on every request).
+    ensure_fonts_registered()
 
     styles.add(ParagraphStyle(
-        name='ShopName', fontName='NotoSansTC-bold', fontSize=16, leading=24
-    ))
-    # styles.add(ParagraphStyle(
-    #     name='OrderTitle', fontName='NotoSansTC-bold', fontSize=22, leading=30
-    # ))
-    styles.add(ParagraphStyle(
-        name='OrderTitle', fontName='NotoSansTC-Bold', fontSize=22, leading=26, spaceAfter=0, spaceBefore=0 # CRITICAL: Remove extra space
-    ))
-
-    # styles.add(ParagraphStyle(
-    #     name='Barcode', fontName='Barcode128', fontSize=32, leading=32
-    # ))
-    styles.add(ParagraphStyle(
-        name='Barcode', fontName='Barcode128', fontSize=32, leading=32, spaceAfter=0, spaceBefore=0
+        name='ShopName', fontName='NotoSansTC-Bold', fontSize=16, leading=24
     ))
     styles.add(ParagraphStyle(
-        name='Greeting', fontName='NotoSansTC-bold', fontSize=13, leading=18, spaceAfter=12
+        name='OrderTitle',
+        fontName='NotoSansTC-Bold', fontSize=22, leading=26,
+        spaceAfter=0, spaceBefore=0,
     ))
     styles.add(ParagraphStyle(
-        name='BodyTextCustom', fontName='NotoSansTC-regular', fontSize=10, leading=15, spaceAfter=10
+        name='Barcode',
+        fontName='Barcode128', fontSize=32, leading=32,
+        spaceAfter=0, spaceBefore=0,
     ))
     styles.add(ParagraphStyle(
-        name='ProductDescription', fontName='NotoSansTC-light', fontSize=10, leading=15, spaceAfter=5, 
-        # wordWrap='LTR'
-        # 'CJK' is best for Chinese/Japanese/Korean wrapping
-        # OR use wordWrap='LTR' for standard Western text wrapping
+        name='Greeting',
+        fontName='NotoSansTC-Bold', fontSize=13, leading=18, spaceAfter=12
     ))
     styles.add(ParagraphStyle(
-        name='LabelXS', fontName='NotoSansTC-regular', fontSize=8, textColor=colors.HexColor('#666666'), spaceAfter=1.0,
+        name='BodyTextCustom',
+        fontName='NotoSansTC-Regular', fontSize=10, leading=15, spaceAfter=10
     ))
     styles.add(ParagraphStyle(
-        name='SectionTitle', fontName='NotoSansTC-bold', fontSize=12, spaceBefore=20, spaceAfter=3
+        name='BodyTextCustomBold',
+        fontName='NotoSansTC-Bold',
+        fontSize=10, leading=15, spaceAfter=10,
     ))
     styles.add(ParagraphStyle(
-        name='FooterBold', fontName='NotoSansTC-bold', fontSize=10, spaceBefore=18, spaceAfter=15
+        name='ProductDescription',
+        fontName='NotoSansTC-Regular', fontSize=10, leading=15, spaceAfter=5,
+    ))
+    styles.add(ParagraphStyle(
+        name='LabelXS',
+        fontName='NotoSansTC-Regular', fontSize=8,
+        textColor=colors.HexColor('#666666'), spaceAfter=1.0,
+    ))
+    styles.add(ParagraphStyle(
+        name='SectionTitle',
+        fontName='NotoSansTC-Bold', fontSize=12, spaceBefore=20, spaceAfter=3
+    ))
+    styles.add(ParagraphStyle(
+        name='FooterBold',
+        fontName='NotoSansTC-Bold', fontSize=10, spaceBefore=18, spaceAfter=15
     ))
     styles.add(ParagraphStyle(
         name='SanskritTitle', fontName='SanskritFont', fontSize=16, leading=24
     ))
     styles.add(ParagraphStyle(name='AlignLeft', alignment=TA_LEFT))
-    styles.add(ParagraphStyle(name='AlignCenter', fontName='NotoSansTC-light', alignment=TA_CENTER))
+    styles.add(ParagraphStyle(
+        name='AlignCenter', fontName='NotoSansTC-Regular', alignment=TA_CENTER
+    ))
     styles.add(ParagraphStyle(name='AlignRight', alignment=TA_RIGHT))
-    styles.add(ParagraphStyle(name='AlignJustify',alignment=TA_JUSTIFY))
+    styles.add(ParagraphStyle(name='AlignJustify', alignment=TA_JUSTIFY))
 
     styles.add(ParagraphStyle(
-        name='SectionHeading', 
-        fontName='NotoSansTC-bold', 
-        fontSize=11, 
-        leading=14, 
-        textColor=colors.HexColor('#686461'), 
-        spaceBefore=10, 
-        spaceAfter=6, 
-        alignment=TA_LEFT
+        name='SectionHeading',
+        fontName='NotoSansTC-Bold',
+        fontSize=11,
+        leading=14,
+        textColor=colors.HexColor('#686461'),
+        spaceBefore=10,
+        spaceAfter=6,
+        alignment=TA_LEFT,
     ))
 
     return styles
@@ -146,25 +170,16 @@ def get_pdf_styles():
 
 def get_header_element(styles):
     shop_name_html = (
-        "<font name='SanskritFont' size='15'>Hṛdayadīpa (हृदयदीप)</font>｜"
-        "心燈"
+        wrap_font("Hṛdayadīpa (हृदयदीप)", "SanskritFont", 15)
+        + "｜心燈"
     )
     mixed_style = ParagraphStyle(
         "MixedStyle",
-        fontName="NotoSansTC-bold",
+        fontName="NotoSansTC-Bold",
         fontSize=16,
         leading=20,
     )
     return Paragraph(shop_name_html, mixed_style)
-
-
-def foreign_currency_formatter(number, currency):
-    currency_symbol = CURRENCY_SYMBOL[currency]
-
-    if currency in INTEGER_CURRENCIES:
-        return f"{currency_symbol}{Decimal(str(number).replace(",", "")):,.0f}"
-    else:
-        return f"{currency_symbol}{Decimal(str(number).replace(",", "")):,.2f}"
 
 
 def generate_order_confirmation_pdf(order_id):
@@ -178,6 +193,7 @@ def generate_order_confirmation_pdf(order_id):
     currency_code = getattr(order, 'currency_code', 'CNY') or 'CNY'
     currency_code = currency_code.upper().strip()
     is_integer = currency_code in INTEGER_CURRENCIES
+    is_bank_transfer = (proforma_invoice.payment_method == "BANK_TRANSFER")
 
     buffer = io.BytesIO()
     styles = get_pdf_styles()
@@ -192,8 +208,10 @@ def generate_order_confirmation_pdf(order_id):
     elements = []
 
     # (a) Top Line (Logo + Shop Name)
-    logo_path = os.path.join(settings.STATIC_ROOT, 'images/miscellaneous/logo_square.png')
-    logo = Image(logo_path, 15*mm, 15*mm) if os.path.exists(logo_path) else "[Logo]"
+    logo_path = os.path.join(str(settings.BASE_DIR), 'static', 'images', 'logos', 'logo_square.png')
+    logo_flowable = safe_image(logo_path, 15*mm, 15*mm)
+    logo = logo_flowable if logo_flowable else Paragraph("[Logo]", styles['BodyTextCustom'])    
+
     shop_paragraph = get_header_element(styles) # Hṛdayadīpa (हृदयदीप)｜心燈
 
     header_table = Table([[logo, shop_paragraph]], colWidths=[15*mm, 130*mm])
@@ -205,9 +223,15 @@ def generate_order_confirmation_pdf(order_id):
 
     # (b) Order Confirmation Title + Barcode
     title_data = [[
-        Paragraph(f"Order Confirmation｜訂單確認", styles['OrderTitle']),
-        Paragraph(order.order_number, styles['Barcode'])
+        Paragraph(
+            "Order Hold Confirmation｜訂單保留確認"
+            if is_bank_transfer
+            else "Order Confirmation｜訂單確認",
+            styles['OrderTitle'],
+        ),
+        Paragraph(order.order_number, styles['Barcode']),
     ]]
+
     title_table = Table(title_data, colWidths=[120*mm, 40*mm])
     title_table.hAlign = 'LEFT'
     title_table.setStyle(TableStyle([
@@ -219,81 +243,191 @@ def generate_order_confirmation_pdf(order_id):
     # (c) Greeting & Paragraphs
     username = user.username if user else "Guest｜訪客"
 
-    p1 = f"Thank you for shopping with us!<br/>感謝您在本店購物！"
-    p2 = "We will notify you when your physical product(s) parcel is dispatched.<br/>我們會在您的實體產品包裹發出時通知您。"
-    p3 = "Your e-product(s), if any, will be sent via another email.<br/>如果您有購買電子產品，我們將透過另一封電子郵件發送給您。"
+    if is_bank_transfer:
+        p1 = (
+            "Thank you for your order. Your item(s) have been reserved for 72 hours.<br/>"
+            "感謝您的訂購！您的商品庫存已為您保留 72 小時。"
+        )
+        p2 = (
+            "Please complete your bank transfer within this 72-hour window. "
+            "Once payment is verified, we will notify you when your physical "
+            "product(s) parcel is dispatched. Please note: if payment is not "
+            "received by the end of this period, the order will be treated as "
+            "cancelled and we cannot guarantee stock retention.<br/>"
+            "請在 72 小時內完成銀行轉帳。經確認付款後，我們將在您的實體產品包裹"
+            "發出時通知您。請注意：若逾期未收到款項，本訂單將視為取消，"
+            "我們亦無法保證為您保留商品庫存，敬請留意。"
+        )
+        p3 = (
+            "Any e-product(s) in this order will be delivered after payment "
+            "clearance: (a) instant digital items — a time-limited secure download "
+            "link will be emailed to you; (b) made-to-order digital items — the "
+            "artisan will begin production after payment and will be in touch to "
+            "confirm delivery; (c) e-vouchers — if you purchased for yourself, the "
+            "credit is added instantly to your member wallet on payment. If you "
+            "gifted it to someone else, an email invitation to claim will be sent "
+            "to the recipient; they can claim it by logging in (or registering "
+            "first) and requesting their redemption PIN, at which point the credit "
+            "is added to their wallet.<br/>"
+            "本訂單中的電子產品將於確認付款後交付：(a) 隨選即發之數位商品——"
+            "我們將以電子郵件寄送具時效性的安全下載連結；(b) 接單訂製之數位商品——"
+            "匠人將於確認付款後開始製作，並與您聯繫確認交付時程；"
+            "(c) 電子禮品券——若為自用，購物金將於付款後即時存入您的會員錢包。"
+            "若為餽贈，我們將以電子郵件向收件人發送領取邀請；收件人可透過登入"
+            "（或先註冊會員）申請領取驗證碼，經核銷後購物金即存入其會員錢包。"
+        )
+    else:
+        p1 = f"Thank you for shopping with us!<br/>感謝您在本店購物！"
+        p2 = "We will notify you when your physical product(s) parcel is dispatched.<br/>我們會在您的實體產品包裹發出時通知您。"
+        p3 = "Your e-product(s), if any, will be sent via another email.<br/>如果您有購買電子產品，我們將透過另一封電子郵件發送給您。"
 
     # (d) Order Details Section
     # *** Name ***
     if user:
         name_data = [[
-            [Paragraph("First Name｜名", styles['LabelXS']), Paragraph(f"<b>{user.first_name if user.first_name else '&nbsp;'}</b>", styles['BodyTextCustom'])],
-            [Paragraph("Last Name｜姓", styles['LabelXS']), Paragraph(f"<b>{user.last_name if user.last_name else '&nbsp;'}</b>", styles['BodyTextCustom'])],
-            [Paragraph("Username｜用戶名", styles['LabelXS']), Paragraph(f"<b>{username if username else '&nbsp;'}</b>", styles['BodyTextCustom'])]
+            [
+                Paragraph("First Name｜名", styles['LabelXS']),
+                safe_paragraph(user.first_name, styles['BodyTextCustomBold']),
+            ],
+            [
+                Paragraph("Last Name｜姓", styles['LabelXS']),
+                safe_paragraph(user.last_name, styles['BodyTextCustomBold']),
+            ],
+            [
+                Paragraph("Username｜用戶名", styles['LabelXS']),
+                safe_paragraph(username, styles['BodyTextCustomBold']),
+            ],
         ]]
         name_table = Table(name_data, colWidths=[58*mm, 58*mm, 58*mm])
     else:
-        name_data = [[Paragraph("Guest User｜訪客用戶", styles["BodyTextCustom"]), "", ""]]
+        name_data = [[
+            Paragraph("Guest User｜訪客用戶", styles["BodyTextCustom"]),
+            "", "",
+        ]]
         name_table = Table(name_data, colWidths=[174*mm])
+
     name_table.hAlign = "LEFT"
 
     # *** contact ***
     contact_data = [[
-        [Paragraph("Email｜電郵", styles['LabelXS']), Paragraph(f"<b>{order.email if order.email else '&nbsp;'}</b>", styles['BodyTextCustom'])],
-        [Paragraph("Phone｜電話", styles['LabelXS']), Paragraph(f"<b>{order.recipient_mobile_area if order.recipient_mobile_area else ''}&nbsp;{order.recipient_mobile_number}</b>", styles['BodyTextCustom'])]
+        [
+            Paragraph("Email｜電郵", styles['LabelXS']),
+            safe_paragraph(order.email, styles['BodyTextCustomBold']),
+        ],
+        [
+            Paragraph("Phone｜電話", styles['LabelXS']),
+            safe_paragraph(
+                f"{(order.recipient_mobile_area or '')} {(order.recipient_mobile_number or '')}".strip(),
+                styles['BodyTextCustomBold'],
+            ),
+        ],
     ]]
     contact_table = Table(contact_data, colWidths=[87*mm, 87*mm])
     contact_table.hAlign = "LEFT"
 
     # *** payment line_1 ***
+    payment_method_display = (
+        order.payment.payment_method if order.payment else "Bank Transfer｜銀行轉帳"
+    )
+    payment_id_display = (
+        order.payment.payment_id if order.payment else "Pending Manual Hold｜待核對"
+    )
     payment_1_data = [[
-        [Paragraph("Payment Method｜支付方式", styles['LabelXS']), Paragraph(f"<b>{order.payment.payment_method if order.payment else 'Bank Transfer｜銀行轉帳'}</b>", styles['BodyTextCustom'])],
-        [Paragraph("Transaction ID｜交易ID", styles['LabelXS']), Paragraph(f"<b>{order.payment.payment_id if order.payment else 'Pending Manual Hold｜待核對'}</b>", styles['BodyTextCustom'])]        
+        [
+            Paragraph("Payment Method｜支付方式", styles['LabelXS']),
+            safe_paragraph(payment_method_display, styles['BodyTextCustomBold']),
+        ],
+        [
+            Paragraph("Transaction ID｜交易ID", styles['LabelXS']),
+            safe_paragraph(payment_id_display, styles['BodyTextCustomBold']),
+        ],
     ]]
     payment_1_table = Table(payment_1_data, colWidths=[87*mm, 87*mm])
     payment_1_table.hAlign = "LEFT"
 
     # *** payment line_2 ***
-    if order.payment:
-        amount_to_format = order.payment.amount_paid
-    else:
-        # Fall back to your multi-currency names matching earlier ledger setups
-        # If order doesn't store a currency name string, default safely to CNY or your cookies currency
-        currency_code = getattr(order, 'currency_code', 'CNY') or 'CNY'
-        amount_to_format = order.total_due
+    # Payment amount is always the order's foreign-currency total.
+    # total_due_foreign is the amount the buyer paid (PayPal) or must
+    # wire (bank transfer) in their chosen currency. total_due is the
+    # CNY base and would mislabel the amount when currency_code != CNY.
+    payment_amount_decimal = safe_decimal(order.total_due_foreign)
 
-    # Execute string formatting matching your integer currency array constraints
-    payment_amount = f"{Decimal(str(amount_to_format).replace(',', '')):,.0f}" if is_integer else f"{Decimal(str(amount_to_format).replace(',', '')):,.2f}"
-    currency_symbol = CURRENCY_SYMBOL.get(currency_code, "")
+    if payment_amount_decimal == Decimal("0") and currency_code != "CNY":
+        logger.warning(
+            "generate_order_confirmation_pdf: order %s has no total_due_foreign "
+            "for currency %s; displaying a placeholder.",
+            order.order_number, currency_code,
+        )
+        payment_amount_display = "—"
+    else:
+        currency_symbol = CURRENCY_SYMBOL.get(currency_code, "")
+        payment_amount_display = format_currency(
+            payment_amount_decimal, currency_symbol, is_integer=is_integer,
+        )
 
     payment_2_data = [[
-        [Paragraph("Payment Currency｜付款貨幣", styles['LabelXS']), Paragraph(f"<b>{currency_code if currency_code else '&nbsp;'}</b>", styles['BodyTextCustom'])],
-        [Paragraph("Payment Amount｜支付金額", styles['LabelXS']), Paragraph(f"<b>{currency_symbol}{payment_amount}</b>", styles['BodyTextCustom'])]    
+        [
+            Paragraph("Payment Currency｜付款貨幣", styles['LabelXS']),
+            safe_paragraph(currency_code, styles['BodyTextCustomBold']),
+        ],
+        [
+            Paragraph("Payment Amount｜支付金額", styles['LabelXS']),
+            safe_paragraph(
+                payment_amount_display,
+                styles['BodyTextCustomBold'],
+                apply_fallback=False,
+            ),
+        ],
     ]]
     payment_2_table = Table(payment_2_data, colWidths=[87*mm, 87*mm])
     payment_2_table.hAlign = "LEFT"
 
     # *** shipping info_1 ***
+    phone_combined = (
+        f"{(order.recipient_mobile_area or '')} {(order.recipient_mobile_number or '')}".strip()
+    )
     shipping_1_data = [[
-        [Paragraph("Recipient Last Name｜收件人 姓", styles['LabelXS']), Paragraph(f"<b>{order.recipient_first_name if order.recipient_first_name else '&nbsp;'}</b>", styles['BodyTextCustom'])],
-        [Paragraph("Recipient First Name｜收件人 名", styles['LabelXS']), Paragraph(f"<b>{order.recipient_last_name if order.recipient_last_name else '&nbsp;'}</b>", styles['BodyTextCustom'])],
-        [Paragraph("Recipient Phone｜收件人電話", styles['LabelXS']), Paragraph(f"<b>{order.recipient_mobile_area}&nbsp;{order.recipient_mobile_number}</b>" if order.recipient_mobile_area and order.recipient_mobile_number else "&nbsp;", styles['BodyTextCustom'])]
+        [
+            Paragraph("Recipient Last Name｜收件人 姓", styles['LabelXS']),
+            safe_paragraph(order.recipient_first_name, styles['BodyTextCustomBold']),
+        ],
+        [
+            Paragraph("Recipient First Name｜收件人 名", styles['LabelXS']),
+            safe_paragraph(order.recipient_last_name, styles['BodyTextCustomBold']),
+        ],
+        [
+            Paragraph("Recipient Phone｜收件人電話", styles['LabelXS']),
+            safe_paragraph(phone_combined, styles['BodyTextCustomBold']),
+        ],
     ]]
     shipping_1_table = Table(shipping_1_data, colWidths=[58*mm, 58*mm, 58*mm])
     shipping_1_table.hAlign = "LEFT"
     
     # *** shipping info_2 ***
-    street_address_data = f"{order.address_line_1}, {order.address_line_2}" if order.address_line_2 else f"{order.address_line_1}"
+    street_address_data = (
+        f"{order.address_line_1}, {order.address_line_2}"
+        if order.address_line_2
+        else (order.address_line_1 or "")
+    )
     shipping_2_data = [[
-        [Paragraph("Street Address｜街道地址", styles['LabelXS']), Paragraph(f"<b>{street_address_data if order.address_line_1 else '&nbsp;'}</b>", styles['BodyTextCustom'])],
+        [
+            Paragraph("Street Address｜街道地址", styles['LabelXS']),
+            safe_paragraph(street_address_data, styles['BodyTextCustomBold']),
+        ],
     ]]
     shipping_2_table = Table(shipping_2_data, colWidths=[174*mm])
     shipping_2_table.hAlign = "LEFT"
 
     # *** shipping info_3 ***
     shipping_3_data = [[
-        [Paragraph("City｜城市", styles['LabelXS']), Paragraph(f"<b>{order.city if order.city else '&nbsp;'}</b>", styles['BodyTextCustom'])],
-        [Paragraph("State/Province｜州/省/縣", styles['LabelXS']), Paragraph(f"<b>{order.state_province_region if order.state_province_region else '&nbsp;'}</b>", styles['BodyTextCustom'])],
+        [
+            Paragraph("City｜城市", styles['LabelXS']),
+            safe_paragraph(order.city, styles['BodyTextCustomBold']),
+        ],
+        [
+            Paragraph("State/Province｜州/省/縣", styles['LabelXS']),
+            safe_paragraph(order.state_province_region, styles['BodyTextCustomBold']),
+        ],
     ]]
     shipping_3_table = Table(shipping_3_data, colWidths=[87*mm, 87*mm])
     shipping_3_table.hAlign = "LEFT"
@@ -303,26 +437,39 @@ def generate_order_confirmation_pdf(order_id):
     name_part = raw_country[:-2].strip() if raw_country and " " in raw_country else raw_country
 
     shipping_4_data = [[
-        [Paragraph("Country / Region｜國家/地區", styles['LabelXS']), Paragraph(f"<b>{name_part if order.country else '&nbsp;'}</b>", styles['BodyTextCustom'])],
-        [Paragraph("Post Code｜郵編", styles['LabelXS']), Paragraph(f"<b>{order.postal_code if order.postal_code else '&nbsp;'}</b>", styles['BodyTextCustom'])],
+        [
+            Paragraph("Country / Region｜國家/地區", styles['LabelXS']),
+            safe_paragraph(name_part, styles['BodyTextCustomBold']),
+        ],
+        [
+            Paragraph("Post Code｜郵編", styles['LabelXS']),
+            safe_paragraph(order.postal_code, styles['BodyTextCustomBold']),
+        ],
     ]]
     shipping_4_table = Table(shipping_4_data, colWidths=[87*mm, 87*mm])
     shipping_4_table.hAlign = "LEFT"
 
     # *** shipping info_5 ***
     shipping_5_data = [[
-        [Paragraph("Delivery Note｜配送備注", styles['LabelXS']), Paragraph(f"<b>{order.delivery_note if order.delivery_note else '&nbsp;'}</b>", styles['BodyTextCustom'])],
+        [
+            Paragraph("Delivery Note｜配送備注", styles['LabelXS']),
+            safe_paragraph(order.delivery_note, styles['BodyTextCustomBold']),
+        ],
     ]]
     shipping_5_table = Table(shipping_5_data, colWidths=[174*mm])
     shipping_5_table.hAlign = "LEFT"
 
     # *** shipping info_6 ***
-    send_invoice = "Yes, include invoice with delivery.｜是，將帳單一起配送。" if order.do_not_send_invoice == False \
-                    else "No, do NOT include invoice with delivery.｜不，不要將帳單一起配送。"
-
+    send_invoice = (
+        "Yes, include invoice with delivery.｜是，將帳單一起配送。"
+        if order.do_not_send_invoice == False
+        else "No, do NOT include invoice with delivery.｜不，不要將帳單一起配送。"
+    )
     shipping_6_data = [[
-        [Paragraph("Include invoice?｜附上帳單?", styles['LabelXS']), 
-            Paragraph(f"<b>{send_invoice}</b>", styles['BodyTextCustom'])],
+        [
+            Paragraph("Include invoice?｜附上帳單?", styles['LabelXS']),
+            safe_paragraph(send_invoice, styles['BodyTextCustomBold'], apply_fallback=False),
+        ],
     ]]
     shipping_6_table = Table(shipping_6_data, colWidths=[174*mm])
     shipping_6_table.hAlign = "LEFT"
@@ -345,24 +492,37 @@ def generate_order_confirmation_pdf(order_id):
     product_data = [["", "Product｜商品", "", "Price｜價格", "Qty｜數量", "Sub-Total｜小計"]]
 
     for idx, item in enumerate(order_products, start=1):
-        img_path = item.product_variation.images.path if item.product_variation and item.product_variation.images else ""
-        p_img = Image(img_path, width=15*mm, height=12*mm) if img_path and os.path.exists(img_path) else ""
-        product_name_flowable = Paragraph(str(item.product_variation), styles['ProductDescription'])
+        # Image — guard with safe_image() which handles robust_exists and
+        # catches Image() construction errors.
+        img_path = None
+        if item.product_variation and item.product_variation.images:
+            try:
+                img_path = item.product_variation.images.path
+            except (ValueError, NotImplementedError):
+                img_path = None
+        p_img = safe_image(img_path, width=15*mm, height=12*mm) or ""
+
+        # Product name — safe_paragraph escapes user-supplied content.
+        product_name_flowable = safe_paragraph(
+            str(item.product_variation) if item.product_variation else "—",
+            styles['ProductDescription'],
+        )
+
         product_data.append([
-            idx, 
-            p_img, 
+            idx,
+            p_img,
             product_name_flowable,
-            f"CNY ¥ {Decimal(str(item.product_price).replace(',', '')):,.2f}", 
-            Paragraph(str(item.quantity), styles["AlignCenter"]), 
-            f"CNY ¥ {Decimal(str(item.get_subtotal()).replace(',', '')):,.2f}"
+            f"CNY ¥ {safe_decimal(item.product_price):,.2f}",
+            safe_paragraph(str(item.quantity), styles["AlignCenter"], apply_fallback=False),
+            f"CNY ¥ {safe_decimal(item.get_subtotal()):,.2f}",
         ])
 
     p_table = Table(product_data, colWidths=[8*mm, 20*mm, 60*mm, 32*mm, 22*mm, 32*mm])
     p_table.hAlign = "LEFT"
     p_table.setStyle(TableStyle([
         ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#e8e7e7")),
-        ("FONTNAME", (0,0), (-1,0), "NotoSansTC-bold"),
-        ("FONTNAME", (0,1), (-1,-1), "NotoSansTC-regular"),
+        ("FONTNAME", (0,0), (-1,0), "NotoSansTC-Bold"),
+        ("FONTNAME", (0,1), (-1,-1), "NotoSansTC-Regular"),
         ("FONTSIZE", (0,0), (-1,-1), 9),
         ("LINEBELOW", (0,0), (-1,0), 1, colors.HexColor("#686461")),
         ("LINEBELOW", (0,1), (-1,-2), 0.5, colors.grey),
@@ -379,60 +539,103 @@ def generate_order_confirmation_pdf(order_id):
     # 📉 (f) PRICE SUMMARY SECTION (BACKWARD-BALANCED PDF LEDGER)
     # =============================================================
     # Extract baseline numbers as raw, clean numeric Decimal structures
-    cny_prod = Decimal(str(order.product_total).replace(",", ""))
-    cny_ship = Decimal(str(order.shipping_cost).replace(",", ""))
-    cny_disc = Decimal(str(order.discount).replace(",", ""))
-    cny_tax = Decimal(str(order.tax).replace(",", ""))
-    cny_vouch = Decimal(str(order.voucher_applied).replace(",", ""))
-    cny_due = Decimal(str(order.total_due).replace(",", ""))
+    cny_prod = safe_decimal(order.product_total)
+    cny_ship = safe_decimal(order.shipping_cost)
+    cny_disc = safe_decimal(order.discount)
+    cny_tax  = safe_decimal(order.tax)
+    cny_vouch = safe_decimal(order.voucher_applied)
+    cny_due  = safe_decimal(order.total_due)    
 
     if currency_code != "CNY":
         fx_currency = currency_code
-        fx_ship = Decimal(str(order.shipping_cost_foreign).replace(",", ""))
-        fx_disc = Decimal(str(order.discount_foreign).replace(",", ""))
-        fx_tax = Decimal(str(order.tax_foreign).replace(",", ""))
-        fx_vouch = Decimal(str(order.voucher_applied_foreign).replace(",", ""))
-        fx_due = Decimal(str(order.total_due_foreign).replace(",", ""))
+        fx_symbol = CURRENCY_SYMBOL.get(fx_currency, "")
+
+        fx_ship = safe_decimal(order.shipping_cost_foreign)
+        fx_disc = safe_decimal(order.discount_foreign)
+        fx_tax  = safe_decimal(order.tax_foreign)
+        fx_vouch = safe_decimal(order.voucher_applied_foreign)
+        fx_due  = safe_decimal(order.total_due_foreign)
+
+        # Backwards-derive the subtotal from the total and its components,
+        # since the DB doesn't store the FX subtotal directly.
         fx_subtotal = fx_due + fx_disc + fx_vouch - fx_tax - fx_ship
 
         summary_data = [
             ["", "CNY", f"{fx_currency}"],
-            ["Products｜商品小計", f"¥ {intcomma(f'{cny_prod:.2f}')}", foreign_currency_formatter(fx_subtotal, fx_currency)],
-            ["Shipping｜運費費率", f"¥ {intcomma(f'{cny_ship:.2f}')}", foreign_currency_formatter(fx_ship, fx_currency)],
+            [
+                "Products｜商品小計",
+                format_currency(cny_prod, "¥"),
+                format_currency(fx_subtotal, fx_symbol, is_integer=is_integer),
+            ],
+            [
+                "Shipping｜運費費率",
+                format_currency(cny_ship, "¥"),
+                format_currency(fx_ship, fx_symbol, is_integer=is_integer),
+            ],
         ]
 
+        # Negated values: the "Less" convention uses format_currency's
+        # negative-parenthesis branch, so both columns read identically.
         if cny_disc > 0:
-            summary_data.append(["Discount (Less)｜優惠折抵 (扣減)", f"¥ ({intcomma(f'{cny_disc:.2f}')})", foreign_currency_formatter(fx_disc, fx_currency)])
+            summary_data.append([
+                "Discount (Less)｜優惠折抵 (扣減)",
+                format_currency(-cny_disc, "¥"),
+                format_currency(-fx_disc, fx_symbol, is_integer=is_integer),
+            ])
         if cny_tax > 0:
-            summary_data.append(["Tax & Duty｜代繳稅金", f"¥ {intcomma(f'{cny_tax:.2f}')}", foreign_currency_formatter(fx_tax, fx_currency)])
+            summary_data.append([
+                "Tax & Duty｜代繳稅金",
+                format_currency(cny_tax, "¥"),
+                format_currency(fx_tax, fx_symbol, is_integer=is_integer),
+            ])
         if cny_vouch > 0:
-            summary_data.append(["Voucher (Less)｜禮品卡折抵 (扣減)", f"¥ ({intcomma(f'{cny_vouch:.2f}')})", foreign_currency_formatter(fx_vouch, fx_currency)])
-            
-        summary_data.append(["Total Received｜總計應收", f"¥ {intcomma(f'{cny_due:.2f}')}", foreign_currency_formatter(fx_due, fx_currency)])
+            summary_data.append([
+                "Voucher (Less)｜禮品卡折抵 (扣減)",
+                format_currency(-cny_vouch, "¥"),
+                format_currency(-fx_vouch, fx_symbol, is_integer=is_integer),
+            ])
+
+        summary_data.append([
+            "Total Received｜總計應收",
+            format_currency(cny_due, "¥"),
+            format_currency(fx_due, fx_symbol, is_integer=is_integer),
+        ])
         s_table = Table(summary_data, colWidths=[70*mm, 52*mm, 52*mm])
 
     else:
-        # Fallback simplified presentation column matrix layout for local currency checkouts
+        # Base-currency-only checkout; no FX column at all.
         summary_data = [
             ["", "CNY"],
-            ["Products｜商品小計", f"¥ {intcomma(f'{cny_prod:.2f}')}"],
-            ["Shipping｜運費費率", f"¥ {intcomma(f'{cny_ship:.2f}')}"]
+            ["Products｜商品小計", format_currency(cny_prod, "¥")],
+            ["Shipping｜運費費率", format_currency(cny_ship, "¥")],
         ]
         if cny_disc > 0:
-            summary_data.append(["Discount (Less)｜優惠折抵 (扣減)", f"¥ ({intcomma(f'{cny_disc:.2f}')})"])
+            summary_data.append([
+                "Discount (Less)｜優惠折抵 (扣減)",
+                format_currency(-cny_disc, "¥"),
+            ])
         if cny_tax > 0:
-            summary_data.append(["Tax & Duty｜代繳稅金", f"¥ {intcomma(f'{cny_tax:.2f}')}"])
+            summary_data.append([
+                "Tax & Duty｜代繳稅金",
+                format_currency(cny_tax, "¥"),
+            ])
         if cny_vouch > 0:
-            summary_data.append(["Voucher (Less)｜禮品卡折抵 (扣減)", f"¥ ({intcomma(f'{cny_vouch:.2f}')})"])
-            
-        summary_data.append(["Total Received｜總計應收", f"¥ {intcomma(f'{cny_due:.2f}')}"])
+            summary_data.append([
+                "Voucher (Less)｜禮品卡折抵 (扣減)",
+                format_currency(-cny_vouch, "¥"),
+            ])
+
+        summary_data.append([
+            "Total Received｜總計應收",
+            format_currency(cny_due, "¥"),
+        ])
         s_table = Table(summary_data, colWidths=[100*mm, 74*mm])
 
     # Apply global summary layout aesthetics
     s_table.hAlign = 'LEFT'
     s_table.setStyle(TableStyle([
-        ('FONTNAME', (0,0), (-1,-1), 'NotoSansTC-regular'),
-        ('FONTNAME', (0,-1), (-1,-1), 'NotoSansTC-bold'),
+        ('FONTNAME', (0,0), (-1,-1), 'NotoSansTC-Regular'),
+        ('FONTNAME', (0,-1), (-1,-1), 'NotoSansTC-Bold'),
         ('ALIGN', (1,0), (-1,-1), 'RIGHT'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('LINEBELOW', (0,0), (-1,-2), 0.5, colors.lightgrey),
@@ -442,61 +645,100 @@ def generate_order_confirmation_pdf(order_id):
     ]))
 
     # 🌟 NEW INJECTED SUBSECTION: OFFLINE REMITTANCE & MOBILE QR CODES (CONDITIONAL)
-    is_bank_transfer = (proforma_invoice.payment_method == "BANK_TRANSFER")
     offline_payment_table = None
     if is_bank_transfer:
-        bank_title_para = Paragraph("🏦 Remittance Bank Details｜銀行轉帳帳號資訊", styles['BodyTextCustom'])
-        qr_title_para = Paragraph("📱 Mobile App Payment Directory｜行動支付搜尋明細", styles['BodyTextCustom'])
-        bank_details_html = (
-            f"Bank Name｜開戶銀行: Bank of China (Mainland)"
-            f"Account Name｜開戶名稱: Xindeng Corporate Entity Ltd."
-            f"Account Number｜銀行帳號: 6217 0000 0000 0000 000"
-            f"Swift Code｜國際代碼: BKCHCNBJXXX"
-            f"Total Due (CNY)｜應付總額: ¥ {order.total_due}"
-            f"*Important: Please include your order number {order.order_number} in the transfer memo."
-            f"*重要提示：請務必在匯款備註/附言中填寫您的訂單號碼 {order.order_number}。"
-        )
-        bank_text_block = Paragraph(bank_details_html, styles['BodyTextCustom'])
-        mobile_details_html = (
-            f"Alipay ID｜支付寶帳號: alipay@xindeng.art"
-            f"Real Name｜實名認證: 心燈藝術 (Xindeng Art)"
-            f"WeChat ID｜微信支付: wechat_xindeng"
-            f"Real Name｜實名認證: 上海心燈文化傳播有限公司"
-            f"*Tip: Scan the QR code or search using the Account IDs listed above."
-            f"*提示：可直接掃描右側二維碼，或在App中搜尋上述帳號完成轉帳。")
-        mobile_text_block = Paragraph(mobile_details_html, styles['BodyTextCustom'])
-        
-    # 🌟 EXTRACT AND SCALE YOUR STATIC ROOT QR GRAPHIC BINARY SAFELY
-    qr_code_path = os.path.join(settings.STATIC_ROOT, 'images', 'miscellaneous', 'QR_codes.png')
-    if os.path.exists(qr_code_path):
-        qr_graphic_element = Image(qr_code_path, 40*mm, 26*mm)
-        qr_graphic_element.hAlign = 'CENTER'
-    
-    # else:
-    #     qr_graphic_element = Paragraph("[Payment QR Code Graphic Missing]", styles['LabelXS'])
-    #     payment_instructions_matrix = [
-    #         [bank_title_para, qr_title_para],
-    #         [
-    #             bank_text_block, 
-    #             [
-    #                 qr_graphic_element, 
-    #                 Spacer(1, 1*mm), 
-    #                 mobile_text_block
-    #             ]
-    #         ]
-    #     ]
-    #     offline_payment_table = Table(payment_instructions_matrix, colWidths=[87*mm, 87*mm])
-    #     offline_payment_table.hAlign = 'LEFT'
-    #     offline_payment_table.setStyle(TableStyle([
-    #         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-    #         ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f7f5f3')),
-    #         ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#cccccc')),
-    #         ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#e5e5e5')),
-    #         ('TOPPADDING', (0, 0), (-1, -1), 8),
-    #         ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-    #         ('LEFTPADDING', (0, 0), (-1, -1), 10),
-    #         ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-    #     ]))
+        # ── Pick the account block matching this order's currency ──
+        account = settings.XINDENG_BANK_ACCOUNTS.get(currency_code)
+        if account is None:
+            # Should be unreachable: the checkout flow only offers bank
+            # transfer when currency_code is HKD or CNY. If we hit this,
+            # something bypassed that gate. Log it and render a support
+            # notice instead of a wrong account.
+            logger.error(
+                "generate_order_confirmation_pdf: bank-transfer order %s "
+                "has unsupported currency %s; no bank account configured",
+                order.order_number, currency_code,
+            )
+            unavailable_html = (
+                "Bank remittance details for this currency are not currently "
+                "available online. Please contact our support team to complete "
+                "your payment.<br/>"
+                "此貨幣的銀行匯款資訊暫未能於線上顯示，請聯繫客服人員以完成付款。"
+            )
+            offline_payment_table = Table(
+                [[
+                    Paragraph(
+                        "Remittance Details Unavailable｜匯款資訊暫缺",
+                        styles['BodyTextCustomBold'],
+                    )
+                ], [
+                    Paragraph(unavailable_html, styles['BodyTextCustom'])
+                ]],
+                colWidths=[174 * mm],
+            )
+            offline_payment_table.hAlign = 'LEFT'
+            offline_payment_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fff5f5')),
+                ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#e5b3b3')),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ]))
+        else:
+            # ── Amount to wire is in the order's own currency ─────
+            # total_due is CNY (base); total_due_foreign is the amount
+            # in the buyer's chosen currency.
+            if currency_code == "CNY":
+                wire_amount = order.total_due
+                wire_symbol = "¥"
+                wire_is_integer = False
+            else:
+                wire_amount = order.total_due_foreign
+                wire_symbol = CURRENCY_SYMBOL.get(currency_code, "")
+                wire_is_integer = currency_code in INTEGER_CURRENCIES
+
+            # ── Bank details, single-column layout ────────────────
+            # <br/> between fields is required: without a separator the
+            # f-strings concatenate into a single run-on line.
+            bank_details_html = "<br/>".join([
+                f"<b>Bank Name｜開戶銀行:</b> {escape_for_pdf(account['bank_name'])}",
+                f"<b>Account Name｜開戶名稱:</b> {escape_for_pdf(account['account_name'])}",
+                f"<b>Account Number｜銀行帳號:</b> {escape_for_pdf(account['account_number'])}",
+                f"<b>Swift Code｜國際代碼:</b> {escape_for_pdf(account['swift'])}",
+                *([f"<b>Bank Address｜銀行地址:</b> {escape_for_pdf(account['bank_address'])}"]
+                  if account.get('bank_address') else []),
+                "",
+                f"<b>Total Due ({currency_code})｜應付總額:</b> "
+                f"{format_currency(wire_amount, wire_symbol, is_integer=wire_is_integer)}",
+                "",
+                f"<i>*Important: Please include your order number "
+                f"{order.order_number} in the transfer memo.</i>",
+                f"<i>*重要提示：請務必在匯款備註/附言中填寫您的訂單號碼 "
+                f"{order.order_number}。</i>",
+            ])
+
+            bank_title_para = Paragraph(
+                "Remittance Bank Details｜銀行轉帳帳號資訊",
+                styles['BodyTextCustomBold'],
+            )
+            bank_text_block = Paragraph(bank_details_html, styles['BodyTextCustom'])
+
+            offline_payment_table = Table(
+                [[bank_title_para], [bank_text_block]],
+                colWidths=[174 * mm],
+            )
+            offline_payment_table.hAlign = 'LEFT'
+            offline_payment_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f7f5f3')),
+                ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#cccccc')),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ]))        
 
     # (g) Footer
     footer_text = Paragraph(
@@ -512,7 +754,7 @@ def generate_order_confirmation_pdf(order_id):
     )
     footer_mixed_style = ParagraphStyle(
         "MixedStyle",
-        fontName="NotoSansTC-regular",
+        fontName="NotoSansTC-Regular",
         fontSize=10,
         leading=20,
     )
@@ -533,25 +775,27 @@ def generate_order_confirmation_pdf(order_id):
     ])
 
     if order.state_province_region != "Digital":
-        elements.extend([
-            Paragraph("Shipping Manifest｜物流詳情", styles['SectionHeading'])
-        ])
-        elements.extend(shipping_manifest_elements)
-        elements.extend([
-            Spacer(1, 10*mm)
-        ])
-
+        elements.append(
+            KeepTogether(
+                [Paragraph("Shipping Manifest｜物流詳情", styles['SectionHeading'])]
+                + shipping_manifest_elements
+            )
+        )
+        elements.append(Spacer(1, 10*mm))
     else:
-        elements.extend([
-            PageBreak()
-        ])
+        elements.append(PageBreak())
     
     # Resume pushing the remainder of your item rows and ledgers
     elements.extend([
-        Paragraph("Ordered Items｜訂購明細", styles['SectionHeading']),
-        p_table, Spacer(1, 6*mm),
-        Paragraph("Financial Summary｜財務總結", styles['SectionHeading']),
-        s_table,
+        KeepTogether([
+            Paragraph("Ordered Items｜訂購明細", styles['SectionHeading']),
+            p_table,
+        ]),
+        Spacer(1, 6*mm),
+        KeepTogether([
+            Paragraph("Financial Summary｜財務總結", styles['SectionHeading']),
+            s_table,
+        ]),
     ])
 
     # 🌟 SURGICAL INJECTION: Mount the offline banking block conditionally right below calculations!

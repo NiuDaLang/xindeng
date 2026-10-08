@@ -62,8 +62,15 @@ def update_exchange_rates():
 
 @worker_ready.connect
 def at_start(sender, **kwargs):
-    # This runs as soon as the worker is ready to process tasks
-    update_exchange_rates.delay()
+    """
+    Dispatch a boot-time refresh exactly once per worker cluster.
+
+    Uses a short-lived Redis lock so that if multiple workers are
+    accidentally started simultaneously (or a zombie from a prior session
+    is still alive), only the first one dispatches.
+    """
+    if cache.add("boot_refresh_exchange_rates_dispatched", "1", timeout=30):
+        update_exchange_rates.delay()
 
 
 @shared_task(name="tasks.send_order_confirmation_email_task")
@@ -283,7 +290,7 @@ def send_bank_hold_confirmation_email_task(order_id):
         context = {
             "user": order.user,
             "order": order,
-            "expiry_date": order.created_at + timedelta(minutes=60), # Standardized match for your 15-minute hold validation
+            "expiry_date": order.inventory_hold_expiry,
             "year": timezone.now().year,
         }
 

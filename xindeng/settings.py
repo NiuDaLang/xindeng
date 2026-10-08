@@ -336,10 +336,15 @@ OPENEXCHANGERATES_APP_ID = os.environ.get("OPENEXCHANGERATES_APP_ID")
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',  # Use a separate DB (1) for cache
+        'LOCATION': 'redis://127.0.0.1:6379/1',
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
+            'CONNECTION_POOL_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+                'health_check_interval': 30,
+            },
+        },
     }
 }
 
@@ -352,19 +357,18 @@ from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE = {
     'update-exchange-rates-hourly': {
-        'task': 'orders.tasks.update_exchange_rates', # Use the full path to your task
-        'schedule': crontab(minute=0, hour=0), # Runs at the start of every hour (e.g., 1:00, 2:00)
+        'task': 'orders.tasks.update_exchange_rates',
+        'schedule': crontab(minute=0),  # ← was: crontab(minute=0, hour=0)
     },
     'check-solar-term-daily': {
         'task': 'accounts.tasks.update_solar_term_broadcast',
-        # 'schedule': crontab(minute='*') ,# Runs this at the start of every minute (e.g., 0:01, 0:02)
-        'schedule': crontab(minute=0, hour=0), # Runs this once a day (e.g., at midnight)
+        'schedule': crontab(minute=0, hour=0),  # unchanged — daily is correct
     },
     'purge-old-admin-trap-hits-daily': {
         'task': 'accounts.tasks.purge_old_admin_trap_hits',
-        'schedule': crontab(minute=30, hour=3),  # 03:30 daily
+        'schedule': crontab(minute=30, hour=3),
     },
-    'purge-old-login-events-daily': {  # optional, if you add a matching task
+    'purge-old-login-events-daily': {
         'task': 'accounts.tasks.purge_old_login_events',
         'schedule': crontab(minute=45, hour=3),
     },
@@ -380,5 +384,26 @@ CHANNEL_LAYERS = {
         "CONFIG": {
             "hosts": [("127.0.0.1", 6379)],
         },
+    },
+}
+
+# ── Bank Transfer / Offline Remittance Details ──
+# Per-currency bank accounts. Only HKD and CNY are supported for
+# bank-transfer checkout. Each entry's fields are read from the
+# environment with the prefix XINDENG_BANK_{CURRENCY}_*.
+XINDENG_BANK_ACCOUNTS = {
+    "HKD": {
+        "bank_name":       os.environ.get("XINDENG_BANK_HKD_BANK_NAME", "[HKD Bank Name]"),
+        "account_name":    os.environ.get("XINDENG_BANK_HKD_ACCOUNT_NAME", "[HKD Account Name]"),
+        "account_number":  os.environ.get("XINDENG_BANK_HKD_ACCOUNT_NUMBER", "[HKD Account Number]"),
+        "swift":           os.environ.get("XINDENG_BANK_HKD_SWIFT", ""),
+        "bank_address":    os.environ.get("XINDENG_BANK_HKD_BANK_ADDRESS", ""),
+    },
+    "CNY": {
+        "bank_name":       os.environ.get("XINDENG_BANK_CNY_BANK_NAME", "[CNY Bank Name]"),
+        "account_name":    os.environ.get("XINDENG_BANK_CNY_ACCOUNT_NAME", "[CNY Account Name]"),
+        "account_number":  os.environ.get("XINDENG_BANK_CNY_ACCOUNT_NUMBER", "[CNY Account Number]"),
+        "swift":           os.environ.get("XINDENG_BANK_CNY_SWIFT", ""),
+        "bank_address":    os.environ.get("XINDENG_BANK_CNY_BANK_ADDRESS", ""),
     },
 }
