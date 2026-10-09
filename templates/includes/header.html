@@ -1,4 +1,4 @@
-<!-- header.html -->
+<!-- templates/includes/header.html -->
 {% block content %}
 {% load humanize %}
 {% load static %}
@@ -116,7 +116,11 @@
                                         <li class="text-xs">
                                             <a href="{{ link.get_url }}" class="flex flex-col items-start p-2">
                                                 <span>{{ link.category_name }}</span>
-                                                <img src="{{ link.cat_image.url }}" alt="category image" class="rounded-e-4xl">
+                                                {% if link.cat_image %}
+                                                    <img src="{{ link.cat_image.url }}" alt="category image" class="rounded-e-4xl">
+                                                    {% else %}
+                                                    <img src="{% static 'images/default-product.webp' %}" alt="category image" class="rounded-e-4xl">
+                                                {% endif %}
                                             </a>
                                         </li>
                                     {% endif %}
@@ -131,7 +135,11 @@
                                         <li class="text-xs">
                                             <a href="{{ link.get_url }}" class="flex flex-col items-start p-2">
                                                 <span>{{ link.category_name }}</span>
-                                                <img src="{{ link.cat_image.url }}" alt="category image" class="rounded-e-4xl">
+                                                {% if link.cat_image %}
+                                                    <img src="{{ link.cat_image.url }}" alt="category image" class="rounded-e-4xl">
+                                                    {% else %}
+                                                    <img src="{% static 'images/default-product.webp' %}" alt="category image" class="rounded-e-4xl">
+                                                {% endif %}
                                             </a>
                                         </li>
                                     {% endif %}
