@@ -1020,53 +1020,6 @@ def guest_order_verify(request):
     return render(request, "orders/guest_order_detail.html", context)
 
 
-# def is_order_eligible_for_online_cancellation(order):
-#     """
-#     Item-Level Deep Validation Engine.
-#     Excludes any orders with discounts applied from automatic online cancellation.
-#     """
-#     # 🌟 NEW CONDITION: DISCOUNT SHIELD GATE
-#     # Blocks orders with promotional discounts from self-service cancellation
-#     if hasattr(order, 'discount') and order.discount > 0:
-#         return False, "Orders with promotional offers applied require manual processing. Please contact support. / 包含特惠折抵的訂單無法線上自動取消，請洽客服人員。"
-
-#     now = timezone.now()
-    
-#     # Pre-fetch items with their product relations to optimize database queries
-#     order_items = order.items.select_related('product').all()
-    
-#     if not order_items.exists():
-#         return False, "This order contains no items. / 訂單內無商品紀錄。"
-
-#     for item in order_items:
-#         product = item.product
-        
-#         # 🌟 CONDITION 1: PHYSICAL PRODUCT AUDIT
-#         if product.is_physical:
-#             # If even a single physical item has been shipped by the warehouse, block automatic cancellation
-#             if item.is_dispatched:
-#                 return False, f"Physical item '{product.product_name}' has been dispatched. Please contact support. / 實體商品已發貨，請聯絡客服。"
-        
-#         # 🌟 CONDITION 2: INSTANT E-PRODUCT AUDIT (Excluding Vouchers)
-#         elif product.is_digital and product.digital_fulfillment_type == 'INSTANT' and not product.is_voucher:
-#             # Block 1: Check if the secure link has already been clicked/downloaded
-#             if item.is_claimed:
-#                 return False, f"Digital item '{product.product_name}' has already been claimed. / 數位產品已下載領取，無法取消。"
-            
-#             # Block 2: Enforce the 7-day payment window expiration limit
-#             if (now - order.created_at).days > 7:
-#                 return False, "The 7-day digital download cancellation window has expired. / 已超過 7 天數位產品鑑賞期限制。"
-        
-#         # 🌟 CONDITION 3: VOUCHER GIFT PRODUCT AUDIT
-#         elif product.is_voucher:
-#             # Vouchers are paid in cash and don't affect structural physical fulfillment eligibility,
-#             # but we protect the system by blocking the cancellation if the voucher has already been claimed/used. [INDEX]
-#             if item.is_partially_used:
-#                 return False, "Gift credit voucher has been partially consumed or claimed. / 禮品券已被核銷使用，無法取消。"
-
-#     return True, "Eligible"
-
-
 def process_order_cancellation(request, order_number):
     """
     Multi-Tier Billing Reconciliation & Dispatch Engine.

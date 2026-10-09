@@ -295,6 +295,17 @@ class OrderAdmin(admin.ModelAdmin):
         absolute ledger data alignment across automated and manual paths.
         """
         if change and 'order_status' in form.changed_data:
+            # NOTE: Staff-initiated cancellations deliberately bypass
+            # Order.evaluate_cancellation_details(). The customer-facing
+            # gate (Order.can_be_cancelled_online) blocks self-service
+            # cancellation when a digital line has been claimed, when a
+            # discount is present, etc. Support staff need the ability to
+            # override those rules — e.g. an accidental download click,
+            # a refund granted as a goodwill gesture. Removing this bypass
+            # would prevent support from processing refunds on claimed
+            # digital orders. See core/tests/test_cancellation_eligibility.py
+            # for the customer-facing rules this path is allowed to skip.
+            
             # Check if the staff member is moving an order into an absolute dead/complete state
             if obj.order_status in ['Refunded', 'Cancelled']:
                 timestamp_str = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
