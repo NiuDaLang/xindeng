@@ -628,8 +628,16 @@ class DigitalDownloadToken(models.Model):
     is_active = models.BooleanField(default=True)
 
     @property
+    def is_revoked(self):
+        return not self.is_active
+
+    @property
     def is_expired(self):
-        return timezone.now() > self.expires_at or not self.is_active
+        return timezone.now() > self.expires_at
+
+    @property
+    def is_revoked_or_expired(self):
+        return self.is_revoked or self.is_expired
 
     def __str__(self):
         # By referencing the properties natively, Python maps them lazily 

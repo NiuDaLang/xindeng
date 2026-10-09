@@ -407,3 +407,6 @@ XINDENG_BANK_ACCOUNTS = {
         "bank_address":    os.environ.get("XINDENG_BANK_CNY_BANK_ADDRESS", ""),
     },
 }
+
+# VAULT
+XINDENG_VAULT_ROOT = BASE_DIR / "private_digital_vault"

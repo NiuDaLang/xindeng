@@ -1,4 +1,4 @@
-<!-- dashboard_main.html -->
+<!-- templates/accounts/dashboard_main.html -->
 {% load humanize %}
 {% load static %}
 <title>{{ page_title }}</title>
@@ -284,7 +284,7 @@
                                         <div class="text-right flex-shrink-0">
                                             {% if item.product_variation.product.is_digital and item.product_variation.product.digital_fulfillment_type == 'INSTANT' %}
                                                 {% for tok in item.download_tokens.all %}
-                                                    {% if not tok.is_expired %}
+                                                    {% if not tok.is_revoked_or_expired %}
                                                         <a href="{% url 'secure_file_download_gate' tok.id %}" class="btn btn-xs btn-accent text-white font-bold rounded-lg px-2.5 shadow-sm py-1.5 h-auto min-h-0">
                                                             <i class="fa-solid fa-download text-[0.65rem]"></i> Download｜下載
                                                         </a>

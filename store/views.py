@@ -288,15 +288,18 @@ def secure_file_download_gate(request, token_id):
     Validates token expirations and streams raw binary safely from the local secure disk structure.
     Also flags digital assets as claimed to block subsequent customer order cancellations.
     """
-    # Look up the token, ensuring it belongs explicitly to the logged-in customer profile
     token = get_object_or_404(DigitalDownloadToken, id=token_id, user=request.user)
 
-    # 🌟 CORE ADJUSTMENT: COMPREHENSIVE LINK INTEGRITY CHECK
-    # Test if the link is dead, separating typical 7-day timeouts from administrative deactivations
-    if token.is_expired or not token.is_active:
-        # Check if the deactivation was explicitly caused by an administrative order cancellation
-        is_revoked_by_cancellation = (not token.is_active) or (token.order_product.order.order_status == 'Cancelled')
-        
+    if token.is_revoked_or_expired:
+        # Distinguish cancellation-revocation from ordinary time-expiry.
+        # `is_revoked` is True when the token was explicitly deactivated
+        # (either by admin revocation or by the cancellation pipeline);
+        # `is_expired` is True only when wall-clock has passed expires_at.
+        is_revoked_by_cancellation = (
+            token.is_revoked
+            or (token.order_product.order.order_status == 'Cancelled')
+        )
+
         if is_revoked_by_cancellation:
             context = {
                 "page_title": "Access Revoked ｜ 存取權限已取消",
@@ -306,7 +309,6 @@ def secure_file_download_gate(request, token_id):
                 "is_cancelled_or_revoked": True
             }
         else:
-            # Fallback standard 7-day payment window expiration message
             context = {
                 "page_title": "Link Expired ｜ 連結已失效",
                 "error_headline": "Download Link Expired ｜ 下載連結已失效",
@@ -319,20 +321,33 @@ def secure_file_download_gate(request, token_id):
     order_product = token.order_product
     variation = order_product.product_variation
 
-    # Verify that a valid path string is registered inside your model row instance
     if not variation or not variation.digital_file_path:
         raise Http404("Digital file resource target is not registered in this variation system.")
 
-    # 🌟 SECURE COORDINATES PATH RESOLUTION
-    # Anchor path directly inside your unexposed private folder
-    private_vault_root = os.path.join(settings.BASE_DIR, 'private_digital_vault')
-    absolute_file_path = os.path.abspath(os.path.join(private_vault_root, variation.digital_file_path))
+    # ── SECURE PATH RESOLUTION ────────────────────────────────────────
+    # Anchor the vault from settings rather than hard-coding BASE_DIR so
+    # the location is configurable per-deployment and overridable in tests.
+    vault_root = Path(settings.XINDENG_VAULT_ROOT).resolve()
+    raw_target = vault_root / variation.digital_file_path
 
-    # Security Check: Prevent directory traversal exploits
-    if not absolute_file_path.startswith(private_vault_root):
+    # Reject symlinks outright. Rationale: resolve() follows symlinks, so
+    # a symlink pointing outside the vault would already fail the
+    # containment check below; a symlink pointing *inside* the vault
+    # would pass it. Refusing both is simpler to reason about than
+    # auditing which symlinks are "safe". A private vault should never
+    # contain symlinks anyway.
+    if raw_target.is_symlink():
+        raise Http404("Symlink not permitted in vault.")
+
+    target = raw_target.resolve()
+
+    # Containment check — post-resolution, so any symlinked intermediate
+    # directory is caught too. is_relative_to() is exact for the
+    # "target == vault_root" case, unlike a `parents` check.
+    if not target.is_relative_to(vault_root):
         raise Http404("Directory traversal security exception occurred.")
 
-    if not os.path.exists(absolute_file_path) or os.path.isdir(absolute_file_path):
+    if not target.is_file():
         raise Http404("The requested file asset could not be found on this disk node.")
 
     # DIGITAL ASSET UNIFIED CLAIM LOCK ENGINE
@@ -347,13 +362,11 @@ def secure_file_download_gate(request, token_id):
             messages.error(request, f"Claim status locking transaction failed: {str(e)}")
             return redirect('dashboard', subpage='main')
 
-    # Stream the file safely to the browser as a binary tracking response chunk
-    response = FileResponse(open(absolute_file_path, 'rb'), as_attachment=True)
-    
-    # Auto-detect Content-Type parameters cleanly (PDF, EPUB, ZIP, etc.)
-    mime_type, _ = mimetypes.guess_type(absolute_file_path)
+    response = FileResponse(open(target, 'rb'), as_attachment=True)
+
+    mime_type, _ = mimetypes.guess_type(str(target))
     response['Content-Type'] = mime_type or 'application/octet-stream'
-    
+
     return response
 
 
