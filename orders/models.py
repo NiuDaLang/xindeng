@@ -180,6 +180,16 @@ class Order(models.Model):
         if not self.is_ordered and self.order_status == 'Hold_Pending':
             return
 
+        # Terminal statuses are never overwritten by this engine.
+        # Cancelled and Refunded are set by the cancellation pipeline
+        # (or by staff via admin) and must not be silently downgraded to
+        # Processing by a subsequent recalculation — e.g. a signal fired
+        # by OrderProduct.save() after a staff edit to a line on a
+        # cancelled order. See core/tests/test_cancellation_eligibility.py
+        # for the tests that caught this.
+        if self.order_status in ('Cancelled', 'Refunded'):
+            return
+
         lines = self.items.all()
         if not lines.exists():
             return
