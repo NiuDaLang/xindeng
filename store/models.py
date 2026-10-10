@@ -659,3 +659,165 @@ class ProductReviewLog(models.Model):
 
     def __str__(self):
         return f"{self.product.product_name} — {self.get_action_display()} @ {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class ArtisanVaultUpload(models.Model):
+    """
+    A staged digital file awaiting admin review before it becomes the
+    authoritative asset for a ProductVariation.
+
+    Lifecycle:
+      1. Artisan uploads via the creators dashboard. Row created with
+         storage_kind=LOCAL and staged_filename pointing at a file in
+         private_digital_vault/_pending/. Server computes sha256.
+         OR
+         Artisan pastes a cloud-drive URL. Row created with
+         storage_kind=EXTERNAL_PENDING, external_url set, checksum
+         optionally filled from the artisan's paste.
+      2. For EXTERNAL_PENDING, an admin downloads the file manually
+         and stages it into _pending/, flipping storage_kind to
+         LOCAL_PENDING and computing the checksum locally. If the
+         artisan supplied a checksum and it disagrees with the
+         server-computed one, the staging view refuses to proceed.
+      3. Admin approves or rejects.
+         Approve: file moves out of _pending/ into the vault root and
+         ProductVariation.digital_file_path is updated. Status set to
+         APPROVED.
+         Reject: staged file (if any) is deleted. Status set to
+         REJECTED with review_note explaining why.
+
+    At most one PENDING upload may exist per variation, enforced by a
+    partial unique constraint. Supersession (artisan uploading again
+    while a previous upload is still pending) is handled at the view
+    layer: the previous row is flipped to SUPERSEDED and the new row
+    is created.
+    """
+
+    STORAGE_KIND_CHOICES = [
+        ("LOCAL", "Direct upload to vault staging"),
+        ("EXTERNAL_PENDING", "Cloud drive link awaiting admin copy"),
+        ("LOCAL_PENDING", "Cloud drive file staged locally"),
+    ]
+
+    STATUS_CHOICES = [
+        ("PENDING", "Pending review"),
+        ("APPROVED", "Approved"),
+        ("REJECTED", "Rejected by admin"),
+        ("SUPERSEDED", "Superseded by newer upload"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    # ── Ownership and target ──────────────────────────────────────
+    artisan = models.ForeignKey(
+        'creators.CreatorProfile',
+        on_delete=models.CASCADE,
+        related_name='vault_uploads',
+    )
+    product = models.ForeignKey(
+        'store.Product',
+        on_delete=models.CASCADE,
+        related_name='vault_uploads',
+    )
+    variation = models.ForeignKey(
+        'store.ProductVariation',
+        on_delete=models.CASCADE,
+        related_name='vault_uploads',
+    )
+
+    # ── File metadata ─────────────────────────────────────────────
+    # staged_filename is a path relative to XINDENG_VAULT_ROOT/_pending/,
+    # e.g. "4b1d3c2a-....pdf". Blank when storage_kind=EXTERNAL_PENDING
+    # and the admin has not yet copied the file in.
+    staged_filename = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text=(
+            "Path relative to XINDENG_VAULT_ROOT/_pending/ for LOCAL "
+            "and LOCAL_PENDING uploads."
+        ),
+    )
+    original_filename = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text=(
+            "The filename the artisan submitted. Preserved for display "
+            "in the review queue and in download headers."
+        ),
+    )
+    file_size = models.PositiveBigIntegerField(
+        default=0,
+        help_text="Bytes. Zero means unknown (EXTERNAL_PENDING pre-copy).",
+    )
+    checksum = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text=(
+            "Hex checksum of the file bytes. For LOCAL and LOCAL_PENDING, "
+            "server-computed SHA-256. For EXTERNAL_PENDING, the artisan-"
+            "supplied value (may be blank)."
+        ),
+    )
+
+    # ── External transit ──────────────────────────────────────────
+    external_url = models.URLField(
+        max_length=500,
+        blank=True,
+        default="",
+        help_text=(
+            "Cloud drive URL provided by the artisan. Only populated for "
+            "EXTERNAL_PENDING rows; kept after staging for audit."
+        ),
+    )
+
+    # ── State ─────────────────────────────────────────────────────
+    storage_kind = models.CharField(
+        max_length=20,
+        choices=STORAGE_KIND_CHOICES,
+        default="LOCAL",
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default="PENDING",
+    )
+
+    # ── Review metadata ───────────────────────────────────────────
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vault_uploads_reviewed',
+    )
+    review_note = models.TextField(
+        blank=True,
+        default="",
+        help_text="Set on rejection; also set on supersession for audit.",
+    )
+
+    class Meta:
+        ordering = ['-submitted_at']
+        indexes = [
+            models.Index(fields=['status', 'submitted_at']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['variation'],
+                condition=Q(status='PENDING'),
+                name='unique_pending_upload_per_variation',
+            ),
+        ]
+
+    def __str__(self):
+        label = (
+            self.original_filename
+            or self.staged_filename
+            or f"upload {str(self.id)[:8]}"
+        )
+        return f"{label} for {self.product.product_name} — {self.status}"
