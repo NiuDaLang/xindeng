@@ -12,6 +12,7 @@ local_settings.py
 # ══════════════════════════════════════════════════════════════
 db.sqlite3
 private_digital_vault/
+private_digital_vault/_pending/
 media/
 staticfiles/
 dump.rdb

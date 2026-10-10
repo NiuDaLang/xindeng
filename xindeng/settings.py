@@ -198,6 +198,14 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+        "OPTIONS": {
+            "timeout": 30,
+            "init_command": (
+                "PRAGMA journal_mode=WAL;"
+                "PRAGMA synchronous=NORMAL;"
+                "PRAGMA busy_timeout=30000;"
+            ),
+        },
     }
 }
 
@@ -409,4 +417,33 @@ XINDENG_BANK_ACCOUNTS = {
 }
 
 # VAULT
+# ── Private Digital Vault ──────────────────────────────────────────
 XINDENG_VAULT_ROOT = BASE_DIR / "private_digital_vault"
+
+# The vault is a third location alongside static/ and media/, for
+# sensitive files that must never be served directly by the web
+# server. All access goes through store.views.secure_file_download_gate.
+
+# Upload limits and content types for artisan-submitted digital assets.
+# 15 MB is within the "normal email attachment" range — Gmail caps at
+# 25 MB, Outlook at 20 MB — so it's a familiar size ceiling for users
+# without forcing chunked uploads.
+XINDENG_VAULT_MAX_BYTES = 15 * 1024 * 1024
+
+XINDENG_VAULT_ALLOWED_EXTENSIONS = {"pdf", "epub", "zip"}
+
+# MIME types keyed by extension. Used by the upload validator as a
+# second check after extension: if the sniffed MIME doesn't match the
+# extension's expected type, the upload is rejected. This catches
+# trivial "rename .php to .pdf" bypasses.
+XINDENG_VAULT_ALLOWED_MIME_TYPES = {
+    "pdf":  "application/pdf",
+    "epub": "application/epub+zip",
+    "zip":  "application/zip",
+}
+
+# Where manage.py backup_vault writes its output. Leave empty in dev
+# to disable; set per-deployment via env var in production. The
+# command errors clearly if unset rather than defaulting to a
+# dangerous location.
+XINDENG_VAULT_BACKUP_TARGET = os.environ.get("XINDENG_VAULT_BACKUP_TARGET", "")
