@@ -1,3 +1,4 @@
+# core/tests/test_widgets.py
 """
 Tests for core.widgets — the crop-tool marker classes and data attributes.
 """

@@ -1,3 +1,4 @@
+<!-- core/tests/README.md -->
 # core.tests
 
 Tests for the image pipeline: `sanitize_filename`, `optimize_image`,
