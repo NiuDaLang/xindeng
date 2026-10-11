@@ -821,3 +821,54 @@ class ArtisanVaultUpload(models.Model):
             or f"upload {str(self.id)[:8]}"
         )
         return f"{label} for {self.product.product_name} — {self.status}"
+
+
+class VaultUploadReviewLog(models.Model):
+    """
+    Audit trail for reviewer actions on ArtisanVaultUpload rows.
+
+    Only reviewer actions are logged here (approve, reject, supersede).
+    Submission is recorded by the ArtisanVaultUpload row itself
+    (submitted_at, status='PENDING'), so we do not duplicate it.
+
+    Kept separate from ProductReviewLog because the two logs have
+    different audiences and different lifecycle semantics: product
+    reviews belong to the product, vault reviews belong to a specific
+    staged file that may be superseded many times over the life of a
+    single variation.
+    """
+
+    ACTION_CHOICES = [
+        ("approved", "Approved｜審核通過"),
+        ("rejected", "Rejected｜審核未通過"),
+        ("superseded", "Superseded by newer upload｜已被新上傳取代"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    upload = models.ForeignKey(
+        'store.ArtisanVaultUpload',
+        on_delete=models.CASCADE,
+        related_name='review_logs',
+    )
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='vault_upload_reviews',
+    )
+    note = models.TextField(
+        blank=True,
+        default="",
+        help_text="Reason for rejection, or context for supersession.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Vault upload review log'
+        verbose_name_plural = 'Vault upload review logs'
+
+    def __str__(self):
+        who = self.actor.username if self.actor else "system"
+        return f"{self.action} by {who} on {str(self.upload.id)[:8]}"

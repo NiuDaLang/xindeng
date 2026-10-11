@@ -1,0 +1,18 @@
+{# templates/emails/vault_upload_pending_notification.txt #}
+Hṛdayadīpa (हृदयदीप)｜心燈 — New Vault Upload Pending Review
+
+Artisan: {{ artisan_label }}
+Product: {{ upload.product.product_name }}
+Variation: {{ upload.variation.get_sku }}
+Submitted: {{ upload.submitted_at|date:"Y-m-d H:i" }}
+Source: {{ source_label }}
+{% if upload.original_filename %}Original filename: {{ upload.original_filename }}{% endif %}
+{% if upload.file_size %}File size: {{ upload.file_size }} bytes{% endif %}
+{% if upload.external_url %}Cloud URL: {{ upload.external_url }}{% endif %}
+{% if upload.checksum %}Checksum: {{ upload.checksum }}{% endif %}
+
+Review queue: {{ review_url }}
+
+—
+This is an automated message from Hṛdayadīpa (हृदयदीप)｜心燈.
+© {{ year }} All Rights Reserved.

@@ -62,6 +62,7 @@ from django.http import JsonResponse
 from store.tasks import (
     send_product_submission_email_task,
     send_product_deactivation_request_email_task,
+    send_vault_upload_pending_email_task
 )
 import logging
 logger = logging.getLogger(__name__)
@@ -1636,6 +1637,19 @@ def dashboard_product_variation_upload_vault(request, pk, variation_pk):
                 product=product,
                 variation=variation,
                 form=form,
+            )
+            # ── Notify admin after the transaction commits ────────
+            # Fetch the newly created PENDING row to get its id for
+            # the notification. This is safe immediately after the
+            # helper returns — no other writer can create a second
+            # PENDING for this variation (partial unique constraint),
+            # so `.get()` cannot race here.
+            new_upload = ArtisanVaultUpload.objects.get(
+                variation=variation, status="PENDING",
+            )
+            transaction.on_commit(
+                lambda uid=new_upload.id:
+                    send_vault_upload_pending_email_task.delay(str(uid))
             )
             messages.success(
                 request,

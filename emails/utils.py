@@ -676,3 +676,62 @@ def send_product_deactivation_request_notification(product_id):
     mail.attach_alternative(html_message, "text/html")
     mail.encoding = "utf-8"
     mail.send()
+
+
+def send_vault_upload_pending_notification(upload_id):
+    """
+    Notify the platform admin that an artisan has staged a new digital
+    file for review. Mirrors the shape of
+    send_product_submission_notification so the review-queue inbox
+    looks consistent.
+    """
+    from store.models import ArtisanVaultUpload
+
+    upload = ArtisanVaultUpload.objects.select_related(
+        'artisan', 'product', 'variation', 'variation__product',
+    ).get(id=upload_id)
+
+    artisan_label = (
+        upload.artisan.display_name if upload.artisan
+        else "Unknown artisan｜未知匠人"
+    )
+    source = {
+        "LOCAL": "Direct upload｜直接上傳",
+        "LOCAL_PENDING": "Direct upload｜直接上傳",
+        "EXTERNAL_PENDING": "Cloud drive link｜雲端連結",
+    }.get(upload.storage_kind, upload.storage_kind)
+
+    subject = (
+        f"📦 [Vault Review] New upload｜新檔案待審 — "
+        f"{upload.product.product_name}"
+    )
+
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_email = [settings.ADMIN_EMAIL]
+
+    context = {
+        "upload": upload,
+        "artisan_label": artisan_label,
+        "source_label": source,
+        "review_url": f"{settings.SITE_DOMAIN}/accounts/dashboard/product_review/",
+        "year": timezone.now().year,
+    }
+    html_message = render_to_string(
+        "emails/vault_upload_pending_notification.html", context,
+    )
+    plain_message = render_to_string(
+        "emails/vault_upload_pending_notification.txt", context,
+    )
+
+    mail = EmailMultiAlternatives(
+        subject=subject,
+        body=plain_message,
+        from_email=from_email,
+        to=to_email,
+        bcc=[from_email],
+    )
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = "utf-8"
+    mail.send()
+
+    return True

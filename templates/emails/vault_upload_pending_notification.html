@@ -1,0 +1,81 @@
+{# templates/emails/vault_upload_pending_notification.html #}
+<!DOCTYPE html>
+<html lang="en">
+<body style="font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: #333; max-width: 640px; margin: 0 auto; padding: 24px;">
+
+    <h2 style="font-size: 18px; margin: 0 0 16px 0;">
+        📦 New Vault Upload Pending Review｜新檔案待審
+    </h2>
+
+    <p style="font-size: 14px; line-height: 1.6; color: #555;">
+        An artisan has staged a digital file for your review. It becomes available
+        to customers only after approval.<br>
+        匠人已提交電子檔案，需您審核通過後方可上架供顧客下載。
+    </p>
+
+    <table cellpadding="8" cellspacing="0" border="0"
+           style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; background: #fafafa; border: 1px solid #e5e5e5;">
+        <tr>
+            <td style="width: 40%; color: #666;">Artisan｜匠人</td>
+            <td><strong>{{ artisan_label }}</strong></td>
+        </tr>
+        <tr style="background:#fff;">
+            <td style="color: #666;">Product｜作品</td>
+            <td>{{ upload.product.product_name }}</td>
+        </tr>
+        <tr>
+            <td style="color: #666;">Variation｜款式</td>
+            <td><code>{{ upload.variation.get_sku }}</code></td>
+        </tr>
+        <tr style="background:#fff;">
+            <td style="color: #666;">Submitted｜提交時間</td>
+            <td>{{ upload.submitted_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        <tr>
+            <td style="color: #666;">Source｜來源</td>
+            <td>{{ source_label }}</td>
+        </tr>
+        {% if upload.original_filename %}
+        <tr style="background:#fff;">
+            <td style="color: #666;">Original filename｜原始檔名</td>
+            <td>{{ upload.original_filename }}</td>
+        </tr>
+        {% endif %}
+        {% if upload.file_size %}
+        <tr>
+            <td style="color: #666;">File size｜檔案大小</td>
+            <td>{{ upload.file_size }} bytes</td>
+        </tr>
+        {% endif %}
+        {% if upload.external_url %}
+        <tr style="background:#fff;">
+            <td style="color: #666;">Cloud URL｜雲端連結</td>
+            <td style="word-break: break-all;">
+                <a href="{{ upload.external_url }}">{{ upload.external_url }}</a>
+            </td>
+        </tr>
+        {% endif %}
+        {% if upload.checksum %}
+        <tr>
+            <td style="color: #666;">Checksum｜校驗碼</td>
+            <td style="font-family: monospace; font-size: 11px; word-break: break-all;">
+                {{ upload.checksum }}
+            </td>
+        </tr>
+        {% endif %}
+    </table>
+
+    <p style="margin: 24px 0;">
+        <a href="{{ review_url }}"
+           style="display: inline-block; padding: 10px 20px; background: #0284c7; color: #fff; text-decoration: none; border-radius: 8px; font-size: 14px;">
+            Open Review Queue｜前往審核佇列
+        </a>
+    </p>
+
+    <p style="font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 12px;">
+        Automated message from Hṛdayadīpa (हृदयदीप)｜心燈.<br>
+        © {{ year }} All Rights Reserved.
+    </p>
+
+</body>
+</html>
