@@ -77,6 +77,13 @@
               Waiting for local staging｜等待本機複製
             </span>
           {% endif %}
+
+          <button type="button"
+                  class="btn btn-xs btn-error gap-1"
+                  onclick="openVaultUploadRejectModal('{% url 'review_vault_upload_reject' upload.id %}')">
+            <i class="fa-solid fa-xmark text-[10px]"></i>
+            Reject｜拒絕
+          </button>
         </div>
       </article>
     {% endfor %}

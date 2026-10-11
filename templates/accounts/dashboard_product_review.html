@@ -32,7 +32,7 @@
         </h2>
         {% include 'accounts/partials/_vault_upload_review_queue.html' %}
     </section>
-    
+
     <!-- REVIEW HISTORY -->
     <section>
         <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40 mb-3">
@@ -66,3 +66,43 @@
     </div>
     <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
+
+<!-- VAULT UPLOAD REJECT NOTE MODAL — single reusable modal -->
+<dialog id="vault_upload_reject_modal" class="modal">
+    <div class="modal-box max-w-md">
+        <h3 class="font-serif text-lg mb-2">
+            Reject Vault Upload｜拒絕電子檔案
+        </h3>
+        <p class="text-xs text-base-content/60 mb-4">
+            匠人將收到您的理由。請具體說明需要修改之處，例如檔案損毀、內容不符、或版權疑慮。
+            <br>
+            The artisan will receive your reason. Be specific about what
+            needs to change — corrupt file, wrong content, rights concerns.
+        </p>
+        <form id="vault_upload_reject_form" method="post" action="">
+            {% csrf_token %}
+            <textarea name="note"
+                      class="textarea textarea-bordered w-full h-32 text-sm"
+                      placeholder="請說明拒絕原因…" required></textarea>
+            <div class="modal-action">
+                <button type="button"
+                        onclick="document.getElementById('vault_upload_reject_modal').close()"
+                        class="btn btn-ghost btn-sm">Cancel｜取消</button>
+                <button type="submit" class="btn btn-error btn-sm">
+                    Reject｜拒絕
+                </button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<script>
+  function openVaultUploadRejectModal(actionUrl) {
+    const modal = document.getElementById('vault_upload_reject_modal');
+    const form = document.getElementById('vault_upload_reject_form');
+    form.setAttribute('action', actionUrl);
+    form.querySelector('textarea[name="note"]').value = '';
+    modal.showModal();
+  }
+</script>

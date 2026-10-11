@@ -47,3 +47,30 @@ def send_vault_upload_pending_email_task(upload_id):
 
     send_vault_upload_pending_notification(upload_id)
     return f"Vault upload notification sent for {upload_id}."
+
+
+@shared_task(name="tasks.send_vault_upload_rejected_email_task")
+def send_vault_upload_rejected_email_task(upload_id):
+    """
+    Notify the artisan that their staged vault file was rejected.
+
+    Skips the send if the row is no longer REJECTED — defensive
+    against a late-arriving task that fires after the artisan has
+    re-uploaded and superseded this row.
+    """
+    from emails.utils import send_vault_upload_rejected_notification
+    from store.models import ArtisanVaultUpload
+
+    try:
+        upload = ArtisanVaultUpload.objects.get(id=upload_id)
+    except ArtisanVaultUpload.DoesNotExist:
+        return f"Upload {upload_id} not found; rejection email skipped."
+
+    if upload.status != "REJECTED":
+        return (
+            f"Upload {upload_id} is {upload.status}, not REJECTED; "
+            f"rejection email skipped."
+        )
+
+    send_vault_upload_rejected_notification(upload_id)
+    return f"Vault rejection email sent for {upload_id}."

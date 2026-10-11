@@ -1,0 +1,65 @@
+{# templates/emails/vault_upload_rejected_notification.html #}
+<!DOCTYPE html>
+<html lang="en">
+<body style="font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: #333; max-width: 640px; margin: 0 auto; padding: 24px;">
+
+    <h2 style="font-size: 18px; margin: 0 0 16px 0;">
+        📝 Vault Upload Needs Revision｜電子檔案需要修改
+    </h2>
+
+    <p style="font-size: 14px; line-height: 1.6; color: #555;">
+        Dear {{ artisan_label }},<br>
+        Thank you for submitting a digital file for review. Unfortunately,
+        your recent upload could not be approved in its current form.<br>
+        <span style="color: #888; font-size: 13px;">
+            {{ artisan_label }} 匠人您好，感謝您提交檔案。您為下列作品提交的檔案，目前未能通過審核。
+        </span>
+    </p>
+
+    <table cellpadding="8" cellspacing="0" border="0"
+           style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; background: #fafafa; border: 1px solid #e5e5e5;">
+        <tr>
+            <td style="width: 40%; color: #666;">Product｜作品</td>
+            <td><strong>{{ product_name }}</strong></td>
+        </tr>
+        <tr style="background:#fff;">
+            <td style="color: #666;">Variation｜款式</td>
+            <td><code>{{ sku }}</code></td>
+        </tr>
+    </table>
+
+    <div style="margin: 16px 0; padding: 14px 16px; background: #fef2f2; border-left: 3px solid #ef4444; border-radius: 6px;">
+        <p style="margin: 0; font-size: 13px; color: #7f1d1d; font-weight: 600;">
+            Reviewer's note｜審核意見
+        </p>
+        <p style="margin: 8px 0 0 0; font-size: 13px; color: #333; white-space: pre-wrap;">{{ review_note }}</p>
+    </div>
+
+    <p style="font-size: 14px; line-height: 1.6; color: #555;">
+        Please review the note above, correct the file, and re-upload via
+        your artisan dashboard.<br>
+        <span style="color: #888; font-size: 13px;">
+            請依審核意見修正檔案後，重新透過匠人工作台上傳。
+        </span>
+    </p>
+
+    <p style="margin: 24px 0;">
+        <a href="{{ dashboard_url }}"
+           style="display: inline-block; padding: 10px 20px; background: #0284c7; color: #fff; text-decoration: none; border-radius: 8px; font-size: 14px;">
+            Open Artisan Dashboard｜前往匠人工作台
+        </a>
+    </p>
+
+    <p style="font-size: 12px; color: #888;">
+        If you believe this decision was made in error, please reply to this
+        email or contact support.<br>
+        若您認為此決定有誤，請直接回覆本郵件或聯繫客服。
+    </p>
+
+    <p style="font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 12px; margin-top: 24px;">
+        Automated message from Hṛdayadīpa (हृदयदीप)｜心燈.<br>
+        © {{ year }} All Rights Reserved.
+    </p>
+
+</body>
+</html>

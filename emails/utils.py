@@ -735,3 +735,62 @@ def send_vault_upload_pending_notification(upload_id):
     mail.send()
 
     return True
+
+
+def send_vault_upload_rejected_notification(upload_id):
+    """
+    Notify the artisan that their staged digital file was rejected,
+    including the reviewer's reason so they can correct and re-upload.
+    """
+    from store.models import ArtisanVaultUpload
+
+    upload = ArtisanVaultUpload.objects.select_related(
+        "artisan", "artisan__user",
+        "product", "variation",
+    ).get(id=upload_id)
+
+    if not upload.artisan:
+        # No artisan to notify (should be unreachable in practice —
+        # ArtisanVaultUpload.artisan is non-nullable — but guard
+        # defensively so a data anomaly doesn't crash the task).
+        return False
+
+    artisan_label = upload.artisan.display_name
+    product_name = upload.product.product_name
+    sku = upload.variation.get_sku()
+
+    mail_subject = (
+        f"📝 [Vault] Revision Needed｜電子檔案需要修改 — {product_name}"
+    )
+
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_email = [upload.artisan.user.email]
+
+    context = {
+        "upload": upload,
+        "artisan_label": artisan_label,
+        "product_name": product_name,
+        "sku": sku,
+        "review_note": upload.review_note,
+        "dashboard_url": f"{settings.SITE_DOMAIN}/artisans/dashboard/products/",
+        "year": timezone.now().year,
+    }
+    html_message = render_to_string(
+        "emails/vault_upload_rejected_notification.html", context,
+    )
+    plain_message = render_to_string(
+        "emails/vault_upload_rejected_notification.txt", context,
+    )
+
+    mail = EmailMultiAlternatives(
+        subject=mail_subject,
+        body=plain_message,
+        from_email=from_email,
+        to=to_email,
+        bcc=[from_email],
+    )
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = "utf-8"
+    mail.send()
+
+    return True

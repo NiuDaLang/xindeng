@@ -1,0 +1,43 @@
+{# templates/emails/vault_upload_rejected_notification.txt #}
+Hṛdayadīpa (हृदयदीप)｜心燈 — Vault Upload Needs Revision
+
+Dear {{ artisan_label }},
+
+Thank you for submitting a digital file for review. Unfortunately,
+your recent upload for the following product could not be approved
+in its current form:
+
+    Product:  {{ product_name }}
+    Variation: {{ sku }}
+
+Reviewer's note:
+    {{ review_note }}
+
+Please review the note above, correct the file as needed, and
+re-upload via your artisan dashboard:
+
+    {{ dashboard_url }}
+
+If you believe this decision was made in error, please reply to
+this email or contact our support team.
+
+—
+{{ artisan_label }}｜匠人您好，
+
+感謝您提交電子檔案以供審核。您為以下作品提交的檔案，目前未能通過審核：
+
+    作品：{{ product_name }}
+    款式：{{ sku }}
+
+審核意見：
+    {{ review_note }}
+
+請依照上述意見修正檔案後，重新透過匠人工作台上傳：
+
+    {{ dashboard_url }}
+
+若您認為此決定有誤，請直接回覆本郵件或聯繫客服。
+
+—
+Automated message from Hṛdayadīpa (हृदयदीप)｜心燈.
+© {{ year }} All Rights Reserved.

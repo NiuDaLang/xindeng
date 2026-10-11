@@ -29,7 +29,10 @@ from creators.models import CreatorProfile
 
 from django.views.decorators.http import require_POST
 from accounts.decorators import superuser_required
-from .tasks import send_product_review_result_email_task
+from .tasks import (
+    send_product_review_result_email_task,
+    send_vault_upload_rejected_email_task,
+)
 from .models import ProductReviewLog
 
 import shutil
@@ -565,6 +568,113 @@ def review_vault_upload_approve(request, upload_id):
     messages.success(
         request,
         f"已通過：{variation.get_sku()}｜Approved.",
+    )
+    return redirect("dashboard", subpage="product_review")
+
+
+@require_POST
+@superuser_required
+def review_vault_upload_reject(request, upload_id):
+    """
+    Reject a staged ArtisanVaultUpload.
+
+    Records the rejection with a required reason, then deletes the
+    staged file on commit.
+
+    Ordering note: unlike approval, the file deletion happens on
+    transaction.on_commit() rather than inside the atomic block. A
+    rejected file is being discarded, not promoted — if the DB write
+    fails, the file lingers in _pending/ and nothing else changes,
+    which is a benign leak the future sweeper will catch. Deleting
+    first and then failing the DB write would leave a stale PENDING
+    row pointing at a file that no longer exists, which is worse.
+    """
+    from store.models import ArtisanVaultUpload, VaultUploadReviewLog
+
+    upload = get_object_or_404(ArtisanVaultUpload, id=upload_id)
+
+    if upload.status != "PENDING":
+        messages.error(
+            request,
+            "此檔案不在待審核狀態。｜This upload is not pending review.",
+        )
+        return redirect("dashboard", subpage="product_review")
+
+    note = request.POST.get("note", "").strip()
+    if not note:
+        messages.error(
+            request,
+            "拒絕時必須填寫理由。｜A reason is required when rejecting.",
+        )
+        return redirect("dashboard", subpage="product_review")
+
+    vault_root = Path(settings.XINDENG_VAULT_ROOT)
+    pending_root = vault_root / "_pending"
+
+    try:
+        with transaction.atomic():
+            locked_upload = (
+                ArtisanVaultUpload.objects
+                .select_for_update()
+                .get(id=upload.id)
+            )
+            if locked_upload.status != "PENDING":
+                messages.error(
+                    request,
+                    "此上傳已被其他審核者處理。"
+                    "｜This upload was processed by another reviewer.",
+                )
+                return redirect("dashboard", subpage="product_review")
+
+            locked_upload.status = "REJECTED"
+            locked_upload.reviewed_at = timezone.now()
+            locked_upload.reviewed_by = request.user
+            locked_upload.review_note = note
+            locked_upload.save(update_fields=[
+                "status", "reviewed_at", "reviewed_by", "review_note",
+            ])
+
+            VaultUploadReviewLog.objects.create(
+                upload=locked_upload,
+                action="rejected",
+                actor=request.user,
+                note=note,
+            )
+
+            # ── Schedule staged-file deletion after commit ────────
+            # Capture the values we need; do not close over the
+            # instance, which may be modified further up the stack.
+            staged_filename = locked_upload.staged_filename
+            upload_id_for_email = str(locked_upload.id)
+            if staged_filename:
+                staged_path = pending_root / staged_filename
+
+                def _delete_staged():
+                    try:
+                        staged_path.unlink(missing_ok=True)
+                    except OSError as exc:
+                        logger.warning(
+                            "Reject: could not delete staged file %s: %s",
+                            staged_path, exc,
+                        )
+
+                transaction.on_commit(_delete_staged)
+
+            transaction.on_commit(
+                lambda uid=upload_id_for_email:
+                    send_vault_upload_rejected_email_task.delay(uid)
+            )
+
+    except Exception as exc:
+        messages.error(
+            request,
+            f"審核時發生錯誤，已安全撤回。｜Rejection failed and was rolled back: {exc}",
+        )
+        return redirect("dashboard", subpage="product_review")
+
+    messages.success(
+        request,
+        f"已拒絕：{upload.variation.get_sku()}｜Rejected.",
     )
     return redirect("dashboard", subpage="product_review")
 
