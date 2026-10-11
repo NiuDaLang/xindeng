@@ -18,4 +18,5 @@ urlpatterns = [
     # Superuser review actions
     path("review/product/<int:product_id>/approve/", views.review_product_approve, name="review_product_approve"),
     path("review/product/<int:product_id>/reject/",  views.review_product_reject,  name="review_product_reject"),
+    path("review/vault-upload/<uuid:upload_id>/approve/", views.review_vault_upload_approve, name="review_vault_upload_approve"),
 ]

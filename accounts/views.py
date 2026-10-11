@@ -1059,12 +1059,21 @@ def dashboard(request, subpage):
             return redirect("dashboard", subpage="main")
 
         from store.models import Product  # local import to avoid circularity
+        from store.models import ArtisanVaultUpload  # add near the top of the branch
 
         pending_products = (
             Product.objects
             .filter(status="Pending", is_deleted=False)
             .select_related("creator", "category")
             .order_by("submitted_at", "modified_date")
+        )
+
+        pending_vault_uploads = (
+            ArtisanVaultUpload.objects
+            .filter(status="PENDING")
+            .select_related("artisan", "product", "variation",
+                            "variation__product")
+            .order_by("submitted_at")
         )
 
         # History: exclude Draft/Pending, keep soft-deleted for audit clarity
@@ -1093,6 +1102,7 @@ def dashboard(request, subpage):
         context.update({
             "pending_products": pending_products,
             "reviewed_products": reviewed_products,
+            "pending_vault_uploads": pending_vault_uploads,
         })
 
     # Global layout branding strings

@@ -32,7 +32,10 @@ from accounts.decorators import superuser_required
 from .tasks import send_product_review_result_email_task
 from .models import ProductReviewLog
 
+import shutil
 
+import logging
+logger = logging.getLogger(__name__)
 
 def products(request, category_slug=None):
     try:
@@ -399,6 +402,170 @@ def review_product_approve(request, product_id):
         lambda: send_product_review_result_email_task.delay(product.id, True, "")
     )
     messages.success(request, f"已通過：{product.product_name}｜Approved.")
+    return redirect("dashboard", subpage="product_review")
+
+
+@require_POST
+@superuser_required
+def review_vault_upload_approve(request, upload_id):
+    """
+    Approve a staged ArtisanVaultUpload.
+
+    Moves the staged file from _pending/ into the vault root, updates
+    ProductVariation.digital_file_path, and records the approval in
+    VaultUploadReviewLog.
+
+    The file move happens inside the transaction, before the DB writes.
+    If a DB write fails, we compensate by renaming the file back to
+    _pending/. Rationale: a rolled-back transaction with an already-moved
+    file would leave an orphan in the vault root; a rolled-back
+    transaction with the file restored is a clean no-op from the
+    observer's perspective.
+
+    A crash between the rename and the commit is the only unsolved
+    failure mode — it leaves a file in the vault with no pointer. The
+    _pending/ sweeper (a future commit) will not catch this; a separate
+    reconciliation command will be needed once the vault runs in anger.
+    """
+    from store.models import ArtisanVaultUpload, VaultUploadReviewLog
+
+    upload = get_object_or_404(ArtisanVaultUpload, id=upload_id)
+
+    if upload.status != "PENDING":
+        messages.error(
+            request,
+            "此檔案不在待審核狀態。｜This upload is not pending review.",
+        )
+        return redirect("dashboard", subpage="product_review")
+
+    if upload.storage_kind == "EXTERNAL_PENDING":
+        messages.error(
+            request,
+            "此檔案尚未從雲端複製至本機，無法審核。"
+            "｜This cloud-drive upload has not been copied locally yet; "
+            "stage it first.",
+        )
+        return redirect("dashboard", subpage="product_review")
+
+    if not upload.staged_filename:
+        messages.error(
+            request,
+            "此上傳缺少檔案路徑，無法審核。"
+            "｜This upload has no staged file; cannot approve.",
+        )
+        return redirect("dashboard", subpage="product_review")
+
+    vault_root = Path(settings.XINDENG_VAULT_ROOT)
+    pending_root = vault_root / "_pending"
+    retired_root = vault_root / "_retired"
+
+    src_path = pending_root / upload.staged_filename
+    dst_path = vault_root / upload.staged_filename
+
+    if not src_path.is_file():
+        messages.error(
+            request,
+            "找不到待審檔案，可能已被其他程序處理。"
+            "｜Staged file not found; it may have already been processed.",
+        )
+        return redirect("dashboard", subpage="product_review")
+
+    variation = upload.variation
+    previous_pointer = variation.digital_file_path or ""
+
+    try:
+        with transaction.atomic():
+            # ── Lock the upload and variation rows ───────────────
+            locked_upload = (
+                ArtisanVaultUpload.objects
+                .select_for_update()
+                .get(id=upload.id)
+            )
+            if locked_upload.status != "PENDING":
+                # Another reviewer beat us to it.
+                messages.error(
+                    request,
+                    "此上傳已被其他審核者處理。"
+                    "｜This upload was processed by another reviewer.",
+                )
+                return redirect("dashboard", subpage="product_review")
+
+            locked_variation = (
+                ProductVariation.objects
+                .select_for_update()
+                .get(id=variation.id)
+            )
+
+            # ── Retire the previous file, if any ─────────────────
+            # Do this before the rename so a failure here aborts
+            # without having touched the new file.
+            if (
+                previous_pointer
+                and previous_pointer != upload.staged_filename
+            ):
+                previous_path = vault_root / previous_pointer
+                if previous_path.is_file():
+                    retired_root.mkdir(parents=True, exist_ok=True)
+                    retired_path = retired_root / previous_pointer
+                    retired_path.parent.mkdir(parents=True, exist_ok=True)
+                    # If the retired path already exists (a repeat
+                    # approval of the same old pointer), suffix it.
+                    if retired_path.exists():
+                        retired_path = (
+                            retired_root
+                            / f"{previous_path.stem}.{int(timezone.now().timestamp())}"
+                            f"{previous_path.suffix}"
+                        )
+                    shutil.move(str(previous_path), str(retired_path))
+
+            # ── Move the new file into the vault root ────────────
+            # Same-filesystem rename: atomic on POSIX.
+            dst_path.parent.mkdir(parents=True, exist_ok=True)
+            os.rename(src_path, dst_path)
+
+            # ── DB writes ─────────────────────────────────────────
+            try:
+                locked_variation.digital_file_path = upload.staged_filename
+                locked_variation.save(update_fields=["digital_file_path"])
+
+                locked_upload.status = "APPROVED"
+                locked_upload.reviewed_at = timezone.now()
+                locked_upload.reviewed_by = request.user
+                locked_upload.save(
+                    update_fields=["status", "reviewed_at", "reviewed_by"],
+                )
+
+                VaultUploadReviewLog.objects.create(
+                    upload=locked_upload,
+                    action="approved",
+                    actor=request.user,
+                    note="",
+                )
+            except Exception:
+                # Compensating action: put the file back where it
+                # came from so a rolled-back transaction leaves the
+                # filesystem unchanged.
+                try:
+                    os.rename(dst_path, src_path)
+                except OSError as rename_back_err:
+                    logger.error(
+                        "Vault approve: failed to restore %s to %s after "
+                        "DB error: %s",
+                        dst_path, src_path, rename_back_err,
+                    )
+                raise
+
+    except Exception as exc:
+        messages.error(
+            request,
+            f"審核時發生錯誤，已安全撤回。｜Approval failed and was rolled back: {exc}",
+        )
+        return redirect("dashboard", subpage="product_review")
+
+    messages.success(
+        request,
+        f"已通過：{variation.get_sku()}｜Approved.",
+    )
     return redirect("dashboard", subpage="product_review")
 
 

@@ -1,0 +1,88 @@
+<!-- templates/accounts/partials/_vault_upload_review_queue.html -->
+{% load humanize %}
+
+{% if pending_vault_uploads %}
+  <div class="flex flex-col gap-3">
+    {% for upload in pending_vault_uploads %}
+      <article class="border border-base-200 rounded-xl p-4 bg-base-100 flex flex-col gap-3">
+
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h3 class="font-medium text-sm truncate">
+              {{ upload.product.product_name }}
+            </h3>
+            <p class="text-[11px] text-base-content/50 mt-0.5">
+              {{ upload.artisan.display_name|default:"Platform｜平台" }}
+              ·
+              <code class="text-[10px]">{{ upload.variation.get_sku }}</code>
+            </p>
+          </div>
+          <div class="flex flex-col items-end gap-1 flex-shrink-0">
+            {% if upload.storage_kind == 'EXTERNAL_PENDING' %}
+              <span class="badge badge-sm badge-warning">Cloud link｜雲端連結</span>
+            {% else %}
+              <span class="badge badge-sm badge-info">Direct｜直接上傳</span>
+            {% endif %}
+            <span class="text-[10px] font-mono text-base-content/50">
+              {{ upload.submitted_at|date:"Y-m-d H:i" }}
+            </span>
+          </div>
+        </div>
+
+        <div class="text-[11px] text-base-content/70 grid grid-cols-2 gap-x-4 gap-y-1 font-mono">
+          {% if upload.original_filename %}
+            <span>Name｜檔名: {{ upload.original_filename }}</span>
+          {% endif %}
+          {% if upload.file_size %}
+            <span>Size｜大小: {{ upload.file_size|filesizeformat }}</span>
+          {% endif %}
+          {% if upload.checksum %}
+            <span class="col-span-2 truncate" title="{{ upload.checksum }}">
+              SHA-256: {{ upload.checksum|slice:":24" }}…
+            </span>
+          {% endif %}
+          {% if upload.external_url %}
+            <span class="col-span-2 truncate" title="{{ upload.external_url }}">
+              URL: <a href="{{ upload.external_url }}" target="_blank" rel="noopener"
+                      class="link link-primary">{{ upload.external_url|truncatechars:60 }}</a>
+            </span>
+          {% endif %}
+        </div>
+
+        {% if upload.storage_kind == 'EXTERNAL_PENDING' %}
+          <div class="text-[11px] bg-warning/10 border-l-2 border-warning/50 rounded px-3 py-2 text-base-content/70">
+            Manual step required: download the file from the cloud link, place it in
+            <code>private_digital_vault/_pending/</code>, then update this row's
+            <code>storage_kind</code> to <code>LOCAL_PENDING</code> and set
+            <code>staged_filename</code> via Django admin before approving.
+            <br>
+            需先從雲端連結手動下載檔案至 <code>_pending/</code>，再於後台更新此列狀態。
+          </div>
+        {% endif %}
+
+        <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-base-200/60 justify-end">
+          {% if upload.storage_kind == 'LOCAL' or upload.storage_kind == 'LOCAL_PENDING' %}
+            <form method="post"
+                  action="{% url 'review_vault_upload_approve' upload.id %}"
+                  class="inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-xs btn-success gap-1"
+                      onclick="return confirm('Approve this vault upload? The file will become downloadable by customers.｜確定通過審核？檔案將正式供顧客下載。');">
+                <i class="fa-solid fa-check text-[10px]"></i>
+                Approve｜通過
+              </button>
+            </form>
+          {% else %}
+            <span class="text-[11px] text-base-content/40 italic">
+              Waiting for local staging｜等待本機複製
+            </span>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="text-center text-xs text-base-content/40 py-10 border border-dashed border-base-200 rounded-xl">
+    No pending vault uploads｜目前沒有待審電子檔案
+  </div>
+{% endif %}
