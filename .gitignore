@@ -11,6 +11,7 @@ local_settings.py
 # 2. DATA LAYERS & RUNTIME STORAGE
 # ══════════════════════════════════════════════════════════════
 db.sqlite3
+db.sqlite3*
 private_digital_vault/
 private_digital_vault/_pending/
 media/
