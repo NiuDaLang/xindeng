@@ -13,7 +13,10 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from accounts.models import Address
-from store.models import Product, ProductGallery, ProductVariation, ProductReviewLog
+from store.models import (
+    Product, ProductGallery, ProductVariation, ProductReviewLog,
+    ArtisanVaultUpload
+)
 from orders.models import OrderProduct, TrackingNumber
 
 from .context import artisan_dashboard_context
@@ -34,9 +37,16 @@ from django.template import TemplateDoesNotExist
 from django.template.loader import get_template
 from .utils import stable_shuffle_queryset
 import hashlib
+from pathlib import Path
+import uuid
 import random
 from datetime import datetime
-from .forms import ArtisanApplicationForm, CreatorProfileForm, BlogPostForm
+from .forms import (
+    ArtisanApplicationForm, 
+    CreatorProfileForm, 
+    BlogPostForm, 
+    ArtisanVaultUploadForm
+)
 from orders.models import OrderProduct, TrackingNumber
 from django.db.models import Prefetch
 
@@ -49,11 +59,13 @@ from category.models import Category
 from django_ckeditor_5.widgets import CKEditor5Widget
 from django.http import JsonResponse
 
-# creators/views.py
 from store.tasks import (
     send_product_submission_email_task,
     send_product_deactivation_request_email_task,
 )
+import logging
+logger = logging.getLogger(__name__)
+
 
 PRODUCTS_PREVIEW_LIMIT = 8
 
@@ -1580,4 +1592,156 @@ def dashboard_product_request_deactivation(request, pk):
 
     messages.success(request, "已提交下架請求，管理員將盡快處理。｜Deactivation request submitted.")
     return redirect("a_dashboard_products")
-    
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# VAULT UPLOAD — artisan staging flow
+# ═══════════════════════════════════════════════════════════════════════════
+
+@artisan_required
+def dashboard_product_variation_upload_vault(request, pk, variation_pk):
+    """
+    GET:  return the vault-upload modal body with a fresh form, for HTMX
+          to swap into #vault-upload-modal-body.
+    POST: validate + stage the submission, then return the refreshed
+          variation-cards partial with HX-Retarget so the modal closes
+          naturally with the swap.
+
+    Only applies to digital products. Non-digital products 404 — the
+    UI hides the button, and the check here closes the forged-POST
+    path.
+    """
+    profile = request.user.creator_profile
+
+    product = get_object_or_404(
+        Product,
+        pk=pk,
+        creator=profile,
+        is_deleted=False,
+        is_digital=True,
+    )
+    variation = get_object_or_404(
+        ProductVariation, pk=variation_pk, product=product,
+    )
+
+    cards_template = "artisans/dashboard/partials/_product_variation_cards.html"
+    form_template = "artisans/dashboard/partials/_vault_upload_form.html"
+
+    # ── POST: process the submission ──────────────────────────────
+    if request.method == "POST":
+        form = ArtisanVaultUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            self_supersede_and_create(
+                profile=profile,
+                product=product,
+                variation=variation,
+                form=form,
+            )
+            messages.success(
+                request,
+                "已提交，等待管理員審核。｜Submitted for admin review.",
+            )
+            variations = product.variations.all().order_by("created_date")
+            response = render(request, cards_template, {
+                "product": product,
+                "variations": variations,
+            })
+            response["HX-Retarget"] = "#variation-cards-container"
+            return response
+
+        # Invalid: re-render the modal body with errors visible.
+        return render(request, form_template, {
+            "form": form,
+            "product": product,
+            "variation": variation,
+        })
+
+    # ── GET: render empty form for the modal body ─────────────────
+    form = ArtisanVaultUploadForm()
+    return render(request, form_template, {
+        "form": form,
+        "product": product,
+        "variation": variation,
+    })
+
+
+def self_supersede_and_create(*, profile, product, variation, form):
+    """
+    Small helper: supersede any existing PENDING upload for this
+    variation (deleting its staged file if one exists), then create
+    the new ArtisanVaultUpload row.
+
+    Both actions inside a single transaction so a failure leaves no
+    half-superseded state. Filesystem deletions are done in-line and
+    are already idempotent (missing_ok=True); a failure there is
+    logged but does not roll back the DB — a stray file in _pending/
+    is harmless and will be caught by the sweeper command when it
+    lands.
+    """
+    pending_root = Path(settings.XINDENG_VAULT_ROOT) / "_pending"
+
+    with transaction.atomic():
+        existing = (
+            ArtisanVaultUpload.objects
+            .select_for_update()
+            .filter(variation=variation, status="PENDING")
+            .first()
+        )
+        if existing is not None:
+            if existing.staged_filename:
+                old_path = pending_root / existing.staged_filename
+                try:
+                    old_path.unlink(missing_ok=True)
+                except OSError as exc:
+                    logger.warning(
+                        "Could not delete superseded staged file %s: %s",
+                        old_path, exc,
+                    )
+            existing.status = "SUPERSEDED"
+            existing.review_note = "Superseded by a newer upload from the artisan."
+            existing.reviewed_at = timezone.now()
+            existing.save(update_fields=["status", "review_note", "reviewed_at"])
+
+        upload_type = form.cleaned_data["upload_type"]
+
+        if upload_type == "DIRECT":
+            uploaded = form.cleaned_data["file"]
+            original_name = uploaded.name or "upload"
+            ext = original_name.rsplit(".", 1)[-1].lower()
+
+            staged_name = f"{uuid.uuid4()}.{ext}"
+            pending_root.mkdir(parents=True, exist_ok=True)
+            dest_path = pending_root / staged_name
+
+            hasher = hashlib.sha256()
+            final_size = 0
+            with open(dest_path, "wb") as dest:
+                for chunk in uploaded.chunks():
+                    hasher.update(chunk)
+                    dest.write(chunk)
+                    final_size += len(chunk)
+
+            ArtisanVaultUpload.objects.create(
+                artisan=profile,
+                product=product,
+                variation=variation,
+                storage_kind="LOCAL",
+                status="PENDING",
+                staged_filename=staged_name,
+                original_filename=original_name,
+                file_size=final_size,
+                checksum=hasher.hexdigest(),
+            )
+        else:  # EXTERNAL
+            ArtisanVaultUpload.objects.create(
+                artisan=profile,
+                product=product,
+                variation=variation,
+                storage_kind="EXTERNAL_PENDING",
+                status="PENDING",
+                staged_filename="",
+                original_filename="",
+                file_size=0,
+                checksum=(form.cleaned_data.get("checksum") or "").strip(),
+                external_url=form.cleaned_data["external_url"],
+            )

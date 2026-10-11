@@ -12,6 +12,7 @@ from blog.models import Post
 from django_ckeditor_5.widgets import CKEditor5Widget
 from .utils import clean_blog_body
 from core.widgets import CropTargetClearableFileInput
+from django.conf import settings
 
 
 class CustomClearableFileInput(forms.ClearableFileInput):
@@ -424,3 +425,141 @@ class BlogPostForm(forms.ModelForm):
                 instance.tags.set(self.cleaned_data['tags_choices'])
 
         return instance
+
+
+class ArtisanVaultUploadForm(forms.Form):
+    """
+    Artisan-side form for staging a digital file against a variation.
+
+    Two transit paths:
+      DIRECT    — artisan uploads the bytes now; server writes to
+                  private_digital_vault/_pending/ and computes sha256.
+      EXTERNAL  — artisan pastes a cloud drive URL; bytes do not touch
+                  the server until an admin copies them in. The artisan
+                  may optionally paste a checksum they read from their
+                  cloud drive client.
+
+    All validation limits are read from settings (XINDENG_VAULT_*),
+    which are the single source of truth shared with the admin copy
+    step and the model.
+    """
+
+    UPLOAD_TYPE_CHOICES = [
+        ("DIRECT", "Upload the file now｜直接上傳檔案"),
+        ("EXTERNAL", "I'll send a cloud drive link｜提供雲端連結"),
+    ]
+
+    upload_type = forms.ChoiceField(
+        choices=UPLOAD_TYPE_CHOICES,
+        initial="DIRECT",
+        widget=forms.RadioSelect(attrs={"class": "radio radio-primary radio-sm"}),
+        label="Upload method｜上傳方式",
+    )
+
+    file = forms.FileField(
+        required=False,
+        widget=forms.ClearableFileInput(attrs={
+            "class": "file-input file-input-bordered w-full",
+            "accept": ".pdf,.epub,.zip",
+        }),
+        label="File｜檔案",
+        help_text=(
+            "PDF, EPUB, or ZIP. Maximum 15 MB per file. "
+            "For a bundle of ebooks, upload a single ZIP."
+        ),
+    )
+
+    external_url = forms.URLField(
+        required=False,
+        max_length=500,
+        widget=forms.URLInput(attrs={
+            "class": "input input-bordered w-full",
+            "placeholder": "https://pan.baidu.com/s/… or https://drive.google.com/…",
+        }),
+        label="Cloud drive link｜雲端硬碟連結",
+        help_text=(
+            "Paste a share link from Baidu Drive, Google Drive, Tianyi, etc. "
+            "Set the link permission to 'anyone with the link'. "
+            "An admin will download and stage the file manually."
+        ),
+    )
+
+    checksum = forms.CharField(
+        required=False,
+        max_length=128,
+        widget=forms.TextInput(attrs={
+            "class": "input input-bordered w-full font-mono text-xs",
+            "placeholder": "Optional — paste if your cloud drive shows one",
+        }),
+        label="Checksum (optional)｜校驗碼（選填）",
+        help_text=(
+            "Optional. If your cloud drive client shows a checksum "
+            "(md5, sha1, sha256), paste it here so we can verify the "
+            "file arrived intact."
+        ),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        upload_type = cleaned.get("upload_type")
+        file = cleaned.get("file")
+        external_url = cleaned.get("external_url")
+
+        if upload_type == "DIRECT" and not file:
+            self.add_error(
+                "file",
+                "Please select a file to upload.｜請選擇要上傳的檔案。",
+            )
+        elif upload_type == "EXTERNAL" and not external_url:
+            self.add_error(
+                "external_url",
+                "Please provide the cloud drive link.｜請提供雲端硬碟連結。",
+            )
+
+        return cleaned
+
+    def clean_file(self):
+        f = self.cleaned_data.get("file")
+        if not f:
+            return f
+
+        # ── Size ──────────────────────────────────────────────────
+        max_bytes = settings.XINDENG_VAULT_MAX_BYTES
+        if f.size > max_bytes:
+            mb = max_bytes / (1024 * 1024)
+            raise ValidationError(
+                f"File exceeds the {mb:.0f} MB limit.｜"
+                f"檔案超過 {mb:.0f} MB 上限。"
+            )
+
+        # ── Extension whitelist ───────────────────────────────────
+        name = f.name or ""
+        ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+        allowed = settings.XINDENG_VAULT_ALLOWED_EXTENSIONS
+        if ext not in allowed:
+            allowed_list = ", ".join(sorted(allowed))
+            raise ValidationError(
+                f"Unsupported file type '.{ext}'. Allowed: {allowed_list}.｜"
+                f"不支援的檔案類型 .{ext}，僅接受：{allowed_list}。"
+            )
+
+        # ── Content sniff — must agree with the extension ─────────
+        from core.vault_utils import sniff_mime_kind
+        sniffed = sniff_mime_kind(f, name)
+
+        if sniffed is None:
+            raise ValidationError(
+                "The file does not look like a valid PDF, EPUB, or ZIP.｜"
+                "檔案內容無法辨識為有效的 PDF、EPUB 或 ZIP。"
+            )
+
+        if sniffed != ext:
+            # An EPUB is technically a ZIP; if the artisan mislabels a
+            # real EPUB as .zip (or vice versa), we refuse rather than
+            # guessing. This keeps the served Content-Type honest.
+            raise ValidationError(
+                "The file's content does not match its extension.｜"
+                "檔案內容與副檔名不符。"
+            )
+
+        return f

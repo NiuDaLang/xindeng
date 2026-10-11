@@ -1,0 +1,85 @@
+<!-- templates/artisans/dashboard/partials/_vault_upload_form.html -->
+<form id="vault-upload-form"
+      hx-post="{% url 'a_dashboard_product_variation_upload_vault' product.id variation.id %}"
+      hx-target="#vault-upload-modal-body"
+      hx-swap="innerHTML"
+      hx-encoding="multipart/form-data">
+
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-error text-xs mb-3">
+        {% for err in form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Upload method -->
+    <div class="form-control mb-4">
+        <label class="label text-xs uppercase tracking-wider opacity-60">
+            {{ form.upload_type.label }}
+        </label>
+        <div class="flex flex-col gap-1">
+            {% for radio in form.upload_type %}
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                {{ radio.tag }} <span>{{ radio.choice_label }}</span>
+            </label>
+            {% endfor %}
+        </div>
+        {% if form.upload_type.errors %}
+        <p class="text-error text-xs mt-1">{{ form.upload_type.errors.0 }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Direct: file -->
+    <div class="form-control mb-4">
+        <label class="label text-xs uppercase tracking-wider opacity-60">
+            {{ form.file.label }}
+        </label>
+        {{ form.file }}
+        {% if form.file.help_text %}
+        <p class="text-[10px] opacity-60 mt-1">{{ form.file.help_text }}</p>
+        {% endif %}
+        {% if form.file.errors %}
+        <p class="text-error text-xs mt-1">{{ form.file.errors.0 }}</p>
+        {% endif %}
+    </div>
+
+    <!-- External: URL -->
+    <div class="form-control mb-4">
+        <label class="label text-xs uppercase tracking-wider opacity-60">
+            {{ form.external_url.label }}
+        </label>
+        {{ form.external_url }}
+        {% if form.external_url.help_text %}
+        <p class="text-[10px] opacity-60 mt-1">{{ form.external_url.help_text }}</p>
+        {% endif %}
+        {% if form.external_url.errors %}
+        <p class="text-error text-xs mt-1">{{ form.external_url.errors.0 }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Optional checksum -->
+    <div class="form-control mb-4">
+        <label class="label text-xs uppercase tracking-wider opacity-60">
+            {{ form.checksum.label }}
+        </label>
+        {{ form.checksum }}
+        {% if form.checksum.help_text %}
+        <p class="text-[10px] opacity-60 mt-1">{{ form.checksum.help_text }}</p>
+        {% endif %}
+        {% if form.checksum.errors %}
+        <p class="text-error text-xs mt-1">{{ form.checksum.errors.0 }}</p>
+        {% endif %}
+    </div>
+
+    <div class="modal-action">
+        <button type="button"
+                onclick="document.getElementById('vault-upload-modal').close()"
+                class="btn btn-ghost btn-sm">
+            Cancel｜取消
+        </button>
+        <button type="submit" class="btn btn-primary btn-sm">
+            Submit for Review｜提交審核
+        </button>
+    </div>
+</form>

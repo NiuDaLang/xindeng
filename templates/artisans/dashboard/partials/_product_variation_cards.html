@@ -30,11 +30,39 @@
                         <i class="fa-solid fa-clock text-[8px]"></i> 新值待審
                     </span>
                     {% endif %}
+                    {% if v.vault_uploads.exists %}
+                        {% with latest=v.vault_uploads.first %}
+                            {% if latest.status == 'PENDING' %}
+                            <span class="badge badge-xs badge-warning">
+                                Vault pending｜待審
+                            </span>
+                            {% elif latest.status == 'APPROVED' %}
+                            <span class="badge badge-xs badge-success">
+                                Vault live｜已上架
+                            </span>
+                            {% elif latest.status == 'REJECTED' %}
+                            <span class="badge badge-xs badge-error"
+                                  title="{{ latest.review_note }}">
+                                Vault rejected｜已拒絕
+                            </span>
+                            {% endif %}
+                        {% endwith %}
+                    {% endif %}
                 </div>
             </div>
         </div>
 
         <div class="flex justify-end gap-2 mt-3 pt-3 border-t border-base-200/60">
+            {% if product.is_digital %}
+            <button type="button"
+                    class="btn btn-xs btn-ghost rounded-lg"
+                    hx-get="{% url 'a_dashboard_product_variation_upload_vault' product.id v.id %}"
+                    hx-target="#vault-upload-modal-body"
+                    hx-swap="innerHTML"
+                    hx-on::after-request="if(event.detail.successful) document.getElementById('vault-upload-modal').showModal()">
+                <i class="fa-solid fa-cloud-arrow-up text-[10px] mr-1"></i> Vault
+            </button>
+            {% endif %}
             <button type="button"
                     class="btn btn-xs btn-ghost rounded-lg edit-variation-btn"
                     data-variation-id="{{ v.id }}"
@@ -73,3 +101,18 @@
     </p>
 </div>
 {% endif %}
+
+<dialog id="vault-upload-modal" class="modal">
+    <div class="modal-box max-w-lg">
+        <h3 class="font-serif text-lg mb-2">Upload Vault File｜上傳電子檔案</h3>
+        <p class="text-xs text-base-content/60 mb-4">
+            檔案將進入待審佇列，管理員審核通過後才會正式上架供顧客下載。<br>
+            The file enters a review queue. It becomes available to customers
+            only after an admin approves it.
+        </p>
+        <div id="vault-upload-modal-body">
+            {# populated via HTMX fetch from the button #}
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>

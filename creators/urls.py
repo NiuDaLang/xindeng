@@ -28,6 +28,7 @@ urlpatterns = [
     path('dashboard/products/<int:pk>/stock/', views.dashboard_product_stock_edit, name='a_dashboard_product_stock_edit'),
     path('dashboard/products/<int:pk>/request-deactivation/', views.dashboard_product_request_deactivation, name='a_dashboard_product_request_deactivation'),
     path('dashboard/products/<int:pk>/gallery/<int:gallery_pk>/delete/', views.dashboard_product_gallery_delete, name='a_dashboard_product_gallery_delete'),
+    path('dashboard/products/<int:pk>/variations/<int:variation_pk>/upload-vault/', views.dashboard_product_variation_upload_vault, name='a_dashboard_product_variation_upload_vault'),
     
     path('dashboard/profile/', views.dashboard_profile_edit, name='a_dashboard_profile'),
     path('dashboard/messages/', views.dashboard_messages, name='a_dashboard_messages'),
