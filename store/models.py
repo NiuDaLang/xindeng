@@ -423,6 +423,20 @@ class ProductVariation(models.Model):
         
         return f"aspect-ratio: {w} / {h};"
 
+    @property
+    def pending_vault_upload_count(self):
+        """
+        Number of ArtisanVaultUpload rows for this variation that are
+        currently PENDING review.
+
+        The partial unique constraint (unique_pending_upload_per_variation)
+        caps this at 1, but it is exposed as a count rather than a bool
+        so the template can render it as a counter badge directly, and
+        so relaxing the constraint later does not silently change the
+        UI contract.
+        """
+        return self.vault_uploads.filter(status="PENDING").count()
+
     def __str__(self):
         # 1. Cleanly extract and fallback text strings from parent relation rows safely
         product_name = str(self.product.product_name).strip() if self.product else ""

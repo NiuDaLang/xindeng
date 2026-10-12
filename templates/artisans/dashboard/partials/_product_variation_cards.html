@@ -30,13 +30,13 @@
                         <i class="fa-solid fa-clock text-[8px]"></i> 新值待審
                     </span>
                     {% endif %}
-                    {% if v.vault_uploads.exists %}
+                    {% if v.pending_vault_upload_count %}
+                    <span class="badge badge-xs badge-warning">
+                        待審核檔案
+                    </span>
+                    {% else %}
                         {% with latest=v.vault_uploads.first %}
-                            {% if latest.status == 'PENDING' %}
-                            <span class="badge badge-xs badge-warning">
-                                Vault pending｜待審
-                            </span>
-                            {% elif latest.status == 'APPROVED' %}
+                            {% if latest.status == 'APPROVED' %}
                             <span class="badge badge-xs badge-success">
                                 Vault live｜已上架
                             </span>
