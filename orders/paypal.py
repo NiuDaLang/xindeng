@@ -487,21 +487,8 @@ def capture_paypal_order(request):
                             order_prod.save(update_fields=['is_dispatched', 'dispatched_at'])
 
                         elif getattr(variation.product, 'is_digital', False) and getattr(variation.product, 'digital_fulfillment_type', 'INSTANT') == 'INSTANT':
-                            # 1. Generate a cryptographically secure token valid for exactly 48 hours
-                            expiration_time = timezone.now() + timedelta(hours=168)
-                            download_token = DigitalDownloadToken.objects.create(
-                                user=order.user,
-                                order_product=order_prod,
-                                expires_at=expiration_time
-                            )
-                            # 2. Trigger the asynchronous background email delivery via Celery task queue
-                            transaction.on_commit(
-                                lambda token_id=download_token.id: send_e_product_email_task.delay(str(token_id))
-                            )
-
-                            order_prod.is_dispatched = True
-                            order_prod.dispatched_at = timezone.now()   # 🌟 NEW
-                            order_prod.save(update_fields=['is_dispatched', 'dispatched_at'])
+                            from orders.utils import issue_download_token
+                            issue_download_token(order_prod)
                             
                     # After handling individual lines, automatically evaluate if order needs an upgraded order status!
                     order.update_fulfillment_status() # Covered in Step 4 below

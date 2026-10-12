@@ -201,20 +201,8 @@ def confirm_bank_payment_admin_action(modeladmin, request, queryset):
                         prod.save(update_fields=['is_dispatched', 'dispatched_at'])
 
                     elif getattr(variation.product, 'is_digital', False) and getattr(variation.product, 'digital_fulfillment_type', 'INSTANT') == 'INSTANT':
-                        expiration_time = timezone.now() + timedelta(hours=168)
-                        download_token = DigitalDownloadToken.objects.create(
-                            user=order_locked.user,
-                            order_product=prod,
-                            expires_at=expiration_time
-                        )
-                        transaction.on_commit(
-                            lambda token_id=download_token.id: send_e_product_email_task.delay(str(token_id))
-                        )
-                        
-                        # Mark instant digital lines as fully dispatched
-                        prod.is_dispatched = True
-                        prod.dispatched_at = timezone.now()
-                        prod.save(update_fields=['is_dispatched', 'dispatched_at'])
+                        from orders.utils import issue_download_token
+                        issue_download_token(prod)                        
 
                 artisan_ids_with_pending = order_products.filter(
                     fulfilled_by__isnull=False,

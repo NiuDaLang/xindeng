@@ -765,18 +765,9 @@ def complete_zero_due_voucher_order(request):
                     order_prod.dispatched_at = timezone.now()
                     order_prod.save(update_fields=['is_dispatched', 'dispatched_at'])
                 
-                # Infinite Instant Digital Assets download token generation loops
                 elif getattr(variation.product, 'is_digital', False) and getattr(variation.product, 'digital_fulfillment_type', 'INSTANT') == 'INSTANT':
-                    expiration_time = timezone.now() + timedelta(hours=168)
-                    download_token = DigitalDownloadToken.objects.create(
-                        user=order.user,
-                        order_product=order_prod,
-                        expires_at=expiration_time
-                    )
-                    transaction.on_commit(lambda token_id=download_token.id: send_e_product_email_task.delay(str(token_id)))
-                    order_prod.is_dispatched = True
-                    order_prod.dispatched_at = timezone.now()
-                    order_prod.save(update_fields=['is_dispatched', 'dispatched_at'])
+                    from orders.utils import issue_download_token
+                    issue_download_token(order_prod)
 
             # After handling individual lines, automatically evaluate final status
             order.update_fulfillment_status()

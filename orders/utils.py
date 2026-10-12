@@ -7,6 +7,7 @@ from carts.models import ProformaInvoice
 import io
 import os
 import logging
+from datetime import timedelta
 from django.conf import settings
 from accounts.models import Perk, UserPerk
 from accounts.evaluators import PerkEvaluator
@@ -16,6 +17,7 @@ from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.contrib.humanize.templatetags.humanize import intcomma
 from accounts.models import CustomerVoucher
+from store.models import DigitalDownloadToken
 from django.db.models import F
 
 # reportlab
@@ -1126,159 +1128,32 @@ def get_paypal_items(cart_items, foreign_currency_code, locked_rate, cart_total_
     }
 
 
+def issue_download_token(order_product, *, ttl_hours=168):
+    """
+    Create a DigitalDownloadToken for an instant-digital OrderProduct,
+    register the post-commit notification email, and mark the line as
+    dispatched.
 
+    Called inside the caller's transaction.atomic() block. The email
+    dispatch is registered with transaction.on_commit so it fires only
+    if the surrounding transaction commits; the token row and the
+    is_dispatched flip are written immediately and roll back with the
+    caller's transaction if anything downstream fails.
 
+    The import of send_e_product_email_task is deferred to call time to
+    avoid a module-level cycle: orders.tasks imports from orders.utils.
+    """
+    from .tasks import send_e_product_email_task
 
-# (1) page-setting
-# A4, padding: vertical 2rem, horizontal 3rem
-
-# (2) Top Line (same as display: flex, lined up horizontally, same as "justify-content: start")
-# - logo (1.5cm * 1.5cm), left corner
-# - gap of 1rem
-# - Shop Name Text : "心燈｜Hṛdayadīpa (हृदयदीप)"
-
-# * vertical alignment: same as "align-items: center"
-# * font size: 1.5rem
-# * font weight: bold
-# * line height: 1.5
-# * text: f"訂單確認｜Order Confirmation &nbsp;&nbsp; {order.order_number}"
-# * text font-size will be 2rem
-# * font style for the part of {order.order_number} above will be same as:
-# font-family: "Libre Barcode 128", system-ui;
-# font-weight: 400;
-# font-style: normal;
-
-# (3) Greeting
-# text = f"您好{username}！｜Hello {username}!"
-# font-weight: 700;
-# font-size: 1.2rem;
-
-# (4) Paragraph 1
-# text = f"感謝您在本店購物！您的訂單號碼是<strong>{order.order_number}</strong>。<br/>
-# Thank you for shopping with us! Your order number is <strong>{order.order_number}</strong>."
-
-# (5) Paragraph 2
-# text = "我們會在您的實體產品包裹發出時通知您。<br/>
-# We will notify you when your physical product(s) parcel(s) is/are dispatched"
-
-# (6) Paragraph 3
-# text = "您的電子產品將透過另一封電子郵件發送給您。<br/>
-# 如果您收不到郵件，請及時聯繫我們。<br/>
-# 如果您已在我們這裡註冊，您也可以透過您的會員控制面板獲取您所購買的電子產品。<br/>
-# 會員登入鏈接：https://xxxx.com/login<br/>
-# Your e-product(s) will be sent to you via another email.<br/>
-# Please notify us if you have issue receiving the email.<br/>
-# If you have registered with us, you can also retrieve your e-product(s) via your member dashboard.<br/>
-# Member login link: https://xxxx.com/login"
-
-# (4) ~ (6)
-# * font-size: 1rem
-# * font-weight: regular (300?)
-# * gap between paragraphs: 1 line (1rem?)
-
-# (7) Sections (Title & Details in Table, each line includes label and underline)
-# <div class="order_item_row" style="margin: 2rem 0;">
-    # <div class="section_title" style="margin-top: 3rem;">
-    #     α 客戶訊息｜Customer Details
-    # </div>
-    # <table class="details-table mb-5" style="margin-left: 0.15rem;">
-    #     {% if user != None %}
-    #         <tr>
-    #             <td>
-    #                 <div class="label-xs">名｜first name</div>
-    #                 <div class="details-text-size"><strong>{{ user.first_name }}</strong></div>
-    #             </td>
-    #             <td>
-    #                 <div class="label-xs">姓｜last name</div>
-    #                 <div class="details-text-size"><strong>{{ user.last_name }}</strong></div>
-    #             </td>
-    #             <td>
-    #                 <div class="label-xs">用戶名｜username</div>
-    #                 <div class="details-text-size"><strong>{{ user.username }}</strong></div>
-    #             </td>
-    #         </tr>
-    #     {% else %}
-    #         <tr>
-    #             <td>
-    #                 <div class="label-xs">名字｜name</div>
-    #                 <div class="px-1 font-normal details-text-size">訪客用戶｜Guest User</div>
-    #             </td>
-    #         </tr>
-    #     {% endif %}
-    # </table>
-    # <table class="details-table mb-5" style="margin-left: 0.15rem;">
-    #     <tr>
-    #         <td>
-    #             <div class="label-xs">電郵｜email</div>
-    #             <div class="details-text-size"><strong>{{ order.email }}</strong></div>
-    #         </td>
-    #         <td>
-    #             <div class="label-xs">電話｜phone</div>
-    #             <div class="details-text-size"><strong>{{ user.mobile_area }}&nbsp;{{ user.mobile_number }}</strong></div>
-    #         </td>
-    #     </tr>
-    # </table>
-# </div>
-
-# .order_item_row {break-inside: avoid;}
-# .section_title {font-size: 1.1rem; font-weight: 600; margin: 1rem 0;}
-# .details-table { width: 100%; border-spacing: 1.5rem 0; margin-left: -1.5rem; }
-# .details-table td { border-bottom: 1px solid #ccc; padding: 0.25rem; width: 33%; vertical-align: bottom; }
-# .mb-5 {margin-bottom: 1.25rem}
-# .label-xs { font-size: 0.75rem; color: #666; }
-# .details-text-size {font-size: 0.95rem;}
-# .px-1 {padding-left: 0.25rem; padding-right: 0.25rem;}
-# .font-normal {--tw-font-weight: 400; font-weight: 400;}
-# .details-text-size {font-size: 0.95rem;}
-
-# (8) Product List (dynamic generation) & Price Summary
-# * container with background color of #e8e7e7
-# * padding: 1.5rem
-
-# * A: Top Table (product list)
-# * Table Heading: [col1: blank, col2-col3: "商品｜Product", col4: "價格｜Price", col5: "數量｜Qty", col6: "小計｜Sub-Total" ]
-# * border-bottom: 2px solid #6864611a;
-# * Table Rows (dynamically generated: for product in order_products:...loop):
-# * col1: counter
-# * col2: product image (order_product.image.url)
-# * col3: product name (order_product.product_variation (__str__())
-# * col4: product price
-# * col5: product quantity
-# * col6: product subtotal (product price * quantity)
-# * border-bottom: 1px solid #eee;
-
-# * divider between top and bottom tables: divider {
-#     display: flex;
-#     height: calc(0.25rem * 4);
-#     flex-direction: row;
-#     align-items: center;
-#     align-self: stretch;
-#     white-space: nowrap;
-#     margin: 0.5rem 0;
-#     --divider-color: #68646054;
-# }
-
-# * B: Bottom Table (price summary)
-# * width: 100%
-# * Table Heading: [col1: blank, col2: CNY, col3: {payment.currency}]
-# * Col3 exists only if payment.currency is not CNY. 
-# * Table Rows:
-# * row1: ["商品小計｜Products", {order.product_total}, optional: {product_total_foreign_currency}]
-# * row2: ["運費｜Shipping", {order.shipping}, optional: {shipping_foreign_currency}]
-# * row3: ["優惠｜Discount", {order.discount}, optional: {discount_foreign_currency}]
-# * row4: ["稅&通關费用｜Tax & Duty", {order.tax}, optional: {tax_foreign_currency}]
-# * row5: ["禮品券｜Voucher", {order.voucher}, optional: {voucher_foreign_currency}]
-# * row6: ["總收款金額｜Total Received", {order.total_due}, optional: {total_due_foreign_currency}]
-# * row6 font: font-weight: 600
-# * col1: text-alignt: left, col2 & col3: text-align: right
-
-# (9) Footer
-# * paragraph1: "若您有任何疑問，請隨時透過 admin@xindeng.com 聯絡我們，或造訪我們的聯絡頁面：https://xindeng.com/contact。<br/>
-#   If you have any further enquiries, please do not hesitate to contact us at admin@xindeng.com or visit our contact page: https://xindeng.com/contact."
-# * font-size: 0.8rem
-# * font-weight: 300
-# * text-align: justified
-# * line-height: 1.5
-# * margin-top: 2rem
-# * paragraph2: "© 2024 心燈｜Hṛdayadīpa (हृदयदीप) All Rights Reserved."
-# * text-align: center
+    token = DigitalDownloadToken.objects.create(
+        user=order_product.order.user,
+        order_product=order_product,
+        expires_at=timezone.now() + timedelta(hours=ttl_hours),
+    )
+    transaction.on_commit(
+        lambda token_id=token.id: send_e_product_email_task.delay(str(token_id))
+    )
+    order_product.is_dispatched = True
+    order_product.dispatched_at = timezone.now()
+    order_product.save(update_fields=["is_dispatched", "dispatched_at"])
+    return token
