@@ -294,7 +294,43 @@ def secure_file_download_gate(request, token_id):
     Validates token expirations and streams raw binary safely from the local secure disk structure.
     Also flags digital assets as claimed to block subsequent customer order cancellations.
     """
-    token = get_object_or_404(DigitalDownloadToken, id=token_id, user=request.user)
+
+    # Fetch by id only. Ownership is enforced explicitly below so the
+    # guest path can fall back to an email match when token.user is
+    # None. The old single-arg lookup get_object_or_404(..., user=...)
+    # collapsed fetch and ownership into one query; splitting them is
+    # what makes the guest branch possible without changing the member
+    # branch's observable behaviour.
+    token = get_object_or_404(DigitalDownloadToken, id=token_id)
+
+    # ── Authorisation ─────────────────────────────────────────────
+    # Member tokens: exact user match. Same outcome as before — a
+    # different authenticated user sees 404, not 403, so the gate
+    # does not leak that the token exists.
+    if token.user_id is not None:
+        if token.user_id != request.user.id:
+            raise Http404("Token not found for this user.")
+
+    # Guest tokens: no user FK to match against. The identity anchor is
+    # the email snapshot taken at issue time. The login_required
+    # decorator guarantees an authenticated user here; we additionally
+    # require that token.email is non-empty and matches the request
+    # user's email case-insensitively.
+    #
+    # The `if not token_email` guard is load-bearing: without it, an
+    # Account with an empty email string would match a token whose
+    # email is also empty, granting access to anyone who happened to
+    # log in with a blank email. Fail closed.
+    #
+    # Invariant this relies on: Account.email is unique (enforced by the
+    # model field). If that ever changes — e.g. allauth config drift —
+    # this fallback stops being a valid identity check and must be
+    # revisited. See Roadmap #7.5.
+    else:
+        token_email = (token.email or "").strip().lower()
+        user_email = (request.user.email or "").strip().lower()
+        if not token_email or token_email != user_email:
+            raise Http404("Token not found for this user.")
 
     if token.is_revoked_or_expired:
         # Distinguish cancellation-revocation from ordinary time-expiry.

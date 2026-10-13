@@ -138,6 +138,77 @@ def make_chain(db, django_user_model, vault_root):
     return _make
 
 
+@pytest.fixture
+def make_guest_chain(db, vault_root):
+    """
+    Companion to make_chain for the guest-purchase shape: Order.user and
+    OrderProduct.user are None, and the token carries an email snapshot
+    instead of a user FK. Mirrors what issue_download_token produces for
+    a guest order after commit 2.
+    """
+    from category.models import Category
+    from store.models import Product, ProductVariation, DigitalDownloadToken
+    from orders.models import Order, OrderProduct
+
+    _counter = {"n": 0}
+
+    def _make(digital_file_path, token_email="guest-buyer@example.com"):
+        _counter["n"] += 1
+        n = _counter["n"]
+
+        category = Category.objects.create(
+            category_name=f"Guest Digital {n}",
+            slug=f"guest-digital-{n}",
+            product_format="e-product",
+        )
+        product = Product.objects.create(
+            product_name=f"Guest Ebook {n}",
+            category=category,
+            is_digital=True,
+            digital_fulfillment_type="INSTANT",
+            is_physical=False,
+            is_active=True,
+            status="Published",
+        )
+        variation = ProductVariation.objects.create(
+            product=product,
+            price=Decimal("10.00"),
+            stock=1,
+            is_available=True,
+            digital_file_path=digital_file_path,
+        )
+        order = Order.objects.create(
+            user=None,
+            order_number=f"GUEST-VAULT-{n:04d}",
+            email=token_email or "",
+            is_ordered=True,
+            order_status="Processing",
+        )
+        order_product = OrderProduct.objects.create(
+            order=order,
+            user=None,
+            product=product,
+            product_variation=variation,
+            product_price=Decimal("10.00"),
+            quantity=1,
+            ordered=True,
+        )
+        token = DigitalDownloadToken.objects.create(
+            user=None,
+            email=token_email,
+            order_product=order_product,
+            expires_at=timezone.now() + timedelta(days=7),
+        )
+        return {
+            "product": product,
+            "variation": variation,
+            "order": order,
+            "order_product": order_product,
+            "token": token,
+        }
+
+    return _make
+
 # ──────────────────────────────────────────────────────────────────
 # Path containment — the security fix
 # ──────────────────────────────────────────────────────────────────
@@ -361,3 +432,161 @@ class TestGateBehaviour:
         second_claim = chain["order_product"].claim_timestamp
 
         assert first_claim == second_claim
+
+
+class TestGuestEmailFallback:
+    """
+    Guest tokens carry user=None and an email snapshot. The gate's
+    contract for these tokens is:
+
+      * anonymous request                                  -> 302 to login
+      * authenticated, email matches token.email (any case) -> 200
+      * authenticated, email differs                        -> 404 (not 403;
+        do not leak that the token exists)
+      * token.email empty or whitespace-only                -> 404 for
+        everyone, including an authenticated user whose own email is
+        also empty
+
+    The last case is the important one: an empty token.email must never
+    match. Without that guard, an Account with an empty email would pass
+    a naive string comparison and the gate would fail open.
+    """
+
+    def test_guest_token_serves_bytes_to_authenticated_user_with_matching_email(
+        self, client, make_guest_chain, vault_file, django_user_model,
+    ):
+        chain = make_guest_chain(vault_file, token_email="guest-buyer@example.com")
+        user = django_user_model.objects.create_user(
+            username="guest_match",
+            email="guest-buyer@example.com",
+            receive_newsletter=False,
+            password="x",
+            is_active=True,
+        )
+        client.force_login(user)
+        url = reverse("secure_file_download_gate", args=[chain["token"].id])
+        response = client.get(url)
+
+        assert response.status_code == 200
+        body = b"".join(response.streaming_content)
+        assert body == b"%PDF-1.4\n% sample ebook for tests\n%%EOF\n"
+
+    def test_guest_download_marks_claimed(
+        self, client, make_guest_chain, vault_file, django_user_model,
+    ):
+        chain = make_guest_chain(vault_file, token_email="guest-buyer@example.com")
+        user = django_user_model.objects.create_user(
+            username="guest_claim",
+            email="guest-buyer@example.com",
+            receive_newsletter=False,
+            password="x",
+            is_active=True,
+        )
+        op = chain["order_product"]
+        assert op.is_claimed is False
+
+        client.force_login(user)
+        url = reverse("secure_file_download_gate", args=[chain["token"].id])
+        response = client.get(url)
+        assert response.status_code == 200
+
+        op.refresh_from_db()
+        assert op.is_claimed is True
+        assert op.claim_timestamp is not None
+
+    def test_guest_token_rejects_authenticated_user_with_different_email(
+        self, client, make_guest_chain, vault_file, django_user_model,
+    ):
+        chain = make_guest_chain(vault_file, token_email="guest-buyer@example.com")
+        user = django_user_model.objects.create_user(
+            username="wrong_guest",
+            email="someone-else@example.com",
+            receive_newsletter=False,
+            password="x",
+            is_active=True,
+        )
+        client.force_login(user)
+        url = reverse("secure_file_download_gate", args=[chain["token"].id])
+        response = client.get(url)
+        assert response.status_code == 404
+
+    def test_guest_token_email_match_is_case_insensitive(
+        self, client, make_guest_chain, vault_file, django_user_model,
+    ):
+        chain = make_guest_chain(vault_file, token_email="Guest-Buyer@Example.COM")
+        user = django_user_model.objects.create_user(
+            username="case_guest",
+            email="guest-buyer@example.com",
+            receive_newsletter=False,
+            password="x",
+            is_active=True,
+        )
+        client.force_login(user)
+        url = reverse("secure_file_download_gate", args=[chain["token"].id])
+        response = client.get(url)
+        assert response.status_code == 200
+
+    def test_guest_token_with_empty_email_rejects_all_authenticated_users(
+        self, client, make_guest_chain, vault_file, django_user_model,
+    ):
+        chain = make_guest_chain(vault_file, token_email="")
+        user = django_user_model.objects.create_user(
+            username="empty_email_user",
+            email="whatever@example.com",
+            receive_newsletter=False,
+            password="x",
+            is_active=True,
+        )
+        client.force_login(user)
+        url = reverse("secure_file_download_gate", args=[chain["token"].id])
+        response = client.get(url)
+        assert response.status_code == 404
+
+    def test_guest_token_with_whitespace_email_rejects_all_authenticated_users(
+        self, client, make_guest_chain, vault_file, django_user_model,
+    ):
+        chain = make_guest_chain(vault_file, token_email="   ")
+        user = django_user_model.objects.create_user(
+            username="ws_email_user",
+            email="whatever2@example.com",
+            receive_newsletter=False,
+            password="x",
+            is_active=True,
+        )
+        client.force_login(user)
+        url = reverse("secure_file_download_gate", args=[chain["token"].id])
+        response = client.get(url)
+        assert response.status_code == 404
+
+    def test_guest_token_anonymous_still_redirects_to_login(
+        self, client, make_guest_chain, vault_file,
+    ):
+        chain = make_guest_chain(vault_file, token_email="guest-buyer@example.com")
+        url = reverse("secure_file_download_gate", args=[chain["token"].id])
+        response = client.get(url)
+        assert response.status_code == 302
+        assert "/accounts/login/" in response["Location"]
+
+    def test_guest_token_second_download_does_not_overwrite_claim_timestamp(
+        self, client, make_guest_chain, vault_file, django_user_model,
+    ):
+        chain = make_guest_chain(vault_file, token_email="guest-buyer@example.com")
+        user = django_user_model.objects.create_user(
+            username="guest_second",
+            email="guest-buyer@example.com",
+            receive_newsletter=False,
+            password="x",
+            is_active=True,
+        )
+        client.force_login(user)
+        url = reverse("secure_file_download_gate", args=[chain["token"].id])
+
+        client.get(url)
+        chain["order_product"].refresh_from_db()
+        first = chain["order_product"].claim_timestamp
+
+        client.get(url)
+        chain["order_product"].refresh_from_db()
+        second = chain["order_product"].claim_timestamp
+
+        assert first == second
