@@ -6,13 +6,12 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 from django.db import transaction, IntegrityError
-from django.db.models import Q, Prefetch
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from accounts.models import Address
+from accounts.models import Address, Account
 from store.models import (
     Product, ProductGallery, ProductVariation, ProductReviewLog,
     ArtisanVaultUpload
@@ -23,12 +22,12 @@ from .context import artisan_dashboard_context
 from taggit.models import Tag
 
 from .decorators import artisan_required
-from .models import CreatorProfile, CraftType
+from .models import CreatorProfile, CraftType, ArtisanChatMessage
 # If you go with Approach A:
 from django.conf import settings
 import os
 from blog.models import Post, BlogPostReviewLog
-from django.db.models import Q
+from django.db.models import Q, Prefetch, Max, Count
 from django.core.paginator import Paginator
 from accounts.data import DESTINATIONS_MAINLAND_CHINA
 
@@ -48,7 +47,6 @@ from .forms import (
     ArtisanVaultUploadForm
 )
 from orders.models import OrderProduct, TrackingNumber
-from django.db.models import Prefetch
 
 from django.http import FileResponse, HttpResponse
 from django.urls import reverse
@@ -1118,14 +1116,96 @@ def dashboard_profile_edit(request):
 
 @artisan_required
 def dashboard_messages(request):
+    """
+    Artisan inbox: thread list plus, when ?customer=<id> is present,
+    the active thread's messages.
+
+    Opening a thread flips every unread customer-authored message in
+    that thread to read. Artisan-authored messages are already
+    is_read=True and are unaffected.
+    """
+    profile = request.user.creator_profile
+    customer_id = request.GET.get("customer")
+
+    # One row per customer who has exchanged messages with this artisan.
+    # last_at is used to order threads most-recently-active first.
+    thread_rows = list(
+        ArtisanChatMessage.objects
+        .filter(artisan=profile)
+        .values("customer")
+        .annotate(last_at=Max("created_at"), unread=Count("id", filter=Q(is_read=False)))
+        .order_by("-last_at")
+    )
+
+    # Fetch the customer Accounts in one query rather than N.
+    customer_ids = [row["customer"] for row in thread_rows]
+    customers_by_id = {
+        u.id: u for u in Account.objects.filter(id__in=customer_ids)
+    }
+    for row in thread_rows:
+        row["customer_obj"] = customers_by_id.get(row["customer"])
+
+    active_customer = None
+    active_messages = ArtisanChatMessage.objects.none()
+
+    if customer_id:
+        active_customer = customers_by_id.get(int(customer_id)) if customer_id.isdigit() else None
+        if active_customer is None:
+            # The customer isn't in this artisan's existing threads.
+            # Load them anyway if they exist as an Account — a fresh
+            # thread starts empty.
+            active_customer = Account.objects.filter(id=customer_id).first()
+        if active_customer:
+            active_messages = (
+                ArtisanChatMessage.objects
+                .filter(artisan=profile, customer=active_customer)
+                .select_related("sender")
+            )
+            ArtisanChatMessage.objects.filter(
+                artisan=profile,
+                customer=active_customer,
+                is_read=False,
+            ).update(is_read=True)
+
     context = artisan_dashboard_context(request)
     context.update({
-        'active_section': 'messages',
-        'page_title': 'Messages｜訊息',
+        "active_section": "messages",
+        "threads": thread_rows,
+        "active_customer": active_customer,
+        "active_messages": active_messages,
+        "page_title": "Messages｜訊息",
     })
-    if request.headers.get('HX-Request'):
-        return render(request, 'artisans/dashboard/partials/_messages_panel.html', context)
-    return render(request, 'artisans/dashboard/messages.html', context)
+
+    if request.headers.get("HX-Request"):
+        return render(request, "artisans/dashboard/partials/_messages_panel.html", context)
+    return render(request, "artisans/dashboard/messages.html", context)
+
+
+@artisan_required
+@require_POST
+def dashboard_messages_send(request, customer_id):
+    """
+    Create a message from this artisan to the given customer.
+
+    Redirects back to the thread. No WebSocket — the reload is what
+    delivers the update.
+    """
+    profile = request.user.creator_profile
+    customer = get_object_or_404(Account, pk=customer_id)
+
+    content = (request.POST.get("content") or "").strip()
+    if not content:
+        messages.error(request, "Message cannot be empty.｜訊息不得為空。")
+        return redirect(f"{reverse('a_dashboard_messages')}?customer={customer.id}")
+
+    ArtisanChatMessage.objects.create(
+        artisan=profile,
+        customer=customer,
+        sender=request.user,
+        content=content,
+        is_read=True,
+    )
+    return redirect(f"{reverse('a_dashboard_messages')}?customer={customer.id}")
 
 
 # Product Registration

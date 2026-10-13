@@ -32,6 +32,7 @@ urlpatterns = [
     
     path('dashboard/profile/', views.dashboard_profile_edit, name='a_dashboard_profile'),
     path('dashboard/messages/', views.dashboard_messages, name='a_dashboard_messages'),
+    path('dashboard/messages/<int:customer_id>/send/', views.dashboard_messages_send, name='a_dashboard_messages_send'),
 
     # Public
     path('', views.artisan_landing, name='artisan_landing'),
