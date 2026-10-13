@@ -719,24 +719,6 @@ def set_role(request, role):
 # ARTISAN DASHBOARD — 匠人工作台
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _artisan_dashboard_context(request):
-    """Shared context for all artisan dashboard views."""
-    profile = request.user.creator_profile
-
-    pending_dispatch = OrderProduct.objects.filter(
-        fulfilled_by=profile,
-        is_dispatched=False,
-    ).count()
-
-    unread_messages = 0  # Wire up ChatMessage later
-
-    return {
-        'profile': profile,
-        'pending_dispatch_count': pending_dispatch,
-        'unread_messages_count': unread_messages,
-    }
-
-
 @artisan_required
 def dashboard_overview(request):
     profile = request.user.creator_profile
@@ -755,7 +737,7 @@ def dashboard_overview(request):
     total_products = profile.products.filter(is_active=True).count()
     recent_posts = profile.posts.filter(status='Published').order_by('-created_at')[:3]
 
-    context = _artisan_dashboard_context(request)
+    context = artisan_dashboard_context(request)
     context.update({
         'active_section': 'overview',
         'dispatched_this_week': dispatched_this_week,
@@ -782,14 +764,33 @@ def dashboard_orders(request):
         Prefetch('tracking_assignments', queryset=TrackingNumber.objects.all())
     ).order_by('-order__created_at')
 
-    pending_lines = base_qs.filter(is_dispatched=False)
+    # Pending lines are bucketed by product type. The artisan has a
+    # distinct action (or no action) per bucket:
+    #
+    #   pending_physical        — enter a tracking number to dispatch
+    #   pending_custom_digital  — produce and upload the file for
+    #                             admin review (via the product edit
+    #                             page's vault-upload modal)
+    #
+    # INSTANT digital and voucher lines auto-fulfil at payment time and
+    # are deliberately excluded. They stay in the queryset only if a
+    # historical row predates the auto-fulfil flip; excluding them
+    # here means a stale line can't block the artisan's view.
+    pending_qs = base_qs.filter(is_dispatched=False)
+    pending_physical = pending_qs.filter(product__is_physical=True)
+    pending_custom_digital = pending_qs.filter(
+        product__is_digital=True,
+        product__digital_fulfillment_type="CUSTOM",
+    )
+
     dispatched_lines = base_qs.filter(is_dispatched=True).exclude(order__order_status='Delivered')[:20]
     delivered_lines = base_qs.filter(order__order_status='Delivered')[:20]
 
-    context = _artisan_dashboard_context(request)
+    context = artisan_dashboard_context(request)
     context.update({
         'active_section': 'orders',
-        'pending_lines': pending_lines,
+        'pending_physical': pending_physical,
+        'pending_custom_digital': pending_custom_digital,
         'dispatched_lines': dispatched_lines,
         'delivered_lines': delivered_lines,
         'page_title': 'Orders｜訂單',
@@ -807,6 +808,13 @@ def dashboard_dispatch_line(request, line_id):
     line = get_object_or_404(
         OrderProduct, id=line_id, fulfilled_by=profile, is_dispatched=False,
     )
+
+    if not line.product.is_physical:
+        messages.error(
+            request,
+            "Only physical items can be dispatched.｜只有實體商品可標記發貨。",
+        )
+        return dashboard_orders(request)
 
     tracking_code = request.POST.get('tracking_code', '').strip()
     carrier = request.POST.get('carrier', '').strip()
@@ -842,7 +850,7 @@ def dashboard_blog_list(request):
         .order_by('-updated_at')
     )
 
-    context = _artisan_dashboard_context(request)
+    context = artisan_dashboard_context(request)
     context.update({
         'active_section': 'blog',
         'posts': posts,
@@ -886,7 +894,7 @@ def dashboard_blog_create(request):
     else:
         form = BlogPostForm()
 
-    context = _artisan_dashboard_context(request)
+    context = artisan_dashboard_context(request)
     context.update({
         'active_section': 'blog',
         'form': form,
@@ -935,7 +943,7 @@ def dashboard_blog_edit(request, pk):
     else:
         form = BlogPostForm(instance=post)
 
-    context = _artisan_dashboard_context(request)
+    context = artisan_dashboard_context(request)
     context.update({
         'active_section': 'blog',
         'form': form,
@@ -1096,7 +1104,7 @@ def dashboard_profile_edit(request):
     else:
         form = CreatorProfileForm(instance=profile)
 
-    context = _artisan_dashboard_context(request)
+    context = artisan_dashboard_context(request)
     context.update({
         'active_section': 'profile',
         'form': form,
@@ -1110,7 +1118,7 @@ def dashboard_profile_edit(request):
 
 @artisan_required
 def dashboard_messages(request):
-    context = _artisan_dashboard_context(request)
+    context = artisan_dashboard_context(request)
     context.update({
         'active_section': 'messages',
         'page_title': 'Messages｜訊息',
@@ -1131,7 +1139,7 @@ def dashboard_products_list(request):
         .order_by('-modified_date')
     )
 
-    context = _artisan_dashboard_context(request)
+    context = artisan_dashboard_context(request)
     context.update({
         'active_section': 'products',
         'products': products,
@@ -1183,7 +1191,7 @@ def dashboard_product_create(request):
     else:
         form = ArtisanProductForm(artisan=profile)
 
-    context = _artisan_dashboard_context(request)
+    context = artisan_dashboard_context(request)
     context.update({
         'active_section': 'products',
         'form': form,
@@ -1276,7 +1284,7 @@ def dashboard_product_edit(request, pk):
     variations = product.variations.all().order_by('created_date')
     gallery_images = product.productgallery_set.all()
 
-    context = _artisan_dashboard_context(request)
+    context = artisan_dashboard_context(request)
     context.update({
         'active_section': 'products',
         'form': form,
