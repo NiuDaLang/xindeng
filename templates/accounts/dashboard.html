@@ -1,4 +1,4 @@
-<!-- templates/dashboard.html -->
+<!-- templates/accounts/dashboard.html -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -69,7 +69,7 @@
         <label for="dashboard-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <!-- SIDEBAR MASTER TRACK MODULE -->
         <aside id="dashboard_sidebar" class="w-[min(83%, w-60)] lg:w-60 mt-[64px] lg:mt-0 min-h-full bg-base-100 border-r border-base-200/60 flex flex-col">
-        {% include 'includes/dashboard_sidebar.html' %}
+        {% include 'accounts/partials/dashboard_sidebar.html' %}
         </aside>
     </div>
 </div>

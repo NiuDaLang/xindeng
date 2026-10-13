@@ -10,3 +10,6 @@ Run: `pytest core/tests/ -v` from the project root.
 so no file ever lands in the real `media/` tree. Use `FakeFieldFile`
 from `_fakes.py` when a test needs a `.name` with a directory prefix
 (Django's `validate_file_name` strips paths at construction time).
+
+### note
+transaction.on_commit() callbacks do not fire under pytest-django's default test transaction. Use the django_capture_on_commit_callbacks fixture when asserting on dispatch behaviour.
