@@ -325,3 +325,65 @@ class TestContextConsolidation:
         assert ctx["unread_messages_count"] == 0
         assert ctx["profile"] == chain["profile"]
 
+
+class TestOrdersPanelTemplate:
+    """
+    The template must reflect the view's bucket split. Before commit 2
+    it still iterated the old `pending_lines` context key, which the
+    view no longer provides, so the pending tab rendered empty even
+    when actionable lines existed.
+    """
+
+    def _get_panel_html(self, client, chain):
+        client.force_login(chain["artisan_user"])
+        response = client.get(reverse("a_dashboard_orders"))
+        assert response.status_code == 200
+        return response.content.decode()
+
+    def test_physical_line_renders_tracking_form(
+        self, client, artisan_orders_setup,
+    ):
+        html = self._get_panel_html(client, artisan_orders_setup)
+        assert 'name="tracking_code"' in html
+
+    def test_custom_digital_line_renders_manage_file_link(
+        self, client, artisan_orders_setup,
+    ):
+        chain = artisan_orders_setup
+        html = self._get_panel_html(client, chain)
+        expected_url = reverse(
+            "a_dashboard_product_edit",
+            args=[chain["custom_line"].product.id],
+        )
+        assert expected_url in html
+
+    def test_custom_digital_line_does_not_render_tracking_form(
+        self, client, artisan_orders_setup,
+    ):
+        """
+        Scope the assertion to the pending panel: the physical line
+        renders a tracking form in the same page, so a naive "no
+        tracking_code input exists" check would be wrong. Slice the
+        pending panel between its data-panel marker and the next one.
+        """
+        html = self._get_panel_html(client, artisan_orders_setup)
+        start = html.find('data-panel="pending"')
+        assert start != -1, "pending tab panel marker missing"
+        end = html.find('data-panel="dispatched"', start)
+        assert end != -1, "dispatched tab panel marker missing"
+        pending_html = html[start:end]
+
+        assert pending_html.count('name="tracking_code"') == 1, (
+            "Exactly one tracking form should render in pending — the "
+            "physical line's. A second means the custom-digital card "
+            "regressed to the old unconditional form."
+        )
+
+    def test_instant_digital_line_absent_from_response(
+        self, client, artisan_orders_setup,
+    ):
+        chain = artisan_orders_setup
+        html = self._get_panel_html(client, chain)
+        # The INSTANT line has never been dispatched and is excluded
+        # from every panel, so its product name should not appear.
+        assert chain["instant_line"].product.product_name not in html
