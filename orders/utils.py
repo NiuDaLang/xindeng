@@ -1147,6 +1147,12 @@ def issue_download_token(order_product, *, ttl_hours=168):
 
     token = DigitalDownloadToken.objects.create(
         user=order_product.order.user,
+        # Snapshot the order's email at issue time. For a guest order,
+        # order.user is None and this email is the only identity anchor
+        # the download gate can fall back to. Coerced and stripped so
+        # the gate's case-insensitive comparison has a well-defined
+        # shape even for legacy rows whose order.email is None.
+        email=(order_product.order.email or "").strip(),
         order_product=order_product,
         expires_at=timezone.now() + timedelta(hours=ttl_hours),
     )
