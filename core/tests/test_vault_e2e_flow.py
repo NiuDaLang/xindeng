@@ -64,6 +64,26 @@ def customer(db, django_user_model):
 
 
 @pytest.fixture
+def guest_buyer_account(db, django_user_model):
+    """
+    The account the guest eventually authenticates as to download.
+
+    A guest order has Order.user=None. The person who placed it may
+    register — or may already have an account — under the same email
+    they used at checkout. That account is the identity the gate
+    matches against token.email. Distinct from the order itself, which
+    has no user at all.
+    """
+    return django_user_model.objects.create_user(
+        username="e2e_guest_buyer",
+        email="guest-buyer@example.com",
+        receive_newsletter=False,
+        password="x",
+        is_active=True,
+    )
+
+
+@pytest.fixture
 def artisan_chain(db, django_user_model, vault_root):
     """Artisan + digital product + one variation + a staged PDF on disk."""
     from category.models import Category
@@ -254,6 +274,136 @@ class TestVaultEndToEnd:
         assert order_product.claim_timestamp is not None
 
         # -- Step 7: cancellation is now blocked.
+        eligible, fee, msg = order.evaluate_cancellation_details()
+        assert eligible is False
+        assert "claimed" in msg.lower()
+        assert order.can_be_cancelled_online is False
+
+
+class TestVaultEndToEndGuest:
+    """
+    Guest variant of TestVaultEndToEnd. Same vault chain — artisan
+    stages -> admin approves -> buyer purchases -> admin confirms ->
+    gate serves -> claim flips -> cancellation blocked — but with
+    Order.user=None throughout, and the download identity coming from
+    the token's email snapshot rather than a user FK.
+
+    This is the test that would have caught the pre-#7.5 bug: a guest
+    purchase of an instant-digital product raised IntegrityError inside
+    confirm_bank_payment_admin_action's transaction.atomic, and the
+    action's broad except swallowed it. Even once the token could be
+    created, the old gate's get_object_or_404(..., user=request.user)
+    lookup made guest tokens unreachable.
+
+    It exercises three things that were changed separately:
+      * 0039/0040 backfill and nullability (implicitly — the token is
+        created with user=None)
+      * issue_download_token writing the email snapshot
+      * the gate's email-match fallback
+    against the same path a real guest purchase takes.
+    """
+
+    def test_guest_chain_upload_approve_buy_download_claim_block(
+        self,
+        client,
+        superuser,
+        guest_buyer_account,
+        artisan_chain,
+        vault_root,
+    ):
+        from store.models import DigitalDownloadToken
+        from orders.models import Order, OrderProduct
+        from orders.admin import confirm_bank_payment_admin_action
+
+        chain = artisan_chain
+        variation = chain["variation"]
+        pdf_bytes = chain["pdf_bytes"]
+        staged_name = chain["staged_name"]
+        staged_path = chain["staged_path"]
+
+        # -- Step 1: sanity -- staged file exists, vault is empty.
+        assert staged_path.is_file()
+        assert not (vault_root / staged_name).exists()
+        assert not variation.digital_file_path
+
+        # -- Step 2: admin approves the upload.
+        client.force_login(superuser)
+        approve_url = reverse(
+            "review_vault_upload_approve", args=[chain["upload"].id],
+        )
+        response = client.post(approve_url)
+        assert response.status_code in (301, 302)
+
+        variation.refresh_from_db()
+        assert variation.digital_file_path == staged_name
+        assert (vault_root / staged_name).is_file()
+        assert not staged_path.exists()
+
+        # -- Step 3: guest places an order (hold pending). Order.user is
+        # None; the email is the only buyer identity on the row.
+        order = Order.objects.create(
+            user=None,
+            order_number="E2E-VAULT-GUEST-0001",
+            email="guest-buyer@example.com",
+            is_ordered=False,
+            order_status="Hold_Pending",
+            total_due=Decimal("10.00"),
+            product_total=Decimal("10.00"),
+        )
+        order_product = OrderProduct.objects.create(
+            order=order,
+            user=None,
+            product=chain["product"],
+            product_variation=variation,
+            product_price=Decimal("10.00"),
+            quantity=1,
+            ordered=False,
+        )
+
+        # -- Step 4: admin confirms bank payment, which issues a token.
+        # Before #7.5 this raised IntegrityError inside the atomic block
+        # and the action's broad except swallowed it, leaving the
+        # operator with no visible signal.
+        request = _make_admin_request(superuser)
+        confirm_bank_payment_admin_action(
+            None,
+            request,
+            Order.objects.filter(id=order.id),
+        )
+
+        order.refresh_from_db()
+        order_product.refresh_from_db()
+        assert order.is_ordered is True
+        assert order.payment is not None
+        assert order_product.ordered is True
+
+        token = DigitalDownloadToken.objects.get(order_product=order_product)
+        # The two fields that make the guest path possible.
+        assert token.user_id is None
+        assert token.email == "guest-buyer@example.com"
+        assert token.is_active is True
+        assert token.is_revoked_or_expired is False
+
+        # -- Step 5: the guest authenticates under a matching email and
+        # downloads via the gate. The gate has no user FK to match
+        # against, so it falls back to comparing token.email with
+        # request.user.email (case-insensitively).
+        client.force_login(guest_buyer_account)
+        gate_url = reverse("secure_file_download_gate", args=[token.id])
+        response = client.get(gate_url)
+
+        assert response.status_code == 200
+        assert _read_file_response(response) == pdf_bytes
+
+        # -- Step 6: gate flipped the claim flag, same contract as the
+        # member path.
+        order_product.refresh_from_db()
+        assert order_product.is_claimed is True
+        assert order_product.claim_timestamp is not None
+
+        # -- Step 7: cancellation is blocked. evaluate_cancellation_details
+        # does not look at Order.user, so the guest path reaches the same
+        # "claimed" refusal as the member path.
         eligible, fee, msg = order.evaluate_cancellation_details()
         assert eligible is False
         assert "claimed" in msg.lower()
