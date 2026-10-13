@@ -634,12 +634,32 @@ class ProductVariationGallery(models.Model):
 
 
 class DigitalDownloadToken(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="digital_tokens")
-    order_product = models.ForeignKey('orders.OrderProduct', on_delete=models.CASCADE, related_name="download_tokens")
-    created_at = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateTimeField()
-    is_active = models.BooleanField(default=True)
+    id              = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="digital_tokens",
+    )
+
+    # Email snapshot, populated at token creation from order.email.
+    # This is the identity anchor for the guest fallback: it survives
+    # any later edit to the parent order, so a change to order.email
+    # after the token was issued cannot widen or narrow access.
+    # Empty string only when the parent order had no email recorded —
+    # checkout requires one, but the field is defensive.
+    email           = models.EmailField(blank=True, default="")
+
+    order_product   = models.ForeignKey(
+                        'orders.OrderProduct',
+                        on_delete=models.CASCADE,
+                        related_name="download_tokens",
+                    )
+    created_at      = models.DateTimeField(auto_now_add=True)
+    expires_at      = models.DateTimeField()
+    is_active       = models.BooleanField(default=True)
 
     @property
     def is_revoked(self):
