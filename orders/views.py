@@ -227,6 +227,8 @@ def place_order(request, proforma_invoice_no):
                                 "postal_code": invoice.postal_code,
                                 "delivery_note": invoice.delivery_note,
                                 "do_not_send_invoice": invoice.do_not_send_invoice,
+
+                                "offer_code": (offer_code or "").strip().upper(),
                                 
                                 # Financial Totals Base CNY
                                 "product_total": invoice.cart_total,
@@ -650,6 +652,12 @@ def complete_zero_due_voucher_order(request):
                 # 🌟 THIS IS THE CRITICAL LINE THAT DECRIMENTS YOUR WALLET LEDGERS ATOMICALLY
                 voucher_changes = execute_atomic_voucher_deduction(request.user, voucher_to_spend)
 
+            # Mark-off coupons/promotions if applicable
+            offer_session = request.session.get("offer_applied", {})
+            offer_code = offer_session.get("offer_code")
+            if offer_code:
+                mark_off_perk_at_checkout(request.user, offer_code)
+
             # 4. Safely get or create the order on the fly (Matching PayPal layout defaults)
             order, order_created = Order.objects.select_for_update().get_or_create(
                 order_number=proforma_invoice_number,
@@ -670,6 +678,7 @@ def complete_zero_due_voucher_order(request):
                     "postal_code": proforma_order.postal_code,
                     "delivery_note": proforma_order.delivery_note,
                     "do_not_send_invoice": proforma_order.do_not_send_invoice,
+                    "offer_code": (offer_code or "").strip().upper(),
                     "product_total": proforma_order.cart_total,
                     "shipping_cost": proforma_order.shipping_cost,
                     "discount": proforma_order.discount,

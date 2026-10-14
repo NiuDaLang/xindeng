@@ -986,12 +986,7 @@ def reverse_perk_usage_at_cancellation(order_instance):
     # (e.g., if order.coupon_code or proforma_invoice.offer_code was stored during views.py)
     
     # Let's extract the clean coupon string via your ProformaInvoice or Order snapshots:
-    offer_code_string = getattr(order_instance, 'coupon_code', None)
-    if not offer_code_string:
-        # Fallback tracking lookup: parse from your settings or related ProformaInvoice table
-        # from store.models import ProformaInvoice
-        proforma = ProformaInvoice.objects.filter(proforma_order_number=order_instance.order_number).first()
-        offer_code_string = proforma.offer_code if proforma else None
+    offer_code_string = order_instance.offer_code
 
     if not offer_code_string:
         return f"No coupon code associated with Order {order_instance.order_number}. Rollback skipped."

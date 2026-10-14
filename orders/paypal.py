@@ -338,7 +338,13 @@ def capture_paypal_order(request):
                 # Open blocking transaction context boundary to isolate thread allocations safely
                 with transaction.atomic():
                     proforma_order = ProformaInvoice.objects.select_for_update().get(proforma_order_number=proforma_invoice_number, is_ordered=False)
-                    
+
+                    # Mark-off coupons/promotions if applicable
+                    offer_session = request.session.get("offer_applied", {})
+                    offer_code = offer_session.get("offer_code")
+                    if offer_code and request.user.is_authenticated:
+                        mark_off_perk_at_checkout(request.user, offer_code)
+
                     # Safely get or create the order on the fly
                     order, order_created = Order.objects.select_for_update().get_or_create(
                         order_number=proforma_invoice_number,
@@ -359,6 +365,7 @@ def capture_paypal_order(request):
                             "postal_code": proforma_order.postal_code,
                             "delivery_note": proforma_order.delivery_note,
                             "do_not_send_invoice": proforma_order.do_not_send_invoice,
+                            "offer_code": (offer_code or "").strip().upper() if request.user.is_authenticated else "",
                             "product_total": proforma_order.cart_total,
                             "shipping_cost": proforma_order.shipping_cost,
                             "discount": proforma_order.discount,
@@ -402,12 +409,6 @@ def capture_paypal_order(request):
                                 voucher=change['voucher_instance'],
                                 amount_deducted=change['amount']
                             )
-
-                    # Mark-off coupons/promotions if applicable
-                    offer_session = request.session.get("offer_applied", {})
-                    offer_code = offer_session.get("offer_code")
-                    if offer_code:
-                        mark_off_perk_at_checkout(request.user, offer_code)
 
                     # Create permanent Payment entry storing explicit authorized configurations
                     payment = Payment.objects.create(
