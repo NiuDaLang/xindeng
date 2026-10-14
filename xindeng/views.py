@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from creators.models import CreatorProfile
 from creators.utils import get_search_variants
 from core.image_utils import safe_image_url
+from django.http import HttpResponse
 
 
 def home(request):
@@ -128,11 +129,15 @@ def error_404(request, exception=None):
     return render(request, '404.html', {"page_title": "404｜頁面不存在"}, status=404)
 
 
-# Keep your 500 error handler exactly as it is (it only takes request)
 def error_500(request):
-    """Custom 500 Internal Server Error page router view."""
-    return render(request, '500.html', {"page_title": "500｜系統錯誤"}, status=500)
-
+    try:
+        return render(request, '500.html', status=500)
+    except Exception:
+        return HttpResponse(
+            "Server error. Please try again later.｜系統錯誤，請稍後再嘗試。",
+            status=500,
+            content_type='text/plain',
+        )
 
 def search(request):
     keyword = ""
