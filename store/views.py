@@ -26,7 +26,7 @@ from django.contrib import messages
 from django.db import transaction
 from orders.models import OrderProduct
 from creators.models import CreatorProfile
-
+from core.image_utils import safe_image_url
 from django.views.decorators.http import require_POST
 from accounts.decorators import superuser_required
 from .tasks import (
@@ -153,22 +153,35 @@ def product(request, category_slug, product_slug):
     min_price = min([v.price for v in variations]) if variations.exists() else 0.00
     only_one_variation = len(variations) == 1
 
-    # Build default master product gallery list maps
+    # Build default master product gallery list maps. safe_image_url
+    # handles variations/products with no hero image, matching the
+    # template-level fallback in product_form.html / gallery_partial.html.
     product_gallery = single_product.productgallery_set.all()
-    default_gallery_list = [{"href": item.image.url, "title": item.title} for item in product_gallery]
-    default_gallery_list.insert(0, {"href": single_product.images.url, "title": single_product.product_name})
+    default_gallery_list = [
+        {"href": safe_image_url(item.image), "title": item.title}
+        for item in product_gallery
+    ]
+    default_gallery_list.insert(
+        0,
+        {"href": safe_image_url(single_product.images), "title": single_product.product_name},
+    )
 
     # Prepare variations stock counts for initial entry
     session_cart_key = _cart_id(request)
     cart = Cart.objects.filter(user=request.user).first() if request.user.is_authenticated else Cart.objects.filter(cart_id=session_cart_key, user__isnull=True).first()
 
     for var in variations:
-        v_stock = var.stock
-        if cart:
-            in_cart_item = CartItem.objects.filter(cart=cart, product_variation=var, is_active=True).first()
-            if in_cart_item:
-                v_stock = max(0, v_stock - in_cart_item.quantity)
-        var.available_production_stock = v_stock
+        in_cart_item = (
+            CartItem.objects
+            .filter(cart=cart, product_variation=var, is_active=True)
+            .first()
+            if cart else None
+        )
+        qty_in_cart = in_cart_item.quantity if in_cart_item else 0
+        var.available_production_stock = var.compute_available_stock(qty_in_cart)
+        # Exposed to the template so the tooltip can show "in cart"
+        # instead of the SKU when it applies.
+        var.in_cart = bool(in_cart_item)
 
     exclusion_blacklist = [None, "", "NONE", "N/A", "N/A｜不適用", "N/A｜不適用"]
     has_valid_colors, has_valid_sizes, has_valid_types = False, False, False
@@ -214,7 +227,7 @@ def product(request, category_slug, product_slug):
         "only_one_variation": only_one_variation,
         "selected_var_id": None,
         "is_resolved_sku": False,
-        "current_main_image": single_product.images.url,
+        "current_main_image": safe_image_url(single_product.images),
         "product_gallery": default_gallery_list,
         "has_valid_colors": has_valid_colors,
         "has_valid_sizes": has_valid_sizes,
@@ -274,7 +287,7 @@ def filter_products(request):
                 filtered_products_json.append({
                     "product_name": product.product_name,
                     "description": product.description,
-                    "image_url": product.images.url if product.images else None,
+                    "image_url": safe_image_url(product.images),
                     "price": float(product.min_price),
                     "tags": list(product.tags.values_list('name', flat=True)),
                     "url": product.get_url(),

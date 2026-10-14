@@ -68,6 +68,7 @@ from blog.models import Post
 
 from .models import LoginEvent
 from .views_admin_trap import client_ip
+from core.image_utils import safe_image_url
 
 
 NUM_MSG_PER_LOAD = 10
@@ -1502,7 +1503,7 @@ def send_message(request):
             "sender_name": request.user.username,
             "sender_avatar_url": request.user.profile.profile_picture_url,
             "msg_content": new_message.content,
-            "msg_img_url": new_message.image.url if new_message.image else None,
+            "msg_img_url": safe_image_url(new_message.image),
             "msg_timestamp": new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
         }
     )
@@ -1516,7 +1517,7 @@ def send_message(request):
             'sender_name': new_message.sender.username,
             'sender_avatar': new_message.sender.profile.profile_picture_url,
             'content': format_chat(new_message.content),
-            'image_url': new_message.image.url if new_message.image else None,
+            'image_url': safe_image_url(new_message.image),
             'timestamp': new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
             'is_read': new_message.is_read,
         })
@@ -1752,7 +1753,7 @@ def api_conversation(request, member_id):
         'sender_name': msg.sender.username,
         'sender_avatar': msg.sender.profile.profile_picture_url,
         'content': format_chat(msg.content),
-        'image_url': msg.image.url if msg.image else None,
+        'image_url': safe_image_url(msg.image),
         'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
         'is_read': msg.is_read,
     } for msg in messages]
@@ -1810,7 +1811,7 @@ def api_search_messages(request):
         'sender_name': msg.sender.username,
         'sender_avatar': msg.sender.profile.profile_picture_url,
         'content': format_chat(msg.content),
-        'image_url': msg.image.url if msg.image else None,
+        'image_url': safe_image_url(msg.image),
         'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
         'is_read': msg.is_read,
     } for msg in chat_messages]
@@ -1859,7 +1860,7 @@ def api_my_conversation(request):
         'sender_name': msg.sender.username,
         'sender_avatar': msg.sender.profile.profile_picture_url,
         'content': format_chat(msg.content),
-        'image_url': msg.image.url if msg.image else None,
+        'image_url': safe_image_url(msg.image),
         'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
         'is_read': msg.is_read,
     } for msg in messages]
@@ -2140,7 +2141,7 @@ def wishlist(request):
             "product_name": wish.product_variation.product.product_name,
             "product_price": str(wish.product_variation.price),
             "product_url": f"/store/product/{wish.product_variation.product.category.slug}/{wish.product_variation.product.slug}",
-            "product_image": wish.product_variation.images.url,
+            "product_image": safe_image_url(wish.product_variation.images),
             "product_variation_stock": wish.product_variation.stock
         }
 

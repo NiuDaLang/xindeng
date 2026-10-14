@@ -1,4 +1,4 @@
-<!-- {% load django_vite %} -->
+<!-- templates/orders/order_confirmation_pdf.html -->
 {% load humanize %}
 {% load static %}
 <!DOCTYPE html>
@@ -575,9 +575,13 @@
                                             <tr>
                                                 <td>
                                                     <div class="h-five-rem" style="width:7rem;">
-                                                        <img src="{{ product.product_variation.images.url }}" alt="" class="rounded-md w-full h-full">
-                                                    </td>
+                                                        {% if product.product_variation.images %}
+                                                            <img src="{{ product.product_variation.images.url }}" alt="" class="rounded-md w-full h-full">
+                                                        {% else %}
+                                                            <img src="{% static 'images/products/variations/pattern1.png' %}" alt="" class="rounded-md w-full h-full">
+                                                        {% endif %}
                                                     </div>
+                                                </td>
                                                 <td>
                                                     <span class="font-bold">{{ product.product_variation.product.product_name }}</span>
                                                     <br/>
@@ -585,19 +589,6 @@
                                                 </td>
                                             </tr>
                                         </table>
-
-
-
-                                        <!-- <div class="flex w-full py-3">
-                                            <div class="h-five-rem" style="width: 30%; margin-right: 1rem;">
-                                                <img src="{{ product.product_variation.images.url }}" alt="" class="rounded-md w-full h-full object-cover">
-                                            </div>
-                                            <div class="ml-half-rem]">
-                                                <span class="font-bold">{{ product.product_variation.product.product_name }}</span>
-                                                <br/>
-                                                <span class="text-ten-px">{{ product.product_variation.get_sku }}</span>
-                                            </div>
-                                        </div> -->
                                     </td>
                                     <td class="text-right">CNY ¥{{ product.product_variation.price|floatformat:2|intcomma }}</td>
                                     <td class="text-center">{{ product.quantity }}</td>

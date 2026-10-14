@@ -4,6 +4,7 @@ from django import template
 from django.utils.safestring import mark_safe
 from django.core.cache import cache
 from store.models import Product  # Adjust import based on your app structure
+from core.image_utils import safe_image_url
 
 
 register = template.Library()
@@ -79,7 +80,7 @@ def get_product_info_from_url(url):
                 if product:
                     product_info = {
                         'name': product.product_name,
-                        'image_url': product.images.url if product.images else static('images/default-product.webp'),
+                        'image_url': safe_image_url(product.images),
                     }
                     
                     # Cache for 1 hour

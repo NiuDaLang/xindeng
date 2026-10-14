@@ -1,6 +1,7 @@
+<!-- templates/store/checkout.html -->
 {% extends 'base.html' %}
 {% load humanize %}
-
+{% load static %}
 {% block content %}
 <div id="checkout-view-container" hx-history="false" class="w-full font-sans antialiased bg-base-50/10">
 
@@ -341,7 +342,11 @@
                         {% for cart_item in cart_items %}
                         <div class="flex gap-3 py-3 items-center min-w-0 w-full first:pt-0 last:pb-0">
                             <div class="w-14 h-14 aspect-square flex-shrink-0 rounded-xl overflow-hidden bg-base-100 border border-base-200 shadow-inner relative">
-                                <img class="w-full h-full object-cover" src="{{ cart_item.product_variation.images.url }}" alt="Canvas Thumbnail"/>
+                                {% if cart_item.product_variation.images %}
+                                    <img class="w-full h-full object-cover" src="{{ cart_item.product_variation.images.url }}" alt="Canvas Thumbnail"/>
+                                {% else %}
+                                    <img class="w-full h-full object-cover" src="{% static 'images/products/variations/pattern1.png' %}" alt="Canvas Thumbnail"/>
+                                {% endif %}
                             </div>
                             <div class="grow min-w-0 space-y-0.5">
                                 <div class="text-xs font-bold text-base-content/90 truncate max-w-full" title="{{ cart_item.product_variation.product.product_name }}">

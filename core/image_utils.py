@@ -527,3 +527,28 @@ def invalidate_image_dimensions_cache(storage_name: str) -> None:
         cache.delete(f"imgdims:{storage_name}")
     except Exception:
         pass
+
+
+def safe_image_url(image_field):
+    """
+    Return the URL for an ImageField, or a shared placeholder when no
+    file is attached.
+
+    The templates already fall back to
+    static('images/products/variations/pattern1.png') when a variation
+    has no image. This helper does the same at the Python level, so any
+    dict the views build (gallery lists, current_main_image context
+    keys, hero-image pointers) can't crash on a null file while the
+    rendered HTML would have been fine.
+
+    Uses static() at call time rather than a module-level constant so
+    Django's settings are guaranteed to be configured when this runs.
+    """
+    from django.templatetags.static import static
+
+    if image_field:
+        try:
+            return image_field.url
+        except ValueError:
+            pass
+    return static("images/products/variations/pattern1.png")

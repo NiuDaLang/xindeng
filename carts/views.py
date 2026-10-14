@@ -37,6 +37,7 @@ from accounts.evaluators import PerkEvaluator
 from django.db import transaction
 from django.db.models import F, Sum
 # from .tax import calculate_free_port_tax, calculate_australia_tax, calculate_new_zealand_tax,calculate_singapore_tax,calculate_malaysia_tax,calculate_korea_tax,calculate_japan_tax, calculate_taiwan_tax
+from core.image_utils import safe_image_url
 
 
 def _cart_id(request):
@@ -211,7 +212,7 @@ def add_to_cart(request):
                 'quantity': item.quantity,
                 'price': item.product_variation.price,
                 'url': str(item.product_variation.product.get_url()),
-                'image_url': item.product_variation.images.url if item.product_variation.images else ''
+                'image_url': safe_image_url(item.product_variation.images),
             })
         has_physical_items = cart_items.filter(product_variation__product__is_physical=True).exists()
         request.session["has_physical_items"] = bool(has_physical_items)
@@ -277,14 +278,26 @@ def select_variation_htmx(request):
     gallery_list = []
     if resolved_variation:
         product_gallery = resolved_variation.productvariationgallery_set.all()
-        gallery_list = [{"href": item.image.url, "title": item.title} for item in product_gallery]
-        gallery_list.insert(0, {"href": resolved_variation.images.url, "title": resolved_variation.get_sku()})
-        forced_image_url = resolved_variation.images.url
+        gallery_list = [
+            {"href": safe_image_url(item.image), "title": item.title}
+            for item in product_gallery
+        ]
+        gallery_list.insert(
+            0,
+            {"href": safe_image_url(resolved_variation.images), "title": resolved_variation.get_sku()},
+        )
+        forced_image_url = safe_image_url(resolved_variation.images)
     else:
         product_gallery = single_product.productgallery_set.all()
-        gallery_list = [{"href": item.image.url, "title": item.title} for item in product_gallery]
-        gallery_list.insert(0, {"href": single_product.images.url, "title": single_product.product_name})
-        forced_image_url = single_product.images.url
+        gallery_list = [
+            {"href": safe_image_url(item.image), "title": item.title}
+            for item in product_gallery
+        ]
+        gallery_list.insert(
+            0,
+            {"href": safe_image_url(single_product.images), "title": single_product.product_name},
+        )
+        forced_image_url = safe_image_url(single_product.images)
 
     is_resolved_sku = resolved_variation is not None
     displayed_price = resolved_variation.price if is_resolved_sku else (min([v.price for v in variations]) if variations.exists() else 0)
@@ -295,12 +308,15 @@ def select_variation_htmx(request):
 
     # Re-evaluate live stock metrics across options
     for var in variations:
-        v_stock = var.stock
-        if cart:
-            in_cart_item = CartItem.objects.filter(cart=cart, product_variation=var, is_active=True).first()
-            if in_cart_item:
-                v_stock = max(0, v_stock - in_cart_item.quantity)
-        var.available_production_stock = v_stock
+        in_cart_item = (
+            CartItem.objects
+            .filter(cart=cart, product_variation=var, is_active=True)
+            .first()
+            if cart else None
+        )
+        qty_in_cart = in_cart_item.quantity if in_cart_item else 0
+        var.available_production_stock = var.compute_available_stock(qty_in_cart)
+        var.in_cart = bool(in_cart_item)
 
     if is_resolved_sku and cart:
         in_cart_item = CartItem.objects.filter(cart=cart, product_variation=resolved_variation, is_active=True).first()
@@ -375,19 +391,26 @@ def add_to_cart_htmx(request):
     cart_item, created = CartItem.objects.get_or_create(
         product_variation=product_var, cart=cart, defaults={'quantity': 0, 'user': user}
     )
-    cart_item.quantity += quantity_added
+    if product_var.is_instant_eproduct:
+        # Single-copy purchase: the download is licensed once, and
+        # place_order() rejects quantity > 1 for these lines. Cap here
+        # so a repeated click on Add to Cart can't push the cart over
+        # the ceiling the checkout already enforces.
+        cart_item.quantity = 1
+    else:
+        cart_item.quantity += quantity_added
     cart_item.save()
 
     # Re-calculate live stock matrix counts across selections
     variations = single_product.variations.filter(is_available=True)
     for var in variations:
-        v_stock = var.stock
         in_cart_item = CartItem.objects.filter(cart=cart, product_variation=var, is_active=True).first()
-        if in_cart_item:
-            v_stock = max(0, v_stock - in_cart_item.quantity)
-        var.available_production_stock = v_stock
+        var.available_production_stock = var.compute_available_stock(
+            in_cart_item.quantity if in_cart_item else 0
+        )
+        var.in_cart = bool(in_cart_item)
 
-    resolved_stock = max(0, product_var.stock - cart_item.quantity)
+    resolved_stock = product_var.compute_available_stock(cart_item.quantity)
     
     active_filters = {
         "size": product_var.size.size_name if product_var.size else "標準",
@@ -410,8 +433,14 @@ def add_to_cart_htmx(request):
 
     # Set gallery list view matching active selected state
     var_gallery = product_var.productvariationgallery_set.all()
-    gallery_list = [{"href": item.image.url, "title": item.title} for item in var_gallery]
-    gallery_list.insert(0, {"href": product_var.images.url, "title": product_var.get_sku()})
+    gallery_list = [
+        {"href": safe_image_url(item.image), "title": item.title}
+        for item in var_gallery
+    ]
+    gallery_list.insert(
+        0,
+        {"href": safe_image_url(product_var.images), "title": product_var.get_sku()},
+    )
 
     context = {
         "single_product": single_product,
@@ -426,7 +455,7 @@ def add_to_cart_htmx(request):
         "has_valid_types": has_valid_types,
         "has_any_valid_specifications": has_any_valid_specifications,
         "active_filters": active_filters,
-        "current_main_image": product_var.images.url,
+        "current_main_image": safe_image_url(product_var.images),
         "product_gallery": gallery_list,
     }
 

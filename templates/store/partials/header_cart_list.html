@@ -1,4 +1,6 @@
+<!-- templates/store/partials/header_cart_list.html -->
 {% load humanize %}
+{% load static %}
 <!-- 🌟 UL CORE OVERHAUL: Set unified scrolling constraints with invisible customized scroll bars trackers -->
 <ul id="cart_items_list" 
     class="overflow-y-auto max-h-[35vh] xs:max-h-[45vh] w-full divide-y divide-base-100 pr-1 scrollbar-none space-y-1.5"
@@ -13,7 +15,11 @@
                 <a href="{{ item.product_variation.product.get_url }}" class="flex items-center gap-3 min-w-0 flex-1 select-none">
                     <!-- 🌟 FIXED: Structured thumbnail card container prevents overflow breaks -->
                     <div class="w-10 h-10 xs:w-12 xs:h-12 rounded-lg overflow-hidden bg-base-200 border border-base-200/50 flex-shrink-0 relative">
-                        <img src="{{ item.product_variation.images.url }}" alt="product thumbnail" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">
+                        {% if item.product_variation.images %}
+                            <img src="{{ item.product_variation.images.url }}" alt="product thumbnail" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">
+                        {% else %}
+                            <img src="{% static 'images/products/variations/pattern1.png' %}" alt="product thumbnail" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">
+                        {% endif %}
                     </div>
                     
                     <!-- Text Metadata Details Alignment Frame -->

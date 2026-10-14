@@ -1,6 +1,6 @@
-<!-- wishlist_item.html -->
+<!-- templates/accounts/partials/wishlist_item.html -->
 {% load humanize %}
-
+{% load static %}
 <div {% if is_htmx_update %}id="wishlist_wrapper" hx-swap-oob="true"{% endif %} class="w-full grid grid-cols-1 gap-6">
     {% if wishlist %}
         {% for item in wishlist %}
@@ -45,9 +45,15 @@
                     <!-- B1: PRODUCT PICTURE ASSET HOLDER CONTAINER -->
                     <div class="flex items-center justify-center shrink-0 max-md:w-full">
                         <a href="{{ item.product_variation.product.get.url }}" class="w-full max-md:max-w-[340px] md:w-32 md:h-32 aspect-square rounded-xl overflow-hidden border border-base-200 shadow-inner block relative group">
+                            {% if item.product_variation.images %}
                             <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                                 src="{{ item.product_variation.images.url }}" 
                                 alt="{{ item.product_variation.product.product_name }}">
+                            {% else %}
+                            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                                src="{% static 'images/products/variations/pattern1.png' %}" 
+                                alt="{{ item.product_variation.product.product_name }}">
+                            {% endif %}
                         </a>
                     </div>
 

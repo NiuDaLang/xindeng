@@ -437,6 +437,41 @@ class ProductVariation(models.Model):
         """
         return self.vault_uploads.filter(status="PENDING").count()
 
+    @property
+    def is_instant_eproduct(self):
+        """
+        True for instant-fulfilment digital products that are not
+        vouchers. These behave as effectively infinite stock: save()
+        forces stock=1, every customer sees the same figure, and
+        purchasing never decrements the column.
+
+        Centralised here so the four call sites that need the same
+        three-condition check — save(), the storefront availability
+        loop, and the two cart views — can't drift.
+        """
+        return (
+            self.product.is_digital
+            and self.product.digital_fulfillment_type == "INSTANT"
+            and not self.product.is_voucher
+        )
+
+    def compute_available_stock(self, quantity_in_cart=0):
+        """
+        Cart-aware availability figure for the storefront display.
+
+        For most lines this is stock minus the user's own cart
+        quantity — a partial reservation, so a visitor can't
+        double-buy the last unit. For instant-digital products,
+        subtraction would make the variation appear out of stock the
+        moment it's added to the cart, which is wrong: stock is a
+        storefront-wide availability figure and every purchase is
+        fulfilled independently. Skip the subtraction there.
+        """
+        if self.is_instant_eproduct:
+            return self.stock
+        return max(0, self.stock - quantity_in_cart)
+    
+
     def __str__(self):
         # 1. Cleanly extract and fallback text strings from parent relation rows safely
         product_name = str(self.product.product_name).strip() if self.product else ""
@@ -484,17 +519,10 @@ class ProductVariation(models.Model):
         making them immune to accidental human edits or workflow deductions.
         """
         # 🌟 Check your explicit business rule condition safely at runtime
-        is_instant_eproduct = (
-            self.product.is_digital and 
-            self.product.digital_fulfillment_type == 'INSTANT' and 
-            not self.product.is_voucher
-        )
-
-        if is_instant_eproduct:
-            # Enforce binary availability rules for infinite digital goods
+        if self.is_instant_eproduct:
             self.stock = 1
             self.is_available = True
-            
+           
             # If your save call specifies 'update_fields', make sure 'stock' and 'is_available' are included
             if 'update_fields' in kwargs and kwargs['update_fields'] is not None:
                 # Convert tuple to list to allow modifications safely

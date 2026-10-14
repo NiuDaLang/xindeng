@@ -1,5 +1,6 @@
+<!-- templates/store/partials/wishlist_row.html -->
 {% load humanize %}
-
+{% load static %}
 <div class="w-full mt-10 font-sans">
     {% if wishlist %}
         <div class="list bg-base-200/60 rounded-box shadow-md p-4 sm:p-5 space-y-4">
@@ -30,7 +31,11 @@
                         <!-- Art Media Thumbnail Frame -->
                         <div class="w-20 h-20 sm:w-24 sm:h-24 aspect-square flex-shrink-0 rounded-xl overflow-hidden bg-base-200 border border-base-200/50 shadow-inner relative block">
                             <a href="{{ item.product_variation.product.get_url }}">
-                                <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src="{{ item.product_variation.images.url }}" alt="Product Thumbnail" loading="lazy"/>
+                                {% if item.product_variation.images %}
+                                    <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src="{{ item.product_variation.images.url }}" alt="Product Thumbnail" loading="lazy"/>
+                                    {% else %}
+                                    <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src="{% static 'images/products/variations/pattern1.png' %}" alt="Product Thumbnail" loading="lazy"/>
+                                {% endif %}
                             </a>
                         </div>
                         

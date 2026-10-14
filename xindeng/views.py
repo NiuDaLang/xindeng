@@ -9,6 +9,7 @@ from django.db.models import Q, Min, Count
 from django.http import JsonResponse
 from creators.models import CreatorProfile
 from creators.utils import get_search_variants
+from core.image_utils import safe_image_url
 
 
 def home(request):
@@ -318,7 +319,7 @@ def find_destined_work(request):
     distined_work_json = {
         "product_name": destined_work[0].product_name,
         "product_description": destined_work[0].description,
-        "product_image_url": str(destined_work[0].images.url),
+        "product_image_url": safe_image_url(destined_work[0].images),
         "product_url": destined_work[0].get_url(),
     }
     

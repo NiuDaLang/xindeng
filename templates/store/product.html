@@ -127,10 +127,17 @@
                     <figure class="md:w-full mx-auto 
                         max-h-[30vh] md:max-h-none rounded-2xl overflow-hidden shadow-sm border border-base-200 bg-base-100 relative"
                         style="{{ single_product.hero_container_style }} max-height: 70vh;">
-                        <img id="main_thumbnail" 
-                            src="{{ single_product.images.url }}" 
-                            class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" 
-                            alt="{{ single_product.product_name|default:'Master Canvas View' }}"/>
+                        {% if single_product.images %}
+                            <img id="main_thumbnail" 
+                                src="{{ single_product.images.url }}" 
+                                class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" 
+                                alt="{{ single_product.product_name|default:'Master Canvas View' }}"/>
+                        {% else %}
+                            <img id="main_thumbnail" 
+                                src="{% static 'images/products/variations/pattern1.png' %}" 
+                                class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" 
+                                alt="{{ single_product.product_name|default:'Master Canvas View' }}"/>
+                        {% endif %}
                     </figure>
                 </a>
                 

@@ -1,5 +1,7 @@
-<!-- favorites_list.html -->
+<!-- templates/accounts/partials/favorites_list.html -->
 {% load humanize %}
+{% load static %}
+
 {% if favorites %}
     <!-- DYNAMIC RESPONSIVE DOUBLE COLUMN PLATFORM GRID MESH -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full items-start my-2">
@@ -11,7 +13,11 @@
                 <!-- A. PRODUCT VISUAL COVER ASSET RAMP -->
                 <figure class="relative aspect-video w-full overflow-hidden border-b border-base-200 bg-neutral/10 shrink-0">
                     <a href="{{ favorite.product_variation.product.get_url }}" class="w-full h-full block relative group/link">
-                        <img src="{{ favorite.product_variation.images.url }}" alt="{{ favorite.product_variation.product.product_name }}" class="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover/link:scale-105" />
+                        {% if favorite.product_variation.images %}
+                            <img src="{{ favorite.product_variation.images.url }}" alt="{{ favorite.product_variation.product.product_name }}" class="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover/link:scale-105" />
+                        {% else %}
+                            <img src="{% static 'images/products/variations/pattern1.png' %}" alt="{{ favorite.product_variation.product.product_name }}" class="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover/link:scale-105" />
+                        {% endif %}
                         <div class="absolute inset-0 bg-neutral-950/0 transition-colors duration-300 group-hover/link:bg-neutral-950/20 cursor-pointer z-10"></div>
                         <i class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 fa-solid fa-right-to-bracket fa-lg opacity-0 scale-95 transition-all duration-300 group-hover/link:opacity-100 group-hover/link:scale-100 text-white z-20 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]"></i>
                     </a>

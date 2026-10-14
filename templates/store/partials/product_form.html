@@ -31,7 +31,7 @@
                     {% for var in variations %}
                     <div id="var_option_{{ var.pk }}" 
                         class="flex flex-col items-center justify-center w-14 text-center tooltip tooltip-bottom tooltip-neutral font-sans text-[11px] {% if var.available_production_stock == 0 %}opacity-30{% endif %}" 
-                        data-tip="{% if var.available_production_stock == 0 %}[ 暫時缺貨｜OUT OF STOCK ]{% else %}{{ var.get_sku }}{% endif %}">
+                        data-tip="{% if var.is_instant_eproduct and var.in_cart %}[ 已在購物車｜IN CART ]{% elif var.available_production_stock == 0 %}[ 暫時缺貨｜OUT OF STOCK ]{% else %}{{ var.get_sku }}{% endif %}">
                         
                         <label class="select-none relative block group rounded-xl {% if var.available_production_stock == 0 %}pointer-events-none cursor-not-allowed{% else %}cursor-pointer{% endif %}"
                             {% if var.available_production_stock > 0 %}
