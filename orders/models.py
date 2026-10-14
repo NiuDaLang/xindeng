@@ -118,6 +118,9 @@ class Order(models.Model):
     # Generic field to hold Taiwan ID, Korea PCCC, etc.
     destination_tax_id      = models.CharField(max_length=50, blank=True, null=True)
 
+    # offer discount info
+    offer_code              = models.CharField(max_length=100, blank=True, default="")
+
     # Financial Totals (Base CNY)
     product_total           = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
     shipping_cost           = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0.0)
