@@ -408,3 +408,374 @@ class TestVaultEndToEndGuest:
         assert eligible is False
         assert "claimed" in msg.lower()
         assert order.can_be_cancelled_online is False
+
+
+# ------------------------------------------------------------------
+# Supersession and claim-integrity edge cases
+# ------------------------------------------------------------------
+
+@pytest.fixture
+def chain_with_supersession(db, django_user_model, vault_root):
+    """
+    Artisan + digital product + one variation, with a supersession
+    already recorded in the staging area.
+
+    v1 was staged first, then replaced by v2 before any admin review.
+    The vault-side state at fixture teardown:
+
+        v1: status=SUPERSEDED, staged file deleted from _pending/
+        v2: status=PENDING,    staged file present in _pending/
+
+    Neither file has been approved. variation.digital_file_path is
+    empty. The fixture asserts these invariants inline so that a
+    future change to the supersession view that silently leaves v1's
+    file on disk cannot make this fixture's premise quietly untrue —
+    the fixture would fail loudly at setup, not produce a confusing
+    failure three assertions into the test body.
+    """
+    from category.models import Category
+    from creators.models import CreatorProfile
+    from store.models import (
+        Product, ProductVariation, ArtisanVaultUpload,
+    )
+
+    user = django_user_model.objects.create_user(
+        username="e2e_supersede_artisan",
+        email="e2e-supersede-artisan@example.com",
+        receive_newsletter=False,
+        password="x",
+        is_active=True,
+    )
+    profile = CreatorProfile.objects.create(
+        user=user,
+        display_name="E2E Supersede Artisan",
+        slug="e2e-supersede-artisan",
+        is_verified=True,
+    )
+    category = Category.objects.create(
+        category_name="E2E Supersede Digital",
+        slug="e2e-supersede-digital",
+        product_format="e-product",
+    )
+    product = Product.objects.create(
+        product_name="E2E Supersede Ebook",
+        category=category,
+        creator=profile,
+        is_digital=True,
+        digital_fulfillment_type="INSTANT",
+        is_physical=False,
+        is_voucher=False,
+        is_active=True,
+        status="Published",
+    )
+    variation = ProductVariation.objects.create(
+        product=product,
+        price=Decimal("10.00"),
+        stock=1,
+        is_available=True,
+    )
+
+    # ── v1: staged, then superseded ─────────────────────────────
+    v1_name = "supersede-v1.pdf"
+    v1_bytes = b"%PDF-1.4\n% supersede v1\n%%EOF\n"
+    v1_path = vault_root / "_pending" / v1_name
+
+    v1 = ArtisanVaultUpload.objects.create(
+        artisan=profile,
+        product=product,
+        variation=variation,
+        storage_kind="LOCAL",
+        status="SUPERSEDED",
+        staged_filename=v1_name,
+        original_filename="ebook-v1.pdf",
+        file_size=len(v1_bytes),
+        checksum="v1checksum".ljust(64, "0"),
+        review_note="Superseded by a newer upload from the artisan.",
+    )
+
+    # ── v2: staged, pending, on disk ────────────────────────────
+    v2_name = "supersede-v2.pdf"
+    v2_bytes = b"%PDF-1.4\n% supersede v2\n%%EOF\n"
+    v2_path = vault_root / "_pending" / v2_name
+    v2_path.write_bytes(v2_bytes)
+
+    v2 = ArtisanVaultUpload.objects.create(
+        artisan=profile,
+        product=product,
+        variation=variation,
+        storage_kind="LOCAL",
+        status="PENDING",
+        staged_filename=v2_name,
+        original_filename="ebook-v2.pdf",
+        file_size=len(v2_bytes),
+        checksum="v2checksum".ljust(64, "0"),
+    )
+
+    # ── Fixture premise assertions ──────────────────────────────
+    # If any of these fail, the supersession pipeline is not in the
+    # state the rest of this test class assumes, and the failure
+    # belongs here rather than three assertions into a test body.
+    assert not v1_path.exists(), (
+        "v1 staged file must have been deleted by the supersession flow"
+    )
+    assert v2_path.is_file(), (
+        "v2 staged file must exist for the pending approval step"
+    )
+    assert not variation.digital_file_path, (
+        "variation pointer must be empty before approval"
+    )
+    assert ArtisanVaultUpload.objects.filter(
+        variation=variation, status="PENDING",
+    ).count() == 1, "exactly one PENDING row per variation"
+
+    return {
+        "artisan_user": user,
+        "profile": profile,
+        "product": product,
+        "variation": variation,
+        "v1": v1,
+        "v2": v2,
+        "v1_name": v1_name,
+        "v2_name": v2_name,
+        "v1_bytes": v1_bytes,
+        "v2_bytes": v2_bytes,
+        "v1_path": v1_path,
+        "v2_path": v2_path,
+    }
+
+
+class TestVaultEndToEndSupersession:
+    """
+    The vault root is the delivery source. When an artisan supersedes
+    an upload before review, the approved file is the *later* one, and
+    the gate must serve that one — not the earlier, superseded file.
+
+    This is the case the plain member/guest E2E cannot catch: with a
+    single staged upload there is only one candidate, so any
+    accidentally-loose pointer lookup still resolves to the right
+    bytes.
+    """
+
+    def test_gate_serves_the_approved_file_not_the_superseded_one(
+        self,
+        client,
+        superuser,
+        customer,
+        chain_with_supersession,
+        vault_root,
+    ):
+        from store.models import DigitalDownloadToken
+        from orders.models import Order, OrderProduct
+        from orders.admin import confirm_bank_payment_admin_action
+
+        chain = chain_with_supersession
+        variation = chain["variation"]
+        v2_name = chain["v2_name"]
+        v2_bytes = chain["v2_bytes"]
+
+        # -- Step 1: sanity, restated from the fixture for clarity --
+        assert not chain["v1_path"].exists()
+        assert chain["v2_path"].is_file()
+        assert not variation.digital_file_path
+        assert not (vault_root / v2_name).exists()
+
+        # -- Step 2: admin approves the PENDING row (v2). --
+        client.force_login(superuser)
+        approve_url = reverse(
+            "review_vault_upload_approve", args=[chain["v2"].id],
+        )
+        response = client.post(approve_url)
+        assert response.status_code in (301, 302)
+
+        variation.refresh_from_db()
+        assert variation.digital_file_path == v2_name
+        assert (vault_root / v2_name).is_file()
+        assert not chain["v2_path"].exists()
+
+        # v1 remains a historical record. Its row is still there and
+        # still SUPERSEDED; nothing about approval of v2 revives it.
+        chain["v1"].refresh_from_db()
+        assert chain["v1"].status == "SUPERSEDED"
+
+        # -- Step 3: customer places an order (hold pending). --
+        order = Order.objects.create(
+            user=customer,
+            order_number="E2E-VAULT-SUPER-0001",
+            email=customer.email,
+            is_ordered=False,
+            order_status="Hold_Pending",
+            total_due=Decimal("10.00"),
+            product_total=Decimal("10.00"),
+        )
+        order_product = OrderProduct.objects.create(
+            order=order,
+            user=customer,
+            product=chain["product"],
+            product_variation=variation,
+            product_price=Decimal("10.00"),
+            quantity=1,
+            ordered=False,
+        )
+
+        # -- Step 4: admin confirms payment; token issued. --
+        request = _make_admin_request(superuser)
+        confirm_bank_payment_admin_action(
+            None,
+            request,
+            Order.objects.filter(id=order.id),
+        )
+
+        order.refresh_from_db()
+        order_product.refresh_from_db()
+        assert order.is_ordered is True
+        assert order_product.ordered is True
+
+        token = DigitalDownloadToken.objects.get(order_product=order_product)
+        assert token.user == customer
+        assert token.is_revoked_or_expired is False
+
+        # -- Step 5: the load-bearing assertion. --
+        # The gate must stream v2's bytes, not v1's. v1's bytes are
+        # distinguishable from v2's by a marker line, so a naive
+        # implementation that resolved the *first* upload rather than
+        # the variation's current pointer would fail here.
+        client.force_login(customer)
+        gate_url = reverse("secure_file_download_gate", args=[token.id])
+        response = client.get(gate_url)
+
+        assert response.status_code == 200
+        body = _read_file_response(response)
+        assert body == v2_bytes
+        assert b"supersede v2" in body
+        assert b"supersede v1" not in body
+
+        # -- Step 6: claim flipped, cancellation blocked. --
+        order_product.refresh_from_db()
+        assert order_product.is_claimed is True
+        assert order_product.claim_timestamp is not None
+
+        eligible, fee, msg = order.evaluate_cancellation_details()
+        assert eligible is False
+        assert "claimed" in msg.lower()
+        assert order.can_be_cancelled_online is False
+
+    def test_failed_download_does_not_flip_is_claimed(
+        self,
+        client,
+        superuser,
+        customer,
+        artisan_chain,
+        vault_root,
+    ):
+        """
+        A download that fails before any bytes are served must not
+        flip OrderProduct.is_claimed.
+
+        is_claimed gates the self-service cancellation window. If the
+        gate flipped it on a 404 — before the customer had received
+        anything — a customer could intentionally request a download
+        of a file that isn't there, lock their own order, and then
+        retain the (still-downloadable-in-principle) digital asset
+        outside the cancellation rules. The gate must only claim on
+        a successful serve.
+
+        Uses the plain artisan_chain fixture (single upload, no
+        supersession) so this test isolates the claim-on-404
+        behaviour from the supersession path.
+        """
+        from store.models import DigitalDownloadToken
+        from orders.models import Order, OrderProduct
+        from orders.admin import confirm_bank_payment_admin_action
+
+        chain = artisan_chain
+        variation = chain["variation"]
+        staged_name = chain["staged_name"]
+
+        # -- Step 1: approve the upload as normal. --
+        client.force_login(superuser)
+        approve_url = reverse(
+            "review_vault_upload_approve", args=[chain["upload"].id],
+        )
+        response = client.post(approve_url)
+        assert response.status_code in (301, 302)
+
+        variation.refresh_from_db()
+        assert variation.digital_file_path == staged_name
+
+        # -- Step 2: buy, confirm payment, token issued. --
+        order = Order.objects.create(
+            user=customer,
+            order_number="E2E-VAULT-404-0001",
+            email=customer.email,
+            is_ordered=False,
+            order_status="Hold_Pending",
+            total_due=Decimal("10.00"),
+            product_total=Decimal("10.00"),
+        )
+        order_product = OrderProduct.objects.create(
+            order=order,
+            user=customer,
+            product=chain["product"],
+            product_variation=variation,
+            product_price=Decimal("10.00"),
+            quantity=1,
+            ordered=False,
+        )
+
+        request = _make_admin_request(superuser)
+        confirm_bank_payment_admin_action(
+            None,
+            request,
+            Order.objects.filter(id=order.id),
+        )
+
+        order.refresh_from_db()
+        order_product.refresh_from_db()
+        assert order.is_ordered is True
+        token = DigitalDownloadToken.objects.get(order_product=order_product)
+        assert token.user == customer
+        assert order_product.is_claimed is False  # sanity
+
+        # -- Step 3: simulate the file having gone missing in the
+        # vault after approval but before the customer downloads. --
+        # The approval moved the file into the vault root; delete it
+        # there. The variation's pointer still names the (now-missing)
+        # file, so the gate's containment check passes and its
+        # is_file() check fails, raising Http404 before any
+        # transaction.atomic() claim block is entered.
+        vault_file = vault_root / staged_name
+        assert vault_file.is_file()
+        vault_file.unlink()
+        assert not vault_file.exists()
+
+        # -- Step 4: the customer requests the download. --
+        client.force_login(customer)
+        gate_url = reverse("secure_file_download_gate", args=[token.id])
+        response = client.get(gate_url)
+
+        assert response.status_code == 404
+
+        # -- Step 5: the load-bearing assertion. --
+        # Confirm the failure is the missing-file branch and not the
+        # containment branch: the pointer still names a file *inside*
+        # the vault root, so is_relative_to() passes and the
+        # is_file() check is what raised. If a future change moved the
+        # claim block above the is_file() check, the flag would flip
+        # here even though the file was never served.
+        assert variation.digital_file_path == staged_name
+        assert staged_name in str(vault_file)  # still inside vault_root
+
+        order_product.refresh_from_db()
+        assert order_product.is_claimed is False
+        assert order_product.claim_timestamp is None
+
+        # -- Step 6: the cancellation window is still open. --
+        # The customer received nothing, so the ordinary
+        # unclaimed-digital eligibility rule applies. If the gate had
+        # flipped is_claimed above, this assertion would fail with
+        # the "claimed" message instead of returning eligible=True.
+        eligible, fee, msg = order.evaluate_cancellation_details()
+        assert eligible is True
+        assert "claimed" not in msg.lower()
+        assert order.can_be_cancelled_online is True
+
