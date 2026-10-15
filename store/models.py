@@ -242,6 +242,27 @@ class Product(models.Model):
     def has_pending_deactivation_request(self):
         latest = self.review_logs.order_by('-created_at').first()
         return latest is not None and latest.action == 'deactivation_requested'
+
+    @property
+    def pending_vault_upload_count(self):
+        """
+        Number of ArtisanVaultUpload rows for this product's variations
+        that are currently PENDING review.
+
+        This is an AGGREGATE across variations, not a per-variation
+        lookup. It is the product-level badge on the products-list page
+        and the edit-page header. ProductVariation.pending_vault_upload_count
+        is the per-variation sibling, used on the variation cards.
+
+        The two properties serve different audiences and must not be
+        collapsed into one: the list page wants "how much work is
+        waiting on this product," the variation card wants "which
+        specific variation is blocked." Do not "simplify" this into a
+        `.first()` or `.exists()` — the aggregate must return the sum
+        across variations, and supersession (one PENDING replaced by a
+        newer PENDING on the same variation) must not inflate it.
+        """
+        return self.vault_uploads.filter(status="PENDING").count()
     
     @property
     def image_dimensions(self):

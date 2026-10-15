@@ -10,6 +10,12 @@
         填寫基本資料後即可建立草稿，隨後新增款式。
         {% endif %}
     </p>
+    {% if is_editing and product.pending_vault_upload_count %}
+    <p class="text-xs text-warning mt-2">
+        <i class="fa-solid fa-clock text-[10px] mr-1"></i>
+        待審檔案 {{ product.pending_vault_upload_count }}
+    </p>
+    {% endif %}    
 </div>
 {% include 'includes/alerts.html' %}
 

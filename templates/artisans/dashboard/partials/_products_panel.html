@@ -30,6 +30,12 @@
             <span class="badge badge-ghost badge-sm">Unpublished｜已下架</span>
             {% endif %}
 
+            {% if product.pending_vault_upload_count %}
+            <span class="badge badge-warning badge-sm">
+                待審檔案 {{ product.pending_vault_upload_count }}
+            </span>
+            {% endif %}
+
             {% if product.has_pending_deactivation_request %}
             <span class="badge badge-xs badge-warning">下架請求待處理</span>
             {% endif %}
