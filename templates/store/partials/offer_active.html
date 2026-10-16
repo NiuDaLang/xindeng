@@ -1,16 +1,4 @@
-<!-- <div id="offer-form-wrapper" hx-swap-oob="true" class="flex items-center justify-between p-3 bg-success/10 border border-success rounded-lg">
-    <span class="text-success font-medium">Code: <strong>{{ active_code }} ({{perk_code}})</strong> Applied!</span>
-    <button hx-post="{% url 'reset_offer' %}" 
-        hx-vals='{"csrfmiddlewaretoken": "{{ csrf_token }}"}'
-        hx-swap="none" 
-        class="btn btn-sm btn-ghost text-error h-auto py-2 min-h-0">
-        <div class="flex items-center gap-2">
-            <span>✕</span>
-            <span>Reset<br>重置</span>
-        </div> 
-    </button>
-</div> -->
-
+<!-- templates/store/partials/offer_active.html -->
 <div id="offer-form-wrapper" {% if is_oob %}hx-swap-oob="true"{% endif %} class="flex flex-col sm:flex-row md:flex-col lg:flex-row items-stretch sm:items-center md:items-stretch lg:items-center justify-between gap-2.5 p-3 bg-success/5 border border-success/20 rounded-xl shadow-sm font-sans w-full min-w-0">
     <div class="grow min-w-0 flex items-center gap-2">
         <i class="fa-solid fa-circle-check text-success text-xs shrink-0"></i>

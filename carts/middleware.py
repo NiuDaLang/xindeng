@@ -1,3 +1,5 @@
+# carts/middleware.py
+
 class CaptureAnonymousSessionMiddleware:
     """
     save session key in the request object for retrieving upon login and merge cart data
