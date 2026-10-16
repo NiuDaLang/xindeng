@@ -1,4 +1,4 @@
-<!-- orders/place_order.html -->
+<!-- templates/orders/place_order.html -->
 {% extends 'base.html' %}
 {% load humanize %}
 
@@ -519,10 +519,42 @@ async function executeZeroDueVoucherFulfillment() {
         }
 
         const result = await response.json();
+
         if (result.status === "SUCCESS") {
             Swal.close();
-            // Smoothly redirect window targets directly onto your permanent checkout receipt views
             window.location.href = `/orders/order_complete/?order_number=${result.order_number}&transaction_id=${result.transaction_id}`;
+        } else if (result.status === "OFFER_CONFLICT" || result.status === "VOUCHER_BALANCE_CONFLICT") {
+            // The backend rejected the transaction before any charge — no
+            // external gateway involved on this path. The response carries
+            // a structured title/text. Close the loading Swal and dispatch
+            // the canonical errorMssg listener so the customer sees the
+            // specific reason and can adjust (remove the offer, or top up
+            // the wallet) without leaving the checkout page.
+            Swal.close();
+            document.dispatchEvent(new CustomEvent("errorMssg", {
+                detail: {
+                    title: result.title,
+                    text: result.text,
+                }
+            }));
+            // Re-enable the button so the customer can retry after
+            // adjusting.
+            finalizeButton.disabled = false;
+            finalizeButton.classList.remove("btn-disabled", "opacity-50");
+            return;
+        } else if (result.status === "STOCK_CONFLICT") {
+            // Genuine stock failure. Same treatment — the customer needs
+            // to know it's a stock issue, not a wallet issue.
+            Swal.close();
+            document.dispatchEvent(new CustomEvent("errorMssg", {
+                detail: {
+                    title: "Out of Stock｜庫存不足",
+                    text: result.error || "An item ran out of stock during settlement. Support will contact you.｜結算過程中商品庫存不足，客服將與您聯繫。"
+                }
+            }));
+            finalizeButton.disabled = false;
+            finalizeButton.classList.remove("btn-disabled", "opacity-50");
+            return;
         } else {
             throw new Error("Billing alignment failure registered across system servers.");
         }
@@ -578,28 +610,6 @@ document.body.addEventListener('htmx:beforeLeave', function cleanupPlaceOrderPag
         console.log("🧹 Cleaned place order currency background intervals.");
     }
     document.body.removeEventListener('htmx:beforeLeave', cleanupPlaceOrderPage);
-});
-
-// Ensure this event listener maps cleanly across window targets exactly once
-document.addEventListener("errorMssg", function(evt) {
-    console.log("📥 Error Signal Cleared. Intercepted Details:", evt.detail);
-    
-    const payload = evt.detail;
-
-    Swal.fire({
-        title: payload.title,
-        html: payload.text, // Supports bilingually stacked HTML line-breaks cleanly
-        icon: 'error',
-        confirmButtonColor: '#3085d6',
-        confirmButtonText: 'OK',
-        allowOutsideClick: false,
-        allowEscapeKey: false
-    }).then((result) => {
-        // 💡 REDIRECT ROUTING: If an explicit redirect destination parameter is provided, move the window
-        if (result.isConfirmed && payload.redirect_url) {
-            window.location.href = payload.redirect_url;
-        }
-    });
 });
 
 </script> 

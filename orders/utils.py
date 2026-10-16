@@ -47,6 +47,22 @@ from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 logger = logging.getLogger(__name__)
 
 
+class VoucherBalanceError(Exception):
+    """
+    Raised by execute_atomic_voucher_deduction when the user's voucher
+    pool can't cover the requested deduction.
+
+    Distinct from ValueError so the checkout callers can catch this
+    specific failure and report it as VOUCHER_BALANCE_CONFLICT, rather
+    than mislabelling it as STOCK_CONFLICT or lumping it in with other
+    ValueErrors that mean something else.
+
+    See complete_zero_due_voucher_order and capture_paypal_order for the
+    response shapes this feeds.
+    """
+    pass
+
+
 def get_current_rate(base_currency_code="CNY", target_currency_code="HKD"):
     """
     Retrieves the rate from Redis cache.
@@ -1072,7 +1088,9 @@ def execute_atomic_voucher_deduction(user, session_input_amount):
         remaining_to_deduct -= deduction
     
     if remaining_to_deduct > 0:
-        raise ValueError("交易校驗失敗｜Voucher balance tracking drift caught during deduction execution.")
+        raise VoucherBalanceError(
+            "交易校驗失敗｜Voucher balance cannot cover the requested deduction."
+        )
         
     return usage_records  # 🌟 Net Fix: Correctly returns the list matrix for your views to iterate over!
 

@@ -898,7 +898,6 @@ async function createOrder() {
 async function captureOrder(data) {
     const proforma_invoice_number = JSON.parse(document.getElementById('proforma_invoice_number').textContent);
     try {
-        // 💡 FIXED: Appended missing invoice number parameter required by backend
         const url = `/orders/api/paypal/capture_paypal_order/?paypal_order_id=${data.orderId}&invoice=${proforma_invoice_number}`;
         const response = await fetch(url, {
             method: "POST",
@@ -909,8 +908,35 @@ async function captureOrder(data) {
             },
             body: JSON.stringify(data)
         });
-        if (!response.ok) throw new Error("Failed to capture order");
-        return await response.json();
+
+        // Non-2xx: throw. The caller's catch shows the generic
+        // "Capture Error" Swal. This covers 500 and 400 responses
+        // where the backend could not do its work at all.
+        if (!response.ok) {
+            throw new Error(`Capture failed with status ${response.status}`);
+        }
+
+        const payload = await response.json();
+
+        // 200 with a non-SUCCESS status: the backend captured the
+        // charge but could not complete the order (stock conflict,
+        // offer conflict, voucher-balance conflict). The response
+        // carries a structured payload — dispatch it through the
+        // canonical errorMssg listener so the customer sees the
+        // specific message and the transaction ID, then signal to
+        // onApprove that this path is already handled.
+        if (payload.status && payload.status !== "SUCCESS") {
+            document.dispatchEvent(new CustomEvent("errorMssg", {
+                detail: {
+                    title: payload.title || "Order Could Not Complete｜訂單未能完成",
+                    text: payload.text
+                        || "Your payment was processed, but the order could not be finalised. Support will contact you.｜您的付款已完成，但訂單未能成立。客服將與您聯繫。"
+                }
+            }));
+            return { status: "HANDLED" };
+        }
+
+        return payload;
     } catch (error) {
         console.error("Failed to capture order", error);
         throw error;
@@ -1001,13 +1027,23 @@ async function renderPayPalComponents(clientToken) {
 
                 try {
                     const backendResult = await captureOrder(data);
-                    
+
                     if (backendResult.status === "SUCCESS") {
                         // Close loading state and move cleanly to confirmation screen
                         Swal.close();
                         window.location.href = `/orders/order_complete/?order_number=${backendResult.order_number}&transaction_id=${backendResult.transaction_id}`;
+                    } else if (backendResult.status === "HANDLED") {
+                        // The backend captured the charge but could not finalise the
+                        // order (stock, offer, or voucher-balance conflict). The
+                        // structured payload was already dispatched through
+                        // errorMssg, which shows the customer the specific message
+                        // and the transaction ID. Just close the loading Swal and
+                        // leave the customer on the checkout page.
+                        Swal.close();
                     } else {
-                        // 🎯 SWAL Fallback for internal database error
+                        // Fallback for an unrecognised shape. Treated the same as the
+                        // pre-fix behaviour: a generic "Order Sync Failed" message.
+                        // This branch should be unreachable with the current backend.
                         Swal.fire({
                             icon: 'error',
                             title: 'Order Sync Failed｜訂單同步失敗',
@@ -1217,15 +1253,36 @@ document.addEventListener("noService", function(evt) {
         confirmButtonText: 'OK'
     });
 });
+
+// Canonical errorMssg handler. Owns the redirect branch that
+// place_order.html used to provide as a second, page-scoped listener.
+// Two listeners on the same CustomEvent produced stacked Swals; this
+// is the single handler.
+//
+// The redirect_url field is optional — most errorMssg dispatches
+// (e.g. from cart-side OOB swaps) have no redirect target, and
+// clicking OK should just dismiss. When present, it moves the window
+// after dismissal.
 document.addEventListener("errorMssg", function(evt) {
+    const payload = evt.detail || {};
     Swal.fire({
-        title: evt.detail.title,
-        html: evt.detail.text,
+        title: payload.title,
+        html: payload.text,
         icon: 'error',
         confirmButtonColor: '#3085d6',
-        confirmButtonText: 'OK'
+        confirmButtonText: 'OK',
+        // allowOutsideClick / allowEscapeKey are left at their
+        // defaults so the user can dismiss without clicking OK. The
+        // place_order.html version enforced both, but that was for a
+        // specific pre-charge confirmation flow; making it global
+        // would trap users on transient cart-side errors.
+    }).then((result) => {
+        if (result.isConfirmed && payload.redirect_url) {
+            window.location.href = payload.redirect_url;
+        }
     });
 });
+
 document.addEventListener("infoMssg", function(evt) {
     Swal.fire({
         title: evt.detail.title,

@@ -9,7 +9,11 @@ from accounts.evaluators import PerkEvaluator
 from .models import Payment, Order, OrderProduct, OrderVoucherUsage
 from django.db import transaction
 from django.http import FileResponse, Http404
-from .utils import generate_order_confirmation_pdf, format_accounting_currency, mark_off_perk_at_checkout, execute_atomic_voucher_deduction, reverse_perk_usage_at_cancellation
+from .utils import (
+    generate_order_confirmation_pdf, format_accounting_currency, 
+    mark_off_perk_at_checkout, execute_atomic_voucher_deduction, 
+    reverse_perk_usage_at_cancellation, VoucherBalanceError
+)
 from django.utils import timezone
 from django.contrib import messages
 from datetime import timedelta
@@ -268,10 +272,7 @@ def place_order(request, proforma_invoice_no):
                         for item in cart_items:
                             variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
                             
-                            # 🌟 CORE CONDITION: Determine if this is an instant digital product (excluding vouchers)
-                            is_instant_eproduct = variation.product.is_digital and variation.product.digital_fulfillment_type == 'INSTANT' and not variation.product.is_voucher
-
-                            if is_instant_eproduct:
+                            if variation.is_instant_eproduct:
                                 # Enforce business rules: Limit infinite digital products to a single quantity unit per order
                                 if item.quantity > 1:
                                     raise ValueError(f"數位產品 [{variation.product.product_name}] 單筆訂單限購 1 件")
@@ -358,10 +359,23 @@ def place_order(request, proforma_invoice_no):
                         
                     return redirect(f"/orders/order_complete/?order_number={invoice.proforma_order_number}&method=bank")
 
+                except VoucherBalanceError as voucher_err:
+                    # execute_atomic_voucher_deduction raises this when the user's
+                    # voucher pool can't cover the deduction. Pre-charge on this
+                    # path, so no money has moved — send the customer back to the
+                    # checkout page with a message rather than a 500.
+                    messages.error(
+                        request,
+                        "Insufficient voucher balance. Please review your wallet and try again."
+                        "｜現金券餘額不足，請檢查後重試。"
+                    )
+                    return redirect(request.META.get('HTTP_REFERER', '/'))
+
                 except ValueError as stock_err:
                     print("stock_err")
                     messages.error(request, str(stock_err))
                     return redirect(request.META.get('HTTP_REFERER', '/'))
+
                 
         # -------------------------------------------------------------
         # 💡 STANDARD GET RENDERING PIPELINE
@@ -652,7 +666,11 @@ def complete_zero_due_voucher_order(request):
                 # 🌟 THIS IS THE CRITICAL LINE THAT DECRIMENTS YOUR WALLET LEDGERS ATOMICALLY
                 voucher_changes = execute_atomic_voucher_deduction(request.user, voucher_to_spend)
 
-            # Mark-off coupons/promotions if applicable
+            # Mark-off coupons/promotions if applicable.
+            # A ValidationError propagates out of the atomic block (rolling
+            # it back — importantly, undoing the voucher deductions done
+            # above by execute_atomic_voucher_deduction) and is caught by
+            # the dedicated `except ValidationError` clause below.
             offer_session = request.session.get("offer_applied", {})
             offer_code = offer_session.get("offer_code")
             if offer_code:
@@ -745,8 +763,7 @@ def complete_zero_due_voucher_order(request):
                     fulfillment_started_at=timezone.now(),     # 🌟 NEW — payment just cleared
                 )
                 
-                is_instant_eproduct = variation.product.is_digital and variation.product.digital_fulfillment_type == 'INSTANT' and not variation.product.is_voucher
-                if not is_instant_eproduct:
+                if not variation.is_instant_eproduct:
                     variation.stock -= item.quantity
                     variation.save(update_fields=['stock'])
                 
@@ -804,7 +821,61 @@ def complete_zero_due_voucher_order(request):
             
             return JsonResponse({"status": "SUCCESS", "transaction_id": payment.payment_id, "order_number": proforma_invoice_number}, status=200)
 
+    except VoucherBalanceError as voucher_err:
+        # execute_atomic_voucher_deduction raises this when the user's
+        # voucher pool can't cover the deduction — a wallet problem, not
+        # a stock problem. Distinct from STOCK_CONFLICT because the
+        # customer instruction differs (check your wallet vs. check
+        # availability) and from OFFER_CONFLICT because the cause is
+        # unrelated to the offer code.
+        logger.warning(
+            "Zero-due voucher checkout: VOUCHER_BALANCE_CONFLICT for "
+            "invoice %s. Error: %s",
+            proforma_invoice_number, voucher_err,
+        )
+        return JsonResponse({
+            "status": "VOUCHER_BALANCE_CONFLICT",
+            "title": "Insufficient Voucher Balance｜現金券餘額不足",
+            "text": (
+                "Your voucher balance no longer covers this order. "
+                "This can happen if another tab used the same balance "
+                "between checkout and confirmation. Please review your "
+                "wallet and try again.<br>"
+                "您的現金券餘額已不足以支付此訂單。"
+                "這通常是因為同一帳戶的另一個結帳視窗同時使用了該餘額。"
+                "請檢查您的錢包後重試。"
+            ),
+        }, status=200)
+
+    except ValidationError as perk_err:
+        # Perk max_uses was consumed between apply_offer and capture.
+        # The atomic block rolled back — the voucher deductions done by
+        # execute_atomic_voucher_deduction above are undone, no Order
+        # row was created, and the customer's wallet is intact.
+        #
+        # No external charge has happened on this path (the view settles
+        # from voucher balance only), so the response carries no
+        # transaction_id.
+        logger.warning(
+            "Zero-due voucher checkout: OFFER_CONFLICT for invoice %s. "
+            "Error: %s",
+            proforma_invoice_number, perk_err,
+        )
+        return JsonResponse({
+            "status": "OFFER_CONFLICT",
+            "title": "Offer Code Unavailable｜優惠碼已失效",
+            "text": (
+                "The offer code on this order is no longer valid. "
+                "Please remove it and try again, or contact support "
+                "if you believe this is an error.<br>"
+                "此訂單套用的優惠碼已失效，請移除後重試，或聯繫客服以協助處理。"
+            ),
+        }, status=200)
+
     except ValueError as stock_err:
+        # Now this clause catches only genuine stock failures — the
+        # "Race condition stock failure" raise and any other ValueError
+        # from the body. Voucher-balance failures are handled above.
         logger.critical(f"⚠ VOUCHER CHECKOUT STOCK EXCEPTION: Invoice {proforma_invoice_number}. Error: {str(stock_err)}")
         return JsonResponse({
             "status": "STOCK_CONFLICT",
@@ -812,6 +883,7 @@ def complete_zero_due_voucher_order(request):
             "order_number": proforma_invoice_number,
             "transaction_id": f"ERR_{proforma_invoice_number}"
         }, status=200)
+
     except Exception as e:
         logger.exception(f"💥 Voucher Settlement Fatal Exception Trace: {str(e)}")
         return JsonResponse({"error": "Internal database serialization error"}, status=500)
@@ -1092,14 +1164,8 @@ def process_order_cancellation(request, order_number):
                 if item.product_variation:
                     variation = item.product_variation
                     
-                    is_instant_eproduct = (
-                        item.product.is_digital and 
-                        item.product.digital_fulfillment_type == 'INSTANT' and 
-                        not item.product.is_voucher
-                    )
-                    
                     # ── # C-e Override Rule: Infinite assets / Token Revocation Engine ──────────────────
-                    if is_instant_eproduct:
+                    if variation.is_instant_eproduct:
                         # Locate and securely deactivate all generated secure download link passes
                         active_tokens = DigitalDownloadToken.objects.filter(order_product=item, is_active=True)
                         if active_tokens.exists():

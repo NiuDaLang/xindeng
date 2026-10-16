@@ -16,6 +16,7 @@ from django.db import models
 from accounts.models import CustomerVoucher
 from django.utils import timezone
 from carts.models import CheckoutInfo
+from django.core.exceptions import ValidationError
 
 # Modern paypalserversdk v6 bindings
 from paypalserversdk.paypal_serversdk_client import PaypalServersdkClient
@@ -35,7 +36,10 @@ from paypalserversdk.models.money import Money
 from carts.models import ProformaInvoice, CartItem
 from .models import Order, Payment, OrderProduct, OrderVoucherUsage
 from store.models import DigitalDownloadToken
-from .utils import get_paypal_items, fmt, mark_off_perk_at_checkout, execute_atomic_voucher_deduction
+from .utils import (
+    get_paypal_items, fmt, mark_off_perk_at_checkout, 
+    execute_atomic_voucher_deduction, VoucherBalanceError,
+)
 
 import json
 import logging
@@ -339,7 +343,16 @@ def capture_paypal_order(request):
                 with transaction.atomic():
                     proforma_order = ProformaInvoice.objects.select_for_update().get(proforma_order_number=proforma_invoice_number, is_ordered=False)
 
-                    # Mark-off coupons/promotions if applicable
+                    # Mark-off coupons/promotions if applicable.
+                    # A ValidationError here means the perk's max_uses was
+                    # consumed between apply_offer and capture — a race the
+                    # customer cannot see or fix. The exception propagates
+                    # out of the atomic block (rolling it back), and is
+                    # caught by the dedicated `except ValidationError`
+                    # clause below, which returns a structured OFFER_CONFLICT
+                    # response carrying the capture ID. The customer has
+                    # already been charged by this point; the response is
+                    # what support uses to trace and refund.
                     offer_session = request.session.get("offer_applied", {})
                     offer_code = offer_session.get("offer_code")
                     if offer_code and request.user.is_authenticated:
@@ -436,6 +449,27 @@ def capture_paypal_order(request):
                     # Relocate items securely over to structural OrderProduct tables
                     for item in cart_items:
                         variation = ProductVariation.objects.select_for_update().get(id=item.product_variation.id)
+
+                        # ── Instant-digital quantity-1 guard ────────────────────────────
+                        # place_order enforces a single-copy ceiling on instant-digital
+                        # lines because the download is licensed once. The PayPal path
+                        # historically did not, on the reasoning that the cart already caps
+                        # at 1 (see add_to_cart_htmx). But a stale cart or a forged POST
+                        # can still present quantity > 1 here, and the line would be
+                        # created with the wrong quantity. Mirror place_order's guard so
+                        # both purchase paths enforce the same ceiling.
+                        #
+                        # Raising ValueError lands in the existing `except ValueError as
+                        # stock_err` handler below. That is intentional: from the customer's
+                        # perspective the outcome is the same as a stock conflict — the
+                        # charge went through, the order did not, support must resolve.
+                        # The message is different, though, so the customer knows the cause
+                        # is a single-copy limit, not inventory.
+                        if variation.is_instant_eproduct and item.quantity > 1:
+                            raise ValueError(
+                                f"數位產品 [{variation.product.product_name}] 單筆訂單限購 1 件"
+                                f"｜Instant-digital items are limited to one copy per order."
+                            )
                         
                         # Create the OrderProduct line history row accurately tracking customer intents
                         order_prod = OrderProduct.objects.create(
@@ -450,11 +484,9 @@ def capture_paypal_order(request):
                             fulfilled_by=variation.product.creator,   # 🌟 NEW — auto-attributed
                             fulfillment_started_at=timezone.now(),     # 🌟 NEW — payment just cleared
                         )
-
-                        is_instant_eproduct = variation.product.is_digital and variation.product.digital_fulfillment_type == 'INSTANT' and not variation.product.is_voucher
-
+                       
                         # 🌟 EXCLUDE DEDUCTION: Stock changes skip infinite e-products entirely
-                        if not is_instant_eproduct:
+                        if not variation.is_instant_eproduct:
                             variation.stock -= item.quantity
                             variation.save(update_fields=['stock'])
 
@@ -543,6 +575,67 @@ def capture_paypal_order(request):
                     "order_number": proforma_invoice_number,
                     "transaction_id": transaction_id
                 }, status=200)
+
+            except ValidationError as perk_err:
+                # Perk max_uses was consumed between apply_offer and capture.
+                # The transaction rolled back — no Order row, no Payment row.
+                # But PayPal has already charged. Report the capture ID so
+                # support can trace and refund.
+                logger.warning(
+                    "PayPal capture: OFFER_CONFLICT for invoice %s. "
+                    "Capture %s. Error: %s",
+                    proforma_invoice_number, transaction_id, perk_err,
+                )
+                return JsonResponse({
+                    "status": "OFFER_CONFLICT",
+                    "transaction_id": transaction_id,
+                    "title": "Offer Code Unavailable｜優惠碼已失效",
+                    "text": (
+                        "Your payment was processed successfully, but the offer "
+                        "code on this order is no longer valid. Our support team "
+                        "will contact you to finalise the discount or issue a "
+                        "partial refund.<br>"
+                        "您的付款已成功處理，但此訂單套用的優惠碼已失效。"
+                        "我們的客服團隊將盡快與您聯繫，以完成優惠折抵或辦理部分退款。"
+                        "<br><br>"
+                        f"<b>Transaction ID｜交易編號：</b> "
+                        f"<code>{transaction_id}</code>"
+                    ),
+                }, status=200)
+
+            except VoucherBalanceError as voucher_err:
+                # execute_atomic_voucher_deduction raises this when a
+                # voucher-applied cart reaches capture but the balance
+                # was consumed between apply_voucher and the capture
+                # call. Same shape as the offer conflict — the charge
+                # went through, the order did not, and support needs
+                # the capture ID to trace and refund.
+                #
+                # The transaction rolled back. No Order row, no Payment
+                # row. The customer sees a specific message pointing at
+                # the wallet, not a generic "Order Sync Failed".
+                logger.warning(
+                    "PayPal capture: VOUCHER_BALANCE_CONFLICT for invoice %s. "
+                    "Capture %s. Error: %s",
+                    proforma_invoice_number, transaction_id, voucher_err,
+                )
+                return JsonResponse({
+                    "status": "VOUCHER_BALANCE_CONFLICT",
+                    "transaction_id": transaction_id,
+                    "title": "Insufficient Voucher Balance｜現金券餘額不足",
+                    "text": (
+                        "Your payment was processed successfully, but the "
+                        "voucher balance applied to this order is no longer "
+                        "sufficient. Our support team will contact you to "
+                        "finalise the order or issue a partial refund.<br>"
+                        "您的付款已成功處理，但此訂單套用的現金券餘額已不足。"
+                        "我們的客服團隊將盡快與您聯繫，以完成訂單或辦理部分退款。"
+                        "<br><br>"
+                        f"<b>Transaction ID｜交易編號：</b> "
+                        f"<code>{transaction_id}</code>"
+                    ),
+                }, status=200)
+
         else:
             return JsonResponse({"error": "Gateway capture execution verification failed"}, status=capture_response.status_code)
 
