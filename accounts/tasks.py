@@ -1,4 +1,4 @@
-# accounts.tasks.py
+# accounts/tasks.py
 import datetime
 from celery import shared_task
 from .utils import get_current_solar_term_period

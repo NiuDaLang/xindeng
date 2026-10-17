@@ -1,3 +1,4 @@
+# accounts/forms.py
 from django import forms
 from .models import UserProfile, Address
 from django.contrib.auth.forms import UserCreationForm, SetPasswordForm
@@ -5,7 +6,6 @@ from .data import AREA_CODE, GENDER, BLOOD, COLOR, LABEL, DESTINATIONS_FOR_INPUT
 from PIL import Image
 import datetime
 from django.core.exceptions import ValidationError
-
 
 
 # get user model

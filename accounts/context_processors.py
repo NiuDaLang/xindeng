@@ -1,4 +1,4 @@
-# accounts.context_processors.py
+# accounts/context_processors.py
 from django.conf import settings
 
 

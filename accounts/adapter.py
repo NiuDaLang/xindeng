@@ -1,3 +1,4 @@
+# accounts/adapter.py
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from .models import UserProfile
 import requests
