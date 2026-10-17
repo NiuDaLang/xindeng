@@ -436,3 +436,180 @@ class TestAggregateBadgeOnEditPageHeader:
 
         assert response.status_code == 200
         assert "待審檔案 1" in response.content.decode()
+
+
+# ──────────────────────────────────────────────────────────────────
+# Determinism of the terminal-state read on the variation card
+# ──────────────────────────────────────────────────────────────────
+
+class TestLatestTerminalVaultUpload:
+    """
+    Pins the determinism of ProductVariation.latest_terminal_vault_upload.
+
+    The bug being guarded: the variation card template used to read
+    `v.vault_uploads.first`, which depends on Meta.ordering
+    ['-submitted_at'] only. Two terminal rows sharing a submitted_at
+    make .first() non-deterministic. The method sorts on
+    (-submitted_at, -pk) so the higher pk wins a tie.
+
+    The collision is planted by creating the rows then rewriting
+    submitted_at via .update(), because submitted_at is
+    auto_now_add=True and cannot be seeded at creation time.
+    """
+
+    def _make_upload(
+        self, chain, *, status_value, filename,
+        submitted_at=None, reviewed_at=None,
+    ):
+        from store.models import ArtisanVaultUpload
+
+        upload = ArtisanVaultUpload.objects.create(
+            artisan=chain["profile"],
+            product=chain["product"],
+            variation=chain["variation"],
+            status=status_value,
+            staged_filename=filename,
+        )
+        updates = {}
+        if submitted_at is not None:
+            updates["submitted_at"] = submitted_at
+        if reviewed_at is not None:
+            updates["reviewed_at"] = reviewed_at
+        if updates:
+            ArtisanVaultUpload.objects.filter(pk=upload.pk).update(**updates)
+            upload.refresh_from_db()
+        return upload
+
+    def test_none_when_no_uploads(self, artisan_chain):
+        assert artisan_chain["variation"].latest_terminal_vault_upload() is None
+
+    def test_none_when_only_pending(self, artisan_chain):
+        self._make_upload(artisan_chain, status_value="PENDING", filename="p.pdf")
+        assert artisan_chain["variation"].latest_terminal_vault_upload() is None
+
+    def test_none_when_only_superseded(self, artisan_chain):
+        self._make_upload(
+            artisan_chain, status_value="SUPERSEDED", filename="s.pdf",
+        )
+        assert artisan_chain["variation"].latest_terminal_vault_upload() is None
+
+    def test_returns_single_terminal_upload(self, artisan_chain):
+        from django.utils import timezone
+
+        approved = self._make_upload(
+            artisan_chain,
+            status_value="APPROVED",
+            filename="a.pdf",
+            submitted_at=timezone.now(),
+        )
+        assert artisan_chain["variation"].latest_terminal_vault_upload() == approved
+
+    def test_picks_later_reviewed_at_on_submitted_at_collision(self, artisan_chain):
+        """
+        The core regression test.
+
+        Two terminal rows with identical submitted_at, but distinct
+        reviewed_at. The method must resolve to the row with the later
+        reviewed_at — the decision that actually came last — and it
+        must do so deterministically across repeated calls.
+
+        Why this test exists: the previous version of this method
+        sorted on (-submitted_at, -pk), and pk is a UUID, so the
+        tiebreak was meaningless. A row with a later decision could
+        lose to a row with a random lexically-higher UUID. This test
+        plants the collision and asserts the decision order.
+        """
+        from datetime import timedelta
+        from django.utils import timezone
+
+        base = timezone.now()
+        collision_ts = base
+
+        # Both rows share submitted_at. older_decision came first;
+        # later_decision came second and is the one the badge must
+        # reflect. The pks are deliberately NOT asserted on — UUID4
+        # ordering is random, so any pk-based assertion is a test bug.
+        older_decision = self._make_upload(
+            artisan_chain,
+            status_value="APPROVED",
+            filename="older_decision.pdf",
+            submitted_at=collision_ts,
+            reviewed_at=base,
+        )
+        later_decision = self._make_upload(
+            artisan_chain,
+            status_value="REJECTED",
+            filename="later_decision.pdf",
+            submitted_at=collision_ts,
+            reviewed_at=base + timedelta(seconds=10),
+        )
+
+        variation = artisan_chain["variation"]
+        assert older_decision.submitted_at == later_decision.submitted_at
+
+        # Determinism: repeated calls, same answer.
+        first = variation.latest_terminal_vault_upload()
+        second = variation.latest_terminal_vault_upload()
+        third = variation.latest_terminal_vault_upload()
+        assert first == later_decision
+        assert second == later_decision
+        assert third == later_decision
+
+    def test_rejected_with_later_submitted_at_wins_when_reviewed_at_is_null(self, artisan_chain):
+        """
+        A re-review flips the verdict. The later decision is the
+        authoritative one for the badge; the method must not prefer
+        APPROVED over REJECTED by status alone.
+        """
+        from datetime import timedelta
+        from django.utils import timezone
+
+        base = timezone.now()
+        self._make_upload(
+            artisan_chain,
+            status_value="APPROVED",
+            filename="approved_earlier.pdf",
+            submitted_at=base,
+        )
+        rejected_later = self._make_upload(
+            artisan_chain,
+            status_value="REJECTED",
+            filename="rejected_later.pdf",
+            submitted_at=base + timedelta(seconds=10),
+        )
+
+        assert (
+            artisan_chain["variation"].latest_terminal_vault_upload()
+            == rejected_later
+        )
+
+    def test_pending_rows_are_excluded_even_with_latest_timestamp(
+        self, artisan_chain,
+    ):
+        """
+        A PENDING row with the most recent submitted_at must not be
+        returned. The template's {% if latest %} guard then renders
+        the previously-approved or previously-rejected state — which
+        is correct: the badge reflects the last *decision*, not the
+        waiting state (the waiting state is rendered by the sibling
+        `pending_vault_upload_count` badge above).
+        """
+        from datetime import timedelta
+        from django.utils import timezone
+
+        base = timezone.now()
+        approved = self._make_upload(
+            artisan_chain,
+            status_value="APPROVED",
+            filename="approved.pdf",
+            submitted_at=base,
+        )
+        self._make_upload(
+            artisan_chain,
+            status_value="PENDING",
+            filename="pending_later.pdf",
+            submitted_at=base + timedelta(seconds=10),
+        )
+
+        assert artisan_chain["variation"].latest_terminal_vault_upload() == approved
+

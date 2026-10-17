@@ -35,16 +35,18 @@
                         待審核檔案
                     </span>
                     {% else %}
-                        {% with latest=v.vault_uploads.first %}
-                            {% if latest.status == 'APPROVED' %}
-                            <span class="badge badge-xs badge-success">
-                                Vault live｜已上架
-                            </span>
-                            {% elif latest.status == 'REJECTED' %}
-                            <span class="badge badge-xs badge-error"
-                                  title="{{ latest.review_note }}">
-                                Vault rejected｜已拒絕
-                            </span>
+                        {% with latest=v.latest_terminal_vault_upload %}
+                            {% if latest %}
+                                {% if latest.status == 'APPROVED' %}
+                                <span class="badge badge-xs badge-success">
+                                    Vault live｜已上架
+                                </span>
+                                {% elif latest.status == 'REJECTED' %}
+                                <span class="badge badge-xs badge-error"
+                                      title="{{ latest.review_note }}">
+                                    Vault rejected｜已拒絕
+                                </span>
+                                {% endif %}
                             {% endif %}
                         {% endwith %}
                     {% endif %}

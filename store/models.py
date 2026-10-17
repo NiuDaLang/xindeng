@@ -458,6 +458,41 @@ class ProductVariation(models.Model):
         """
         return self.vault_uploads.filter(status="PENDING").count()
 
+    def latest_terminal_vault_upload(self):
+        """
+        The most recent terminal (APPROVED or REJECTED) upload for this
+        variation.
+
+        Sort key is (-reviewed_at, -submitted_at).
+
+        reviewed_at is the primary sort because it is the wall-clock
+        time of the admin's decision — the semantically correct answer
+        to "which terminal state is current". submitted_at is the
+        secondary sort for the pathological case where two decisions
+        share a reviewed_at (essentially impossible for human-admin
+        actions, but cheap as a tiebreaker).
+
+        Why not -pk: ArtisanVaultUpload.pk is a UUIDField, not an
+        auto-increment integer. UUID4 ordering is random, so -pk would
+        not order by insertion. See the test class
+        TestLatestTerminalVaultUpload for the collision test that
+        caught this.
+
+        Legacy rows with null reviewed_at sort last under -reviewed_at
+        in SQLite (NULL < any value, so DESC places NULL last), which
+        is the desired behaviour: a reviewed decision beats an
+        unreviewed terminal row.
+
+        Returns None when this variation has never had a terminal upload
+        (e.g. still PENDING, or superseded before review).
+        """
+        return (
+            self.vault_uploads
+            .filter(status__in=["APPROVED", "REJECTED"])
+            .order_by("-reviewed_at", "-submitted_at")
+            .first()
+        )
+
     @property
     def is_instant_eproduct(self):
         """
