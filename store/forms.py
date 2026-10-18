@@ -6,6 +6,7 @@ from django_ckeditor_5.widgets import CKEditor5Widget
 from taggit.models import Tag
 from .models import Product, ProductVariation, Color, Size, Type
 from core.widgets import CropTargetFileInput
+import re
 
 
 PRODUCT_KIND_CHOICES = [
@@ -48,7 +49,8 @@ class ArtisanProductForm(forms.ModelForm):
             'gender',
             'blood',
             'images',
-            'digital_fulfillment_type'
+            'digital_fulfillment_type',
+            'hs_code',
         ]
         widgets = {
             'product_name': forms.TextInput(attrs={
@@ -74,6 +76,11 @@ class ArtisanProductForm(forms.ModelForm):
             'images': CropTargetFileInput(),
             'digital_fulfillment_type': forms.Select(attrs={
                 'class': 'select select-bordered w-full',
+            }),
+            'hs_code': forms.TextInput(attrs={
+                'class': 'input input-bordered w-full font-mono text-sm',
+                'placeholder': 'e.g. 9701.10 (paintings)',
+                'maxlength': '20',
             }),
         }
 
@@ -155,6 +162,30 @@ class ArtisanProductForm(forms.ModelForm):
             except Exception:
                 pass
         return img
+
+    def clean_hs_code(self):
+        """
+        HS codes are optional (a product can be published without one),
+        but if supplied they must be at least superficially valid:
+        digits, optionally with dots for the chapter.heading format
+        (9701, 9701.10, 9701.10.00). Codes are case-insensitive in
+        practice, but we trim whitespace and let the value through
+        as-is.
+
+        No length or chapter validation beyond the field's
+        max_length=20 — the tariff schedule changes and this form's
+        job is not to be a tariff-schedule checker.
+        """
+        value = (self.cleaned_data.get('hs_code') or '').strip()
+        if not value:
+            return value
+        if not re.fullmatch(r'\d+(?:\.\d+)*', value):
+            raise forms.ValidationError(
+                "HS Code should be digits, optionally separated by dots "
+                "(e.g. 9701, 9701.10, 9701.10.00). "
+                "｜海關商品編碼應為數字，可用小數點分隔（例如 9701.10）。"
+            )
+        return value
 
     def save(self, commit=True):
         instance = super().save(commit=False)

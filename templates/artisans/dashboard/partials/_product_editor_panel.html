@@ -119,6 +119,23 @@
 
         <div>
             <label class="label text-xs uppercase tracking-wider opacity-60">
+                HS Code｜海關商品編碼
+                <span class="text-[10px] normal-case tracking-normal opacity-60 ml-1">（可選 / optional）</span>
+            </label>
+            {{ form.hs_code }}
+            <p class="text-[10px] opacity-50 mt-1">
+                Harmonized System code for customs and duty calculation.
+                Leave blank if unsure; an admin can fill it in later.
+                <br>
+                用於海關申報與關稅計算的商品編碼。若不確定可留空，管理員可稍後補填。
+            </p>
+            {% if form.hs_code.errors %}
+            <p class="text-xs text-error mt-1">{{ form.hs_code.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <div>
+            <label class="label text-xs uppercase tracking-wider opacity-60">
                 Tags｜標籤
             </label>
             <p class="text-[10px] opacity-50 mb-2">
