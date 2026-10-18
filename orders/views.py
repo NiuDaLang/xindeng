@@ -890,35 +890,6 @@ def complete_zero_due_voucher_order(request):
         logger.exception(f"💥 Voucher Settlement Fatal Exception Trace: {str(e)}")
         return JsonResponse({"error": "Internal database serialization error"}, status=500)
 
-    
-# def order_confirmation_pdf(request, order_id): # to be deleted later
-#     order = Order.objects.get(order_number=order_id, is_ordered=True)
-#     proforma_invoice = ProformaInvoice.objects.get(proforma_order_number=order_id)
-#     payment = order.payment
-#     currency_symbol = CURRENCY_SYMBOL[payment.currency]
-#     foreign_currency_digit = 2 if payment.currency not in INTEGER_CURRENCIES else 0
-#     user = order.user
-#     order_products = OrderProduct.objects.filter(order=order)
-#     has_physical_products = False
-
-#     for order_product in order_products:
-#         product = order_product.product_variation.product
-#         if product.category.product_format == "physical":
-#             has_physical_products = True
-            
-#     context = {
-#         "page_title": f"訂單確認｜Order Confirmation - {order.order_number}",
-#         "user": user,
-#         "proforma_invoice": proforma_invoice,
-#         "order": order,
-#         "payment": payment,
-#         "currency_symbole":currency_symbol,
-#         "foreign_currency_digit": foreign_currency_digit,
-#         "order_products": order_products,
-#         "has_physical_products": has_physical_products,
-#     }
-#     return render(request, "orders/order_confirmation_pdf.html", context)
-
 
 def view_order_pdf(request, order_id):
     # 1. Call your ReportLab function
