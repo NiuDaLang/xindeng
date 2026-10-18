@@ -212,6 +212,27 @@
                                         </label>
                                     </div>
                                 </div>
+                                {% if proforma_invoice_form.country.value == 'KR' or proforma_invoice_form.country.value == 'TW' %}
+                                <div class="w-full space-y-1">
+                                    <span class="text-[0.65rem] font-bold text-base-content/60 pl-1 relative block pr-4 w-fit">
+                                        {% if proforma_invoice_form.country.value == 'KR' %}PCCC / Personal Customs Code｜個人通關代碼{% else %}National ID / EZ WAY Number｜身分證字號 / 實名認證{% endif %}
+                                        <span class="text-error font-bold absolute right-0 top-0">*</span>
+                                    </span>
+                                    <label class="input input-bordered flex items-center gap-2 rounded-xl h-10">
+                                        <i class="fa-solid fa-passport opacity-40 text-xs"></i>
+                                        {{ proforma_invoice_form.destination_tax_id }}
+                                    </label>
+                                    <p class="text-[10px] text-base-content/40 pl-1 leading-normal">
+                                        {% if proforma_invoice_form.country.value == 'KR' %}
+                                        Required for Korean customs clearance: P followed by 12 digits.
+                                        <br>韓國海關要求個人通關代碼，格式為 P + 12 位數字。
+                                        {% else %}
+                                        Required for Taiwan customs clearance: your National ID or EZ WAY registration number.
+                                        <br>台灣海關要求身分證字號或 EZ WAY 實名認證號碼。
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                {% endif %}
                                 <div class="pt-1.5 w-full">
                                     {{ proforma_invoice_form.delivery_note }}
                                 </div>

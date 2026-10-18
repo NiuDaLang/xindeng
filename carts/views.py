@@ -2226,6 +2226,7 @@ def checkout(request):
                     "gift_message": proforma_invoice_form.cleaned_data.get("gift_message"),
                     "delivery_note": proforma_invoice_form.cleaned_data.get("delivery_note"),
                     "do_not_send_invoice": proforma_invoice_form.cleaned_data.get("do_not_send_invoice"),
+                    "destination_tax_id": proforma_invoice_form.cleaned_data.get("destination_tax_id"),
                     "google_place_id": proforma_invoice_form.cleaned_data.get("google_place_id"),
                     "latitude": proforma_invoice_form.cleaned_data.get("latitude"),
                     "longitude": proforma_invoice_form.cleaned_data.get("longitude"),

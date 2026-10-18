@@ -231,6 +231,7 @@ def place_order(request, proforma_invoice_no):
                                 "postal_code": invoice.postal_code,
                                 "delivery_note": invoice.delivery_note,
                                 "do_not_send_invoice": invoice.do_not_send_invoice,
+                                "destination_tax_id": invoice.destination_tax_id,
 
                                 "offer_code": (offer_code or "").strip().upper(),
                                 
@@ -696,6 +697,7 @@ def complete_zero_due_voucher_order(request):
                     "postal_code": proforma_order.postal_code,
                     "delivery_note": proforma_order.delivery_note,
                     "do_not_send_invoice": proforma_order.do_not_send_invoice,
+                    "destination_tax_id": proforma_order.destination_tax_id,
                     "offer_code": (offer_code or "").strip().upper(),
                     "product_total": proforma_order.cart_total,
                     "shipping_cost": proforma_order.shipping_cost,

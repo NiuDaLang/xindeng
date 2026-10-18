@@ -34,10 +34,11 @@ class ProformaInvoiceForm(forms.ModelForm):
             'recipient_mobile_area', 'recipient_mobile_number',
             'address_line_1', 'address_line_2', 'city', 
             'state_province_region', 'country', 'postal_code', 
+            'destination_tax_id',
             'recipient_email', 'gift_message', 'delivery_note', 
             'do_not_send_invoice', 'google_place_id', 'latitude', 
             'longitude', 'is_verified_by_google', 'save_to_address_book'
-        ]
+        ]        
         widgets = {
             'email': forms.EmailInput(attrs={'id': 'id_email', 'class': 'grow font-mono text-xs font-semibold', 'placeholder': 'Email｜常用電子郵件'}),
             'recipient_first_name': forms.TextInput(attrs={'id': 'id_recipient_first_name', 'class': 'grow font-sans text-xs font-semibold', 'placeholder': '*First Name｜名字'}),
@@ -55,6 +56,11 @@ class ProformaInvoiceForm(forms.ModelForm):
             'gift_message': forms.Textarea(attrs={'id': 'id_gift_message', 'class': 'textarea textarea-bordered w-full text-xs font-medium font-sans h-20 min-h-0', 'placeholder': 'May all beings be happy and free...｜願一切眾生常得安樂...'}),
             'delivery_note': forms.Textarea(attrs={'id': 'id_delivery_note', 'class': 'textarea textarea-bordered w-full text-xs font-medium font-sans h-20 min-h-0', 'placeholder': 'Instructions for shop/courier...｜給店家的備註備忘...'}),
             'do_not_send_invoice': forms.CheckboxInput(attrs={'id': 'id_do_not_send_invoice', 'class': 'checkbox checkbox-primary checkbox-xs'}),
+            'destination_tax_id': forms.TextInput(attrs={
+                'id': 'id_destination_tax_id',
+                'class': 'grow font-mono text-xs font-semibold',
+                'placeholder': 'Customs ID｜海關申報號',
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -102,3 +108,32 @@ class ProformaInvoiceForm(forms.ModelForm):
         email = self.cleaned_data.get('email')
         validate_email_mx_domain(email)
         return email
+
+    def clean_destination_tax_id(self):
+        """
+        KR requires a Personal Customs Clearance Code (PCCC); TW
+        requires a National ID / EZ WAY registration number. The parcel
+        is refused at the border without one, so the field is required
+        for those two destinations.
+
+        Other destinations leave the field optional. A future
+        destination with a similar requirement adds its country code
+        to the `requires` set here.
+
+        Note: `country` is only in `cleaned_data` for PHYSICAL and
+        PHYSICAL_AND_VOUCHER modes — __init__ pops it for the two
+        digital-only modes — so this check silently no-ops for
+        EPRODUCT_ONLY and VOUCHER_ONLY. That's correct: those modes
+        never ship a physical parcel.
+        """
+        value = (self.cleaned_data.get('destination_tax_id') or '').strip()
+        country = self.cleaned_data.get('country')
+        requires = country in ('KR', 'TW')
+        if requires and not value:
+            raise forms.ValidationError(
+                "Customs ID required for this destination. "
+                "KR: PCCC (P + 12 digits). TW: National ID. ｜"
+                "此目的地需要海關申報號碼：韓國需個人通關代碼 "
+                "(P+12位數字)，台灣需身分證字號。"
+            )
+        return value
