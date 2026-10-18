@@ -81,7 +81,12 @@ def get_current_rate(base_currency_code="CNY", target_currency_code="HKD"):
         usd_target_currency = all_rates.get(target_currency_code)
 
         if usd_base_currency is not None and usd_target_currency is not None:
-            raw = (usd_target_currency / usd_base_currency) * INTERNAL_CURRENCY_ADJUSTMENT
+            # usd_target_currency and usd_base_currency come from the
+            # Redis cache (JSON), so they are floats. INTERNAL_CURRENCY_
+            # ADJUSTMENT is now a Decimal; multiplying float * Decimal
+            # raises TypeError. Do the float math first, then convert to
+            # Decimal for the quantize step.
+            raw = (usd_target_currency / usd_base_currency) * float(INTERNAL_CURRENCY_ADJUSTMENT)
             quantized = Decimal(str(raw).replace(",", "")).quantize(
                 Decimal('0.0001'), rounding=ROUND_HALF_UP
             )
@@ -106,10 +111,13 @@ def get_current_rate(base_currency_code="CNY", target_currency_code="HKD"):
         )
         return 1.0
 
-    fallback_rate = (
-        Decimal(str(fallback_rate).replace(",", ""))
-        * Decimal(str(INTERNAL_CURRENCY_ADJUSTMENT))
-    ).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+    # DEFAULT_EXCHANGE_RATE_VS_CNY values already include the
+    # INTERNAL_CURRENCY_ADJUSTMENT multiplier (see accounts/data.py).
+    # Applying it again here would double-adjust every fallback rate.
+    # The float() cast keeps the public return type stable.
+    fallback_rate = Decimal(str(fallback_rate).replace(",", "")).quantize(
+        Decimal("0.0001"), rounding=ROUND_HALF_UP
+    )
     return float(fallback_rate)
 
 
