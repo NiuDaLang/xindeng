@@ -222,7 +222,7 @@ class ProformaInvoice(models.Model):
     # User / Buyer tracking (Null if guest checkout)
     cart                    = models.OneToOneField(Cart, on_delete=models.SET_NULL, null=True)
     user                    = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True)
-    proforma_order_number   = models.CharField(max_length=100, blank=True, null=True)
+    proforma_order_number   = models.CharField(max_length=100, blank=True, null=True, unique=True)
 
     # Buyer Contact line (Always present for order communications/receipts)
     email                   = models.EmailField(max_length=100, blank=True, null=True)
