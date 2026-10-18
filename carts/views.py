@@ -804,18 +804,39 @@ def calculate_shipping(request):
     response = HttpResponse("".join(filter(None, oob_updates)))
 
     if region != "china":
-        response['HX-Trigger'] = json.dumps({
-            "showDapDisclaimer": {
-                "title_en": "Import Duties & Taxes",
-                "title_zh": "進口關稅與稅項提示",
-                "text_en": "Your order will be shipped on a DAP (Delivered at Place) basis. ",
-                "text_en_bold": "Displayed totals exclude regional import taxes, VAT, or clearance tariffs. The courier will collect these fees directly from you prior to or upon delivery.",
-                "text_zh": "您的訂單將以 DAP (目的地交貨) 條款寄出。",
-                "text_zh_bold": "目前的結算總額不包含您所在國家/地區的進口關稅、增值稅或清關手續費。物流公司將在派送前或派送時直接向您收取此費用。",
-                "delivery_policy_link": "/shipping_policy/",
-                "delivery_policy_link_label": "Shipping Policy｜配送須知"
-            }
-        })
+        from core.settings_helpers import is_ddp_enabled
+        if is_ddp_enabled():
+            # DDP: duties are calculated at checkout and charged to
+            # the customer. The tax estimates in carts/tax.py will
+            # be consulted in a future session; for now, dispatch a
+            # DDP notice that tells the customer duties are included.
+            response['HX-Trigger'] = json.dumps({
+                "showDdpDisclaimer": {
+                    "title_en": "Duties & Taxes Included",
+                    "title_zh": "關稅與稅項已包含",
+                    "text_en": "Your order is shipped on a DDP (Delivered Duty Paid) basis. ",
+                    "text_en_bold": "Import duties and taxes are calculated at checkout and included in the total. The courier will not collect any additional fees on delivery.",
+                    "text_zh": "您的訂單將以 DDP (完稅後交貨) 條款寄出。",
+                    "text_zh_bold": "進口關稅及稅項已於結帳時計算並包含在總額中。物流公司於派送時將不會再向您收取任何額外費用。",
+                    "delivery_policy_link": "/shipping_policy/",
+                    "delivery_policy_link_label": "Shipping Policy｜配送須知",
+                }
+            })
+        else:
+            # DAP: duties are the customer's responsibility at
+            # destination (current live behaviour).
+            response['HX-Trigger'] = json.dumps({
+                "showDapDisclaimer": {
+                    "title_en": "Import Duties & Taxes",
+                    "title_zh": "進口關稅與稅項提示",
+                    "text_en": "Your order will be shipped on a DAP (Delivered at Place) basis. ",
+                    "text_en_bold": "Displayed totals exclude regional import taxes, VAT, or clearance tariffs. The courier will collect these fees directly from you prior to or upon delivery.",
+                    "text_zh": "您的訂單將以 DAP (目的地交貨) 條款寄出。",
+                    "text_zh_bold": "目前的結算總額不包含您所在國家/地區的進口關稅、增值稅或清關手續費。物流公司將在派送前或派送時直接向您收取此費用。",
+                    "delivery_policy_link": "/shipping_policy/",
+                    "delivery_policy_link_label": "Shipping Policy｜配送須知"
+                }
+            })
 
     return response
 

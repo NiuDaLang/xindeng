@@ -1326,6 +1326,23 @@ document.body.addEventListener('showDapDisclaimer', (evt) => {
         }
     });
 });
+document.body.addEventListener('showDdpDisclaimer', (evt) => {
+    Swal.fire({
+        icon: 'success',
+        iconColor: '#10b981',
+        title: `<div class="text-lg font-bold">${evt.detail.title_en}<br><span class="text-base font-semibold text-neutral-500">${evt.detail.title_zh}</span></div>`,
+        html: `
+            <div class="text-left text-sm space-y-4 max-h-60 overflow-y-auto px-1 py-2">
+                <p class="text-neutral-700 leading-relaxed">${evt.detail.text_en}<strong>${evt.detail.text_en_bold}</strong></p>
+                <div class="border-t border-dashed border-gray-200 my-2"></div>
+                <p class="text-neutral-600 leading-relaxed font-sans">${evt.detail.text_zh}<strong>${evt.detail.text_zh_bold}</strong></p>
+                <p class="text-neutral-400 text-xs text-center"><a href=${evt.detail.delivery_policy_link}>${evt.detail.delivery_policy_link_label}</a></p>
+            </div>
+        `,
+        confirmButtonText: 'Got It / 知道了',
+        confirmButtonColor: '#10b981',
+    });
+});
 
 // document.body.addEventListener('triggerOutOfStockSwal', function(evt) {
 //     console.log("📥 Out of Stock Event Detected! Payload:", evt.detail);

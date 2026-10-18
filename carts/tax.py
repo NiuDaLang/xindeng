@@ -1,4 +1,58 @@
 # carts/tax.py
+"""
+Pre-DDP tax/duty estimators. NOT WIRED INTO CHECKOUT.
+
+Status
+------
+These functions estimate import taxes and duties for the nine
+destinations the platform supports, based on the tax-regime rules
+in the module's trailing comments (AU GST, NZ GST/levy, SG GST,
+MY LVG, KR VAT, JP consumption tax, TW VAT, HK/MO free port).
+
+They are NOT called from any live code path. The one integration
+point (`carts.views.calculate_tax_duty_api` and its dispatcher) is
+commented out at the bottom of `carts/views.py`. The DDP mode this
+module was written to support was shelved pending the policy
+decision documented in `docs/物流方案討論稿`; the current live
+checkout uses DAP (duties at destination) and dispatches the
+`showDapDisclaimer` event from `carts.views.calculate_shipping`.
+
+When and if DDP is turned on (via core.SiteConfig.ddp_enabled and
+core.settings_helpers.is_ddp_enabled), the plan is:
+
+  1. `calculate_shipping` branches on is_ddp_enabled() and either
+     dispatches showDapDisclaimer (current) or showDdpDisclaimer
+     (future).
+  2. Each `calculate_*_tax` function gets called with the right
+     per-jurisdiction arguments (they already take them).
+  3. `CheckoutInfo.tax_amount` / `CheckoutInfo.duty_amount` and
+     their `_foreign` siblings are populated from the function's
+     return value inside `checkout`.
+  4. The order-creation paths copy tax_amount / duty_amount through
+     to `Order.tax` / `Order.duty_amount`.
+
+Do not wire these functions into `calculate_shipping` or `checkout`
+without the SiteConfig flag. Doing so would silently start charging
+DDP-style tax on orders that ship under DAP and the customer would
+be double-taxed at the border.
+
+Shape inconsistency note
+------------------------
+The functions return different shapes:
+  * calculate_australia_tax          -> (gst, duty) tuple
+  * calculate_new_zealand_tax        -> (gst, duty, levy) tuple
+  * calculate_singapore_tax          -> dict
+  * calculate_malaysia_tax           -> dict
+  * calculate_korea_tax              -> dict
+  * calculate_japan_tax              -> dict
+  * calculate_taiwan_tax             -> dict
+  * calculate_hong_kong_tax          -> dict
+  * calculate_free_port_tax          -> dict
+
+A future caller must handle both shapes or normalise them first.
+Not fixed in this commit; noted so a future reader does not assume
+a uniform dict shape.
+"""
 
 from decimal import Decimal
 
