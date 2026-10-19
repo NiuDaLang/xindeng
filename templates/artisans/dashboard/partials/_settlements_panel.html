@@ -1,0 +1,61 @@
+<!-- templates/artisans/dashboard/partials/_settlements_panel.html -->
+
+<div class="mb-8">
+    <h1 class="font-serif text-2xl tracking-wide">Settlements｜結算</h1>
+    <p class="text-sm text-base-content/50 mt-1">
+        您作品的收入與結算紀錄。<br>
+        <span class="text-[11px] opacity-70">Settlement records for your artwork sales.</span>
+    </p>
+</div>
+{% include 'includes/alerts.html' %}
+
+{% if settlement_lines %}
+<div class="space-y-4">
+    {% for line in settlement_lines %}
+    <div class="bg-white border border-base-200/60 rounded-2xl p-5">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-4 mb-4 border-b border-base-200/60">
+            <div>
+                <h2 class="text-sm font-bold">Order #{{ line.order.order_number }}</h2>
+                <p class="text-xs text-base-content/50">Created on {{ line.created_at|date:"Y-m-d" }}</p>
+            </div>
+            <div class="flex items-center gap-2">
+                {% if line.status == 'UNAID' %}
+                    <span class="badge badge-warning badge-sm">Unpaid｜未支付</span>
+                {% elif line.status == 'PAID' %}
+                    <span class="badge badge-success badge-sm">Paid｜已支付</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div>
+                <p class="text-xs text-base-content/50">Product Revenue｜商品收入</p>
+                <p class="font-mono">¥ {{ line.product_revenue|floatformat:2 }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-base-content/50">Shipping Charged｜運費收入</p>
+                <p class="font-mono">¥ {{ line.shipping_charged_to_customer|floatformat:2 }}</p>
+            </div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-base-200/60">
+            {% if line.is_finalised %}
+                <p class="text-xs text-base-content/50">Net Payable｜應付總額</p>
+                <p class="font-mono text-xl font-bold text-primary">¥ {{ line.net_payable_to_artisan|floatformat:2 }}</p>
+            {% else %}
+                <p class="text-sm text-base-content/40 italic flex items-center gap-2">
+                    <i class="fa-solid fa-clock text-xs"></i>
+                    Settlement Pending｜結算處理中
+                </p>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="bg-white border border-base-200/60 rounded-2xl p-12 text-center">
+    <i class="fa-solid fa-file-invoice-dollar text-3xl text-base-content/20 mb-3"></i>
+    <p class="text-sm text-base-content/50 mb-1">尚無結算紀錄</p>
+    <p class="text-xs text-base-content/30">No settlement records yet.</p>
+</div>
+{% endif %}

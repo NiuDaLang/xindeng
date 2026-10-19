@@ -34,6 +34,8 @@ urlpatterns = [
     path('dashboard/messages/', views.dashboard_messages, name='a_dashboard_messages'),
     path('dashboard/messages/<int:customer_id>/send/', views.dashboard_messages_send, name='a_dashboard_messages_send'),
 
+    path('dashboard/settlements/', views.dashboard_settlements, name='a_dashboard_settlements'),
+
     # Public
     path('', views.artisan_landing, name='artisan_landing'),
     path('profiles/', views.artisan_list, name='artisan_list'),

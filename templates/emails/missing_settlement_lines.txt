@@ -1,0 +1,22 @@
+{# templates/emails/missing_settlement_lines.txt #}
+Hṛdayadīpa (हृदयदीप)｜心燈 — Missing Settlement Lines｜結算紀錄缺失提醒
+
+以下訂單已完成付款並由匠人發貨逾 {{ days }} 天，但尚未建立對應的結算紀錄。
+The following orders have been paid and contain lines fulfilled by an
+artisan for more than {{ days }} days, but no settlement lines have been
+created for them:
+
+{% for item in missing_lines %}
+- Order: {{ item.order.order_number }}
+  Artisan: {{ item.artisan.display_name }}
+  Paid On: {{ item.order.ordered_at|date:"Y-m-d" }}
+{% endfor %}
+
+請登入 Django 管理後台，於訂單管理介面執行「Create settlement lines
+for selected orders」動作，為上述訂單補建立結算紀錄。
+Please log into the Django admin and create the missing settlement
+lines from the Orders admin page.
+
+—
+This is an automated message from Hṛdayadīpa (हृदयदीप)｜心燈.
+© {{ year }} All Rights Reserved.

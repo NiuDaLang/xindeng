@@ -18,6 +18,7 @@ from .tasks import (
 )
 from django.urls import reverse
 import decimal
+from settlements.admin import create_settlement_lines_for_selected_orders
 
 
 @admin.register(Payment)
@@ -255,11 +256,19 @@ def confirm_bank_payment_admin_action(modeladmin, request, queryset):
     
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ["user", "payment", "order_number", "order_status", "recipient_first_name", "recipient_last_name", "email", "total_due", "is_ordered", "created_at"]
+    list_display = [
+        "user", "payment", "order_number", "order_status",
+        "recipient_first_name", "recipient_last_name", 
+        "email", "total_due", "is_ordered", "created_at"
+    ]
     search_fields = ["user__email", "user__username", "payment__payment_id", "order_number", "email", "order_status"]
-    list_filter = ["is_ordered", "order_status", "created_at"]
+    list_filter = ["is_ordered", "order_status", "created_at",
+                    ("items__fulfilled_by", admin.RelatedOnlyFieldListFilter)]
 
-    actions = [confirm_bank_payment_admin_action] 
+    actions = [
+        confirm_bank_payment_admin_action,
+        create_settlement_lines_for_selected_orders,
+    ]
     inlines = [OrderVoucherUsageInline]
 
     def get_actions(self, request):
@@ -338,4 +347,9 @@ class OrderAdmin(admin.ModelAdmin):
 @admin.register(OrderProduct)
 class OrderProductAdmin(admin.ModelAdmin):
     list_display = ["order", "user", "product_variation", "quantity", "is_dispatched", "created_at",]
-    search_fields = ["order", "user", "created_at",]
+    search_fields = [
+        "order__order_number",   # was "order" — FK, not searchable with icontains
+        "user__email",           # was "user"
+        "user__username",        # was "user"
+        "created_at",            # unchanged
+    ]

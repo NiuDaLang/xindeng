@@ -1,0 +1,60 @@
+{# templates/emails/missing_settlement_lines.html #}
+<!DOCTYPE html>
+<html lang="en">
+<body style="font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: #333; max-width: 640px; margin: 0 auto; padding: 24px;">
+
+    <h2 style="font-size: 18px; margin: 0 0 16px 0;">
+        ⚠️ Missing Settlement Lines｜結算紀錄缺失提醒
+    </h2>
+
+    <p style="font-size: 14px; line-height: 1.6; color: #555;">
+        The following orders have been paid and contain lines fulfilled by
+        an artisan for more than <strong>{{ days }} days</strong>, but no
+        settlement lines have been created for them:
+        <br>
+        <span style="color: #888; font-size: 13px;">
+            以下訂單已完成付款並由匠人發貨逾 <strong>{{ days }} 天</strong>，但尚未建立對應的結算紀錄。
+        </span>
+    </p>
+
+    <table cellpadding="8" cellspacing="0" border="0"
+           style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; background: #fafafa; border: 1px solid #e5e5e5;">
+        <thead>
+            <tr style="background: #f0f0f0; text-align: left;">
+                <th style="border-bottom: 1px solid #e5e5e5; padding: 10px;">Order｜訂單號碼</th>
+                <th style="border-bottom: 1px solid #e5e5e5; padding: 10px;">Artisan｜匠人</th>
+                <th style="border-bottom: 1px solid #e5e5e5; padding: 10px;">Paid On｜付款日期</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in missing_lines %}
+            <tr>
+                <td style="border-bottom: 1px solid #e5e5e5; padding: 10px; font-family: monospace;">
+                    {{ item.order.order_number }}
+                </td>
+                <td style="border-bottom: 1px solid #e5e5e5; padding: 10px;">
+                    {{ item.artisan.display_name }}
+                </td>
+                <td style="border-bottom: 1px solid #e5e5e5; padding: 10px; font-family: monospace; color: #666;">
+                    {{ item.order.ordered_at|date:"Y-m-d" }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p style="font-size: 14px; line-height: 1.6; color: #555;">
+        Please log into the Django admin and create the missing settlement
+        lines from the Orders admin page.<br>
+        <span style="color: #888; font-size: 13px;">
+            請登入 Django 管理後台，於訂單管理介面執行「Create settlement lines for selected orders」動作，為上述訂單補建立結算紀錄。
+        </span>
+    </p>
+
+    <p style="font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 12px;">
+        Automated message from Hṛdayadīpa (हृदयदीप)｜心燈.<br>
+        © {{ year }} All Rights Reserved.
+    </p>
+
+</body>
+</html>

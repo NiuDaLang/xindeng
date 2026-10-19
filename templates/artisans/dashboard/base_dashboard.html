@@ -56,6 +56,15 @@
                 {% endif %}
             </a>
 
+            <a hx-get="{% url 'a_dashboard_settlements' %}"
+                hx-target="#dashboard-main"
+                hx-push-url="true"
+                class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors
+                    {% if active_section == 'settlements' %}bg-base-200 text-primary font-semibold{% endif %}">
+                <i class="fa-solid fa-money-check-dollar text-xs w-4 text-center"></i>
+                <span>Settlements｜結算</span>
+            </a>
+
             <a hx-get="{% url 'a_dashboard_products' %}"
                hx-target="#dashboard-main"
                hx-push-url="true"

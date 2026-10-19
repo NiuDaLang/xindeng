@@ -51,6 +51,7 @@ from orders.models import OrderProduct, TrackingNumber
 from django.http import FileResponse, HttpResponse
 from django.urls import reverse
 from blog.tasks import send_blog_submission_email_task
+from settlements.models import ArtisanSettlementLine
 
 from store.forms import ArtisanProductForm, ProductVariationForm
 from category.models import Category
@@ -1847,3 +1848,30 @@ def self_supersede_and_create(*, profile, product, variation, form):
                 checksum=(form.cleaned_data.get("checksum") or "").strip(),
                 external_url=form.cleaned_data["external_url"],
             )
+
+
+@artisan_required
+def dashboard_settlements(request):
+    """
+    Read-only list of settlement lines for the logged-in artisan.
+    The net payable amount is only shown when is_finalised=True.
+    """
+    profile = request.user.creator_profile
+    
+    settlement_lines = (
+        ArtisanSettlementLine.objects
+        .filter(artisan=profile)
+        .select_related('order')
+        .order_by('-created_at')
+    )
+
+    context = artisan_dashboard_context(request)
+    context.update({
+        'active_section': 'settlements',
+        'settlement_lines': settlement_lines,
+        'page_title': 'Settlements｜結算',
+    })
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'artisans/dashboard/partials/_settlements_panel.html', context)
+    return render(request, 'artisans/dashboard/settlements.html', context)

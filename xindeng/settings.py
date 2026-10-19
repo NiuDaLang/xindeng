@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "dataentry",
     "emails",
     "orders",
+    "settlements",
     "store",
     "taggit",
     "taggit_selectize",
@@ -380,6 +381,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'accounts.tasks.purge_old_login_events',
         'schedule': crontab(minute=45, hour=3),
     },
+    'audit-missing-settlement-lines-daily': {
+        'task': 'settlements.tasks.audit_missing_settlement_lines_task',
+        'schedule': crontab(minute=0, hour=4),
+    },    
 }
 
 
