@@ -14,7 +14,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
 
 from core import image_utils as iu
-from core.tests._fakes import FakeFieldFile
+from tests._fakes import FakeFieldFile
 
 # ══════════════════════════════════════════════════════════════
 # sanitize_filename
