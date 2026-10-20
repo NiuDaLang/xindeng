@@ -11,7 +11,14 @@ Proves the whole chain in one place:
     -> OrderProduct.is_claimed flips to True
     -> self-service cancellation is now blocked
 
-Located under core/tests/ to match pytest.ini's testpaths.
+The `superuser` fixture uses `make_superuser` (from tests/_fakes.py),
+which sets both is_admin and is_superadmin. This file only strictly
+needs is_superadmin — every admin-facing action here is guarded by
+superuser_required, not by Django's ModelAdmin.has_view_permission.
+But the fixture is shared across the three store vault test files
+and the settlements aggregate tests for uniformity; if this file
+ever gains a test that hits the admin changelist (e.g. testing
+OrderAdmin.get_actions filtering), the fixture is already correct.
 """
 
 from __future__ import annotations
@@ -23,6 +30,8 @@ from django.contrib.messages.middleware import MessageMiddleware
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import RequestFactory
 from django.urls import reverse
+
+from tests._fakes import make_superuser
 
 
 # ------------------------------------------------------------------
@@ -38,18 +47,8 @@ def vault_root(tmp_path, settings):
 
 
 @pytest.fixture
-def superuser(db, django_user_model):
-    user = django_user_model.objects.create_user(
-        username="e2e_superu",
-        email="e2e-superu@example.com",
-        receive_newsletter=False,
-        password="x",
-        is_active=True,
-    )
-    user.is_superadmin = True
-    user.is_staff = True
-    user.save(update_fields=["is_superadmin", "is_staff"])
-    return user
+def superuser(db):
+    return make_superuser(username="e2e_superu", email="e2e-superu@example.com")
 
 
 @pytest.fixture

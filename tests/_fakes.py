@@ -7,6 +7,7 @@ test suite can import from it without a circular or app-specific path.
 """
 
 from __future__ import annotations
+from django.contrib.auth import get_user_model
 
 
 class FakeFieldFile:
@@ -35,3 +36,48 @@ class FakeFieldFile:
 
     def close(self):
         pass
+
+
+def make_superuser(
+    *,
+    username: str = "fake_superu",
+    email: str = "fake-superu@example.com",
+    password: str = "x",
+):
+    """
+    Create an Account that satisfies both of the project's
+    superuser checks:
+
+      * is_admin      → Account.has_perm() returns this. Django's
+                        admin site consults has_perm() for
+                        has_view_permission / has_change_permission,
+                        so any admin changelist or change view will
+                        403 without it.
+
+      * is_superadmin → the project's own flag. Checked by
+                        accounts.decorators.superuser_required and by
+                        custom ModelAdmin.get_actions overrides.
+
+    The real MyAccountManager.create_superuser() sets both, plus
+    is_staff and is_active. This helper reproduces that state
+    without going through create_superuser(), which has a custom
+    signature (email-first positional) that is awkward to use from
+    fixtures.
+
+    Callers who need a custom username or email for a specific
+    test can pass them; the defaults work for any test that does
+    not care.
+    """
+    Account = get_user_model()
+    user = Account.objects.create_user(
+        username=username,
+        email=email,
+        receive_newsletter=False,
+        password=password,
+        is_active=True,
+        is_staff=True,
+    )
+    user.is_admin = True
+    user.is_superadmin = True
+    user.save(update_fields=["is_admin", "is_superadmin"])
+    return user

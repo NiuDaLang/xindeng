@@ -2,7 +2,10 @@
 
 from decimal import Decimal
 from django.contrib import admin, messages
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Max, Q
+from django.db.models.functions import Coalesce
+from django.template.response import TemplateResponse
+from django.urls import path
 from django.utils import timezone
 from django.urls import reverse
 from django.utils.html import format_html
@@ -394,3 +397,79 @@ class LogisticsAdvanceAdmin(admin.ModelAdmin):
             obj.reimbursed_at = None
 
         super().save_model(request, obj, form, change)
+
+    # ── Aggregated view toggle ────────────────────────────────────
+
+    def get_urls(self):
+        """
+        Add the aggregate view as a URL, keeping the default
+        changelist intact. The aggregate view is reached via the
+        toggle link that changelist_view injects into extra_context.
+        """
+        custom_urls = [
+            path(
+                "aggregate/",
+                self.admin_site.admin_view(self.aggregate_view),
+                name="settlements_logisticsadvance_aggregate",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context["aggregate_view_url"] = reverse(
+            "admin:settlements_logisticsadvance_aggregate"
+        )
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def aggregate_view(self, request):
+        """
+        Monthly summary of logistics advances, grouped by
+        (individual, month). Respects the standard changelist's
+        filters and search by delegating to ChangeList's
+        get_queryset, then aggregating on top.
+        """
+        cl = self.get_changelist_instance(request)
+        base_qs = cl.get_queryset(request)
+
+        groups = (
+            base_qs
+            .values("individual__username", "individual__id", "month")
+            .annotate(
+                rows=Count("id"),
+                advanced=Sum("amount_advanced"),
+                reimbursed=Coalesce(Sum("reimbursed_amount"), Decimal("0.00")),
+                pending_count=Count("id", filter=Q(status="PENDING")),
+                submitted_count=Count("id", filter=Q(status="SUBMITTED")),
+                reimbursed_count=Count("id", filter=Q(status="REIMBURSED")),
+                last_activity=Max("updated_at"),
+            )
+            .order_by("-month", "individual__username")
+        )
+
+        for g in groups:
+            g["outstanding"] = (g["advanced"] or Decimal("0.00")) - (g["reimbursed"] or Decimal("0.00"))
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Logistics Advances — Monthly Summary",
+            "app_label": self.model._meta.app_label,
+            "opts": self.model._meta,
+            # admin/change_list.html's breadcrumb block reverses
+            # admin:app_list using cl.opts.app_label. Without `cl` in
+            # context, that reverse gets app_label="" and raises
+            # NoReverseMatch. The standard changelist_view supplies
+            # `cl` via ChangeList.get_context(); a custom view extending
+            # change_list.html must do the same.
+            "cl": cl,
+            "groups": groups,
+            "toggle_back_url": reverse(
+                "admin:settlements_logisticsadvance_changelist"
+            ),
+            "preserved_query": request.META.get("QUERY_STRING", ""),
+        }
+        return TemplateResponse(
+            request,
+            "admin/settlements/logisticsadvance/aggregate.html",
+            context,
+        )

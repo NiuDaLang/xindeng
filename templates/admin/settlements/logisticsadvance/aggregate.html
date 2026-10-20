@@ -1,0 +1,58 @@
+<!-- templates/admin/settlements/logisticsadvance/aggregate.html -->
+{% extends "admin/change_list.html" %}
+
+{% block content_title %}
+  <h1>Logistics Advances — Monthly Summary</h1>
+  <p style="margin: 0.5em 0 1em;">
+    <a href="{{ toggle_back_url }}{% if preserved_query %}?{{ preserved_query }}{% endif %}">
+      ← Back to row-level view
+    </a>
+  </p>
+{% endblock %}
+
+{% block result_list %}
+  {% if groups %}
+    <table id="result_list">
+      <thead>
+        <tr>
+          <th scope="col">Individual</th>
+          <th scope="col">Month</th>
+          <th scope="col" style="text-align:right;">Rows</th>
+          <th scope="col" style="text-align:right;">Advanced</th>
+          <th scope="col" style="text-align:right;">Reimbursed</th>
+          <th scope="col" style="text-align:right;">Outstanding</th>
+          <th scope="col">Status</th>
+          <th scope="col">Last activity</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in groups %}
+          <tr>
+            <td>{{ g.individual__username }}</td>
+            <td>{{ g.month|date:"Y-m" }}</td>
+            <td style="text-align:right;">{{ g.rows }}</td>
+            <td style="text-align:right; font-family: monospace;">¥&nbsp;{{ g.advanced|floatformat:2 }}</td>
+            <td style="text-align:right; font-family: monospace;">¥&nbsp;{{ g.reimbursed|floatformat:2 }}</td>
+            <td style="text-align:right; font-family: monospace; {% if g.outstanding > 0 %}font-weight: bold;{% endif %}">
+              ¥&nbsp;{{ g.outstanding|floatformat:2 }}
+            </td>
+            <td>
+              <span style="background:#fee; color:#900; padding:1px 6px; border-radius:3px; font-size:0.85em;">
+                P: {{ g.pending_count }}
+              </span>
+              <span style="background:#fef3cd; color:#856404; padding:1px 6px; border-radius:3px; font-size:0.85em;">
+                S: {{ g.submitted_count }}
+              </span>
+              <span style="background:#d4edda; color:#155724; padding:1px 6px; border-radius:3px; font-size:0.85em;">
+                R: {{ g.reimbursed_count }}
+              </span>
+            </td>
+            <td>{{ g.last_activity|date:"Y-m-d H:i" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No logistics advances match the current filters.</p>
+  {% endif %}
+{% endblock %}

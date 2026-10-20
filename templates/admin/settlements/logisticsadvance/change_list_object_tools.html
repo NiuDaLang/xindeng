@@ -1,0 +1,13 @@
+<!-- templates/admin/settlements/logisticsadvance/change_list_object_tools.html -->
+{% extends "admin/change_list_object_tools.html" %}
+
+{% block object-tools-items %}
+  {% if aggregate_view_url %}
+    <li>
+      <a href="{{ aggregate_view_url }}" class="viewsitelink">
+        View by month
+      </a>
+    </li>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}
