@@ -842,7 +842,22 @@ class ArtisanVaultUpload(models.Model):
         on_delete=models.CASCADE,
         related_name='vault_uploads',
     )
-
+    order_product = models.ForeignKey(
+        'orders.OrderProduct',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vault_uploads',
+        help_text=(
+            "Set for CUSTOM order-product-scoped uploads. The approve view "
+            "writes OrderProduct.digital_file_path when this is set, and "
+            "ProductVariation.digital_file_path otherwise. SET_NULL, not "
+            "CASCADE — a staged file is the artisan's submitted work, not "
+            "the parent's property, so it must survive an OrderProduct "
+            "deletion (order cancelled, line replaced). See the sweeper "
+            "backlog item for eventual cleanup."
+        ),
+    )
     # ── File metadata ─────────────────────────────────────────────
     # staged_filename is a path relative to XINDENG_VAULT_ROOT/_pending/,
     # e.g. "4b1d3c2a-....pdf". Blank when storage_kind=EXTERNAL_PENDING
@@ -929,6 +944,11 @@ class ArtisanVaultUpload(models.Model):
                 fields=['variation'],
                 condition=Q(status='PENDING'),
                 name='unique_pending_upload_per_variation',
+            ),
+            models.UniqueConstraint(
+                fields=['order_product'],
+                condition=Q(order_product__isnull=False, status='PENDING'),
+                name='unique_pending_upload_per_order_product',
             ),
         ]
 

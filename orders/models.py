@@ -356,6 +356,7 @@ class OrderProduct(models.Model):
                               )
     fulfillment_started_at  = models.DateTimeField(null=True, blank=True)
     dispatched_at           = models.DateTimeField(null=True, blank=True)
+    digital_file_path       = models.CharField(max_length=255, blank=True, null=True)
 
     # E-Product Specific Claim Safety Trackers
     is_claimed              = models.BooleanField(default=False)
