@@ -125,6 +125,122 @@ def chain_with_pending(db, django_user_model, vault_root):
     }
 
 
+@pytest.fixture
+def chain_with_pending_custom(db, django_user_model, vault_root):
+    """
+    Companion to chain_with_pending for the CUSTOM (order-product-
+    scoped) approval path. Builds a CUSTOM product, an Order with a
+    single OrderProduct line, and a pending ArtisanVaultUpload whose
+    order_product FK is set.
+
+    The variation is still populated on the upload (it always is —
+    variation is a non-nullable FK), but the approve view will write
+    OrderProduct.digital_file_path, not ProductVariation.digital_file_path,
+    because upload.order_product_id is set.
+    """
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from category.models import Category
+    from creators.models import CreatorProfile
+    from store.models import (
+        Product, ProductVariation, ArtisanVaultUpload,
+    )
+    from orders.models import Order, OrderProduct
+
+    user = django_user_model.objects.create_user(
+        username="custom_artisan",
+        email="custom_artisan@example.com",
+        receive_newsletter=False,
+        password="x",
+        is_active=True,
+    )
+    profile = CreatorProfile.objects.create(
+        user=user, display_name="Custom Approval Artisan",
+        slug="custom-approval-artisan", is_verified=True,
+    )
+    category = Category.objects.create(
+        category_name="Custom Approval Digital",
+        slug="custom-approval-digital",
+        product_format="e-product",
+    )
+    product = Product.objects.create(
+        product_name="Custom Approval Ebook",
+        category=category,
+        creator=profile,
+        is_digital=True,
+        digital_fulfillment_type="CUSTOM",
+        is_physical=False,
+        is_active=True,
+        status="Published",
+    )
+    variation = ProductVariation.objects.create(
+        product=product,
+        price=Decimal("10.00"),
+        stock=1,
+        is_available=True,
+    )
+
+    customer = django_user_model.objects.create_user(
+        username="custom_customer",
+        email="custom_customer@example.com",
+        receive_newsletter=False,
+        password="x",
+        is_active=True,
+    )
+    order = Order.objects.create(
+        user=customer,
+        order_number="CUSTOM-APPROVAL-0001",
+        email=customer.email,
+        is_ordered=True,
+        ordered_at=timezone.now(),
+        order_status="Processing",
+        product_total=Decimal("10.00"),
+        total_due=Decimal("10.00"),
+    )
+    order_product = OrderProduct.objects.create(
+        order=order,
+        user=customer,
+        product=product,
+        product_variation=variation,
+        product_price=Decimal("10.00"),
+        quantity=1,
+        ordered=True,
+        fulfilled_by=profile,
+        fulfillment_started_at=timezone.now(),
+    )
+
+    staged_name = "custom-abc-123.pdf"
+    staged_path = vault_root / "_pending" / staged_name
+    staged_path.write_bytes(b"%PDF-1.4\n% custom approval test\n%%EOF\n")
+
+    upload = ArtisanVaultUpload.objects.create(
+        artisan=profile,
+        product=product,
+        variation=variation,
+        order_product=order_product,
+        storage_kind="LOCAL",
+        status="PENDING",
+        staged_filename=staged_name,
+        original_filename="custom-ebook.pdf",
+        file_size=staged_path.stat().st_size,
+        checksum="cafebabe" * 8,
+    )
+    return {
+        "artisan_user": user,
+        "profile": profile,
+        "product": product,
+        "variation": variation,
+        "customer": customer,
+        "order": order,
+        "order_product": order_product,
+        "upload": upload,
+        "staged_path": staged_path,
+        "staged_name": staged_name,
+    }
+
+
 def _url(upload):
     return reverse("review_vault_upload_approve", args=[upload.id])
 
@@ -312,3 +428,84 @@ class TestEdgeCases:
         chain["variation"].refresh_from_db()
         assert not chain["variation"].digital_file_path
 
+
+# ──────────────────────────────────────────────────────────────────
+# CUSTOM (order-product-scoped) approval path
+# ──────────────────────────────────────────────────────────────────
+
+class TestApproveCustomOrderProduct:
+    """
+    Pins the order-product-scoped branch of review_vault_upload_approve:
+    the file is promoted to OrderProduct.digital_file_path (not the
+    variation's), the variation pointer is untouched, and
+    issue_download_token is called on the order-product inside the
+    atomic block.
+
+    See store/views.py::review_vault_upload_approve and the CUSTOM
+    pipeline v2 handoff.
+    """
+
+    def test_approve_writes_order_product_pointer_not_variation(
+        self, client, superuser, chain_with_pending_custom, vault_root,
+    ):
+        from store.models import ArtisanVaultUpload, VaultUploadReviewLog
+        from store.models import DigitalDownloadToken
+
+        chain = chain_with_pending_custom
+        upload = chain["upload"]
+        order_product = chain["order_product"]
+        variation = chain["variation"]
+        staged_path = chain["staged_path"]
+
+        # Pre-conditions: nothing is set yet, no token exists, line
+        # not dispatched.
+        assert order_product.digital_file_path is None or order_product.digital_file_path == ""
+        assert variation.digital_file_path is None or variation.digital_file_path == ""
+        assert order_product.is_dispatched is False
+        assert order_product.dispatched_at is None
+        assert DigitalDownloadToken.objects.filter(order_product=order_product).count() == 0
+
+        client.force_login(superuser)
+        response = client.post(_url(upload))
+        assert response.status_code in (301, 302)
+
+        # File moved out of _pending/ into the vault root.
+        assert not staged_path.exists()
+        new_path = vault_root / chain["staged_name"]
+        assert new_path.is_file()
+        assert new_path.read_bytes().startswith(b"%PDF-")
+
+        # The order-product pointer was written.
+        order_product.refresh_from_db()
+        assert order_product.digital_file_path == chain["staged_name"]
+
+        # The variation pointer was NOT touched — this is the load-
+        # bearing assertion. If a future refactor drops the
+        # is_order_product_scoped branch and unconditionally writes
+        # variation.digital_file_path, this fails.
+        variation.refresh_from_db()
+        assert variation.digital_file_path is None or variation.digital_file_path == ""
+
+        # The download token was issued for the order-product.
+        token = DigitalDownloadToken.objects.get(order_product=order_product)
+        # Token's user is the customer, not the artisan.
+        assert token.user_id == chain["customer"].id
+        assert token.email == chain["customer"].email
+        # Token is fresh, not expired or revoked.
+        assert token.is_revoked is False
+        assert token.is_expired is False
+
+        # The order-product was marked dispatched by the helper.
+        assert order_product.is_dispatched is True
+        assert order_product.dispatched_at is not None
+
+        # Upload flipped to APPROVED with reviewer metadata.
+        upload.refresh_from_db()
+        assert upload.status == "APPROVED"
+        assert upload.reviewed_at is not None
+        assert upload.reviewed_by == superuser
+
+        # Review log written.
+        log = VaultUploadReviewLog.objects.get(upload=upload)
+        assert log.action == "approved"
+        assert log.actor == superuser

@@ -66,7 +66,7 @@ def make_chain(db, django_user_model, vault_root):
 
     _counter = {"n": 0}
 
-    def _make(digital_file_path: str):
+    def _make(digital_file_path: str, *, order_product_digital_file_path: str | None = None):
         _counter["n"] += 1
         n = _counter["n"]
 
@@ -118,6 +118,7 @@ def make_chain(db, django_user_model, vault_root):
             product_price=Decimal("10.00"),
             quantity=1,
             ordered=True,
+            digital_file_path=order_product_digital_file_path,
         )
 
         token = DigitalDownloadToken.objects.create(
@@ -590,3 +591,108 @@ class TestGuestEmailFallback:
         second = chain["order_product"].claim_timestamp
 
         assert first == second
+
+
+class TestCustomGateBranch:
+    """
+    Tests for the CUSTOM-delivery branch of secure_file_download_gate:
+    file resolution prefers OrderProduct.digital_file_path when set,
+    and the security-critical containment/claim logic is unchanged
+    for both pointers.
+
+    See store/views.py::secure_file_download_gate and the CUSTOM
+    pipeline v2 handoff for the two-pointer reasoning.
+    """
+
+    def test_serves_order_product_file_when_set(
+        self, client, make_chain, vault_root,
+    ):
+        """
+        When both pointers are set to different files, the gate
+        serves the order-product file. This is the test that catches
+        a "simplify back to one pointer" refactor. If the gate ever
+        resolves the variation pointer despite the order-product
+        pointer being set, a CUSTOM customer would receive the shared
+        (possibly wrong-customer) variation file.
+        """
+        # Two distinct files, distinct bytes.
+        ebooks = vault_root / "ebooks"
+        ebooks.mkdir(parents=True, exist_ok=True)
+
+        variation_file = ebooks / "instant.pdf"
+        variation_file.write_bytes(b"%PDF-1.4\n% INSTANT variation file\n")
+
+        custom_file = ebooks / "custom.pdf"
+        custom_file.write_bytes(b"%PDF-1.4\n% CUSTOM order-product file\n")
+
+        chain = make_chain(
+            "ebooks/instant.pdf",
+            order_product_digital_file_path="ebooks/custom.pdf",
+        )
+        client.force_login(chain["user"])
+        url = reverse("secure_file_download_gate", args=[chain["token"].id])
+        response = client.get(url)
+
+        assert response.status_code == 200
+        body = b"".join(response.streaming_content)
+        # Serves the custom file, not the instant one.
+        assert body == b"%PDF-1.4\n% CUSTOM order-product file\n"
+        assert body != b"%PDF-1.4\n% INSTANT variation file\n"
+
+        # And the claim flag still flips on first successful serve.
+        chain["order_product"].refresh_from_db()
+        assert chain["order_product"].is_claimed is True
+
+    def test_404s_when_neither_pointer_set(self, client, make_chain):
+        """
+        Both pointers empty: 404. Pins the fail-closed branch. This
+        is the same outcome the old single-pointer check produced;
+        the test makes the branch explicit for the new precedence
+        rule.
+        """
+        chain = make_chain("", order_product_digital_file_path=None)
+        # The factory's default None already leaves
+        # OrderProduct.digital_file_path null. The variation pointer
+        # is the empty string. Neither pointer resolves.
+        client.force_login(chain["user"])
+        url = reverse("secure_file_download_gate", args=[chain["token"].id])
+        response = client.get(url)
+
+        assert response.status_code == 404
+        chain["order_product"].refresh_from_db()
+        # 404 fires before the claim flip. The customer received
+        # nothing.
+        assert chain["order_product"].is_claimed is False
+
+    def test_404s_when_order_product_pointer_escapes_vault(
+        self, client, make_chain, vault_root, tmp_path,
+    ):
+        """
+        A traversal attempt on the order-product pointer is caught by
+        the containment check, before the claim flip. This is the
+        security-critical assertion: the claim flip happens after the
+        containment check, so a customer cannot force a 404 to self-
+        lock their own line outside the cancellation rules.
+        """
+        # Plant a file one level above the vault root.
+        (tmp_path / "outside.pdf").write_bytes(b"%PDF-1.4\n% outside\n")
+
+        # The variation pointer is a legitimate file so that if the
+        # gate ever falls back to it, the test would see a 200 and
+        # fail loudly. The order-product pointer is hostile.
+        ebooks = vault_root / "ebooks"
+        ebooks.mkdir(parents=True, exist_ok=True)
+        (ebooks / "instant.pdf").write_bytes(b"%PDF-1.4\n% INSTANT\n")
+
+        chain = make_chain(
+            "ebooks/instant.pdf",
+            order_product_digital_file_path="../outside.pdf",
+        )
+        client.force_login(chain["user"])
+        url = reverse("secure_file_download_gate", args=[chain["token"].id])
+        response = client.get(url)
+
+        assert response.status_code == 404
+        chain["order_product"].refresh_from_db()
+        assert chain["order_product"].is_claimed is False
+
