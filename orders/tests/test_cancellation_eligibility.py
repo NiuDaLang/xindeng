@@ -192,13 +192,42 @@ class TestEvaluateCancellationDetails:
         eligible, fee, msg = b["order"].evaluate_cancellation_details()
         assert eligible is True
 
-    def test_custom_digital_is_not_subject_to_claim_block(self, build_order):
-        # Only INSTANT digital lines are gated by is_claimed. Custom
-        # (manual-fulfilment) digital orders fall through to the standard
-        # eligibility path and are allowed here.
+    def test_custom_digital_takes_custom_message_not_claim_message(self, build_order):
+        """
+        The claim block is an INSTANT-only mechanism. A CUSTOM line
+        with is_claimed=True does not take the INSTANT claim message;
+        it takes the CUSTOM "contact support" message. This pins that
+        the CUSTOM branch fires before the claim check in
+        evaluate_cancellation_details — if a future refactor reorders
+        the branches and the CUSTOM line starts hitting the INSTANT
+        claim message, this test fails.
+
+        (This test replaces an earlier version that asserted CUSTOM
+        orders were eligible by fall-through. That assertion matched
+        the pre-2026-10-21 policy. The policy was changed: CUSTOM
+        digital lines are made-to-order and admin-mediated, never
+        self-service cancellable. See the CUSTOM pipeline v2 handoff.)
+        """
         b = build_order(lines=[{"product_kind": "digital_custom", "is_claimed": True}])
         eligible, fee, msg = b["order"].evaluate_cancellation_details()
-        assert eligible is True
+        # Not eligible — but because CUSTOM is never self-service
+        # cancellable, not because the claim block fired.
+        assert eligible is False
+        assert "made-to-order" in msg.lower()
+        # The INSTANT claim message must not be the one returned.
+        assert "already been claimed" not in msg.lower()
+
+    def test_custom_digital_is_ineligible_regardless_of_claim_state(self, build_order):
+        """
+        CUSTOM is unconditional: the policy is not stage-dependent,
+        so is_claimed does not change the answer for a CUSTOM line.
+        If a future refactor makes is_claimed meaningful for CUSTOM,
+        this test fails and the policy needs re-opening.
+        """
+        b = build_order(lines=[{"product_kind": "digital_custom", "is_claimed": False}])
+        eligible, fee, msg = b["order"].evaluate_cancellation_details()
+        assert eligible is False
+        assert "made-to-order" in msg.lower()
 
     def test_partially_used_voucher_is_blocked(self, build_order):
         b = build_order(lines=[{"product_kind": "voucher", "is_partially_used": True}])

@@ -268,6 +268,48 @@ class Order(models.Model):
             # 🌟 STEP A: Physical item dispatch verification guard
             if product.is_physical and item.is_dispatched:
                 return False, decimal.Decimal('0.00'), f"Physical item '{product.product_name} {product_variation.get_sku()}' has been dispatched. / 實體商品已發貨，不可取消。"
+
+            # 🌟 STEP A.5: Custom digital — made to order, admin-mediated
+            # cancellation only.
+            #
+            # Dispatch order after this change, and why:
+            #
+            #   discount > 0                 → manual processing message
+            #   physical + dispatched        → dispatched message
+            #   CUSTOM digital               → "contact support" message (NEW)
+            #   INSTANT + claimed            → claimed message
+            #   INSTANT + window expired     → window expired message
+            #   voucher + partially used     → voucher claimed message
+            #   none of the above            → eligible
+            #
+            # The CUSTOM branch sits between the physical and INSTANT
+            # branches because that is where "this line needs admin
+            # mediation" logically sits: physically dispatched lines
+            # are past the point of customer action (the parcel is in
+            # transit), CUSTOM lines are past the point of self-service
+            # action (the artisan may have begun work), and INSTANT
+            # lines are past the point of self-service action only
+            # when the customer has downloaded or the window has
+            # closed.
+            #
+            # The discount > 0 early return (above the loop) fires
+            # before this branch. That is correct: a discounted CUSTOM
+            # order sees the discount message, which is also a
+            # "contact support" instruction. The customer's next step
+            # is identical either way.
+            #
+            # This branch is unconditional at every order stage. The
+            # CUSTOM policy is not stage-dependent: made-to-order never
+            # becomes self-service-cancellable, not after approval, not
+            # after download. Do not add stage-specific carve-outs here
+            # without re-opening the policy decision.
+            elif product.is_digital and product.digital_fulfillment_type == 'CUSTOM':
+                return False, decimal.Decimal('0.00'), (
+                    f"Custom digital item '{product.product_name} "
+                    f"{product_variation.get_sku()}' is made-to-order and "
+                    f"cannot be cancelled online. Please contact support. "
+                    f"/ 客製數位作品需線下洽詢客服辦理取消。"
+                )
             
             # 🌟 STEP B: Instant digital download claiming & time window boundaries
             elif product.is_digital and product.digital_fulfillment_type == 'INSTANT' and not product.is_voucher:
