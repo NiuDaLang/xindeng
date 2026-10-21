@@ -306,6 +306,9 @@ def secure_file_download_gate(request, token_id):
     Time-Locked Data Stream Matrix:
     Validates token expirations and streams raw binary safely from the local secure disk structure.
     Also flags digital assets as claimed to block subsequent customer order cancellations.
+    File resolution: prefer OrderProduct.digital_file_path (CUSTOM delivery); 
+    fall back to ProductVariation.digital_file_path (INSTANT delivery). 
+    Both are vault-relative. See the CUSTOM pipeline v2 handoff for why the two pointers exist.
     """
 
     # Fetch by id only. Ownership is enforced explicitly below so the
@@ -376,14 +379,36 @@ def secure_file_download_gate(request, token_id):
     order_product = token.order_product
     variation = order_product.product_variation
 
-    if not variation or not variation.digital_file_path:
-        raise Http404("Digital file resource target is not registered in this variation system.")
+    # ── FILE RESOLUTION ───────────────────────────────────────────────
+    # CUSTOM path: per-order-product pointer, populated by
+    # review_vault_upload_approve when the upload was order-product-
+    # scoped. Takes precedence when set.
+    #
+    # INSTANT path: variation-level pointer, the original behaviour.
+    #
+    # Fail closed: if neither pointer is set, 404. This is the same
+    # shape as the original single-pointer check, extended to
+    # consider the order-product pointer first.
+    #
+    # Precedence rule: the order-product pointer wins when set. This
+    # is what makes CUSTOM delivery correct — the order-product
+    # pointer is the per-order file, the variation pointer is the
+    # shared one. A future refactor that "simplifies" this back to a
+    # single-pointer lookup breaks CUSTOM delivery. See the CUSTOM
+    # pipeline v2 handoff.
+    file_pointer = (order_product.digital_file_path or "").strip()
+    if not file_pointer and variation:
+        file_pointer = (variation.digital_file_path or "").strip()
+    if not file_pointer:
+        raise Http404(
+            "Digital file resource target is not registered for this line."
+        )
 
     # ── SECURE PATH RESOLUTION ────────────────────────────────────────
     # Anchor the vault from settings rather than hard-coding BASE_DIR so
     # the location is configurable per-deployment and overridable in tests.
     vault_root = Path(settings.XINDENG_VAULT_ROOT).resolve()
-    raw_target = vault_root / variation.digital_file_path
+    raw_target = vault_root / file_pointer
 
     # Reject symlinks outright. Rationale: resolve() follows symlinks, so
     # a symlink pointing outside the vault would already fail the
