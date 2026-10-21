@@ -548,7 +548,18 @@ def review_vault_upload_approve(request, upload_id):
         return redirect("dashboard", subpage="product_review")
 
     variation = upload.variation
-    previous_pointer = variation.digital_file_path or ""
+    is_order_product_scoped = upload.order_product_id is not None
+
+    # The "previous pointer to retire" depends on which scope this
+    # upload belongs to. CUSTOM uploads promote the file to the
+    # order-product; INSTANT uploads promote to the variation. The
+    # two scopes are mutually exclusive on an individual upload row
+    # (a row is either variation-scoped or order-product-scoped), so
+    # the branch below is exhaustive.
+    if is_order_product_scoped:
+        previous_pointer = upload.order_product.digital_file_path or ""
+    else:
+        previous_pointer = variation.digital_file_path or ""
 
     try:
         with transaction.atomic():
@@ -601,9 +612,40 @@ def review_vault_upload_approve(request, upload_id):
             os.rename(src_path, dst_path)
 
             # ── DB writes ─────────────────────────────────────────
+            # Lock ordering (write-side): upload → variation →
+            # order-product. No other code path locks the variation
+            # and the order-product together, so this ordering is
+            # uncontended. Named in the CUSTOM pipeline v2 handoff.
             try:
-                locked_variation.digital_file_path = upload.staged_filename
-                locked_variation.save(update_fields=["digital_file_path"])
+                if is_order_product_scoped:
+                    locked_order_product = (
+                        OrderProduct.objects
+                        .select_for_update()
+                        .get(id=locked_upload.order_product_id)
+                    )
+                    locked_order_product.digital_file_path = (
+                        locked_upload.staged_filename
+                    )
+                    locked_order_product.save(
+                        update_fields=["digital_file_path"]
+                    )
+                    # Issue the token now that the file pointer is
+                    # committed inside this transaction. Same helper
+                    # as the three INSTANT call sites; the token row
+                    # and is_dispatched flip are written immediately
+                    # and roll back with the transaction if anything
+                    # downstream fails. The email dispatch is deferred
+                    # to on_commit by the helper itself — unchanged
+                    # behaviour.
+                    from orders.utils import issue_download_token #DO NOT MAKE THIS IMPORT MODULE-SCOPE
+                    issue_download_token(locked_order_product)
+                else:
+                    locked_variation.digital_file_path = (
+                        locked_upload.staged_filename
+                    )
+                    locked_variation.save(
+                        update_fields=["digital_file_path"]
+                    )
 
                 locked_upload.status = "APPROVED"
                 locked_upload.reviewed_at = timezone.now()
@@ -621,7 +663,8 @@ def review_vault_upload_approve(request, upload_id):
             except Exception:
                 # Compensating action: put the file back where it
                 # came from so a rolled-back transaction leaves the
-                # filesystem unchanged.
+                # filesystem unchanged. Same as before; the branch
+                # does not change the compensating behaviour.
                 try:
                     os.rename(dst_path, src_path)
                 except OSError as rename_back_err:

@@ -803,6 +803,11 @@ class ArtisanVaultUpload(models.Model):
          APPROVED.
          Reject: staged file (if any) is deleted. Status set to
          REJECTED with review_note explaining why.
+         Approve (order-product-scoped): file moves out of _pending/ into
+         the vault root, OrderProduct.digital_file_path is updated, and
+         issue_download_token is called on the order-product. Status set to
+         APPROVED. This is the CUSTOM delivery path; see the CUSTOM pipeline
+         v2 handoff.
 
     At most one PENDING upload may exist per variation, enforced by a
     partial unique constraint. Supersession (artisan uploading again
