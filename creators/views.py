@@ -1768,11 +1768,11 @@ def dashboard_product_variation_upload_vault(request, pk, variation_pk):
     })
 
 
-def self_supersede_and_create(*, profile, product, variation, form):
+def self_supersede_and_create(*, profile, product, variation, form, order_product=None):
     """
-    Small helper: supersede any existing PENDING upload for this
-    variation (deleting its staged file if one exists), then create
-    the new ArtisanVaultUpload row.
+    Small helper: supersede any existing PENDING upload for this target
+    (deleting its staged file if one exists), then create the new
+    ArtisanVaultUpload row.
 
     Both actions inside a single transaction so a failure leaves no
     half-superseded state. Filesystem deletions are done in-line and
@@ -1780,16 +1780,31 @@ def self_supersede_and_create(*, profile, product, variation, form):
     logged but does not roll back the DB — a stray file in _pending/
     is harmless and will be caught by the sweeper command when it
     lands.
+
+    Supersession target: when order_product is set, the supersession
+    filter is order_product=order_product; otherwise it is
+    variation=variation (the original INSTANT-path behaviour). The
+    branch is required because a single variation can host multiple
+    CUSTOM order lines, each with its own order-product-scoped PENDING
+    upload (per the unique_pending_upload_per_order_product constraint).
+    Filtering by variation on the CUSTOM path would supersede the
+    wrong line's upload — a silent data bug, not an error. See the
+    CUSTOM pipeline v2 handoff.
     """
     pending_root = Path(settings.XINDENG_VAULT_ROOT) / "_pending"
 
     with transaction.atomic():
-        existing = (
-            ArtisanVaultUpload.objects
-            .select_for_update()
-            .filter(variation=variation, status="PENDING")
-            .first()
-        )
+        supersede_qs = ArtisanVaultUpload.objects.select_for_update()
+        if order_product is not None:
+            supersede_qs = supersede_qs.filter(
+                order_product=order_product, status="PENDING",
+            )
+        else:
+            supersede_qs = supersede_qs.filter(
+                variation=variation, status="PENDING",
+            )
+        existing = supersede_qs.first()
+
         if existing is not None:
             if existing.staged_filename:
                 old_path = pending_root / existing.staged_filename
@@ -1806,6 +1821,17 @@ def self_supersede_and_create(*, profile, product, variation, form):
             existing.save(update_fields=["status", "review_note", "reviewed_at"])
 
         upload_type = form.cleaned_data["upload_type"]
+
+        # Shared kwargs for both create branches. order_product is
+        # None for the INSTANT path and a real FK for the CUSTOM path;
+        # passing None to a nullable FK is a no-op on the row.
+        common_kwargs = {
+            "artisan": profile,
+            "product": product,
+            "variation": variation,
+            "order_product": order_product,
+            "status": "PENDING",
+        }
 
         if upload_type == "DIRECT":
             uploaded = form.cleaned_data["file"]
@@ -1825,11 +1851,8 @@ def self_supersede_and_create(*, profile, product, variation, form):
                     final_size += len(chunk)
 
             ArtisanVaultUpload.objects.create(
-                artisan=profile,
-                product=product,
-                variation=variation,
+                **common_kwargs,
                 storage_kind="LOCAL",
-                status="PENDING",
                 staged_filename=staged_name,
                 original_filename=original_name,
                 file_size=final_size,
@@ -1837,11 +1860,8 @@ def self_supersede_and_create(*, profile, product, variation, form):
             )
         else:  # EXTERNAL
             ArtisanVaultUpload.objects.create(
-                artisan=profile,
-                product=product,
-                variation=variation,
+                **common_kwargs,
                 storage_kind="EXTERNAL_PENDING",
-                status="PENDING",
                 staged_filename="",
                 original_filename="",
                 file_size=0,
