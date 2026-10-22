@@ -76,44 +76,11 @@
         </div>
         {% endfor %}
 
-        {# ── Custom digital lines: upload via the product edit page's vault-upload modal ── #}
-        {% for line in pending_custom_digital %}
-        <div class="bg-white border border-base-200/60 rounded-2xl p-5">
-            <div class="flex items-start gap-4">
-                <div class="w-16 h-16 rounded-xl overflow-hidden bg-base-200 flex-shrink-0">
-                    {% if line.product.images %}
-                    <img src="{{ line.product.images.url }}" class="w-full h-full object-cover" />
-                    {% endif %}
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="badge badge-xs badge-accent">Custom Digital｜客製數位</span>
-                    </div>
-                    <p class="text-sm font-medium">{{ line.product.product_name }}</p>
-                    <p class="text-xs text-base-content/50 mt-1">
-                        {{ line.product_variation.get_sku }} · Qty: {{ line.quantity }}
-                    </p>
-                    <p class="text-xs text-base-content/50 mt-1">
-                        Order #{{ line.order.order_number }}
-                    </p>
-                    <p class="text-xs text-base-content/60 mt-2 leading-relaxed">
-                        將完成的作品檔案上傳至系統，經管理員審核後由系統發送下載連結給買家。
-                        <br>
-                        <span class="text-[10px] opacity-70">Upload the finished file. After admin review the system delivers the download link to the buyer.</span>
-                    </p>
-                </div>
-            </div>
-
-            <div class="mt-4 pt-4 border-t border-base-200/60 flex justify-end">
-                <a href="{% url 'a_dashboard_product_edit' line.product.id %}"
-                   class="btn btn-primary btn-sm rounded-lg">
-                    <i class="fa-solid fa-cloud-arrow-up text-xs mr-1"></i>
-                    Manage File｜管理檔案
-                </a>
-            </div>
+        {# ── Custom digital lines: order-product-scoped vault upload (see 2026-10-22) ── #}
+        <div id="pending-custom-digital-container">
+            {% include 'artisans/dashboard/partials/_pending_custom_digital_rows.html' %}
         </div>
-        {% endfor %}
-
+        
         {% if not pending_physical and not pending_custom_digital %}
         <p class="text-center text-sm text-base-content/40 py-16">
             暫無待處理訂單。｜No pending orders.
@@ -121,6 +88,23 @@
         {% endif %}
     </div>
 </div>
+
+<dialog id="order-product-vault-upload-modal" class="modal">
+    <div class="modal-box max-w-lg">
+        <h3 class="font-serif text-lg mb-2">Upload Vault File｜上傳電子檔案</h3>
+        <p class="text-xs text-base-content/60 mb-4">
+            檔案將進入待審佇列，管理員審核通過後，系統會為此訂單簽發專屬下載連結。
+            <br>
+            The file enters a review queue. On approval, a download link is
+            issued for this specific order line.
+        </p>
+        <div id="order-product-vault-upload-modal-body">
+            {# populated via HTMX GET from the upload button #}
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
 
 <!-- Dispatched tab -->
 <div class="tab-panel hidden" data-panel="dispatched">

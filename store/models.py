@@ -809,11 +809,44 @@ class ArtisanVaultUpload(models.Model):
          APPROVED. This is the CUSTOM delivery path; see the CUSTOM pipeline
          v2 handoff.
 
-    At most one PENDING upload may exist per variation, enforced by a
-    partial unique constraint. Supersession (artisan uploading again
-    while a previous upload is still pending) is handled at the view
+    Uniqueness invariant: at most one PENDING upload may exist per
+    target, where "target" is the variation for variation-scoped rows
+    and the order_product for order-product-scoped rows. Enforced by
+    two partial unique constraints whose conditions partition the
+    PENDING-row space:
+
+      * unique_pending_upload_per_variation
+        Fields: variation
+        Condition: order_product__isnull=True, status='PENDING'
+        Applies to: the INSTANT path and legacy variation-scoped
+          uploads (rows whose order_product is NULL).
+        The order_product__isnull=True condition is load-bearing.
+        Without it, the constraint would also cover order-product-
+        scoped rows and cap PENDING uploads at one per variation —
+        which breaks the CUSTOM pipeline, because a single variation
+        legitimately hosts many CUSTOM order lines, each with its own
+        PENDING upload.
+
+      * unique_pending_upload_per_order_product
+        Fields: order_product
+        Condition: order_product__isnull=False, status='PENDING'
+        Applies to: the CUSTOM path (rows whose order_product is set).
+        The order_product__isnull=False condition is the mirror guard.
+        Without it, the constraint would attempt uniqueness enforcement
+        on the NULL values that variation-scoped rows carry, which is
+        not the intent.
+
+    The two conditions are complementary, not redundant. Do not remove
+    either "for simplicity" — doing so either breaks CUSTOM delivery
+    (removing the isnull=True guard) or adds unintended uniqueness
+    pressure on the INSTANT path (removing the isnull=False guard).
+
+    Supersession — an artisan uploading again while a previous upload
+    for the same target is still PENDING — is handled at the view
     layer: the previous row is flipped to SUPERSEDED and the new row
-    is created.
+    is created. The supersession query branches on the same target-
+    scoping the constraints use; see
+    creators.views.self_supersede_and_create.
     """
 
     STORAGE_KIND_CHOICES = [
@@ -947,7 +980,7 @@ class ArtisanVaultUpload(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['variation'],
-                condition=Q(status='PENDING'),
+                condition=Q(order_product__isnull=True, status='PENDING'),
                 name='unique_pending_upload_per_variation',
             ),
             models.UniqueConstraint(

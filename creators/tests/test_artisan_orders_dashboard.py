@@ -346,16 +346,58 @@ class TestOrdersPanelTemplate:
         html = self._get_panel_html(client, artisan_orders_setup)
         assert 'name="tracking_code"' in html
 
-    def test_custom_digital_line_renders_manage_file_link(
+    def test_custom_digital_line_renders_upload_button(
         self, client, artisan_orders_setup,
     ):
+        """
+        The custom-digital card must open the order-product-scoped
+        vault upload modal, not the 2026-10-14 product-edit stopgap.
+
+        Both halves matter: the new hx-get must be present, and the
+        old product-edit link must be absent. A future regression that
+        reintroduces the stopgap link (perhaps by "simplifying" the
+        partial back to its pre-2026-10-22 shape) fails the second
+        assertion even if someone leaves the new button in place too.
+        """
         chain = artisan_orders_setup
         html = self._get_panel_html(client, chain)
-        expected_url = reverse(
+
+        new_url = reverse(
+            "a_dashboard_order_product_upload_vault",
+            args=[chain["custom_line"].id],
+        )
+        assert f'hx-get="{new_url}"' in html
+
+        # Absence assertion: the old product-edit link (with the
+        # product's id, not the order-product's id) must not be the
+        # custom card's action. Scoped to the pending panel so the
+        # "no product-edit link at all" reading isn't misleading —
+        # other parts of the page may legitimately link there.
+        start = html.find('data-panel="pending"')
+        end = html.find('data-panel="dispatched"', start)
+        pending_html = html[start:end]
+        old_url = reverse(
             "a_dashboard_product_edit",
             args=[chain["custom_line"].product.id],
         )
-        assert expected_url in html
+        assert old_url not in pending_html, (
+            "The custom-digital card still links to the product-edit "
+            "stopgap. It should open the order-product-scoped upload "
+            "modal instead."
+        )
+
+    def test_custom_digital_line_renders_disclosure_line(
+        self, client, artisan_orders_setup,
+    ):
+        """
+        The 2026-10-21 Q1 decision requires an artisan-side disclosure
+        that this line cannot be self-cancelled by the customer. The
+        copy decision (2026-10-22) is the (b) shorter phrasing; the
+        full policy text is not duplicated here.
+        """
+        html = self._get_panel_html(client, artisan_orders_setup)
+        assert "cannot be self-cancelled by the customer" in html
+        assert "此訂單顧客無法自行取消" in html
 
     def test_custom_digital_line_does_not_render_tracking_form(
         self, client, artisan_orders_setup,
@@ -387,3 +429,200 @@ class TestOrdersPanelTemplate:
         # The INSTANT line has never been dispatched and is excluded
         # from every panel, so its product name should not appear.
         assert chain["instant_line"].product.product_name not in html
+
+
+class TestOrderProductVaultUploadView:
+    """
+    The order-product-scoped vault upload view. See the 2026-10-22
+    commit "store: close the artisan-side CUSTOM pipeline".
+
+    Two contracts:
+      1. GET renders the shared form with an hx-post pointing at this
+         line's upload endpoint, targeting the orders-dashboard modal.
+      2. POST creates an ArtisanVaultUpload scoped to the order-product,
+         and supersession targets by order-product — not by variation.
+         The second half is what distinguishes the CUSTOM path from the
+         INSTANT path; the helper's branch exists precisely to prevent
+         cross-line supersession.
+    """
+
+    @pytest.fixture
+    def vault_root(self, settings, tmp_path):
+        settings.XINDENG_VAULT_ROOT = tmp_path
+        (tmp_path / "_pending").mkdir()
+        return tmp_path
+
+    def test_get_returns_form_with_order_product_post_url(
+        self, client, artisan_orders_setup, vault_root,
+    ):
+        chain = artisan_orders_setup
+        client.force_login(chain["artisan_user"])
+
+        url = reverse(
+            "a_dashboard_order_product_upload_vault",
+            args=[chain["custom_line"].id],
+        )
+        response = client.get(url)
+        assert response.status_code == 200
+
+        body = response.content.decode()
+        assert f'hx-post="{url}"' in body
+        # The order-product view's modal target, not the variation-page
+        # default. If the view forgot to pass upload_target, the form
+        # would carry the variation default and fail this assertion.
+        assert 'hx-target="#order-product-vault-upload-modal-body"' in body
+
+    def test_get_404s_for_non_custom_line(
+        self, client, artisan_orders_setup, vault_root,
+    ):
+        """Forged-GET guard: a physical line's id is not a valid target."""
+        chain = artisan_orders_setup
+        client.force_login(chain["artisan_user"])
+        url = reverse(
+            "a_dashboard_order_product_upload_vault",
+            args=[chain["physical_line"].id],
+        )
+        response = client.get(url)
+        assert response.status_code == 404
+
+    def test_get_404s_for_another_artisans_line(
+        self, client, artisan_orders_setup, vault_root, django_user_model,
+    ):
+        """Ownership guard: fulfilled_by must match the logged-in artisan."""
+        from creators.models import CreatorProfile
+
+        chain = artisan_orders_setup
+
+        other_user = django_user_model.objects.create_user(
+            username="other_artisan",
+            email="other-artisan@example.com",
+            receive_newsletter=False,
+            password="x",
+            is_active=True,
+        )
+        CreatorProfile.objects.create(
+            user=other_user,
+            display_name="Other Artisan",
+            slug="other-artisan",
+            is_verified=True,
+        )
+
+        client.force_login(other_user)
+        url = reverse(
+            "a_dashboard_order_product_upload_vault",
+            args=[chain["custom_line"].id],
+        )
+        response = client.get(url)
+        assert response.status_code == 404
+
+    def test_post_creates_order_product_scoped_upload(
+        self, client, artisan_orders_setup, vault_root,
+    ):
+        from store.models import ArtisanVaultUpload
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        chain = artisan_orders_setup
+        client.force_login(chain["artisan_user"])
+
+        url = reverse(
+            "a_dashboard_order_product_upload_vault",
+            args=[chain["custom_line"].id],
+        )
+        upload = SimpleUploadedFile(
+            "art.pdf", b"%PDF-1.4 test", "application/pdf",
+        )
+        response = client.post(url, {
+            "upload_type": "DIRECT",
+            "file": upload,
+        })
+        assert response.status_code == 200
+
+        row = ArtisanVaultUpload.objects.get(
+            order_product=chain["custom_line"], status="PENDING",
+        )
+        assert row.variation_id == chain["custom_line"].product_variation_id
+        assert row.product_id == chain["custom_line"].product_id
+        assert row.staged_filename
+        assert (vault_root / "_pending" / row.staged_filename).exists()
+
+    def test_reupload_supersedes_by_order_product_not_variation(
+        self, client, artisan_orders_setup, vault_root,
+    ):
+        """
+        The load-bearing test. Two CUSTOM lines on the same variation.
+        Uploading on line A must not supersede line B's PENDING upload.
+
+        A shape-only test (assert PENDING row exists after re-upload)
+        would pass with a variation-keyed filter — the supersession
+        would have hit the wrong row but a PENDING row would still
+        exist. The comparison against line B's row is what catches the
+        bug the helper's branch exists to prevent.
+        """
+        from store.models import ArtisanVaultUpload
+        from orders.models import OrderProduct
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        chain = artisan_orders_setup
+        custom_line = chain["custom_line"]
+        client.force_login(chain["artisan_user"])
+
+        # Line B: same order, same product, same variation, own row.
+        line_b = OrderProduct.objects.create(
+            order=custom_line.order,
+            user=custom_line.user,
+            product=custom_line.product,
+            product_variation=custom_line.product_variation,
+            product_price=custom_line.product_price,
+            quantity=1,
+            ordered=True,
+            fulfilled_by=custom_line.fulfilled_by,
+            fulfillment_started_at=timezone.now(),
+        )
+
+        url_a = reverse(
+            "a_dashboard_order_product_upload_vault",
+            args=[custom_line.id],
+        )
+        url_b = reverse(
+            "a_dashboard_order_product_upload_vault",
+            args=[line_b.id],
+        )
+
+        # First upload on A.
+        client.post(url_a, {
+            "upload_type": "DIRECT",
+            "file": SimpleUploadedFile("a1.pdf", b"%PDF-1.4 a1", "application/pdf"),
+        })
+        pending_a1 = ArtisanVaultUpload.objects.get(
+            order_product=custom_line, status="PENDING",
+        )
+
+        # Upload on B.
+        client.post(url_b, {
+            "upload_type": "DIRECT",
+            "file": SimpleUploadedFile("b1.pdf", b"%PDF-1.4 b1", "application/pdf"),
+        })
+        pending_b = ArtisanVaultUpload.objects.get(
+            order_product=line_b, status="PENDING",
+        )
+
+        # Re-upload on A: supersedes A's PENDING, not B's.
+        client.post(url_a, {
+            "upload_type": "DIRECT",
+            "file": SimpleUploadedFile("a2.pdf", b"%PDF-1.4 a2", "application/pdf"),
+        })
+
+        pending_a1.refresh_from_db()
+        pending_b.refresh_from_db()
+        assert pending_a1.status == "SUPERSEDED"
+        assert pending_b.status == "PENDING", (
+            "Re-upload on line A superseded line B's pending upload. "
+            "The helper's supersession filter is keying on variation "
+            "rather than order_product — a silent data bug."
+        )
+
+        new_pending_a = ArtisanVaultUpload.objects.get(
+            order_product=custom_line, status="PENDING",
+        )
+        assert new_pending_a.pk != pending_a1.pk
+

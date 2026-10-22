@@ -57,6 +57,7 @@ from store.forms import ArtisanProductForm, ProductVariationForm
 from category.models import Category
 from django_ckeditor_5.widgets import CKEditor5Widget
 from django.http import JsonResponse
+from django.http import Http404
 
 from store.tasks import (
     send_product_submission_email_task,
@@ -1721,12 +1722,30 @@ def dashboard_product_variation_upload_vault(request, pk, variation_pk):
     if request.method == "POST":
         form = ArtisanVaultUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            self_supersede_and_create(
-                profile=profile,
-                product=product,
-                variation=variation,
-                form=form,
-            )
+            try:
+                self_supersede_and_create(
+                    profile=profile,
+                    product=product,
+                    variation=variation,
+                    form=form,
+                )
+            except IntegrityError:
+                # Race with a concurrent upload for the same variation
+                # from another tab. The partial unique constraint is the
+                # guard; the correct recovery is to retry the supersession
+                # once (the second call's select_for_update will see the
+                # committed PENDING row and flip it to SUPERSEDED before
+                # creating the new one). If the retry also fails
+                # (three-way race, e.g. a third tab), the exception
+                # propagates and the view returns 500 — acceptable
+                # for a behaviour this rare; the constraint has still
+                # protected the data.
+                self_supersede_and_create(
+                    profile=profile,
+                    product=product,
+                    variation=variation,
+                    form=form,
+                )
             # ── Notify admin after the transaction commits ────────
             # Fetch the newly created PENDING row to get its id for
             # the notification. This is safe immediately after the
@@ -1757,6 +1776,10 @@ def dashboard_product_variation_upload_vault(request, pk, variation_pk):
             "form": form,
             "product": product,
             "variation": variation,
+            "upload_post_url": reverse(
+                "a_dashboard_product_variation_upload_vault",
+                args=[product.id, variation.id],
+            ),
         })
 
     # ── GET: render empty form for the modal body ─────────────────
@@ -1765,6 +1788,10 @@ def dashboard_product_variation_upload_vault(request, pk, variation_pk):
         "form": form,
         "product": product,
         "variation": variation,
+        "upload_post_url": reverse(
+            "a_dashboard_product_variation_upload_vault",
+            args=[product.id, variation.id],
+        ),
     })
 
 
@@ -1868,6 +1895,145 @@ def self_supersede_and_create(*, profile, product, variation, form, order_produc
                 checksum=(form.cleaned_data.get("checksum") or "").strip(),
                 external_url=form.cleaned_data["external_url"],
             )
+
+
+@artisan_required
+def dashboard_order_product_upload_vault(request, order_product_id):
+    """
+    GET:  return the vault-upload modal body with a fresh form, for HTMX
+          to swap into the artisan orders dashboard's shared modal.
+    POST: validate + stage the submission with order_product set, then
+          return the refreshed pending-custom-digital partial with
+          HX-Retarget so the modal closes naturally with the swap.
+
+    This is the order-product-scoped sibling of
+    dashboard_product_variation_upload_vault. The difference is the
+    target: this view stages a file against a specific CUSTOM order
+    line (OrderProduct), not against a ProductVariation. The distinction
+    is load-bearing for the CUSTOM pipeline: the approve view branches
+    on upload.order_product_id to decide whether to write
+    OrderProduct.digital_file_path (this path) or
+    ProductVariation.digital_file_path (the variation path). Without
+    this view, the artisan has no way to set order_product at creation,
+    and the approve branch always falls through to the variation path.
+    See the CUSTOM pipeline v2 handoff.
+
+    Only applies to CUSTOM digital lines. Non-CUSTOM lines 404 — the
+    dashboard hides the button, and the check here closes the
+    forged-POST path. A line whose fulfilled_by is not this artisan
+    also 404s (get_object_or_404 with the ownership filter), so a
+    guessed id cannot stage a file against another artisan's order.
+    """
+    profile = request.user.creator_profile
+
+    line = get_object_or_404(
+        OrderProduct,
+        id=order_product_id,
+        fulfilled_by=profile,
+    )
+
+    # Forged-POST guard, mirroring the variation view's is_digital=True.
+    if not (
+        line.product.is_digital
+        and line.product.digital_fulfillment_type == "CUSTOM"
+    ):
+        raise Http404(
+            "This order line is not a CUSTOM digital line."
+        )
+
+    product = line.product
+    variation = line.product_variation
+
+    pending_partial = "artisans/dashboard/partials/_pending_custom_digital_rows.html"
+    form_template = "artisans/dashboard/partials/_vault_upload_form.html"
+
+    # The form template renders into #vault-upload-modal-body on the
+    # variation page; on the orders dashboard it targets
+    # #order-product-vault-upload-modal-body. Keep the two containers
+    # separate so the two modals can be open on different pages without
+    # cross-targeting.
+    form_context = {
+        "form": None,  # filled per branch below
+        "product": product,
+        "variation": variation,
+        "order_product": line,
+        "upload_post_url": reverse(
+            "a_dashboard_order_product_upload_vault",
+            args=[order_product_id],
+        ),
+        "upload_target": "#order-product-vault-upload-modal-body",
+    }
+
+    if request.method == "POST":
+        form = ArtisanVaultUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                self_supersede_and_create(
+                    profile=profile,
+                    product=product,
+                    variation=variation,
+                    form=form,
+                    order_product=line,
+                )
+            except IntegrityError:
+                # Race with a concurrent upload for the same order_product
+                # from another tab. The partial unique constraint is the
+                # guard; the correct recovery is to retry the supersession
+                # once (the second call's select_for_update will see the
+                # committed PENDING row and flip it to SUPERSEDED before
+                # creating the new one). If the retry also fails
+                # (three-way race, e.g. a third tab), the exception
+                # propagates and the view returns 500 — acceptable
+                # for a behaviour this rare; the constraint has still
+                # protected the data.
+                self_supersede_and_create(
+                    profile=profile,
+                    product=product,
+                    variation=variation,
+                    form=form,
+                    order_product=line,
+                )
+            # Fetch the new PENDING row to schedule the admin notification.
+            # Safe immediately after the helper returns: the second
+            # partial unique constraint caps PENDING rows at one per
+            # order_product, so .get() cannot race here.
+            new_upload = ArtisanVaultUpload.objects.get(
+                order_product=line, status="PENDING",
+            )
+            transaction.on_commit(
+                lambda uid=new_upload.id:
+                    send_vault_upload_pending_email_task.delay(str(uid))
+            )
+            messages.success(
+                request,
+                "已提交，等待管理員審核。｜Submitted for admin review.",
+            )
+            # Re-render the pending-custom-digital list so the card
+            # picks up the new 待審核檔案 badge (see commit 5's
+            # property on OrderProduct). The container id matches the
+            # one in _orders_panel.html.
+            pending_lines = (
+                OrderProduct.objects
+                .filter(fulfilled_by=profile, is_dispatched=False)
+                .filter(
+                    product__is_digital=True,
+                    product__digital_fulfillment_type="CUSTOM",
+                )
+                .select_related("order", "product", "product_variation")
+                .order_by("-order__created_at")
+            )
+            response = render(request, pending_partial, {
+                "pending_custom_digital": pending_lines,
+            })
+            response["HX-Retarget"] = "#pending-custom-digital-container"
+            return response
+
+        form_context["form"] = form
+        return render(request, form_template, form_context)
+
+    # GET
+    form_context["form"] = ArtisanVaultUploadForm()
+    return render(request, form_template, form_context)
 
 
 @artisan_required

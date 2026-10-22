@@ -33,12 +33,30 @@ from PIL import Image
 # ──────────────────────────────────────────────────────────────
 
 @pytest.fixture(autouse=True)
-def _redirect_media_root(tmp_path, settings):
-    """Point MEDIA_ROOT at a fresh per-test directory."""
+def _redirect_test_storage(tmp_path, settings):
+    """
+    Point MEDIA_ROOT and XINDENG_VAULT_ROOT at fresh per-test
+    directories.
+
+    Autouse and project-wide: a test that writes to an image field or
+    to the vault cannot accidentally write into the real media/ or
+    private_digital_vault/ trees. The vault, in particular, has no
+    cleanup outside the eventual _pending/ sweeper (backlog item 12),
+    so a stray test write there would leak into subsequent runs.
+
+    The _pending/ subdirectory is created eagerly so tests that 
+    assert on the vault's directory structure see the same shape 
+    they would in production. 
+    The helper itself creates the directory before writing; 
+    the eager mkdir is for tests, not for the helper.
+    """
     media = tmp_path / "media"
     media.mkdir(parents=True, exist_ok=True)
     settings.MEDIA_ROOT = str(media)
 
+    vault = tmp_path / "vault"
+    (vault / "_pending").mkdir(parents=True, exist_ok=True)
+    settings.XINDENG_VAULT_ROOT = str(vault)
 
 # ──────────────────────────────────────────────────────────────
 # Image byte factories

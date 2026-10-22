@@ -7,6 +7,8 @@ urlpatterns = [
     path('dashboard/', views.dashboard_overview, name='a_dashboard'),
     path('dashboard/orders/', views.dashboard_orders, name='a_dashboard_orders'),
     path('dashboard/orders/<int:line_id>/dispatch/', views.dashboard_dispatch_line, name='a_dashboard_dispatch_line'),
+    path('dashboard/orders/<int:order_product_id>/upload-vault/', views.dashboard_order_product_upload_vault, name='a_dashboard_order_product_upload_vault'),
+
     path('dashboard/blog/', views.dashboard_blog_list, name='a_dashboard_blog'),
     path('dashboard/blog/new/', views.dashboard_blog_create, name='a_dashboard_blog_new'),
     path('dashboard/blog/<int:pk>/edit/', views.dashboard_blog_edit, name='a_dashboard_blog_edit'),

@@ -1,0 +1,60 @@
+{# templates/artisans/dashboard/partials/_pending_custom_digital_rows.html #}
+{% for line in pending_custom_digital %}
+<div class="bg-white border border-base-200/60 rounded-2xl p-5">
+    <div class="flex items-start gap-4">
+        <div class="w-16 h-16 rounded-xl overflow-hidden bg-base-200 flex-shrink-0">
+            {% if line.product.images %}
+            <img src="{{ line.product.images.url }}" class="w-full h-full object-cover" />
+            {% endif %}
+        </div>
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1 flex-wrap">
+                <span class="badge badge-xs badge-accent">Custom Digital｜客製數位</span>
+                {% if line.pending_vault_upload_count %}
+                <span class="badge badge-xs badge-warning">
+                    待審核檔案 {{ line.pending_vault_upload_count }}
+                </span>
+                {% endif %}
+            </div>
+            <p class="text-sm font-medium">{{ line.product.product_name }}</p>
+            <p class="text-xs text-base-content/50 mt-1">
+                {{ line.product_variation.get_sku }} · Qty: {{ line.quantity }}
+            </p>
+            <p class="text-xs text-base-content/50 mt-1">
+                Order #{{ line.order.order_number }}
+            </p>
+            <p class="text-xs text-base-content/60 mt-2 leading-relaxed">
+                將完成的作品檔案上傳至系統，經管理員審核後由系統發送下載連結給買家。
+                <br>
+                <span class="text-[10px] opacity-70">Upload the finished file. After admin review the system delivers the download link to the buyer.</span>
+            </p>
+            <p class="text-[10px] text-warning mt-2 flex items-center gap-1">
+                <i class="fa-solid fa-lock text-[9px]"></i>
+                This order cannot be self-cancelled by the customer｜此訂單顧客無法自行取消
+            </p>
+        </div>
+    </div>
+
+    <div class="mt-4 pt-4 border-t border-base-200/60 flex justify-end">
+        <button type="button"
+                class="btn btn-primary btn-sm rounded-lg"
+                hx-get="{% url 'a_dashboard_order_product_upload_vault' line.id %}"
+                hx-target="#order-product-vault-upload-modal-body"
+                hx-swap="innerHTML"
+                hx-on::after-request="if(event.detail.successful) document.getElementById('order-product-vault-upload-modal').showModal()">
+            <i class="fa-solid fa-cloud-arrow-up text-xs mr-1"></i>
+            {% if line.pending_vault_upload_count %}
+                Replace File｜重新上傳
+            {% else %}
+                Upload File｜上傳檔案
+            {% endif %}
+        </button>
+    </div>
+</div>
+{% endfor %}
+
+{% if not pending_custom_digital %}
+<p class="text-center text-sm text-base-content/40 py-8">
+    暫無待上傳的客製數位訂單。｜No pending custom-digital uploads.
+</p>
+{% endif %}

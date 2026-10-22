@@ -1,7 +1,7 @@
 <!-- templates/artisans/dashboard/partials/_vault_upload_form.html -->
 <form id="vault-upload-form"
-      hx-post="{% url 'a_dashboard_product_variation_upload_vault' product.id variation.id %}"
-      hx-target="#vault-upload-modal-body"
+      hx-post="{{ upload_post_url }}"
+      hx-target="{{ upload_target|default:'#vault-upload-modal-body' }}"
       hx-swap="innerHTML"
       hx-encoding="multipart/form-data">
 
