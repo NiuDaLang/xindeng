@@ -416,7 +416,45 @@ class OrderProduct(models.Model):
     
     def get_subtotal(self):
         return self.product_price * self.quantity
-    
+
+    @property
+    def pending_vault_upload_count(self):
+        """
+        Number of ArtisanVaultUpload rows for this specific order-product
+        line that are currently PENDING review.
+
+        This is the per-line sibling of ProductVariation.pending_vault_upload_count
+        and Product.pending_vault_upload_count. The three serve different
+        audiences and must not be collapsed:
+
+          * Product.pending_vault_upload_count — the products-list page
+            and edit-page header: "how much work is waiting on this
+            product?"
+          * ProductVariation.pending_vault_upload_count — the variation
+            card on the product-edit page: "which specific variation is
+            blocked?"
+          * OrderProduct.pending_vault_upload_count — the pending-custom-
+            digital card on the artisan orders dashboard: "does this
+            order line already have a file awaiting admin review?"
+
+        The distinction between the variation-level and order-product-
+        level counts is load-bearing for CUSTOM delivery: a single
+        variation can have multiple CUSTOM order lines, and each line's
+        upload is scoped to its order_product (see the second partial
+        unique constraint on ArtisanVaultUpload, unique_pending_upload_
+        per_order_product). The variation-level count aggregates across
+        those lines; the order-product-level count is per-line. Reading
+        the wrong one in the orders dashboard would show a badge on
+        every line the moment any line on that variation had a pending
+        upload.
+
+        The partial unique constraint caps this at 1 in practice, but
+        it is exposed as a count rather than a bool so the template can
+        render it as a counter badge directly, and so relaxing the
+        constraint later does not silently change the UI contract.
+        """
+        return self.vault_uploads.filter(status="PENDING").count()
+
 
 class OrderVoucherUsage(models.Model):
     order               = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="voucher_usages")
