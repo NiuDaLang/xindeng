@@ -667,35 +667,76 @@ class TestPendingCustomDigitalRejectionState:
         assert "Rejected｜已拒絕" in html
         assert "File is blurry — please rescan at 300dpi." in html
 
-    def test_approved_state_hides_upload_action(
-        self, client, artisan_orders_setup,
+    def test_approved_line_moves_to_delivered_tab(
+        self, client, artisan_orders_setup, django_user_model,
     ):
+        """
+        Approving a CUSTOM upload flips is_dispatched and recomputes
+        the order to 'Delivered'. The line therefore leaves the
+        pending bucket and appears in the delivered bucket. This is
+        the pipeline's actual behaviour — the artisan's "done" surface
+        is the delivered tab, not a persistent approved badge in the
+        pending tab.
+        """
+        from orders.models import Order, OrderProduct
         from store.models import ArtisanVaultUpload
-        from django.utils import timezone as tz
 
         chain = artisan_orders_setup
-        ArtisanVaultUpload.objects.create(
-            artisan=chain["profile"],
+        customer = chain["customer"]
+        profile = chain["profile"]
+
+        # A minimal single-CUSTOM-line order, dispatched via approval.
+        order = Order.objects.create(
+            user=customer,
+            order_number="ORD-ARTISAN-APPROVED",
+            email=customer.email,
+            is_ordered=True,
+            order_status="Processing",
+        )
+        line = OrderProduct.objects.create(
+            order=order,
+            user=customer,
             product=chain["custom_line"].product,
-            variation=chain["custom_line"].product_variation,
-            order_product=chain["custom_line"],
+            product_variation=chain["custom_line"].product_variation,
+            product_price=Decimal("20.00"),
+            quantity=1,
+            ordered=True,
+            fulfilled_by=profile,
+            fulfillment_started_at=timezone.now(),
+            is_dispatched=True,   # approval flipped this
+            dispatched_at=timezone.now(),
+        )
+        ArtisanVaultUpload.objects.create(
+            artisan=profile,
+            product=line.product,
+            variation=line.product_variation,
+            order_product=line,
             status="APPROVED",
             storage_kind="LOCAL",
             staged_filename="x.pdf",
             original_filename="x.pdf",
             file_size=10, checksum="a" * 64,
-            reviewed_at=tz.now(),
+            reviewed_at=timezone.now(),
         )
-        html = self._custom_line_html(client, chain)
-        assert "已交付｜Delivered" in html
-        # The upload endpoint URL must NOT appear as an hx-get in this
-        # line's card. The pending and the initial states both render
-        # an hx-get; only the approved state does not.
-        url = reverse(
-            "a_dashboard_order_product_upload_vault",
-            args=[chain["custom_line"].id],
-        )
-        assert f'hx-get="{url}"' not in html
+        # The post_save signal recomputes the order to 'Delivered'
+        # when the only line is dispatched and there are no physical
+        # lines. Assert the precondition.
+        order.refresh_from_db()
+        assert order.order_status == "Delivered"
+
+        client.force_login(chain["artisan_user"])
+        response = client.get(reverse("a_dashboard_orders"))
+        assert response.status_code == 200
+
+        pending_ids = {
+            line.id for line in response.context["pending_custom_digital"]
+        }
+        delivered_ids = {
+            line.id for line in response.context["delivered_lines"]
+        }
+
+        assert line.id not in pending_ids
+        assert line.id in delivered_ids
 
 
 class TestDispatchedAndDeliveredTabs:

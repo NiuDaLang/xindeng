@@ -15,8 +15,6 @@
                         <span class="badge badge-xs badge-warning">待審核檔案 1</span>
                     {% elif latest and latest.status == 'REJECTED' %}
                         <span class="badge badge-xs badge-error">已拒絕｜Rejected</span>
-                    {% elif latest and latest.status == 'APPROVED' %}
-                        <span class="badge badge-xs badge-success">已交付｜Delivered</span>
                     {% endif %}
                 {% endwith %}
             </div>
@@ -71,13 +69,6 @@
                         <br>
                         A file is already awaiting review. Uploading again replaces it.
                     </p>
-                </div>
-            {% elif latest and latest.status == 'APPROVED' %}
-                <div class="flex justify-end">
-                    <span class="text-[10px] opacity-50 italic">
-                        File delivered — no further action needed.
-                        ｜檔案已交付。
-                    </span>
                 </div>
             {% else %}
                 <div class="flex justify-end">
