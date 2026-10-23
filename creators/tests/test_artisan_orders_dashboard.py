@@ -626,3 +626,136 @@ class TestOrderProductVaultUploadView:
         )
         assert new_pending_a.pk != pending_a1.pk
 
+
+class TestPendingCustomDigitalRejectionState:
+    """
+    The artisan's per-line upload card must distinguish four states:
+    no upload / pending / rejected / approved. The rejection state
+    renders the reviewer's note so the artisan knows why they need
+    to re-upload; the approved state hides the upload action because
+    the file has already been served to the customer.
+    """
+
+    def _custom_line_html(self, client, chain):
+        client.force_login(chain["artisan_user"])
+        response = client.get(reverse("a_dashboard_orders"))
+        assert response.status_code == 200
+        html = response.content.decode()
+        start = html.find('data-panel="pending"')
+        end = html.find('data-panel="dispatched"', start)
+        return html[start:end]
+
+    def test_rejection_renders_review_note(
+        self, client, artisan_orders_setup,
+    ):
+        from store.models import ArtisanVaultUpload
+
+        chain = artisan_orders_setup
+        ArtisanVaultUpload.objects.create(
+            artisan=chain["profile"],
+            product=chain["custom_line"].product,
+            variation=chain["custom_line"].product_variation,
+            order_product=chain["custom_line"],
+            status="REJECTED",
+            storage_kind="LOCAL",
+            staged_filename="x.pdf",
+            original_filename="x.pdf",
+            file_size=10, checksum="a" * 64,
+            review_note="File is blurry — please rescan at 300dpi.",
+        )
+        html = self._custom_line_html(client, chain)
+        assert "Rejected｜已拒絕" in html
+        assert "File is blurry — please rescan at 300dpi." in html
+
+    def test_approved_state_hides_upload_action(
+        self, client, artisan_orders_setup,
+    ):
+        from store.models import ArtisanVaultUpload
+        from django.utils import timezone as tz
+
+        chain = artisan_orders_setup
+        ArtisanVaultUpload.objects.create(
+            artisan=chain["profile"],
+            product=chain["custom_line"].product,
+            variation=chain["custom_line"].product_variation,
+            order_product=chain["custom_line"],
+            status="APPROVED",
+            storage_kind="LOCAL",
+            staged_filename="x.pdf",
+            original_filename="x.pdf",
+            file_size=10, checksum="a" * 64,
+            reviewed_at=tz.now(),
+        )
+        html = self._custom_line_html(client, chain)
+        assert "已交付｜Delivered" in html
+        # The upload endpoint URL must NOT appear as an hx-get in this
+        # line's card. The pending and the initial states both render
+        # an hx-get; only the approved state does not.
+        url = reverse(
+            "a_dashboard_order_product_upload_vault",
+            args=[chain["custom_line"].id],
+        )
+        assert f'hx-get="{url}"' not in html
+
+
+class TestDispatchedAndDeliveredTabs:
+    """
+    Both tabs must show enough information for the artisan to identify
+    the order and the line without switching to the member side. The
+    pre-change templates rendered only the product name and (for
+    dispatched) the date.
+    """
+
+    def _panel_slice(self, html, start_marker, end_marker):
+        start = html.find(start_marker)
+        end = html.find(end_marker, start)
+        assert start != -1 and end != -1
+        return html[start:end]
+
+    def test_delivered_tab_shows_order_number_and_sku(
+        self, client, artisan_orders_setup, django_user_model,
+    ):
+        """
+        A minimal delivered order — one line, dispatched, order status
+        'Delivered'. The mixed-cart fixture cannot reach 'Delivered'
+        because the physical and instant lines are undispatched, and
+        the post_save signal correctly recomputes to 'Partly_Dispatched'
+        on any line save. Trying to fight the signal is a fixture
+        defect, not a view defect.
+        """
+        from orders.models import Order, OrderProduct
+
+        chain = artisan_orders_setup
+        customer = chain["customer"]
+        profile = chain["profile"]
+        product = chain["custom_line"].product
+        variation = chain["custom_line"].product_variation
+
+        delivered_order = Order.objects.create(
+            user=customer,
+            order_number="ORD-ARTISAN-DELIVERED",
+            email=customer.email,
+            is_ordered=True,
+            order_status="Delivered",
+        )
+        delivered_line = OrderProduct.objects.create(
+            order=delivered_order,
+            user=customer,
+            product=product,
+            product_variation=variation,
+            product_price=Decimal("20.00"),
+            quantity=1,
+            ordered=True,
+            fulfilled_by=profile,
+            fulfillment_started_at=timezone.now(),
+            is_dispatched=True,
+            dispatched_at=timezone.now(),
+        )
+
+        client.force_login(chain["artisan_user"])
+        response = client.get(reverse("a_dashboard_orders"))
+        html = response.content.decode()
+        tail = html[html.find('data-panel="delivered"'):]
+
+        assert delivered_order.order_number in tail
+        assert variation.get_sku() in tail

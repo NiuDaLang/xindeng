@@ -455,6 +455,23 @@ class OrderProduct(models.Model):
         """
         return self.vault_uploads.filter(status="PENDING").count()
 
+    @property
+    def latest_vault_upload(self):
+        """
+        The most recent upload for this order line, in any state.
+
+        Used by the artisan orders dashboard to render the per-line state
+        (no upload / pending / rejected / approved) and — when rejected —
+        to surface the reviewer's note so the artisan knows why they need
+        to re-upload.
+
+        Sort key mirrors ProductVariation.latest_terminal_vault_upload:
+        submitted_at is a monotonic auto_now_add and reliable as an
+        ordering key across all states; reviewed_at is null for PENDING
+        rows so cannot be the primary sort here.
+        """
+        return self.vault_uploads.order_by('-submitted_at').first()
+
 
 class OrderVoucherUsage(models.Model):
     order               = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="voucher_usages")

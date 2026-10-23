@@ -74,7 +74,7 @@
 
     <div class="modal-action">
         <button type="button"
-                onclick="document.getElementById('vault-upload-modal').close()"
+                onclick="this.closest('dialog')?.close()"
                 class="btn btn-ghost btn-sm">
             Cancel｜取消
         </button>
@@ -83,3 +83,14 @@
         </button>
     </div>
 </form>
+<script>
+    document.body.addEventListener(
+        "orderProductVaultUploadSuccess",
+        function () {
+            const modal = document.getElementById(
+                "order-product-vault-upload-modal"
+            );
+            if (modal) modal.close();
+        }
+    );
+</script>

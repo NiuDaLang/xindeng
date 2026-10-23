@@ -58,6 +58,7 @@ from category.models import Category
 from django_ckeditor_5.widgets import CKEditor5Widget
 from django.http import JsonResponse
 from django.http import Http404
+import json
 
 from store.tasks import (
     send_product_submission_email_task,
@@ -784,8 +785,11 @@ def dashboard_orders(request):
     )
 
     dispatched_lines = base_qs.filter(is_dispatched=True).exclude(order__order_status='Delivered')[:20]
-    delivered_lines = base_qs.filter(order__order_status='Delivered')[:20]
-
+    delivered_lines = (
+        base_qs
+        .filter(order__order_status='Delivered')
+        .order_by('-dispatched_at', '-order__updated_at')[:20]
+    )
     context = artisan_dashboard_context(request)
     context.update({
         'active_section': 'orders',
@@ -2026,6 +2030,9 @@ def dashboard_order_product_upload_vault(request, order_product_id):
                 "pending_custom_digital": pending_lines,
             })
             response["HX-Retarget"] = "#pending-custom-digital-container"
+            response["HX-Trigger"] = json.dumps({
+                "orderProductVaultUploadSuccess": True,
+            })
             return response
 
         form_context["form"] = form

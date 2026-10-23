@@ -111,16 +111,21 @@
     <div class="space-y-3">
         {% for line in dispatched_lines %}
         <div class="bg-white border border-base-200/60 rounded-xl p-4">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 mb-2">
                 <i class="fa-solid fa-truck text-xs text-success"></i>
-                <p class="text-sm flex-1">{{ line.product.product_name }}</p>
-                <p class="text-xs text-base-content/50">
+                <p class="text-sm font-medium flex-1">{{ line.product.product_name }}</p>
+                <span class="text-[10px] font-mono text-base-content/50">
                     {{ line.dispatched_at|date:"Y-m-d" }}
-                </p>
+                </span>
+            </div>
+            <div class="ml-7 grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1 text-[11px] text-base-content/60 font-mono">
+                <span>Order #{{ line.order.order_number }}</span>
+                <span>SKU: {{ line.product_variation.get_sku }}</span>
+                <span>Qty: {{ line.quantity }}</span>
             </div>
             {% with tracking=line.tracking_assignments.first %}
             {% if tracking %}
-            <p class="text-xs text-base-content/60 mt-2 ml-6 font-mono">
+            <p class="text-xs text-base-content/60 mt-2 ml-7 font-mono">
                 {{ tracking.carrier_name }} · {{ tracking.tracking_code }}
             </p>
             {% endif %}
@@ -137,8 +142,18 @@
     <div class="space-y-3">
         {% for line in delivered_lines %}
         <div class="bg-white border border-base-200/60 rounded-xl p-4">
-            <p class="text-sm">{{ line.product.product_name }}</p>
-            <p class="text-xs text-base-content/50 mt-1">Delivered</p>
+            <div class="flex items-center gap-3 mb-2">
+                <i class="fa-solid fa-circle-check text-xs text-success"></i>
+                <p class="text-sm font-medium flex-1">{{ line.product.product_name }}</p>
+                <span class="text-[10px] font-mono text-base-content/50">
+                    {{ line.dispatched_at|date:"Y-m-d"|default:line.order.updated_at|date:"Y-m-d" }}
+                </span>
+            </div>
+            <div class="ml-7 grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1 text-[11px] text-base-content/60 font-mono">
+                <span>Order #{{ line.order.order_number }}</span>
+                <span>SKU: {{ line.product_variation.get_sku }}</span>
+                <span>Qty: {{ line.quantity }}</span>
+            </div>
         </div>
         {% empty %}
         <p class="text-center text-sm text-base-content/40 py-16">No delivered orders yet.</p>
