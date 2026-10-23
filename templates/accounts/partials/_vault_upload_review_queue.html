@@ -61,6 +61,13 @@
         {% endif %}
 
         <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-base-200/60 justify-end">
+          <a href="{% url 'review_vault_upload_preview' upload.id %}"
+            target="_blank"
+            rel="noopener"
+            class="btn btn-xs btn-ghost gap-1">
+              <i class="fa-regular fa-eye text-[10px]"></i>
+              Preview｜預覽
+          </a>
           {% if upload.storage_kind == 'LOCAL' or upload.storage_kind == 'LOCAL_PENDING' %}
             <form method="post"
                   action="{% url 'review_vault_upload_approve' upload.id %}"

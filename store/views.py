@@ -27,7 +27,7 @@ from django.db import transaction
 from orders.models import OrderProduct
 from creators.models import CreatorProfile
 from core.image_utils import safe_image_url
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from accounts.decorators import superuser_required
 from .tasks import (
     send_product_review_result_email_task,
@@ -687,6 +687,92 @@ def review_vault_upload_approve(request, upload_id):
         f"已通過：{variation.get_sku()}｜Approved.",
     )
     return redirect("dashboard", subpage="product_review")
+
+
+@require_GET
+@superuser_required
+def review_vault_upload_preview(request, upload_id):
+    """
+    Stream the staged file of a PENDING ArtisanVaultUpload to the
+    reviewing superuser, without moving it out of _pending/.
+
+    This is the admin-side counterpart of secure_file_download_gate.
+    The gate serves the customer the final, approved file. This view
+    serves the reviewer the staged file so they can decide whether to
+    approve it. Same containment discipline; different authorisation
+    target (the reviewer, not the token holder) and different source
+    (the _pending/ staging area, not the vault root).
+
+    Only PENDING uploads are served. Once an upload is approved or
+    rejected, the file has either moved to the vault root (approved,
+    served by the gate to the customer) or been deleted (rejected);
+    serving it here would either be dead code or a leak of a deleted
+    path. Restricting to PENDING keeps the view single-purpose.
+
+    Content-Disposition branches on whether the browser can render
+    the file natively:
+
+      * application/pdf  → inline. Chrome, Firefox, Safari, and Edge
+        all ship a PDF viewer. The reviewer reads the file in the
+        tab and closes it.
+
+      * application/epub+zip, application/zip → attachment. No browser
+        renders EPUB or ZIP natively; inline would show a blank page
+        (what the reviewer then assumes is a broken view). Forcing
+        download is the correct intent: the reviewer wants the file
+        in their hands, not in the browser window.
+
+    A future addition (e.g. accepting image formats as an alternate
+    review path) would extend the inline branch; the ZIP/EPUB branch
+    stays attachment.
+    """
+    from store.models import ArtisanVaultUpload
+
+    upload = get_object_or_404(ArtisanVaultUpload, id=upload_id)
+
+    if upload.status != "PENDING":
+        raise Http404(
+            "Only PENDING uploads can be previewed by the reviewer."
+        )
+
+    if not upload.staged_filename:
+        raise Http404(
+            "This upload has no staged file to preview."
+        )
+
+    pending_root = Path(settings.XINDENG_VAULT_ROOT) / "_pending"
+    raw_target = pending_root / upload.staged_filename
+
+    if raw_target.is_symlink():
+        raise Http404("Symlink not permitted in vault.")
+
+    target = raw_target.resolve()
+    if not target.is_relative_to(pending_root.resolve()):
+        raise Http404("Directory traversal security exception occurred.")
+
+    if not target.is_file():
+        raise Http404("Staged file not found on disk.")
+
+    mime_type, _ = mimetypes.guess_type(str(target))
+    mime_type = mime_type or "application/octet-stream"
+
+    # Branches on whether the browser can render the file natively.
+    # Only PDF has a browser-native renderer among the whitelisted
+    # formats; ZIP and EPUB do not and would show a blank inline page.
+    if mime_type == "application/pdf":
+        disposition = "inline"
+    else:
+        disposition = "attachment"
+
+    response = FileResponse(
+        open(target, "rb"),
+        as_attachment=(disposition == "attachment"),
+    )
+    response["Content-Type"] = mime_type
+    response["Content-Disposition"] = (
+        f'{disposition}; filename="{upload.original_filename or target.name}"'
+    )
+    return response
 
 
 @require_POST
