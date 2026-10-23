@@ -5,8 +5,13 @@ Thank you for your purchase! Your digital product has been fulfilled successfull
 
 商品名稱｜Item Name: {{ product.product_name }}
 
+{% if token.order_product.product.digital_fulfillment_type == "CUSTOM" %}
+請點擊下方連結下載您的電子商品（因作品為接單訂製，連結有效期為一年）：
+Please click the link below to securely fetch your digital product (Valid for one year — this item was made to order):
+{% else %}
 請點擊下方連結下載您的電子商品（連結有效期為 7 天）：
 Please click the link below to securely fetch your digital product (Valid for 7 days):
+{% endif %}
 {{ download_url }}
 
 本下載連結將於 {{ token.expires_at|date:"Y-m-d H:i" }} 自動失效。

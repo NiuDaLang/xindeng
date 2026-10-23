@@ -171,6 +171,23 @@ class TestIssueDownloadToken:
         expected_max = after + timedelta(hours=168)
         assert expected_min <= token.expires_at <= expected_max
 
+    def test_custom_ttl_override_produces_one_year_expires_at(
+        self, order_with_instant_digital_line, django_capture_on_commit_callbacks,
+    ):
+        from orders.utils import issue_download_token
+        from orders.tasks import send_e_product_email_task
+
+        chain = order_with_instant_digital_line
+        before = timezone.now()
+        with patch.object(send_e_product_email_task, "delay", lambda uid: None):
+            with django_capture_on_commit_callbacks(execute=True):
+                token = issue_download_token(chain["order_product"], ttl_hours=8760)
+        after = timezone.now()
+
+        expected_min = before + timedelta(hours=8760)
+        expected_max = after + timedelta(hours=8760)
+        assert expected_min <= token.expires_at <= expected_max
+
     def test_dispatches_notification_on_commit(
         self, order_with_instant_digital_line, django_capture_on_commit_callbacks,
     ):

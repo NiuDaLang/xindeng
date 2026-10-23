@@ -638,7 +638,14 @@ def review_vault_upload_approve(request, upload_id):
                     # to on_commit by the helper itself — unchanged
                     # behaviour.
                     from orders.utils import issue_download_token #DO NOT MAKE THIS IMPORT MODULE-SCOPE
-                    issue_download_token(locked_order_product)
+                    # CUSTOM delivery is made-to-order: the customer waited weeks
+                    # for the work. The 2026-10-21 decision specifies one year,
+                    # not the shared helper's 7-day default (which is the INSTANT
+                    # window and is meaningful there — the download-period /
+                    # cancellation-window shape). See the CUSTOM pipeline v2
+                    # handoff, and the email-template branch that must move with
+                    # this call.
+                    issue_download_token(locked_order_product, ttl_hours=8760)
                 else:
                     locked_variation.digital_file_path = (
                         locked_upload.staged_filename

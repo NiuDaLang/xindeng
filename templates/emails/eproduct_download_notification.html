@@ -21,13 +21,23 @@
         </div>
 
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #fffaf0; border: 1px solid #feebc8; border-radius: 8px; margin-top: 20px;">
-            <tr>
-                <td style="padding: 12px; font-size: 11px; line-height: 1.4rem; color: #c05621;">
-                    <strong>🔒 Security Access Restrictions｜存取時效安全提示：</strong><br/>
-                    • This link remains valid for exactly <strong>7 days</strong> from the time of order settlement. It will expire automatically on {{ token.expires_at|date:"Y-m-d H:i" }}.<br/>
-                    • 本下載連結從訂單付款完成起算，有效期為 <strong>7 天</strong>。連結將於 {{ token.expires_at|date:"Y-m-d H:i" }} 自動失效，過期後將無法下載。
-                </td>
-            </tr>
+            {% if token.order_product.product.digital_fulfillment_type == "CUSTOM" %}
+                <tr>
+                    <td style="padding: 12px; font-size: 11px; line-height: 1.4rem; color: #c05621;">
+                        <strong>🔒 Security Access Restrictions｜存取時效安全提示：</strong><br/>
+                        • This link remains valid for <strong>one year</strong> from the time of delivery, because your item was made to order. It will expire automatically on {{ token.expires_at|date:"Y-m-d H:i" }}.<br/>
+                        • 本下載連結因作品為接單訂製，自交付起算有效期為 <strong>一年</strong>。連結將於 {{ token.expires_at|date:"Y-m-d H:i" }} 自動失效，過期後將無法下載。
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td style="padding: 12px; font-size: 11px; line-height: 1.4rem; color: #c05621;">
+                        <strong>🔒 Security Access Restrictions｜存取時效安全提示：</strong><br/>
+                        • This link remains valid for exactly <strong>7 days</strong> from the time of order settlement. It will expire automatically on {{ token.expires_at|date:"Y-m-d H:i" }}.<br/>
+                        • 本下載連結從訂單付款完成起算，有效期為 <strong>7 天</strong>。連結將於 {{ token.expires_at|date:"Y-m-d H:i" }} 自動失效，過期後將無法下載。
+                    </td>
+                </tr>
+            {% endif %}
         </table>
     </div>
 </body>
