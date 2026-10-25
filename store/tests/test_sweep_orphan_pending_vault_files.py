@@ -43,7 +43,7 @@ def vault_root(tmp_path, settings):
 
 
 @pytest.fixture
-def pending_root(vault_root) -> Path:
+def pending_root(vault_root, db) -> Path:
     return vault_root / "_pending"
 
 
