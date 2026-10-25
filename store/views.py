@@ -536,8 +536,44 @@ def review_vault_upload_approve(request, upload_id):
     pending_root = vault_root / "_pending"
     retired_root = vault_root / "_retired"
 
+    # ── Route by Category.vault_subfolder ─────────────────────────
+    # The category's vault_subfolder determines where the approved
+    # file lands and what prefix its pointer carries. Blank = the
+    # vault root (the historical default, and the state of every
+    # category that has not been explicitly configured).
+    #
+    # The containment check is fail-closed: a vault_subfolder of
+    # "..", an absolute path, or anything else that resolves outside
+    # the vault root is refused rather than coerced. No currently-
+    # configured category triggers it; the guard is here so a future
+    # admin edit to Category.vault_subfolder cannot silently write
+    # outside the vault.
+    category_subfolder = (upload.product.category.vault_subfolder or "").strip()
+    if category_subfolder:
+        dst_dir = vault_root / category_subfolder
+        if not dst_dir.resolve().is_relative_to(vault_root.resolve()):
+            messages.error(
+                request,
+                "分類的 vault subfolder 設定了不安全的値，無法審核。"
+                "｜The category's vault_subfolder escapes the vault "
+                "root; refusing to approve.",
+            )
+            return redirect("dashboard", subpage="product_review")
+    else:
+        dst_dir = vault_root
+
+    # Pointer the file will be promoted to. Prefixed when a subfolder
+    # is configured, bare otherwise. Both forms resolve correctly
+    # through secure_file_download_gate (which does vault_root /
+    # file_pointer); this is why the pointer is a string, not a Path.
+    new_pointer = (
+        f"{category_subfolder}/{upload.staged_filename}"
+        if category_subfolder
+        else upload.staged_filename
+    )
+
     src_path = pending_root / upload.staged_filename
-    dst_path = vault_root / upload.staged_filename
+    dst_path = dst_dir / upload.staged_filename
 
     if not src_path.is_file():
         messages.error(
@@ -587,9 +623,17 @@ def review_vault_upload_approve(request, upload_id):
             # ── Retire the previous file, if any ─────────────────
             # Do this before the rename so a failure here aborts
             # without having touched the new file.
+            #
+            # previous_pointer is a vault-relative string, so it
+            # already carries its own subfolder prefix (if any) —
+            # _retired / "epaintings/<uuid>.pdf" is the correct
+            # destination and preserves the file's provenance. For
+            # legacy pointers with no prefix, _retired / "<uuid>.pdf"
+            # is what we already had; the block is unchanged in that
+            # case.
             if (
                 previous_pointer
-                and previous_pointer != upload.staged_filename
+                and previous_pointer != new_pointer
             ):
                 previous_path = vault_root / previous_pointer
                 if previous_path.is_file():
@@ -606,8 +650,10 @@ def review_vault_upload_approve(request, upload_id):
                         )
                     shutil.move(str(previous_path), str(retired_path))
 
-            # ── Move the new file into the vault root ────────────
-            # Same-filesystem rename: atomic on POSIX.
+            # ── Move the new file into the routed destination ────
+            # mkdir(parents=True, exist_ok=True) auto-creates the
+            # subfolder on first approval. Same-filesystem rename:
+            # atomic on POSIX.
             dst_path.parent.mkdir(parents=True, exist_ok=True)
             os.rename(src_path, dst_path)
 
@@ -623,9 +669,7 @@ def review_vault_upload_approve(request, upload_id):
                         .select_for_update()
                         .get(id=locked_upload.order_product_id)
                     )
-                    locked_order_product.digital_file_path = (
-                        locked_upload.staged_filename
-                    )
+                    locked_order_product.digital_file_path = new_pointer
                     locked_order_product.save(
                         update_fields=["digital_file_path"]
                     )
@@ -647,9 +691,7 @@ def review_vault_upload_approve(request, upload_id):
                     # this call.
                     issue_download_token(locked_order_product, ttl_hours=8760)
                 else:
-                    locked_variation.digital_file_path = (
-                        locked_upload.staged_filename
-                    )
+                    locked_variation.digital_file_path = new_pointer
                     locked_variation.save(
                         update_fields=["digital_file_path"]
                     )
