@@ -118,7 +118,7 @@ def artisan_chain(db, django_user_model, vault_root):
         is_physical=False,
         is_voucher=False,
         is_active=True,
-        status="Published",
+        status="Pending",
     )
     variation = ProductVariation.objects.create(
         product=product,
@@ -465,7 +465,7 @@ def chain_with_supersession(db, django_user_model, vault_root):
         is_physical=False,
         is_voucher=False,
         is_active=True,
-        status="Published",
+        status="Pending",
     )
     variation = ProductVariation.objects.create(
         product=product,

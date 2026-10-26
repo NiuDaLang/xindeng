@@ -532,6 +532,33 @@ def review_vault_upload_approve(request, upload_id):
         )
         return redirect("dashboard", subpage="product_review")
 
+    # ── Review-state guard ────────────────────────────────────────
+    # A variation-scoped upload can only be approved into a product
+    # that is currently Pending. Draft, Rejected, and Unpublished mean
+    # the product has not (or no longer) been submitted — the file
+    # cannot go live because the product cannot go live. Published
+    # means the file has already passed through review; a new upload
+    # against a Published product cannot be created through the
+    # variation-upload view (the is_editable_by_artisan guard from
+    # 96da259 refuses it), but a stale edit page, a forged POST, or a
+    # legacy row could still present one, and the guard closes that at
+    # the last point before the file moves.
+    #
+    # CUSTOM (order-product-scoped) rows are exempt: the order line
+    # exists and is already under fulfilment, the product is
+    # Published, and the review is against the file's suitability for
+    # that specific delivery, not against the product's lifecycle
+    # state. See the CUSTOM pipeline v2 handoff.
+    is_order_product_scoped = upload.order_product_id is not None
+    if not is_order_product_scoped and upload.product.status != "Pending":
+        messages.error(
+            request,
+            "此作品目前的審核狀態不允許通過此檔案。"
+            "｜This product's review state does not permit approving "
+            "a variation-scoped file right now.",
+        )
+        return redirect("dashboard", subpage="product_review")
+
     vault_root = Path(settings.XINDENG_VAULT_ROOT)
     pending_root = vault_root / "_pending"
     retired_root = vault_root / "_retired"
@@ -584,7 +611,6 @@ def review_vault_upload_approve(request, upload_id):
         return redirect("dashboard", subpage="product_review")
 
     variation = upload.variation
-    is_order_product_scoped = upload.order_product_id is not None
 
     # The "previous pointer to retire" depends on which scope this
     # upload belongs to. CUSTOM uploads promote the file to the

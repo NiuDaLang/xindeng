@@ -90,7 +90,7 @@ def chain_with_pending(db, django_user_model, vault_root):
         digital_fulfillment_type="INSTANT",
         is_physical=False,
         is_active=True,
-        status="Published",
+        status="Pending",
     )
     variation = ProductVariation.objects.create(
         product=product,
@@ -509,3 +509,144 @@ class TestApproveCustomOrderProduct:
         log = VaultUploadReviewLog.objects.get(upload=upload)
         assert log.action == "approved"
         assert log.actor == superuser
+
+
+# ──────────────────────────────────────────────────────────────────
+# Review-state guard — a variation-scoped upload cannot be approved
+# against a product that is not Pending
+# ──────────────────────────────────────────────────────────────────
+
+class TestApproveRefusedOnNonPendingProduct:
+    """
+    The review-state guard added to review_vault_upload_approve.
+
+    A variation-scoped upload can only be approved into a product that
+    is currently Pending. Draft, Rejected, and Unpublished mean the
+    product has not (or no longer) been submitted — the file cannot go
+    live because the product cannot go live. Published means the file
+    has already passed through review; a new upload against a Published
+    product cannot be created through the view (the
+    is_editable_by_artisan guard refuses it), but a stale edit page, a
+    forged POST, or a legacy row could still present one.
+
+    CUSTOM (order-product-scoped) rows are exempt: the product is
+    Published by definition, the order line is already under
+    fulfilment, and the review is against the file's suitability for
+    that specific delivery. TestApproveCustomOrderProduct (above)
+    covers the happy path for that scope; nothing here changes it.
+    """
+
+    def _set_product_status(self, chain, status_value):
+        from store.models import Product
+        Product.objects.filter(pk=chain["product"].pk).update(status=status_value)
+        chain["product"].refresh_from_db()
+
+    def _assert_refused(self, client, chain, response):
+        from store.models import ArtisanVaultUpload
+        from django.contrib.messages import get_messages
+
+        assert response.status_code in (301, 302)
+        # The staged file did not move.
+        assert chain["staged_path"].is_file()
+        # No new file appeared at the vault root.
+        vault_file = chain["staged_path"].parent.parent / chain["staged_name"]
+        assert not vault_file.is_file()
+        # The row's status did not change.
+        chain["upload"].refresh_from_db()
+        assert chain["upload"].status == "PENDING"
+        # The variation pointer was not touched.
+        chain["variation"].refresh_from_db()
+        assert not chain["variation"].digital_file_path
+        # The guard's message is what the reviewer saw.
+        messages_list = [str(m) for m in get_messages(response.wsgi_request)]
+        assert any("review state does not permit" in m for m in messages_list), (
+            "The guard did not fire, or a different refusal reached the "
+            "request first. messages were: " + repr(messages_list)
+        )
+
+    def test_refused_when_product_is_draft(
+        self, client, superuser, chain_with_pending,
+    ):
+        chain = chain_with_pending
+        self._set_product_status(chain, "Draft")
+        client.force_login(superuser)
+        response = client.post(_url(chain["upload"]))
+        self._assert_refused(client, chain, response)
+
+    def test_refused_when_product_is_rejected(
+        self, client, superuser, chain_with_pending,
+    ):
+        chain = chain_with_pending
+        self._set_product_status(chain, "Rejected")
+        client.force_login(superuser)
+        response = client.post(_url(chain["upload"]))
+        self._assert_refused(client, chain, response)
+
+    def test_refused_when_product_is_unpublished(
+        self, client, superuser, chain_with_pending,
+    ):
+        chain = chain_with_pending
+        self._set_product_status(chain, "Unpublished")
+        client.force_login(superuser)
+        response = client.post(_url(chain["upload"]))
+        self._assert_refused(client, chain, response)
+
+    def test_refused_when_product_is_published(
+        self, client, superuser, chain_with_pending,
+    ):
+        """
+        The state a forged POST or a stale edit page would present. A
+        new upload against a Published product cannot be created
+        through the view, but a legacy row or a forged POST could
+        carry one; the guard closes that at approval time.
+        """
+        chain = chain_with_pending
+        self._set_product_status(chain, "Published")
+        client.force_login(superuser)
+        response = client.post(_url(chain["upload"]))
+        self._assert_refused(client, chain, response)
+
+    def test_pending_product_still_approves(
+        self, client, superuser, chain_with_pending,
+    ):
+        """
+        Regression guard: the guard must not refuse the happy path.
+        The fixture's product is already Pending; this test is the
+        baseline the four refusal tests read against.
+        """
+        chain = chain_with_pending
+        assert chain["product"].status == "Pending"
+        client.force_login(superuser)
+        response = client.post(_url(chain["upload"]))
+        assert response.status_code in (301, 302)
+
+        chain["upload"].refresh_from_db()
+        assert chain["upload"].status == "APPROVED"
+        chain["variation"].refresh_from_db()
+        assert chain["variation"].digital_file_path == chain["staged_name"]
+
+    def test_custom_row_is_exempt_from_the_guard(
+        self, client, superuser, chain_with_pending_custom,
+    ):
+        """
+        A CUSTOM row's product is Published by definition. The guard
+        must not refuse it — otherwise every CUSTOM approval would
+        fail, because no CUSTOM product is ever Pending.
+        """
+        chain = chain_with_pending_custom
+        # Assert the premise: a CUSTOM product is Published.
+        from store.models import Product
+        product = Product.objects.get(pk=chain["product"].pk)
+        assert product.status == "Published"
+
+        client.force_login(superuser)
+        response = client.post(_url(chain["upload"]))
+        assert response.status_code in (301, 302)
+
+        chain["upload"].refresh_from_db()
+        assert chain["upload"].status == "APPROVED"
+        chain["order_product"].refresh_from_db()
+        assert chain["order_product"].digital_file_path == chain["staged_name"]
+        # The variation pointer was not touched — CUSTOM is order-scoped.
+        chain["variation"].refresh_from_db()
+        assert not chain["variation"].digital_file_path

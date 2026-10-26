@@ -98,7 +98,7 @@ def make_chain(db, django_user_model, vault_root):
             digital_fulfillment_type="CUSTOM" if custom else "INSTANT",
             is_physical=False,
             is_active=True,
-            status="Published",
+            status="Pending",
         )
         variation = ProductVariation.objects.create(
             product=product,
