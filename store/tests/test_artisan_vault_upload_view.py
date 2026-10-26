@@ -70,7 +70,7 @@ def artisan_chain(db, django_user_model):
         digital_fulfillment_type="INSTANT",
         is_physical=False,
         is_active=True,
-        status="Published",
+        status="Draft",   # ← change to "Draft"
     )
     variation = ProductVariation.objects.create(
         product=product,
@@ -214,7 +214,7 @@ class TestDirectUpload:
 
         upload = ArtisanVaultUpload.objects.get(variation=chain["variation"])
         assert upload.storage_kind == "LOCAL"
-        assert upload.status == "PENDING"
+        assert upload.status == "DRAFT"
         assert upload.original_filename == "ebook.pdf"
         assert upload.file_size == len(pdf)
         assert upload.checksum == expected_sha
@@ -295,8 +295,7 @@ class TestDirectUpload:
 # ──────────────────────────────────────────────────────────────────
 
 class TestExternalUpload:
-
-    def test_external_upload_creates_pending_row(self, client, artisan_chain, vault_root):
+    def test_external_upload_creates_draft_row(self, client, artisan_chain, vault_root):
         from store.models import ArtisanVaultUpload
 
         chain = artisan_chain
@@ -315,7 +314,7 @@ class TestExternalUpload:
 
         upload = ArtisanVaultUpload.objects.get(variation=chain["variation"])
         assert upload.storage_kind == "EXTERNAL_PENDING"
-        assert upload.status == "PENDING"
+        assert upload.status == "DRAFT"
         assert upload.staged_filename == ""
         assert upload.external_url.startswith("https://drive.google.com/")
         assert upload.checksum == "deadbeef"
@@ -373,15 +372,15 @@ class TestSupersession:
         )
         assert response.status_code == 200
 
-        # Old row is SUPERSEDED, its file is gone, and exactly one PENDING remains.
+        # Old row is SUPERSEDED, its file is gone, and exactly one DRAFT remains.
         old_upload.refresh_from_db()
         assert old_upload.status == "SUPERSEDED"
         assert not old_staged.exists()
 
-        pending = ArtisanVaultUpload.objects.filter(
-            variation=chain["variation"], status="PENDING",
+        draft = ArtisanVaultUpload.objects.filter(
+            variation=chain["variation"], status="DRAFT",
         )
-        assert pending.count() == 1
-        new_upload = pending.first()
+        assert draft.count() == 1
+        new_upload = draft.first()
         assert new_upload.original_filename == "v2.pdf"
         assert (vault_root / "_pending" / new_upload.staged_filename).is_file()
