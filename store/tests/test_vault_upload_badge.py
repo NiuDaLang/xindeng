@@ -157,6 +157,72 @@ class TestBadgeOnProductEditPage:
         assert response.status_code == 200
         assert "待審核檔案" in response.content.decode()
 
+    def test_staged_badge_present_when_draft_upload_exists(self, client, artisan_chain):
+        """
+        A DRAFT upload renders the Staged｜已暫存 badge. The label is
+        distinct from 待審核檔案 on purpose: a test that string-
+        matches one cannot be silently satisfied by the other. The
+        full-width bar is the file's convention; a test that matched
+        only "Staged" and "已暫存" separately would be insensitive to
+        the bar, which is why the assertion is on the whole label.
+        """
+        chain = artisan_chain
+        _make_draft(chain, chain["variation"], "staged.pdf")
+
+        client.force_login(chain["user"])
+        response = client.get(_edit_url(chain["product"]))
+
+        assert response.status_code == 200
+        body = response.content.decode()
+        assert "Staged｜已暫存" in body
+        # The PENDING label must not also appear — a DRAFT row does not
+        # count toward pending_vault_upload_count.
+        assert "待審核檔案" not in body
+
+    def test_staged_badge_absent_when_only_pending_upload_exists(
+        self, client, artisan_chain,
+    ):
+        """
+        Symmetry check: a PENDING upload renders 待審核檔案, not
+        Staged｜已暫存. Without this, a template edit that flipped the
+        branch order would still pass test_staged_badge_present_...
+        because the DRAFT branch would fire, and would silently
+        render the wrong label for every PENDING row.
+        """
+        chain = artisan_chain
+        _make_pending(chain, chain["variation"], "pending.pdf")
+
+        client.force_login(chain["user"])
+        response = client.get(_edit_url(chain["product"]))
+
+        assert response.status_code == 200
+        body = response.content.decode()
+        assert "待審核檔案" in body
+        assert "Staged｜已暫存" not in body
+
+    def test_staged_and_pending_badges_are_mutually_exclusive_at_the_card_level(
+        self, client, two_variation_chain,
+    ):
+        """
+        Two variations, one DRAFT and one PENDING. The card for each
+        variation carries exactly its own badge. This is the card-
+        level assertion that the aggregate tests cannot make: the
+        header shows both counts (see TestAggregateBadgeOnEditPage
+        Header), but each card is a single row and shows one badge.
+        """
+        chain = two_variation_chain
+        _make_draft(chain, chain["variation_a"], "a-staged.pdf")
+        _make_pending(chain, chain["variation_b"], "b-pending.pdf")
+
+        client.force_login(chain["user"])
+        response = client.get(_edit_url(chain["product"]))
+        assert response.status_code == 200
+        body = response.content.decode()
+
+        # Both labels appear somewhere in the page — once per card.
+        assert "Staged｜已暫存" in body
+        assert "待審核檔案" in body
+
 
 # ──────────────────────────────────────────────────────────────────
 # Product-level aggregate — the source of truth for both new badges
@@ -231,6 +297,22 @@ def _make_pending(chain, variation, name):
         product=chain["product"],
         variation=variation,
         status="PENDING",
+        staged_filename=name,
+    )
+
+
+def _make_draft(chain, variation, name):
+    """
+    Companion to _make_pending. DRAFT is the status a variation-scoped
+    upload starts in against a product that has not been submitted;
+    the badge that reads it is Staged｜已暫存.
+    """
+    from store.models import ArtisanVaultUpload
+    return ArtisanVaultUpload.objects.create(
+        artisan=chain["profile"],
+        product=chain["product"],
+        variation=variation,
+        status="DRAFT",
         staged_filename=name,
     )
 
@@ -436,6 +518,48 @@ class TestAggregateBadgeOnEditPageHeader:
 
         assert response.status_code == 200
         assert "待審檔案 1" in response.content.decode()
+
+    def test_header_shows_staged_count_when_draft_upload_exists(
+        self, client, artisan_chain,
+    ):
+        """
+        The header carries Staged｜已暫存 N alongside 待審檔案 M. Both
+        labels are present with their counts.
+        """
+        chain = artisan_chain
+        _make_draft(chain, chain["variation"], "staged.pdf")
+
+        client.force_login(chain["user"])
+        response = client.get(_edit_url(chain["product"]))
+
+        assert response.status_code == 200
+        body = response.content.decode()
+        assert "Staged｜已暫存 1" in body
+        # No pending upload, so the other header block is absent.
+        assert "待審檔案" not in body
+
+    def test_header_shows_both_counts_when_both_exist(
+        self, client, two_variation_chain,
+    ):
+        """
+        Comparison-shaped: the header renders both counts, each with
+        its own label. A template edit that collapsed the two blocks
+        into one — for instance by picking the first matching property
+        — would drop one of the counts and fail here. The single-
+        count tests above would each pass individually and jointly
+        miss the collapse.
+        """
+        chain = two_variation_chain
+        _make_draft(chain, chain["variation_a"], "a-staged.pdf")
+        _make_pending(chain, chain["variation_b"], "b-pending.pdf")
+
+        client.force_login(chain["user"])
+        response = client.get(_edit_url(chain["product"]))
+
+        assert response.status_code == 200
+        body = response.content.decode()
+        assert "Staged｜已暫存 1" in body
+        assert "待審檔案 1" in body
 
 
 # ──────────────────────────────────────────────────────────────────

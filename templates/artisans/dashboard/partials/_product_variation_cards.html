@@ -30,7 +30,11 @@
                         <i class="fa-solid fa-clock text-[8px]"></i> 新值待審
                     </span>
                     {% endif %}
-                    {% if v.pending_vault_upload_count %}
+                    {% if v.draft_staged_count %}
+                    <span class="badge badge-xs badge-neutral">
+                        Staged｜已暫存
+                    </span>
+                    {% elif v.pending_vault_upload_count %}
                     <span class="badge badge-xs badge-warning">
                         待審核檔案
                     </span>
