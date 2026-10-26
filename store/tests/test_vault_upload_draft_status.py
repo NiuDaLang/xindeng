@@ -2,10 +2,12 @@
 """
 Tests for the DRAFT status on ArtisanVaultUpload.
 
-This file opens with the two draft_staged_count properties only. The
-status itself is added to STATUS_CHOICES in the same commit, but no
-code path creates a DRAFT row yet — the promotion lives in the
-submit/withdraw views, which are a later commit. Testing the counters
+The file has two halves. The first half pins the two
+draft_staged_count properties. The second half pins the status a new
+upload starts in, from the variation-upload view (DRAFT for every
+upload that reaches it) and the order-product-scoped sibling (PENDING
+unconditionally). The promotion of DRAFT → PENDING on submit and the
+demotion on withdraw are a later commit and are not covered here. Testing the counters
 first pins the read side before the write side exists, so a later
 change to the promotion cannot silently break the badge.
 
@@ -286,3 +288,347 @@ class TestProductDraftStagedCount:
 
         assert chain["product"].draft_staged_count == 0
         assert chain["product"].pending_vault_upload_count == 1
+
+
+# ──────────────────────────────────────────────────────────────────
+# Upload-view transition — the status a new row starts in
+# ──────────────────────────────────────────────────────────────────
+
+@pytest.fixture
+def vault_root_for_draft(tmp_path, settings):
+    """
+    Per-test vault root. The other fixtures in this file do not write
+    to disk, so this only becomes necessary when the upload view is
+    exercised. Named distinctly from `vault_root` (which other files
+    define) to avoid a cross-file collision if this file is ever
+    merged into a single vault test module.
+    """
+    vault = tmp_path / "private_digital_vault"
+    (vault / "_pending").mkdir(parents=True, exist_ok=True)
+    settings.XINDENG_VAULT_ROOT = vault
+    return vault
+
+
+def _upload_url(product, variation):
+    from django.urls import reverse
+    return reverse(
+        "a_dashboard_product_variation_upload_vault",
+        args=[product.pk, variation.pk],
+    )
+
+
+def _pdf_upload():
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    return SimpleUploadedFile(
+        "draft.pdf", b"%PDF-1.4\n% draft status test\n%%EOF\n",
+        content_type="application/pdf",
+    )
+
+
+class TestUploadInitialStatus:
+    """
+    The status a new ArtisanVaultUpload starts in, per _initial_upload_status.
+
+    Draft / Rejected / Unpublished → DRAFT (the artisan is building or
+    revising, and the file must not enter the admin queue before the
+    product is resubmitted). CUSTOM (order-product-scoped) → PENDING
+    regardless, because the helper short-circuits on order_product is
+    not None; that case is covered in TestCustomUploadAlwaysPending.
+
+    Pending and Published are not tested here: the view refuses them at
+    the is_editable_by_artisan guard before the helper is reached. See
+    TestUploadRefusedOnLockedProduct.
+    """
+
+    def _set_status_and_login(self, client, chain, status_value):
+        from store.models import Product
+        Product.objects.filter(pk=chain["product"].pk).update(status=status_value)
+        chain["product"].refresh_from_db()
+        client.force_login(chain["user"])
+
+    def _post_upload(self, client, chain):
+        return client.post(
+            _upload_url(chain["product"], chain["variation"]),
+            data={"upload_type": "DIRECT", "file": _pdf_upload()},
+        )
+
+    def test_draft_product_creates_draft_row(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        from store.models import ArtisanVaultUpload
+
+        chain = artisan_chain
+        self._set_status_and_login(client, chain, "Draft")
+        self._post_upload(client, chain)
+
+        upload = ArtisanVaultUpload.objects.get(variation=chain["variation"])
+        assert upload.status == "DRAFT"
+
+    def test_rejected_product_creates_draft_row(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        from store.models import ArtisanVaultUpload
+
+        chain = artisan_chain
+        self._set_status_and_login(client, chain, "Rejected")
+        self._post_upload(client, chain)
+
+        upload = ArtisanVaultUpload.objects.get(variation=chain["variation"])
+        assert upload.status == "DRAFT"
+
+    def test_unpublished_product_creates_draft_row(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        from store.models import ArtisanVaultUpload
+
+        chain = artisan_chain
+        self._set_status_and_login(client, chain, "Unpublished")
+        self._post_upload(client, chain)
+
+        upload = ArtisanVaultUpload.objects.get(variation=chain["variation"])
+        assert upload.status == "DRAFT"
+
+    def test_draft_upload_does_not_dispatch_admin_email(
+        self, client, artisan_chain, vault_root_for_draft,
+        django_capture_on_commit_callbacks, monkeypatch,
+    ):
+        from store.tasks import send_vault_upload_pending_email_task
+
+        chain = artisan_chain
+        self._set_status_and_login(client, chain, "Draft")
+
+        dispatched = []
+        monkeypatch.setattr(
+            send_vault_upload_pending_email_task, "delay",
+            lambda uid: dispatched.append(uid),
+        )
+        with django_capture_on_commit_callbacks(execute=True):
+            self._post_upload(client, chain)
+
+        assert dispatched == []
+
+    def test_reupload_while_draft_supersedes_the_draft(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        """
+        Two uploads while the product is still in Draft. The first
+        row is superseded; exactly one DRAFT remains. This is the
+        widening of the supersession filter — with the old PENDING-only
+        filter, the second upload would create a second DRAFT row and
+        the partial unique constraint would not have fired (it only
+        governs PENDING).
+        """
+        from store.models import ArtisanVaultUpload
+
+        chain = artisan_chain
+        self._set_status_and_login(client, chain, "Draft")
+        self._post_upload(client, chain)
+        first = ArtisanVaultUpload.objects.get(variation=chain["variation"])
+        assert first.status == "DRAFT"
+
+        self._post_upload(client, chain)
+
+        first.refresh_from_db()
+        assert first.status == "SUPERSEDED"
+        assert ArtisanVaultUpload.objects.filter(
+            variation=chain["variation"], status="DRAFT",
+        ).count() == 1
+        assert ArtisanVaultUpload.objects.filter(
+            variation=chain["variation"], status="PENDING",
+        ).count() == 0
+
+
+class TestUploadRefusedOnLockedProduct:
+    """
+    The is_editable_by_artisan guard on the variation-upload view.
+
+    A Pending or Published product is not editable by the artisan; the
+    template hides the Vault button, but the view was the only thing
+    standing between a forged POST and a row. The guard closes that
+    path. Two states are refused, not one: the memo's transition table
+    named only Published, but is_editable_by_artisan also excludes
+    Pending, and the two refusals are the same shape.
+    """
+
+    def _assert_refused(self, client, chain):
+        from store.models import ArtisanVaultUpload
+        from django.contrib.messages import get_messages
+        from django.urls import reverse
+
+        response = client.post(
+            _upload_url(chain["product"], chain["variation"]),
+            data={"upload_type": "DIRECT", "file": _pdf_upload()},
+        )
+
+        assert response.status_code == 302
+        assert response["Location"] == reverse("a_dashboard_products")
+        assert not ArtisanVaultUpload.objects.filter(
+            variation=chain["variation"]
+        ).exists()
+        messages_list = [str(m) for m in get_messages(response.wsgi_request)]
+        assert any("cannot accept uploads" in m for m in messages_list)
+
+    def test_forged_post_against_published_product_is_refused(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        from store.models import Product
+
+        chain = artisan_chain
+        Product.objects.filter(pk=chain["product"].pk).update(status="Published")
+        chain["product"].refresh_from_db()
+        client.force_login(chain["user"])
+
+        self._assert_refused(client, chain)
+
+    def test_forged_post_against_pending_product_is_refused(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        from store.models import Product
+
+        chain = artisan_chain
+        Product.objects.filter(pk=chain["product"].pk).update(status="Pending")
+        chain["product"].refresh_from_db()
+        client.force_login(chain["user"])
+
+        self._assert_refused(client, chain)
+
+
+class TestCustomUploadAlwaysPending:
+    """
+    The CUSTOM path is the only remaining way a view produces a PENDING
+    row on upload. _initial_upload_status returns PENDING unconditionally
+    when order_product is set, because the order line already exists and
+    the product is already Published (so the Draft → submit → review
+    lifecycle that DRAFT exists to serve does not apply).
+
+    Lived in test_artisan_orders_dashboard.py::TestOrderProductVaultUploadView
+    before this correction, but only as an assertion about supersession
+    keying. The status assertion belongs here, in the file that names
+    every status transition. Keeping it there would mean the invariant
+    "CUSTOM starts PENDING" was tested in a file whose name does not say
+    so, and a reader looking for the rule would not find it.
+    """
+
+    @pytest.fixture
+    def custom_line_chain(self, db, django_user_model, vault_root_for_draft):
+        from category.models import Category
+        from creators.models import CreatorProfile
+        from store.models import Product, ProductVariation
+        from orders.models import Order, OrderProduct
+
+        user = django_user_model.objects.create_user(
+            username="custom_draft_artisan",
+            email="custom-draft@example.com",
+            receive_newsletter=False,
+            password="x",
+            is_active=True,
+        )
+        profile = CreatorProfile.objects.create(
+            user=user,
+            display_name="Custom Draft Artisan",
+            slug="custom-draft-artisan",
+            is_verified=True,
+        )
+        category = Category.objects.create(
+            category_name="Custom Draft Digital",
+            slug="custom-draft-digital",
+            product_format="e-product",
+        )
+        product = Product.objects.create(
+            product_name="Custom Draft Book",
+            category=category,
+            creator=profile,
+            is_digital=True,
+            digital_fulfillment_type="CUSTOM",
+            is_physical=False,
+            is_active=True,
+            status="Published",
+        )
+        variation = ProductVariation.objects.create(
+            product=product,
+            price=Decimal("20.00"),
+            stock=1,
+            is_available=True,
+        )
+        customer = django_user_model.objects.create_user(
+            username="custom_draft_customer",
+            email="custom-draft-customer@example.com",
+            receive_newsletter=False,
+            password="x",
+            is_active=True,
+        )
+        order = Order.objects.create(
+            user=customer,
+            order_number="CUSTOM-DRAFT-0001",
+            email=customer.email,
+            is_ordered=True,
+            order_status="Processing",
+        )
+        line = OrderProduct.objects.create(
+            order=order,
+            user=customer,
+            product=product,
+            product_variation=variation,
+            product_price=Decimal("20.00"),
+            quantity=1,
+            ordered=True,
+            fulfilled_by=profile,
+        )
+        return {
+            "user": user,
+            "profile": profile,
+            "product": product,
+            "variation": variation,
+            "line": line,
+        }
+
+    def _post(self, client, chain):
+        from django.urls import reverse
+        url = reverse(
+            "a_dashboard_order_product_upload_vault",
+            args=[chain["line"].id],
+        )
+        return client.post(
+            url,
+            data={"upload_type": "DIRECT", "file": _pdf_upload()},
+        )
+
+    def test_custom_upload_creates_pending_row(
+        self, client, custom_line_chain,
+        django_capture_on_commit_callbacks,
+    ):
+        from store.models import ArtisanVaultUpload
+
+        chain = custom_line_chain
+        client.force_login(chain["user"])
+        with django_capture_on_commit_callbacks(execute=False):
+            self._post(client, chain)
+
+        upload = ArtisanVaultUpload.objects.get(
+            order_product=chain["line"],
+        )
+        assert upload.status == "PENDING"
+
+    def test_custom_upload_dispatches_admin_email(
+        self, client, custom_line_chain,
+        django_capture_on_commit_callbacks, monkeypatch,
+    ):
+        from store.models import ArtisanVaultUpload
+        from store.tasks import send_vault_upload_pending_email_task
+
+        chain = custom_line_chain
+        client.force_login(chain["user"])
+
+        dispatched = []
+        monkeypatch.setattr(
+            send_vault_upload_pending_email_task, "delay",
+            lambda uid: dispatched.append(uid),
+        )
+        with django_capture_on_commit_callbacks(execute=True):
+            self._post(client, chain)
+
+        upload = ArtisanVaultUpload.objects.get(
+            order_product=chain["line"],
+        )
+        assert dispatched == [str(upload.id)]
+

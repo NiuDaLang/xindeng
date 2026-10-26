@@ -1702,9 +1702,20 @@ def dashboard_product_variation_upload_vault(request, pk, variation_pk):
           variation-cards partial with HX-Retarget so the modal closes
           naturally with the swap.
 
-    Only applies to digital products. Non-digital products 404 — the
-    UI hides the button, and the check here closes the forged-POST
-    path.
+    Only applies to digital products and to products the artisan may
+    still edit (Draft, Rejected, Unpublished). Non-digital products
+    404; a Pending or Published product is refused with a warning and a
+    redirect. The two refusals are different: a forged POST against a
+    product in a locked state resolves the URL but is told it cannot
+    upload, while a forged POST against another artisan's product sees
+    the same 404 as a missing product.
+
+    New rows start in the status _initial_upload_status chooses:
+    DRAFT for every upload that reaches this view, PENDING only for the
+    order-product-scoped sibling view. The admin notification fires only
+    for PENDING. CUSTOM uploads go through
+    dashboard_order_product_upload_vault, which never reaches this
+    view.
     """
     profile = request.user.creator_profile
 
@@ -1721,6 +1732,15 @@ def dashboard_product_variation_upload_vault(request, pk, variation_pk):
 
     cards_template = "artisans/dashboard/partials/_product_variation_cards.html"
     form_template = "artisans/dashboard/partials/_vault_upload_form.html"
+
+    if not product.is_editable_by_artisan:
+        messages.warning(
+            request,
+            "此作品目前無法上傳檔案（僅限草稿、未通過或已下架的作品）。"
+            "｜This product cannot accept uploads right now (only Draft, "
+            "Rejected, or Unpublished products can).",
+        )
+        return redirect("a_dashboard_products")
 
     # ── POST: process the submission ──────────────────────────────
     if request.method == "POST":
@@ -1756,17 +1776,6 @@ def dashboard_product_variation_upload_vault(request, pk, variation_pk):
             # helper returns — no other writer can create a second
             # PENDING for this variation (partial unique constraint),
             # so `.get()` cannot race here.
-            new_upload = ArtisanVaultUpload.objects.get(
-                variation=variation, status="PENDING",
-            )
-            transaction.on_commit(
-                lambda uid=new_upload.id:
-                    send_vault_upload_pending_email_task.delay(str(uid))
-            )
-            messages.success(
-                request,
-                "已提交，等待管理員審核。｜Submitted for admin review.",
-            )
             variations = product.variations.all().order_by("created_date")
             response = render(request, cards_template, {
                 "product": product,
@@ -1799,6 +1808,35 @@ def dashboard_product_variation_upload_vault(request, pk, variation_pk):
     })
 
 
+def _initial_upload_status(product, order_product):
+    """
+    The status a new ArtisanVaultUpload row starts in.
+
+    CUSTOM uploads are order-product-scoped: the product is live and
+    the order line already exists, so the file is under review from
+    the moment it is staged. Those always start PENDING.
+
+    Every other upload reaches this helper only for a Draft, Rejected,
+    or Unpublished product — a Pending or Published product is refused
+    by the is_editable_by_artisan guard in
+    dashboard_product_variation_upload_vault before the helper is
+    called. Those start DRAFT: the file sits in staging until the
+    submit view promotes it, so it never enters the admin queue before
+    the product is resubmitted.
+
+    There is no "Pending → PENDING" branch here. A Pending product
+    cannot accept an upload at all: it is under admin review, and its
+    variations and metadata are locked by the same
+    is_editable_by_artisan predicate. The memo's transition table
+    named a Pending-upload row; the code that would have served it
+    is this branch, and it was never reachable. Removed in the
+    correction commit that added this docstring paragraph.
+    """
+    if order_product is not None:
+        return "PENDING"
+    return "DRAFT"
+
+
 def self_supersede_and_create(*, profile, product, variation, form, order_product=None):
     """
     Small helper: supersede any existing PENDING upload for this target
@@ -1821,6 +1859,12 @@ def self_supersede_and_create(*, profile, product, variation, form, order_produc
     Filtering by variation on the CUSTOM path would supersede the
     wrong line's upload — a silent data bug, not an error. See the
     CUSTOM pipeline v2 handoff.
+
+    The filter widens to status__in=["DRAFT", "PENDING"] so an
+    artisan re-uploading during the Draft build-up supersedes the
+    earlier DRAFT row. CUSTOM rows never hold a DRAFT, so widening
+    the filter there is inert; the branch stays symmetric for the
+    reader.
     """
     pending_root = Path(settings.XINDENG_VAULT_ROOT) / "_pending"
 
@@ -1828,11 +1872,13 @@ def self_supersede_and_create(*, profile, product, variation, form, order_produc
         supersede_qs = ArtisanVaultUpload.objects.select_for_update()
         if order_product is not None:
             supersede_qs = supersede_qs.filter(
-                order_product=order_product, status="PENDING",
+                order_product=order_product,
+                status__in=["DRAFT", "PENDING"],
             )
         else:
             supersede_qs = supersede_qs.filter(
-                variation=variation, status="PENDING",
+                variation=variation,
+                status__in=["DRAFT", "PENDING"],
             )
         existing = supersede_qs.first()
 
@@ -1861,7 +1907,7 @@ def self_supersede_and_create(*, profile, product, variation, form, order_produc
             "product": product,
             "variation": variation,
             "order_product": order_product,
-            "status": "PENDING",
+            "status": _initial_upload_status(product, order_product),
         }
 
         if upload_type == "DIRECT":
@@ -1920,6 +1966,13 @@ def dashboard_order_product_upload_vault(request, order_product_id):
     ProductVariation.digital_file_path (the variation path). Without
     this view, the artisan has no way to set order_product at creation,
     and the approve branch always falls through to the variation path.
+    New rows from this view are always PENDING:
+    _initial_upload_status returns PENDING unconditionally when
+    order_product is set, so the CUSTOM path never produces a DRAFT.
+    CUSTOM is reviewable from the moment it is staged because the order
+    line already exists; the product is already Published and cannot
+    enter the Draft → submit → review lifecycle that DRAFT exists to
+    serve.
     See the CUSTOM pipeline v2 handoff.
 
     Only applies to CUSTOM digital lines. Non-CUSTOM lines 404 — the
