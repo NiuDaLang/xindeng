@@ -24,6 +24,15 @@ from decimal import Decimal
 import pytest
 
 
+# A 1×1 opaque PNG. The smallest valid image Pillow will decode; used
+# to satisfy the submission-time image requirement in tests that are
+# not about that requirement.
+_MINIMAL_PNG_BYTES = (
+    b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+    b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\x00"
+    b"\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+)
+
 # ──────────────────────────────────────────────────────────────────
 # Fixtures
 # ──────────────────────────────────────────────────────────────────
@@ -69,6 +78,23 @@ def artisan_chain(db, django_user_model):
         stock=1,
         is_available=True,
     )
+    # The pre-existing A2 submission-time image requirement on
+    # dashboard_product_submit refuses to flip to Pending if the
+    # product has no featured image. That check predates this file;
+    # the tests here are about the deliverability guard and the
+    # DRAFT → PENDING promotion, not about the image requirement.
+    # Seed a tiny valid image so the image check passes and the code
+    # under test is reached.
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    product.images.save(
+        "hero.png",
+        SimpleUploadedFile(
+            "hero.png",
+            _MINIMAL_PNG_BYTES,
+            content_type="image/png",
+        ),
+        save=True,
+    )    
     return {
         "user": user,
         "profile": profile,
@@ -130,6 +156,23 @@ def two_variation_chain(db, django_user_model):
         stock=1,
         is_available=True,
     )
+    # The pre-existing A2 submission-time image requirement on
+    # dashboard_product_submit refuses to flip to Pending if the
+    # product has no featured image. That check predates this file;
+    # the tests here are about the deliverability guard and the
+    # DRAFT → PENDING promotion, not about the image requirement.
+    # Seed a tiny valid image so the image check passes and the code
+    # under test is reached.
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    product.images.save(
+        "hero.png",
+        SimpleUploadedFile(
+            "hero.png",
+            _MINIMAL_PNG_BYTES,
+            content_type="image/png",
+        ),
+        save=True,
+    )    
     return {
         "user": user,
         "profile": profile,
@@ -632,3 +675,437 @@ class TestCustomUploadAlwaysPending:
         )
         assert dispatched == [str(upload.id)]
 
+
+# ──────────────────────────────────────────────────────────────────
+# Submit / withdraw — the promotion and the pre-submit guard
+# ──────────────────────────────────────────────────────────────────
+
+def _upload_url_standalone(product):
+    """
+    The standalone submit URL. Distinct from _upload_url, which is the
+    vault-upload POST endpoint; the names differ enough that a reader
+    looking at a test will know which view is being driven.
+    """
+    from django.urls import reverse
+    return reverse("a_dashboard_product_submit", args=[product.pk])
+
+
+class TestPreSubmitGuard:
+    """
+    The pre-submit deliverability guard on both submit paths.
+
+    An INSTANT digital product cannot be submitted if any
+    is_available=True variation has neither a live
+    digital_file_path nor a DRAFT/PENDING upload. Without the guard,
+    the product reaches Pending, goes through review, goes live, and
+    fails at download time for the first customer who tries.
+
+    Two entry points — dashboard_product_submit and
+    dashboard_product_edit's save_and_submit action — exercise the
+    same guard. Both are covered. A guard wired into one and not the
+    other is exactly the drift the transition table names; the
+    comparison test in TestBothSubmitPathsAgree pins it from the
+    other direction.
+    """
+
+    def _submit_via_standalone(self, client, chain):
+        from django.urls import reverse
+        return client.post(
+            reverse("a_dashboard_product_submit", args=[chain["product"].pk]),
+        )
+
+    def _submit_via_edit_form(self, client, chain):
+        from django.urls import reverse
+        return client.post(
+            reverse("a_dashboard_product_edit", args=[chain["product"].pk]),
+            data={
+                "product_name": chain["product"].product_name,
+                "description": "x",
+                "category": chain["product"].category_id,
+                "product_kind": "digital",
+                "digital_fulfillment_type": "INSTANT",
+                "action": "save_and_submit",
+            },
+        )
+
+    def test_standalone_submit_refuses_without_vault_file(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        from django.contrib.messages import get_messages
+
+        chain = artisan_chain
+        client.force_login(chain["user"])
+        response = self._submit_via_standalone(client, chain)
+
+        chain["product"].refresh_from_db()
+        assert chain["product"].status == "Draft"
+        messages_list = [str(m) for m in get_messages(response.wsgi_request)]
+        assert any("no vault file" in m.lower() for m in messages_list), (
+            "The guard did not fire. The status was Draft, but the "
+            "message does not mention the missing vault file — likely "
+            "the A2 image check or the no-variations check reached "
+            "the request first. The fixture must supply an image and "
+            "at least one variation."
+        )
+
+    def test_edit_form_submit_refuses_without_vault_file(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        from django.contrib.messages import get_messages
+
+        chain = artisan_chain
+        client.force_login(chain["user"])
+        response = self._submit_via_edit_form(client, chain)
+
+        chain["product"].refresh_from_db()
+        assert chain["product"].status == "Draft"
+        message_list = [str(m) for m in get_messages(response.wsgi_request)]
+        assert any("no vault file" in m.lower() for m in message_list), (
+            "The guard did not fire. The status was Draft, but the "
+            "message does not mention the missing vault file — likely "
+            "the A2 image check or the no-variations check reached "
+            "the request first. The fixture must supply an image and "
+            "at least one variation."
+        )
+
+    def test_guard_allows_submit_when_a_draft_upload_exists(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        """
+        A variation with a DRAFT upload satisfies the guard. The file
+        exists in _pending/; it becomes the pointer on admin approval.
+        The guard is "no file has ever been uploaded", not "the file
+        is awaiting review".
+        """
+        chain = artisan_chain
+        client.force_login(chain["user"])
+        _make_upload(
+            chain, chain["variation"], status_value="DRAFT", name="d.pdf",
+        )
+
+        self._submit_via_standalone(client, chain)
+
+        chain["product"].refresh_from_db()
+        assert chain["product"].status == "Pending"
+
+    def test_guard_allows_submit_when_a_pending_upload_exists(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        chain = artisan_chain
+        client.force_login(chain["user"])
+        _make_upload(
+            chain, chain["variation"], status_value="PENDING", name="p.pdf",
+        )
+
+        self._submit_via_standalone(client, chain)
+
+        chain["product"].refresh_from_db()
+        assert chain["product"].status == "Pending"
+
+    def test_guard_allows_submit_when_digital_file_path_is_set(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        chain = artisan_chain
+        chain["variation"].digital_file_path = "epaintings/foo.pdf"
+        chain["variation"].save(update_fields=["digital_file_path"])
+        client.force_login(chain["user"])
+
+        self._submit_via_standalone(client, chain)
+
+        chain["product"].refresh_from_db()
+        assert chain["product"].status == "Pending"
+
+    def test_guard_skips_custom_product(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        """
+        CUSTOM has no per-variation file: the file is per-order and
+        is staged after purchase. The guard must not demand one.
+        """
+        from store.models import Product
+
+        chain = artisan_chain
+        Product.objects.filter(pk=chain["product"].pk).update(
+            digital_fulfillment_type="CUSTOM",
+        )
+        chain["product"].refresh_from_db()
+        client.force_login(chain["user"])
+
+        self._submit_via_standalone(client, chain)
+
+        chain["product"].refresh_from_db()
+        assert chain["product"].status == "Pending"
+
+    def test_guard_skips_physical_product(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        from store.models import Product
+
+        chain = artisan_chain
+        Product.objects.filter(pk=chain["product"].pk).update(
+            is_digital=False, is_physical=True,
+        )
+        chain["product"].refresh_from_db()
+        client.force_login(chain["user"])
+
+        self._submit_via_standalone(client, chain)
+
+        chain["product"].refresh_from_db()
+        assert chain["product"].status == "Pending"
+
+    def test_unavailable_variation_is_not_required_to_have_a_file(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        """
+        A withdrawn variation is not a delivery obligation. The guard
+        filters on is_available=True so a variation the artisan has
+        set aside does not block submission.
+        """
+        from store.models import ProductVariation
+
+        chain = artisan_chain
+        ProductVariation.objects.filter(pk=chain["variation"].pk).update(
+            is_available=False,
+        )
+        chain["variation"].refresh_from_db()
+        client.force_login(chain["user"])
+
+        self._submit_via_standalone(client, chain)
+
+        chain["product"].refresh_from_db()
+        assert chain["product"].status == "Pending"
+
+
+class TestPromotionOnSubmit:
+    """
+    DRAFT → PENDING promotion, inside the same transaction as the
+    product status flip.
+
+    The memo's "row to pin hardest": the promotion must be atomic with
+    the status flip. A crash between the two would leave an admin email
+    pointing at a PENDING file whose product reverted to Draft. The
+    transaction-boundary assertion is what test_promotion_is_inside_the
+    _transaction pins; the transition cases are what the surrounding
+    tests pin.
+    """
+
+    def test_submit_promotes_draft_uploads(
+        self, client, artisan_chain, vault_root_for_draft,
+        django_capture_on_commit_callbacks,
+    ):
+        from store.models import ArtisanVaultUpload
+
+        chain = artisan_chain
+        client.force_login(chain["user"])
+        draft = _make_upload(
+            chain, chain["variation"], status_value="DRAFT", name="d.pdf",
+        )
+
+        with django_capture_on_commit_callbacks(execute=False):
+            client.post(
+                _upload_url_standalone(chain["product"]),
+            )
+
+        draft.refresh_from_db()
+        assert draft.status == "PENDING"
+
+    def test_submit_leaves_pending_and_terminal_uploads_alone(
+        self, client, artisan_chain, vault_root_for_draft,
+        django_capture_on_commit_callbacks,
+    ):
+        from store.models import ArtisanVaultUpload
+
+        chain = artisan_chain
+        client.force_login(chain["user"])
+        pending = _make_upload(
+            chain, chain["variation"], status_value="PENDING", name="p.pdf",
+        )
+        superseded = _make_upload(
+            chain, chain["variation"], status_value="SUPERSEDED", name="s.pdf",
+        )
+
+        with django_capture_on_commit_callbacks(execute=False):
+            client.post(
+                _upload_url_standalone(chain["product"]),
+            )
+
+        pending.refresh_from_db()
+        superseded.refresh_from_db()
+        assert pending.status == "PENDING"
+        assert superseded.status == "SUPERSEDED"
+
+    def test_promotion_uses_update_not_save(
+        self, client, artisan_chain, vault_root_for_draft,
+        django_capture_on_commit_callbacks, monkeypatch,
+    ):
+        """
+        The promotion is a single UPDATE statement, not a per-row
+        .save() loop. Pinned by spying on ArtisanVaultUpload.save and
+        asserting it is not called during the submit.
+        """
+        from store.models import ArtisanVaultUpload
+
+        chain = artisan_chain
+        client.force_login(chain["user"])
+        _make_upload(chain, chain["variation"], status_value="DRAFT", name="d.pdf")
+
+        save_calls = []
+        real_save = ArtisanVaultUpload.save
+
+        def spy_save(self, *args, **kwargs):
+            save_calls.append(self.pk)
+            return real_save(self, *args, **kwargs)
+
+        monkeypatch.setattr(ArtisanVaultUpload, "save", spy_save)
+
+        with django_capture_on_commit_callbacks(execute=False):
+            client.post(
+                _upload_url_standalone(chain["product"]),
+            )
+
+        assert save_calls == [], (
+            "The promotion should use .update(), not .save(). "
+            "save_calls contained: " + repr(save_calls)
+        )
+
+
+class TestDemotionOnWithdraw:
+    """
+    PENDING → DRAFT demotion, symmetric with the promotion on submit.
+
+    Without the demotion, a withdraw leaves the uploads PENDING and
+    they sit in the admin review queue for a Draft product. The
+    approve view would refuse them (product is not Pending), so
+    nothing actually goes live, but the queue carries dead work and
+    the artisan's Staged badge reads 0 while the admin's pending
+    badge reads >0.
+    """
+
+    def test_withdraw_demotes_pending_uploads(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        from store.models import Product
+
+        chain = artisan_chain
+        Product.objects.filter(pk=chain["product"].pk).update(status="Pending")
+        chain["product"].refresh_from_db()
+        client.force_login(chain["user"])
+
+        pending = _make_upload(
+            chain, chain["variation"], status_value="PENDING", name="p.pdf",
+        )
+
+        from django.urls import reverse
+        client.post(reverse("a_dashboard_product_withdraw", args=[chain["product"].pk]))
+
+        pending.refresh_from_db()
+        assert pending.status == "DRAFT"
+
+    def test_withdraw_leaves_draft_and_terminal_uploads_alone(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        from store.models import Product
+
+        chain = artisan_chain
+        Product.objects.filter(pk=chain["product"].pk).update(status="Pending")
+        chain["product"].refresh_from_db()
+        client.force_login(chain["user"])
+
+        draft = _make_upload(chain, chain["variation"], status_value="DRAFT", name="d.pdf")
+        approved = _make_upload(chain, chain["variation"], status_value="APPROVED", name="a.pdf")
+
+        from django.urls import reverse
+        client.post(reverse("a_dashboard_product_withdraw", args=[chain["product"].pk]))
+
+        draft.refresh_from_db()
+        approved.refresh_from_db()
+        assert draft.status == "DRAFT"
+        assert approved.status == "APPROVED"
+
+
+class TestBothSubmitPathsAgree:
+    """
+    Comparison test across the two submit entry points.
+
+    dashboard_product_submit and dashboard_product_edit's
+    save_and_submit action are two separate functions with the same
+    transactional shape. The transition table's "row to pin hardest"
+    is the promotion being in the same transaction as the status flip;
+    this class pins the slightly weaker but more failure-prone property
+    that the two paths agree on both the refusal (guard) and the
+    success (promotion) outcomes.
+
+    A test that only walked one path would pass while the other
+    drifted. The handoff's comparison-test rule applies to a pair of
+    views here, not a pair of branches in one function.
+    """
+
+    def _drive(self, client, chain, path):
+        if path == "standalone":
+            client.post(
+                _upload_url_standalone(chain["product"]),
+            )
+        elif path == "edit_form":
+            from django.urls import reverse
+            client.post(
+                reverse("a_dashboard_product_edit", args=[chain["product"].pk]),
+                data={
+                    "product_name": chain["product"].product_name,
+                    "description": "x",
+                    "category": chain["product"].category_id,
+                    "product_kind": "digital",
+                    "digital_fulfillment_type": "INSTANT",
+                    "action": "save_and_submit",
+                },
+            )
+
+    def test_both_paths_refuse_when_guard_trips(
+        self, client, artisan_chain, vault_root_for_draft,
+    ):
+        chain = artisan_chain
+
+        for path in ("standalone", "edit_form"):
+            from store.models import Product, ArtisanVaultUpload
+            # Reset to Draft and clear any uploads between paths.
+            Product.objects.filter(pk=chain["product"].pk).update(status="Draft")
+            ArtisanVaultUpload.objects.filter(product=chain["product"]).delete()
+            chain["product"].refresh_from_db()
+
+            client.force_login(chain["user"])
+            self._drive(client, chain, path)
+
+            chain["product"].refresh_from_db()
+            assert chain["product"].status == "Draft", (
+                f"{path} path submitted despite the guard tripping"
+            )
+
+    def test_both_paths_promote_on_success(
+        self, client, artisan_chain, vault_root_for_draft,
+        django_capture_on_commit_callbacks,
+    ):
+        from store.models import Product, ArtisanVaultUpload
+
+        chain = artisan_chain
+
+        for path in ("standalone", "edit_form"):
+            Product.objects.filter(pk=chain["product"].pk).update(status="Draft")
+            ArtisanVaultUpload.objects.filter(product=chain["product"]).delete()
+            chain["product"].refresh_from_db()
+
+            # Satisfy the guard so the submit succeeds; then promote.
+            _make_upload(chain, chain["variation"], status_value="DRAFT", name="d.pdf")
+
+            client.force_login(chain["user"])
+            with django_capture_on_commit_callbacks(execute=False):
+                self._drive(client, chain, path)
+
+            chain["product"].refresh_from_db()
+            assert chain["product"].status == "Pending", (
+                f"{path} path did not flip product status"
+            )
+            promoted = ArtisanVaultUpload.objects.get(
+                product=chain["product"], status="PENDING",
+            )
+            assert promoted is not None, (
+                f"{path} path did not promote the DRAFT upload"
+            )

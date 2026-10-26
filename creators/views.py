@@ -1294,6 +1294,14 @@ def dashboard_product_create(request):
 def dashboard_product_edit(request, pk):
     """
     Phase 2: edit metadata + manage variations via dedicated endpoints.
+
+    The 'save_and_submit' action is one of the two submit paths; the
+    other is dashboard_product_submit. Both run the same pre-submit
+    deliverability guard and the same DRAFT → PENDING promotion, inside
+    the same atomic block as the product status flip. Changing one and
+    not the other is a drift that the transition table's "row to pin
+    hardest" exists to catch; the comparison test in
+    test_vault_upload_draft_status.py runs both and asserts they agree.
     """
     profile = request.user.creator_profile
     product = get_object_or_404(Product, pk=pk, creator=profile, is_deleted=False)
@@ -1341,24 +1349,46 @@ def dashboard_product_edit(request, pk):
                             "提交前請至少新增一個款式。｜Add at least one variation before submitting."
                         )
                     else:
-                        with transaction.atomic():
-                            product.status = 'Pending'
-                            product.submitted_at = timezone.now()
-                            product.save(update_fields=['status', 'submitted_at'])
+                        # ── Pre-submit deliverability guard (same as
+                        # dashboard_product_submit) ──
+                        missing = _missing_instant_deliverables(product)
+                        if missing.exists():
+                            skus = ", ".join(v.get_sku() for v in missing)
+                            messages.error(
+                                request,
+                                f"以下款式尚未上傳電子檔案，無法提交審核：{skus}。"
+                                f"｜These variations have no vault file and cannot be submitted: "
+                                f"{skus}.",
+                            )
+                        else:
+                            with transaction.atomic():
+                                product.status = 'Pending'
+                                product.submitted_at = timezone.now()
+                                product.save(update_fields=['status', 'submitted_at'])
 
-                            ProductReviewLog.objects.create(
-                                product=product,
-                                action='submitted',
-                                actor=request.user,
-                                note='Author submitted for review.',
+                                # ── Promote DRAFT uploads to PENDING,
+                                # same transaction (same as
+                                # dashboard_product_submit) ──
+                                ArtisanVaultUpload.objects.filter(
+                                    product=product, status="DRAFT",
+                                ).update(
+                                    status="PENDING",
+                                    submitted_at=timezone.now(),
+                                )
+
+                                ProductReviewLog.objects.create(
+                                    product=product,
+                                    action='submitted',
+                                    actor=request.user,
+                                    note='Author submitted for review.',
+                                )
+
+                            transaction.on_commit(
+                                lambda: send_product_submission_email_task.delay(product.id)
                             )
 
-                        transaction.on_commit(
-                            lambda: send_product_submission_email_task.delay(product.id)
-                        )
-
-                        messages.success(request, "已提交審核。｜Submitted for review.")
-                        return redirect('a_dashboard_products')
+                            messages.success(request, "已提交審核。｜Submitted for review.")
+                            return redirect('a_dashboard_products')
 
                 else:
                     # Plain "Save Draft" — stay on the edit page
@@ -1476,6 +1506,47 @@ def dashboard_product_gallery_delete(request, pk, gallery_pk):
     })
 
 
+def _missing_instant_deliverables(product):
+    """
+    The variations on this product that cannot be delivered if the
+    product is submitted now, as a queryset.
+
+    Only meaningful for a digital product whose fulfilment type is
+    INSTANT. Every is_available=True variation must point at a vault
+    file — either an already-approved ProductVariation.digital_file_path,
+    or a DRAFT/PENDING ArtisanVaultUpload for that variation that will
+    become live once approved.
+
+    CUSTOM and physical products return an empty queryset. CUSTOM has no
+    per-variation file: the file is per-order and is staged after
+    purchase. Physical products have no file at all.
+
+    This is the pre-submit guard the A/B/C memo specifies. Before it,
+    a Draft product could change is_physical / is_digital freely, be
+    submitted with a digital product_kind and one variation that has
+    no vault file, reach Pending, be approved, go live, and fail at
+    download time. The guard closes that gap at the point of submit,
+    which is the last point before the admin sees the product.
+
+    is_available=True is the filter, not an accident: a variation the
+    artisan has deliberately withdrawn from sale is not a delivery
+    obligation, and demanding a file for it would force the artisan to
+    either re-upload a file they do not intend to deliver or delete a
+    variation they are keeping for reference.
+    """
+    if not (product.is_digital and product.digital_fulfillment_type == "INSTANT"):
+        return product.variations.none()
+
+    return (
+        product.variations
+        .filter(is_available=True)
+        .filter(Q(digital_file_path="") | Q(digital_file_path__isnull=True))
+        .exclude(
+            vault_uploads__status__in=["DRAFT", "PENDING"],
+        )
+    )
+
+
 @artisan_required
 @require_POST
 def dashboard_product_submit(request, pk):
@@ -1502,10 +1573,41 @@ def dashboard_product_submit(request, pk):
         )
         return redirect('a_dashboard_products')
 
+    # ── Pre-submit deliverability guard ──
+    # Every available variation on an INSTANT digital product must
+    # have a live vault file or a DRAFT/PENDING upload that will
+    # become one on approval. Without this, a Draft product can change
+    # product_kind freely, be submitted with a digital product_kind and
+    # one variation that has no vault file, reach Pending, be approved,
+    # go live, and fail at download time. See _missing_instant_deliverables.
+    missing = _missing_instant_deliverables(product)
+    if missing.exists():
+        skus = ", ".join(v.get_sku() for v in missing)
+        messages.error(
+            request,
+            f"以下款式尚未上傳電子檔案，無法提交審核：{skus}。"
+            f"｜These variations have no vault file and cannot be submitted: "
+            f"{skus}.",
+        )
+        return redirect('a_dashboard_products')
+
     with transaction.atomic():
         product.status = 'Pending'
         product.submitted_at = timezone.now()
         product.save(update_fields=['status', 'submitted_at'])
+
+        # ── Promote DRAFT uploads to PENDING, same transaction ──
+        # The promotion must be inside this atomic block, not on
+        # on_commit, so a crash between the two writes leaves neither
+        # applied. An admin email pointing at a PENDING file whose
+        # product reverted to Draft is the failure mode this
+        # transaction ordering exists to prevent.
+        ArtisanVaultUpload.objects.filter(
+            product=product, status="DRAFT",
+        ).update(
+            status="PENDING",
+            submitted_at=timezone.now(),
+        )
 
         ProductReviewLog.objects.create(
             product=product,
@@ -1535,6 +1637,20 @@ def dashboard_product_withdraw(request, pk):
     with transaction.atomic():
         product.status = 'Draft'
         product.save(update_fields=['status'])
+
+        # ── Demote PENDING uploads to DRAFT, same transaction ──
+        # Symmetric with the promotion on submit. Without this, a
+        # withdraw leaves the uploads PENDING and they remain in the
+        # admin review queue for a product that has been pulled back
+        # to Draft. The admin would approve a file for a Draft
+        # product — the approve view already refuses a variation-
+        # scoped upload whose product is not Pending, so nothing
+        # would actually go live, but the file sits in the queue
+        # uselessly and the artisan's Staged badge reads 0 while the
+        # admin's pending badge reads >0. The demotion closes both.
+        ArtisanVaultUpload.objects.filter(
+            product=product, status="PENDING",
+        ).update(status="DRAFT")
 
         ProductReviewLog.objects.create(
             product=product,
