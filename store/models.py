@@ -263,6 +263,28 @@ class Product(models.Model):
         newer PENDING on the same variation) must not inflate it.
         """
         return self.vault_uploads.filter(status="PENDING").count()
+
+    @property
+    def draft_staged_count(self):
+        """
+        Number of ArtisanVaultUpload rows for this product's variations
+        that are currently DRAFT (staged but not yet submitted for
+        review).
+
+        The sibling of pending_vault_upload_count. Same aggregate
+        semantics, different status: this counts work the artisan has
+        done that has not yet left the artisan's hands, while
+        pending_vault_upload_count counts work waiting on an admin.
+        The two badges are labelled differently on purpose — a test
+        string-matching one cannot be silently satisfied by the other.
+
+        Do not collapse into pending_vault_upload_count. A product
+        under construction typically has DRAFT uploads and zero
+        PENDING ones; the artisan's products-list page needs to show
+        the former.
+        """
+        return self.vault_uploads.filter(status="DRAFT").count()
+
     
     @property
     def image_dimensions(self):
@@ -457,6 +479,21 @@ class ProductVariation(models.Model):
         UI contract.
         """
         return self.vault_uploads.filter(status="PENDING").count()
+
+    @property
+    def draft_staged_count(self):
+        """
+        Number of ArtisanVaultUpload rows for this variation that are
+        currently DRAFT.
+
+        Per-variation sibling of Product.draft_staged_count, and of
+        pending_vault_upload_count. The partial unique constraint
+        (unique_pending_upload_per_variation) governs PENDING rows
+        only, so a variation can in principle hold more than one DRAFT
+        row across supersession — the count is exposed as a count, not
+        a bool, for that reason as much as for template symmetry.
+        """
+        return self.vault_uploads.filter(status="DRAFT").count()
 
     def latest_terminal_vault_upload(self):
         """
@@ -809,6 +846,15 @@ class ArtisanVaultUpload(models.Model):
          APPROVED. This is the CUSTOM delivery path; see the CUSTOM pipeline
          v2 handoff.
 
+    DRAFT is the status of an INSTANT upload staged against a product
+    that has not yet been submitted for review.
+    It is promoted to PENDING in the same transaction that flips
+    Product.status to Pending, so a DRAFT row is never visible in the
+    admin review queue.
+    CUSTOM uploads are always created PENDING (the order line already exists
+    and is already under review), and no code path demotes a row to DRAFT
+    except dashboard_product_withdraw.
+
     Uniqueness invariant: at most one PENDING upload may exist per
     target, where "target" is the variation for variation-scoped rows
     and the order_product for order-product-scoped rows. Enforced by
@@ -856,6 +902,7 @@ class ArtisanVaultUpload(models.Model):
     ]
 
     STATUS_CHOICES = [
+        ("DRAFT", "Draft — staged, not yet submitted"),
         ("PENDING", "Pending review"),
         ("APPROVED", "Approved"),
         ("REJECTED", "Rejected by admin"),
