@@ -235,12 +235,16 @@ function closeModal({ restoreOriginal = false } = {}) {
 function commitCrop() {
   if (!state.cropper || !state.input || !state.originalFile) return;
 
+  // Capture what the callback needs before toBlob returns.
+  const targetInput = state.input;
+  const originalFile = state.originalFile;
+
   const canvas = state.cropper.getCroppedCanvas({
     // No maxWidth/maxHeight: the server-side pipeline enforces max_dimension.
     imageSmoothingEnabled: true,
     imageSmoothingQuality: 'high',
   });
-
+  
   if (!canvas) {
     console.warn('crop_tool: getCroppedCanvas returned null');
     return;
@@ -252,11 +256,9 @@ function commitCrop() {
       return;
     }
 
-    const original = state.originalFile;
-    const dot = original.name.lastIndexOf('.');
-    const base = dot >= 0 ? original.name.slice(0, dot) : original.name;
-    // Always emit .png so the pipeline sees a lossless intermediate.
-    // Name format: "<base>.crop.png" -> pipeline produces "<base>.crop.webp"
+    // Use captured refs, not state.
+    const dot = originalFile.name.lastIndexOf('.');
+    const base = dot >= 0 ? originalFile.name.slice(0, dot) : originalFile.name;
     const newName = `${base}.crop.png`;
 
     const croppedFile = new File([blob], newName, {
@@ -267,13 +269,11 @@ function commitCrop() {
     const dt = new DataTransfer();
     dt.items.add(croppedFile);
 
-    state.input.files = dt.files;
+    targetInput.files = dt.files;
 
-    // Fire a custom event so any future listeners (e.g. live previews)
-    // can react to the swap. There are none today, but it's cheap.
-    state.input.dispatchEvent(new CustomEvent('crop:committed', {
+    targetInput.dispatchEvent(new CustomEvent('crop:committed', {
       bubbles: true,
-      detail: { file: croppedFile, originalFile: original },
+      detail: { file: croppedFile, originalFile: originalFile },
     }));
 
     closeModal();
