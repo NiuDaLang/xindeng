@@ -261,41 +261,39 @@
         </a>
 
         {% if is_editing %}
-            <button type="submit"
-                    name="action"
-                    value="save_draft"
+            <!-- Change to type="button" and add onclick -->
+            <button type="button"
+                    onclick="submitProductForm('save_draft')"
                     class="btn btn-ghost btn-sm rounded-lg">
                 <i class="fa-regular fa-floppy-disk text-xs mr-1"></i>
                 Save Draft｜儲存草稿
             </button>
 
             {% if product.status == 'Draft' %}
-                <button type="submit"
-                        name="action"
-                        value="save_and_submit"
+                <!-- Change to type="button" and add onclick -->
+                <button type="button"
+                        onclick="submitProductForm('save_and_submit')"
                         class="btn btn-primary rounded-lg px-6">
                     <i class="fa-solid fa-check text-xs mr-1"></i>
                     提交審核｜Submit for Review
                 </button>
             {% elif product.status == 'Rejected' %}
-                <button type="submit"
-                        name="action"
-                        value="save_and_submit"
+                <button type="button"
+                        onclick="submitProductForm('save_and_submit')"
                         class="btn btn-primary rounded-lg px-6">
                     <i class="fa-solid fa-rotate-right text-xs mr-1"></i>
                     儲存並重新提交｜Save & Resubmit
                 </button>
             {% elif product.status == 'Unpublished' %}
-                <button type="submit"
-                        name="action"
-                        value="save_and_submit"
+                <button type="button"
+                        onclick="submitProductForm('save_and_submit')"
                         class="btn btn-primary rounded-lg px-6">
                     <i class="fa-solid fa-arrow-up-from-bracket text-xs mr-1"></i>
                     儲存並重新上架｜Save & Relist
                 </button>
             {% endif %}
         {% else %}
-            <button type="submit" class="btn btn-primary rounded-lg px-6">
+            <button type="button" onclick="submitProductForm('save_draft')" class="btn btn-primary rounded-lg px-6">
                 <i class="fa-solid fa-check text-xs mr-1"></i>
                 Continue｜下一步
             </button>
@@ -573,6 +571,61 @@
 </script>
 
 {% endif %}
+
+<script>
+    // ══════════════════════════════════════════════════════════════
+    // 1. Core Form Submission Bypasser
+    // (Ensures 'Save Draft' and 'Submit for Review' both trigger a POST)
+    // ══════════════════════════════════════════════════════════════
+    function submitProductForm(actionValue) {
+        const form = document.querySelector('form[enctype="multipart/form-data"]');
+        if (!form) {
+            console.error("Form not found!");
+            return;
+        }
+
+        // Remove any previous action input (if clicking twice)
+        const existingInput = form.querySelector('input[name="action"]');
+        if (existingInput) existingInput.remove();
+
+        // Create and append the new action input
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = actionValue;
+        form.appendChild(actionInput);
+
+        // Submit the form, bypassing native button type checks
+        form.submit();
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // 2. Page Load Initialization
+    // ══════════════════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // A. Remove `required` from hidden inputs that block native submission
+        const detailsTextarea = document.getElementById('id_details');
+        if (detailsTextarea) detailsTextarea.removeAttribute('required');
+
+        const modalImages = document.querySelector('#variation-modal input[name="images"]');
+        if (modalImages) modalImages.removeAttribute('required');
+
+        // B. Scroll to top if the page rendered with validation errors
+        // (e.g., if the user missed a required field and the backend returned a 200)
+        const form = document.querySelector('form[enctype="multipart/form-data"]');
+        if (form) {
+            const firstError = document.querySelector('.text-error');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+
+    // ══════════════════════════════════════════════════════════════
+    // 3. (Existing code for variation modals remains above this)
+    // ══════════════════════════════════════════════════════════════
+</script>
 
 <!-- ADD: crop modal is always present -->
 {% include 'includes/crop_modal.html' %}

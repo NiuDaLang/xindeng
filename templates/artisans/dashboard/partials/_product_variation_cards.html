@@ -58,11 +58,11 @@
             </div>
         </div>
 
-        <div class="flex justify-end gap-2 mt-3 pt-3 border-t border-base-200/60">
+        <div class="flex flex-wrap justify-end gap-2 mt-3 pt-3 border-t border-base-200/60">
             <div class="vault-btn-wrapper" {% if not product.is_digital %}style="display:none;"{% endif %}>
                 {% if v.pending_vault_upload_count %}
                 <button type="button"
-                        class="btn btn-xs btn-warning btn-outline rounded-lg px-3"
+                        class="btn btn-xs btn-warning btn-outline rounded-lg px-3 whitespace-nowrap"
                         title="Resubmit File｜已有檔案待審核，重新上傳將取代先前的檔案。"
                         hx-get="{% url 'a_dashboard_product_variation_upload_vault' product.id v.id %}"
                         hx-target="#vault-upload-modal-body"
@@ -72,7 +72,7 @@
                 </button>
                 {% elif v.draft_staged_count %}
                 <button type="button"
-                        class="btn btn-xs btn-info btn-outline rounded-lg px-3"
+                        class="btn btn-xs btn-info btn-outline rounded-lg px-3 whitespace-nowrap"
                         title="Replace Staged｜已有暫存檔案尚未提交，重新上傳將取代先前的檔案。"
                         hx-get="{% url 'a_dashboard_product_variation_upload_vault' product.id v.id %}"
                         hx-target="#vault-upload-modal-body"
@@ -82,7 +82,7 @@
                 </button>
                 {% else %}
                 <button type="button"
-                        class="btn btn-xs btn-ghost rounded-lg px-3"
+                        class="btn btn-xs btn-ghost rounded-lg px-3 whitespace-nowrap"
                         hx-get="{% url 'a_dashboard_product_variation_upload_vault' product.id v.id %}"
                         hx-target="#vault-upload-modal-body"
                         hx-swap="innerHTML"
@@ -92,7 +92,7 @@
                 {% endif %}
             </div>
             <button type="button"
-                    class="btn btn-xs btn-ghost rounded-lg edit-variation-btn"
+                    class="btn btn-xs btn-ghost rounded-lg edit-variation-btn whitespace-nowrap"
                     data-variation-id="{{ v.id }}"
                     data-price="{{ v.price }}"
                     data-original-price="{{ v.original_price|default_if_none:'' }}"
@@ -110,7 +110,7 @@
                 <i class="fa-solid fa-pen text-[10px] mr-1"></i> 編輯
             </button>
             <button type="button"
-                    class="btn btn-xs btn-ghost text-error rounded-lg"
+                    class="btn btn-xs btn-ghost text-error rounded-lg whitespace-nowrap"
                     hx-post="{% url 'a_dashboard_product_variation_remove' product.id v.id %}"
                     hx-target="#variation-cards-container"
                     hx-swap="innerHTML"

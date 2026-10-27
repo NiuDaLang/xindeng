@@ -67,14 +67,13 @@
 
           <div class="flex-1"></div>
 
-          <form method="post"
-                action="{% url 'review_product_approve' product.id %}"
-                class="inline">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-xs btn-success gap-1">
-              <i class="fa-solid fa-check text-[10px]"></i>
-              Approve｜通過
-            </button>
+          <form method="post" 
+                action="{% url 'review_product_approve' product.id %}" 
+                class="inline" onsubmit="return confirm('Approve this product? It will be published and visible to customers. | 確定通過審核？作品將正式發布並供顧客瀏覽。');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-xs btn-success gap-1">
+                  <i class="fa-solid fa-check text-xs mr-1"></i> Approve｜通過
+              </button>
           </form>
 
           <button type="button"
