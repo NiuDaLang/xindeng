@@ -510,8 +510,9 @@
     (function() {
         const field = document.getElementById('digital-fulfillment-field');
         const physicalFields = document.getElementById('physical-variation-fields');
-        if (!fielradid) return;
-        const os = document.querySelectorAll('input[name="product_kind"]');
+        const fulfillmentSelect = document.getElementById('id_digital_fulfillment_type');
+        if (!field) return;
+        const radios = document.querySelectorAll('input[name="product_kind"]');
         
         window.toggleProductKindFields = function() {
             const digital = [...radios].some(r => r.checked && r.value === 'digital');
@@ -519,9 +520,31 @@
             if (physicalFields) {
                 physicalFields.style.display = digital ? 'none' : '';
             }
+
+            // Stock lock for INSTANT digital products. Model-level
+            // save() forces stock=1; this prevents the user from
+            // typing a number that will be silently overwritten.
+            const stockInput = document.querySelector('#variation-form [name="stock"]');
+            if (stockInput) {
+                const isInstant = digital
+                    && fulfillmentSelect
+                    && fulfillmentSelect.value === 'INSTANT';
+                
+                if (isInstant) {
+                    stockInput.value = '1';
+                    stockInput.readOnly = true;
+                    stockInput.classList.add('opacity-60', 'cursor-not-allowed');
+                } else {
+                    stockInput.readOnly = false;
+                    stockInput.classList.remove('opacity-60', 'cursor-not-allowed');
+                }
+            }
         };
         
         radios.forEach(r => r.addEventListener('change', window.toggleProductKindFields));
+        if (fulfillmentSelect) {
+            fulfillmentSelect.addEventListener('change', window.toggleProductKindFields);
+        }
         window.toggleProductKindFields();
     })();
 
