@@ -60,14 +60,36 @@
 
         <div class="flex justify-end gap-2 mt-3 pt-3 border-t border-base-200/60">
             <div class="vault-btn-wrapper" {% if not product.is_digital %}style="display:none;"{% endif %}>
+                {% if v.pending_vault_upload_count %}
                 <button type="button"
-                        class="btn btn-xs btn-ghost rounded-lg"
+                        class="btn btn-xs btn-warning btn-outline rounded-lg px-3"
+                        title="Resubmit File｜已有檔案待審核，重新上傳將取代先前的檔案。"
                         hx-get="{% url 'a_dashboard_product_variation_upload_vault' product.id v.id %}"
                         hx-target="#vault-upload-modal-body"
                         hx-swap="innerHTML"
                         hx-on::after-request="if(event.detail.successful) document.getElementById('vault-upload-modal').showModal()">
-                    <i class="fa-solid fa-cloud-arrow-up text-[10px] mr-1"></i> Vault
+                    <i class="fa-solid fa-clock text-[10px] mr-1"></i> 重傳
                 </button>
+                {% elif v.draft_staged_count %}
+                <button type="button"
+                        class="btn btn-xs btn-info btn-outline rounded-lg px-3"
+                        title="Replace Staged｜已有暫存檔案尚未提交，重新上傳將取代先前的檔案。"
+                        hx-get="{% url 'a_dashboard_product_variation_upload_vault' product.id v.id %}"
+                        hx-target="#vault-upload-modal-body"
+                        hx-swap="innerHTML"
+                        hx-on::after-request="if(event.detail.successful) document.getElementById('vault-upload-modal').showModal()">
+                    <i class="fa-solid fa-box-open text-[10px] mr-1"></i> 替換
+                </button>
+                {% else %}
+                <button type="button"
+                        class="btn btn-xs btn-ghost rounded-lg px-3"
+                        hx-get="{% url 'a_dashboard_product_variation_upload_vault' product.id v.id %}"
+                        hx-target="#vault-upload-modal-body"
+                        hx-swap="innerHTML"
+                        hx-on::after-request="if(event.detail.successful) document.getElementById('vault-upload-modal').showModal()">
+                    <i class="fa-solid fa-cloud-arrow-up text-[10px] mr-1"></i> 上傳
+                </button>
+                {% endif %}
             </div>
             <button type="button"
                     class="btn btn-xs btn-ghost rounded-lg edit-variation-btn"
@@ -85,7 +107,7 @@
                     data-pending-size="{{ v.pending_size }}"
                     data-pending-type="{{ v.pending_type }}"
                     data-edit-url="{% url 'a_dashboard_product_variation_edit' product.id v.id %}">
-                <i class="fa-solid fa-pen text-[10px] mr-1"></i> Edit
+                <i class="fa-solid fa-pen text-[10px] mr-1"></i> 編輯
             </button>
             <button type="button"
                     class="btn btn-xs btn-ghost text-error rounded-lg"
@@ -93,10 +115,9 @@
                     hx-target="#variation-cards-container"
                     hx-swap="innerHTML"
                     hx-confirm="確定移除此款式？｜Remove this variation?">
-                <i class="fa-solid fa-trash text-[10px] mr-1"></i> Remove
+                <i class="fa-solid fa-trash text-[10px] mr-1"></i> 刪除
             </button>
         </div>
-
     </div>
     {% endfor %}
 </div>
