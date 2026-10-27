@@ -521,6 +521,11 @@
                 physicalFields.style.display = digital ? 'none' : '';
             }
 
+            // Vault button wrappers on the variation cards
+            document.querySelectorAll('.vault-btn-wrapper').forEach(wrapper => {
+                wrapper.style.display = digital ? '' : 'none';
+            });
+
             // Stock lock for INSTANT digital products. Model-level
             // save() forces stock=1; this prevents the user from
             // typing a number that will be silently overwritten.
@@ -541,12 +546,29 @@
             }
         };
         
-        radios.forEach(r => r.addEventListener('change', window.toggleProductKindFields));
-        if (fulfillmentSelect) {
-            fulfillmentSelect.addEventListener('change', window.toggleProductKindFields);
+        if (!window._variationPanelInitialised) {
+            window._variationPanelInitialised = true;
+            radios.forEach(r => r.addEventListener('change', window.toggleProductKindFields));
+            if (fulfillmentSelect) {
+                fulfillmentSelect.addEventListener('change', window.toggleProductKindFields);
+            }
+            window.toggleProductKindFields();
         }
-        window.toggleProductKindFields();
     })();
+
+    // Re-apply the current product_kind intent to newly rendered
+    // variation cards. The HTMX response carries the DB product state,
+    // which may lag the radio state the user just set.
+    if (!window._vaultAfterSwapBound) {
+        window._vaultAfterSwapBound = true;
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target && evt.detail.target.id === 'variation-cards-container') {
+                if (typeof window.toggleProductKindFields === 'function') {
+                    window.toggleProductKindFields();
+                }
+            }
+        });
+    }
 
 </script>
 
