@@ -351,30 +351,33 @@
                     </p>
                 </div>
 
-                <div class="flex items-center gap-2 pt-4">
-                    {{ variation_form.with_shipping }}
-                    <label class="text-xs">Shipping included｜含運費</label>
+                <!-- Physical ONLY fields -->
+                <div id="physical-variation-fields" class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div class="flex items-center gap-2">
+                        {{ variation_form.with_shipping }}
+                        <label class="text-xs">Shipping included｜含運費</label>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        {{ variation_form.single_pack }}
+                        <label class="text-xs">Single Pack｜單件包裝</label>
+                    </div>
+
+                    <p class="text-[10px] opacity-50 sm:col-span-2">
+                        <strong>含運費</strong>：運費已包含在售價中（適合平價小物）。<br>
+                        <strong>單件包裝</strong>：每件單獨計運費（如畫作）。若不勾選，多件可合併計算運費。<br>
+                        <span class="italic">
+                            <strong>Shipping included</strong>: cost is baked into the price. |
+                            <strong>Single Pack</strong>: each unit ships separately. Leave unchecked to combine shipping.
+                        </span>
+                    </p>
+
+                    <div>
+                        <label class="label text-xs">Weight｜重量(g)</label>
+                        {{ variation_form.weight }}
+                    </div>
                 </div>
-
-                <div class="flex items-center gap-2 pt-4">
-                    {{ variation_form.single_pack }}
-                    <label class="text-xs">Single Pack｜單件包裝</label>
-                </div>
-
-                <p class="text-[10px] opacity-50 sm:col-span-2">
-                    <strong>含運費</strong>：運費已包含在售價中（適合平價小物）。<br>
-                    <strong>單件包裝</strong>：每件單獨計運費（如畫作）。若不勾選，多件可合併計算運費。<br>
-                    <span class="italic">
-                        <strong>Shipping included</strong>: cost is baked into the price. |
-                        <strong>Single Pack</strong>: each unit ships separately. Leave unchecked to combine shipping.
-                    </span>
-                </p>
-
-                <div>
-                    <label class="label text-xs">Weight｜重量(g)</label>
-                    {{ variation_form.weight }}
-                </div>
-
+                
                 <div class="sm:col-span-2">
                     <label class="label text-xs">
                         Variation Image｜款式圖片
@@ -447,6 +450,7 @@
 
         document.getElementById('variation-form-errors').innerHTML = '';
         document.getElementById('variation-modal').showModal();
+        if (typeof window.toggleProductKindFields === 'function') window.toggleProductKindFields();        
     }
 
     function openVariationModalForEdit(btn) {
@@ -478,6 +482,7 @@
 
         document.getElementById('variation-form-errors').innerHTML = '';
         document.getElementById('variation-modal').showModal();
+        if (typeof window.toggleProductKindFields === 'function') window.toggleProductKindFields();
     }
 
     // ---------- HTMX response handler ----------
@@ -504,14 +509,20 @@
     // ---------- Conditional Digital Fulfillment ----------
     (function() {
         const field = document.getElementById('digital-fulfillment-field');
-        if (!field) return;
-        const radios = document.querySelectorAll('input[name="product_kind"]');
-        function toggle() {
+        const physicalFields = document.getElementById('physical-variation-fields');
+        if (!fielradid) return;
+        const os = document.querySelectorAll('input[name="product_kind"]');
+        
+        window.toggleProductKindFields = function() {
             const digital = [...radios].some(r => r.checked && r.value === 'digital');
             field.style.display = digital ? '' : 'none';
-        }
-        radios.forEach(r => r.addEventListener('change', toggle));
-        toggle();
+            if (physicalFields) {
+                physicalFields.style.display = digital ? 'none' : '';
+            }
+        };
+        
+        radios.forEach(r => r.addEventListener('change', window.toggleProductKindFields));
+        window.toggleProductKindFields();
     })();
 
 </script>
