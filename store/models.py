@@ -303,6 +303,31 @@ class Product(models.Model):
         return h > w
 
     @property
+    def safe_image_url(self):
+        """
+        The hero image URL, or a static fallback if no image is set
+        OR the storage layer cannot resolve the stored name.
+
+        Storefront templates use this instead of `product.images.url`
+        directly. ImageField raises ValueError when the field is empty,
+        and can also raise when the DB name and storage disagree.
+        A single failing product would 500 the entire list page,
+        which is exactly what happened on /store/products/all and
+        /search/ during the buyer verification walk. The fallback
+        isolates the failure to that one card.
+
+        The default image lives at static/images/default-product.webp,
+        already present in the tree.
+        """
+        if self.images:
+            try:
+                return self.images.url
+            except ValueError:
+                pass
+        from django.templatetags.static import static
+        return static('images/default-product.webp')
+
+    @property
     def is_landscape(self):
         dims = self.image_dimensions
         if not dims:
