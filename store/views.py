@@ -261,7 +261,11 @@ def filter_products(request):
     price_range = request.GET.get('price_range')
     params = [category, color, selected_tag_ids, price_range]
 
-    qs = Product.products.filter(is_active=True).annotate(
+    qs = Product.products.filter(
+        is_active=True,
+        is_deleted=False,
+        status="Published",
+    ).annotate(
         min_price=Min(
             'variations__price', 
             filter=Q(variations__is_available=True)
