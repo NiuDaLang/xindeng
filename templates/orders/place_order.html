@@ -206,7 +206,15 @@
                 <span class="opacity-50 shrink-0 text-[0.65rem] xs:text-xs w-[9rem] xs:w-[11rem] font-medium">Buyer Name｜姓名:</span>
                 <div class="grow min-w-0">
                   <strong class="font-bold text-base-content/80 break-words">
-                    {% if user.is_authenticated %}{{ user.first_name }} {{ user.last_name }}{% else %}Guest｜訪客購買{% endif %}
+                    {% if user.is_authenticated %}
+                      {% if user.first_name or user.last_name %}
+                        {{ user.first_name }} {{ user.last_name }}
+                      {% else %}
+                        {{ user.username }}
+                      {% endif %}
+                    {% else %}
+                      Guest｜訪客購買
+                    {% endif %}
                   </strong>
                 </div>
               </div>
