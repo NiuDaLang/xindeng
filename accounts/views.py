@@ -188,6 +188,7 @@ def register(request):
         email_errors = None
         username_errors = None
 
+    print("errors: ", form_errors, email_errors, pw_errors, username_errors)
     context = {
         "google_client_id": os.environ.get('GOOGLE_CLIENT_ID'),
         "form": form,
@@ -212,7 +213,10 @@ def activate(request, uidb64, token):
         user.save()
 
         # 🌟 THE NET FIX: Auto-authenticate and log in the user on verification success
-        auth_login(request, user)
+        auth_login(
+            request, user,
+            backend='django.contrib.auth.backends.ModelBackend',
+        )
 
         success_messages_list = ["帳號已成功激活！ | Account activated!"]
 
