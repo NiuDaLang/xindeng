@@ -1303,6 +1303,15 @@ document.addEventListener("successMssg", function(evt) {
         timer: 5000
     });
 });
+document.body.addEventListener('orderProductVaultUploadSuccess', function() {
+    document.dispatchEvent(new CustomEvent("successMssg", {
+        detail: {
+            title: "Upload Received｜檔案已提交",
+            html: "Your file has been submitted for admin review. You will be notified once it is approved.<br><span class='text-xs opacity-60 mt-1 block'>您的檔案已提交至審核佇列。管理員審核通過後將通知您。</span>",
+            icon: "success"
+        }
+    }));
+});
 document.body.addEventListener('showDapDisclaimer', (evt) => {
     Swal.fire({
         icon: 'info',
