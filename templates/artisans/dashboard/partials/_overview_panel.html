@@ -46,7 +46,17 @@
         <p class="text-[10px] uppercase tracking-[0.2em] text-base-content/40 mb-2">
             Messages｜未讀訊息
         </p>
-        <p class="text-3xl font-serif">{{ unread_messages_count }}</p>
+        <p class="text-3xl font-serif">{{ unread_messages_count|add:unread_admin_messages_count }}</p>
+        <p class="text-[10px] text-base-content/40 mt-1 leading-relaxed">
+            <span class="inline-flex items-center gap-1">
+                <i class="fa-solid fa-user text-[8px]"></i>
+                {{ unread_messages_count }} 客戶
+            </span>
+            <span class="inline-flex items-center gap-1 ml-2">
+                <i class="fa-solid fa-shield-halved text-[8px]"></i>
+                {{ unread_admin_messages_count }} platform
+            </span>
+        </p>
     </div>
 </div>
 

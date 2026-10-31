@@ -69,7 +69,8 @@ from blog.models import Post
 from .models import LoginEvent
 from .views_admin_trap import client_ip
 from core.image_utils import safe_image_url
-
+from creators.models import ArtisanAdminMessage, CreatorProfile
+from django.db.models import Max
 
 NUM_MSG_PER_LOAD = 10
 
@@ -546,6 +547,7 @@ def dashboard(request, subpage):
         'threed': 'accounts/dashboard_threed.html',
         'blog_review': 'accounts/dashboard_blog_review.html',
         'product_review': 'accounts/dashboard_product_review.html',
+        'artisan_messages': 'accounts/dashboard_artisan_messages.html',
     }
     page_title = {
         'main': 'Main｜管理主頁',
@@ -560,6 +562,7 @@ def dashboard(request, subpage):
         'threed': '3D Scenes｜三維場景',
         'blog_review': 'Blog Review｜筆記審核',
         'product_review': 'Product Review｜作品審核',
+        'artisan_messages': 'Artisan Messages｜匠人訊息',
     }
     template_name = templates.get(subpage, 'accounts/dashboard_main.html')
     subpage_title = page_title.get(subpage, 'Main｜管理主頁')
@@ -1031,6 +1034,71 @@ def dashboard(request, subpage):
             "other_user": other_user,
             "first_unread_id": first_unread.id if first_unread else None,
             "search_query": search_query,
+        })
+
+    # artisan_messages — superadmin only
+    if subpage == "artisan_messages":
+        if not getattr(request.user, "is_superadmin", False):
+            messages.error(request, "Access denied.｜無權限訪問。")
+            return redirect("dashboard", subpage="main")
+
+        active_artisan = None
+        active_messages = ArtisanAdminMessage.objects.none()
+        artisan_id_param = request.GET.get("artisan")
+
+        # ── 1. Resolve the active artisan (direct lookup — do not
+        #      depend on artisans_by_id, which is built below).
+        if artisan_id_param and artisan_id_param.isdigit():
+            active_artisan = (
+                CreatorProfile.objects
+                .filter(id=int(artisan_id_param))
+                .select_related("user")
+                .first()
+            )
+
+            # ── 2. Flip unread received messages to read for the
+            #      active artisan BEFORE the annotation below, so the
+            #      row badge in the thread list matches the sidebar
+            #      badge (which the context processor recomputes
+            #      post-flip).
+            if active_artisan:
+                ArtisanAdminMessage.objects.filter(
+                    artisan=active_artisan,
+                    is_read=False,
+                ).exclude(sender=request.user).update(is_read=True)
+
+        # ── 3. Now run the annotation query, post-flip ──
+        artisan_rows = list(
+            ArtisanAdminMessage.objects
+            .values("artisan")
+            .annotate(
+                last_at=Max("created_at"),
+                unread=Count("id", filter=Q(is_read=False)),
+            )
+            .order_by("-last_at")
+        )
+
+        # ── 4. Fetch the CreatorProfile rows in one query, not N.
+        artisan_ids = [row["artisan"] for row in artisan_rows]
+        artisans_by_id = {
+            p.id: p for p in
+            CreatorProfile.objects.filter(id__in=artisan_ids).select_related("user")
+        }
+        for row in artisan_rows:
+            row["artisan_obj"] = artisans_by_id.get(row["artisan"])
+
+        # ── 5. Load the active thread's messages ──
+        if active_artisan:
+            active_messages = (
+                ArtisanAdminMessage.objects
+                .filter(artisan=active_artisan)
+                .select_related("sender")
+            )
+
+        context.update({
+            "artisan_message_threads": artisan_rows,
+            "active_artisan": active_artisan,
+            "active_artisan_messages": active_messages,
         })
 
     # blog_review — superuser only
@@ -1532,6 +1600,50 @@ def send_message(request):
             "admin": admin_user
         }
         return render(request, 'accounts/partials/new_chat_mssg.html', context)
+
+
+@login_required(login_url="login")
+@require_POST
+def artisan_messages_send(request, artisan_id):
+    """
+    Create a message from the platform admin to the given artisan.
+
+    Only superadmins can post. The artisan-side unread count
+    (unread_admin_messages_count) flips when the artisan opens
+    their thread (a separate view); this view only writes.
+    """
+    if not getattr(request.user, "is_superadmin", False):
+        return HttpResponse(status=403)
+
+    artisan = get_object_or_404(CreatorProfile, id=artisan_id)
+
+    content = (request.POST.get("content") or "").strip()
+    if not content:
+        messages.error(request, "Message cannot be empty.｜訊息不得為空。")
+        return redirect(
+            f"{reverse('dashboard', kwargs={'subpage': 'artisan_messages'})}"
+            f"?artisan={artisan.id}"
+        )
+
+    from creators.tasks import send_artisan_admin_message_email_task
+
+    with transaction.atomic():
+        msg = ArtisanAdminMessage.objects.create(
+            artisan=artisan,
+            sender=request.user,
+            content=content,
+            is_read=False,
+        )
+        transaction.on_commit(
+            lambda mid=msg.id:
+                send_artisan_admin_message_email_task.delay(str(mid))
+        )
+
+    return redirect(
+        f"{reverse('dashboard', kwargs={'subpage': 'artisan_messages'})}"
+        f"?artisan={artisan.id}"
+    )
+
 
 def refresh_chat(request):
     msg_id = request.GET.get('msg_id')

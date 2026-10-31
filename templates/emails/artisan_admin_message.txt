@@ -1,0 +1,26 @@
+{% autoescape off %}
+📬 平台新訊息通知｜NEW MESSAGE FROM THE PLATFORM
+
+Dear {{ artisan.display_name }}｜{{ artisan.display_name }} 您好:
+
+The platform team has sent you a message via your admin thread.
+平台團隊已透過您的專屬對話頻道向您發送訊息。
+
+============================================================
+💬 MESSAGE｜訊息
+============================================================
+{{ message.content }}
+============================================================
+
+Sent {{ message.created_at|date:"Y-m-d H:i" }} by {{ message.sender.username }}.
+
+Please log in to reply. Replies are not sent by replying to this email.
+請登入工作台回覆。直接回覆此郵件不會送達平台。
+
+→ {{ dashboard_url }}
+
+============================================================
+Hṛdayadīpa (हृदयदीप)｜心燈
+Automated notification — please do not reply directly.
+系統自動通知，請勿直接回覆。
+{% endautoescape %}

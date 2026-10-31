@@ -22,7 +22,7 @@ from .context import artisan_dashboard_context
 from taggit.models import Tag
 
 from .decorators import artisan_required
-from .models import CreatorProfile, CraftType, ArtisanChatMessage
+from .models import CreatorProfile, CraftType, ArtisanChatMessage, ArtisanAdminMessage
 # If you go with Approach A:
 from django.conf import settings
 import os
@@ -1183,7 +1183,9 @@ def dashboard_messages(request):
     })
 
     if request.headers.get("HX-Request"):
-        return render(request, "artisans/dashboard/partials/_messages_panel.html", context)
+        # HTMX swaps only the inner content
+        return render(request, "artisans/dashboard/partials/_messages_tabs.html", context)
+    # Full page load gets the container
     return render(request, "artisans/dashboard/messages.html", context)
 
 
@@ -1212,6 +1214,74 @@ def dashboard_messages_send(request, customer_id):
         is_read=True,
     )
     return redirect(f"{reverse('a_dashboard_messages')}?customer={customer.id}")
+
+
+@artisan_required
+def dashboard_messages_admin(request):
+    """
+    Artisan's thread with the platform admin.
+
+    There is one thread — keyed on the artisan alone. No customer
+    picker, no URL parameter. Opening the view flips every unread
+    admin-authored message to read; artisan-authored messages are
+    already is_read=True and are unaffected.
+
+    This is a sibling of dashboard_messages (the customer thread).
+    Do not merge them, and do not repoint either at the other model.
+    """
+    profile = request.user.creator_profile
+
+    messages_qs = (
+        ArtisanAdminMessage.objects
+        .filter(artisan=profile)
+        .select_related("sender")
+    )
+
+    ArtisanAdminMessage.objects.filter(
+        artisan=profile,
+        is_read=False,
+    ).exclude(sender=profile.user).update(is_read=True)
+
+    context = artisan_dashboard_context(request)
+    context.update({
+        "active_section": "messages_admin",
+        "admin_messages": messages_qs,
+        "page_title": "Admin Thread｜平台對話",
+    })
+
+    if request.headers.get("HX-Request"):
+        # HTMX swaps only the inner content
+        return render(request, "artisans/dashboard/partials/_messages_tabs.html", context)
+    # Full page load gets the container
+    return render(request, "artisans/dashboard/messages_admin.html", context)
+
+
+@artisan_required
+@require_POST
+def dashboard_messages_admin_send(request):
+    """
+    Create a message from this artisan to the platform admin.
+
+    The sender is the artisan; is_read is True because the sender
+    has, by definition, read their own message. The admin-side
+    unread counter flips when the admin opens the artisan's thread
+    (that counter is not is_read here; it's the admin-side view's
+    own query).
+    """
+    profile = request.user.creator_profile
+
+    content = (request.POST.get("content") or "").strip()
+    if not content:
+        messages.error(request, "Message cannot be empty.｜訊息不得為空。")
+        return redirect("a_dashboard_messages_admin")
+
+    ArtisanAdminMessage.objects.create(
+        artisan=profile,
+        sender=request.user,
+        content=content,
+        is_read=False,
+    )
+    return redirect("a_dashboard_messages_admin")
 
 
 # Product Registration

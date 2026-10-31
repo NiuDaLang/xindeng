@@ -1,0 +1,27 @@
+<!-- templates/artisans/dashboard/partials/_messages_tabs.html -->
+<div class="mb-4 border-b border-base-200/60">
+    <div class="flex items-end gap-2">
+        <a hx-get="{% url 'a_dashboard_messages' %}"
+           hx-target="#dashboard-main"
+           hx-push-url="true"
+           class="px-4 py-2 text-sm border-b-2 transition-colors cursor-pointer
+                  {% if active_section == 'messages' %}border-primary text-primary font-semibold{% else %}border-transparent text-base-content/60 hover:text-base-content{% endif %}">
+            Customer Thread｜買家對話
+        </a>
+        <a hx-get="{% url 'a_dashboard_messages_admin' %}"
+           hx-target="#dashboard-main"
+           hx-push-url="true"
+           class="px-4 py-2 text-sm border-b-2 transition-colors cursor-pointer flex items-center gap-2
+                  {% if active_section == 'messages_admin' %}border-primary text-primary font-semibold{% else %}border-transparent text-base-content/60 hover:text-base-content{% endif %}">
+            <span>Admin Thread｜平台對話</span>
+            {% if unread_admin_messages_count %}
+            <span class="badge badge-xs badge-primary font-mono">{{ unread_admin_messages_count }}</span>
+            {% endif %}
+        </a>
+    </div>
+</div>
+{% if active_section == 'messages_admin' %}
+    {% include 'artisans/dashboard/partials/_messages_admin_panel.html' %}
+{% else %}
+    {% include 'artisans/dashboard/partials/_messages_panel.html' %}
+{% endif %}

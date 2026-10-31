@@ -35,6 +35,8 @@ urlpatterns = [
     path('dashboard/profile/', views.dashboard_profile_edit, name='a_dashboard_profile'),
     path('dashboard/messages/', views.dashboard_messages, name='a_dashboard_messages'),
     path('dashboard/messages/<int:customer_id>/send/', views.dashboard_messages_send, name='a_dashboard_messages_send'),
+    path('dashboard/messages/admin/', views.dashboard_messages_admin, name='a_dashboard_messages_admin'),
+    path('dashboard/messages/admin/send/', views.dashboard_messages_admin_send, name='a_dashboard_messages_admin_send'),
 
     path('dashboard/settlements/', views.dashboard_settlements, name='a_dashboard_settlements'),
 

@@ -158,6 +158,7 @@ TEMPLATES = [
                 "blog.context_processors.blog_review_count",
                 "accounts.context_processors.get_google_api",
                 "accounts.context_processors.product_review_count",
+                "creators.context_processors.artisan_message_count",
                 # "carts.context_processors.counter",
                 # "carts.context_processors.cart_items",
             ],

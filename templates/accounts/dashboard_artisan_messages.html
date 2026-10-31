@@ -1,0 +1,99 @@
+<!-- templates/accounts/dashboard_artisan_messages.html -->
+{% load humanize %}
+<title>{{ page_title }}</title>
+
+<div id="dashboard_artisan_messages" class="subpage flex flex-col gap-6 animate-fade-in w-full text-neutral font-sans select-none">
+
+    <div class="flex items-end justify-between gap-4 border-b border-base-200 pb-4">
+        <div>
+            <h1 class="font-serif text-2xl tracking-wide">Artisan Messages｜匠人訊息</h1>
+            <p class="text-xs text-base-content/50 mt-1">
+                與匠人的直接對話。此為平台與匠人之間的專屬通道，與會員客服（Help）分開。
+                <span class="opacity-60">｜Direct chat with artisans. Separate from member-facing Help.</span>
+            </p>
+        </div>
+        <span class="badge badge-warning badge-lg font-mono">
+            {{ pending_artisan_message_count }} unread
+        </span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 min-h-[60vh]">
+        <!-- Thread list -->
+        <aside class="border border-base-200/60 rounded-2xl bg-base-100 overflow-hidden">
+            <div class="px-4 py-3 border-b border-base-200/60 bg-base-50/40">
+                <p class="text-[10px] font-mono uppercase tracking-wider opacity-60">Artisans｜匠人</p>
+            </div>
+            <ul class="divide-y divide-base-200/40">
+                {% for t in artisan_message_threads %}
+                <li>
+                    <a href="?artisan={{ t.artisan }}"
+                       class="flex items-center gap-3 px-4 py-3 hover:bg-base-200/40 transition-colors
+                              {% if active_artisan and active_artisan.id == t.artisan %}bg-base-200/60{% endif %}">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-medium truncate">
+                                {% if t.artisan_obj %}{{ t.artisan_obj.display_name }}{% else %}(unknown){% endif %}
+                            </p>
+                            <p class="text-[10px] text-base-content/40 font-mono">
+                                {{ t.last_at|date:"Y-m-d H:i" }}
+                            </p>
+                        </div>
+                        {% if t.unread %}
+                        <span class="badge badge-xs badge-primary">{{ t.unread }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                {% empty %}
+                <li class="px-4 py-10 text-center text-[11px] text-base-content/40">
+                    No conversations yet.<br>尚無對話。
+                </li>
+                {% endfor %}
+            </ul>
+        </aside>
+
+        <!-- Active thread -->
+        <section class="border border-base-200/60 rounded-2xl bg-base-100 flex flex-col">
+            {% if active_artisan %}
+                <div class="px-4 py-3 border-b border-base-200/60">
+                    <p class="text-sm font-medium">{{ active_artisan.display_name }}</p>
+                    <p class="text-[10px] text-base-content/40">{{ active_artisan.user.email }}</p>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-4 space-y-3 max-h-[50vh]">
+                    {% for m in active_artisan_messages %}
+                    <div class="flex {% if m.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
+                        <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed
+                                    {% if m.sender == request.user %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content{% endif %}">
+                            {{ m.content|linebreaksbr }}
+                            <span class="block text-[9px] opacity-60 mt-1 font-mono">
+                                {{ m.sender.username }} · {{ m.created_at|date:"Y-m-d H:i" }}
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-xs text-base-content/40 py-10">
+                        No messages yet. Say hello.｜暫無訊息。
+                    </p>
+                    {% endfor %}
+                </div>
+
+                <form method="post"
+                      action="{% url 'artisan_messages_send' active_artisan.id %}"
+                      class="border-t border-base-200/60 p-3 flex gap-2">
+                    {% csrf_token %}
+                    <textarea name="content" maxlength="2000" rows="2" required
+                              placeholder="Write a short message…｜輸入訊息…"
+                              class="textarea textarea-bordered flex-1 text-xs rounded-xl"></textarea>
+                    <button type="submit" class="btn btn-primary btn-sm rounded-xl">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </form>
+            {% else %}
+                <div class="flex-1 flex flex-col items-center justify-center text-center text-base-content/40 py-16">
+                    <i class="fa-solid fa-comments text-3xl opacity-30 mb-2"></i>
+                    <p class="text-sm">Select an artisan to view messages.</p>
+                    <p class="text-xs opacity-70 mt-1">請選擇匠人以查看訊息。</p>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+</div>

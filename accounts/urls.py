@@ -42,6 +42,8 @@ urlpatterns = [
     path('api/mark_all_read/', views.api_mark_all_read, name='api_mark_all_read'),
     path('api/get_all_unread_counts/', views.api_get_all_unread_counts, name='api_get_all_unread_counts'),
 
+    path('artisan_messages/<int:artisan_id>/send/', views.artisan_messages_send, name='artisan_messages_send'),
+
     # Unread count (used by HTMX badges)
     path('get_unread_count/', views.get_unread_count, name='get_unread_count'),
     path('get_unread_count/<int:sender_id>/', views.get_unread_count, name='get_unread_count_member'),

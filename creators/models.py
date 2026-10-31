@@ -214,3 +214,58 @@ class ArtisanChatMessage(models.Model):
             f"{self.sender.username} → {self.customer.username} "
             f"({self.artisan.display_name}): {self.content[:30]}"
         )
+
+
+class ArtisanAdminMessage(models.Model):
+    """
+    A plain-text message in a artisan ↔ admin thread.
+
+    One thread per artisan, implied by the FK — there is no Thread
+    model in v1. Unlike ArtisanChatMessage (which is per-customer),
+    the counterparty here is fixed: the platform admin. So the thread
+    key is just `artisan`.
+
+    Deliberately simpler than accounts.ChatMessage (member↔admin):
+
+      * No image/attachment field. Content is text-only.
+      * No WebSocket. The messages panel is server-rendered; a manual
+        refresh or a form-driven reload is what picks up new messages.
+      * No artisan-side thread picker. There is one thread — the one
+        with the platform.
+
+    is_read semantics: admin-authored messages start is_read=False
+    and are flipped to True when the artisan opens the thread.
+    Artisan-authored messages are created is_read=True (the sender
+    has by definition read their own message).
+
+    Do not repoint unread_messages_count (the customer thread) or
+    unread_admin_messages_count (this thread) at each other. They
+    are sibling counters on separate models.
+    """
+
+    artisan = models.ForeignKey(
+        CreatorProfile,
+        on_delete=models.CASCADE,
+        related_name="admin_chat_messages",
+    )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_artisan_admin_messages",
+    )
+    content = models.TextField(max_length=2000)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["artisan", "created_at"]),
+            models.Index(fields=["artisan", "is_read"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.sender.username} → {self.artisan.display_name}: "
+            f"{self.content[:30]}"
+        )

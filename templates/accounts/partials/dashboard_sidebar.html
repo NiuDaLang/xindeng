@@ -276,26 +276,47 @@
     </div>
     {% endif %}
 
-  {% if user.is_superadmin %}
-  <div class="px-4 pb-3 border-b border-base-200/60">
-      <a href="{% url 'dashboard' 'product_review' %}"
-        hx-get="{% url 'dashboard' 'product_review' %}"
-        hx-target="#dashboard-content"
-        hx-push-url="true"
-        class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-info/30 hover:border-info/60 hover:bg-info/5 transition-all duration-200 group">
-          <div class="flex items-center gap-3 min-w-0">
-              <i class="fa-solid fa-box-open text-info text-sm"></i>
-              <div class="flex flex-col min-w-0">
-                  <span class="text-xs font-semibold text-info tracking-wide">Product Review</span>
-                  <span class="text-[10px] text-base-content/50 font-sans">作品審核</span>
-              </div>
-          </div>
-          {% if pending_product_count %}
-          <span class="badge badge-info badge-sm font-mono">{{ pending_product_count }}</span>
-          {% endif %}
-      </a>
-  </div>
-  {% endif %}
+    {% if user.is_superadmin %}
+    <div class="px-4 pb-3 border-b border-base-200/60">
+        <a href="{% url 'dashboard' 'product_review' %}"
+          hx-get="{% url 'dashboard' 'product_review' %}"
+          hx-target="#dashboard-content"
+          hx-push-url="true"
+          class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-info/30 hover:border-info/60 hover:bg-info/5 transition-all duration-200 group">
+            <div class="flex items-center gap-3 min-w-0">
+                <i class="fa-solid fa-box-open text-info text-sm"></i>
+                <div class="flex flex-col min-w-0">
+                    <span class="text-xs font-semibold text-info tracking-wide">Product Review</span>
+                    <span class="text-[10px] text-base-content/50 font-sans">作品審核</span>
+                </div>
+            </div>
+            {% if pending_product_count %}
+            <span class="badge badge-info badge-sm font-mono">{{ pending_product_count }}</span>
+            {% endif %}
+        </a>
+    </div>
+    {% endif %}
+
+    {% if user.is_superadmin %}
+    <div class="px-4 pb-3 border-b border-base-200/60">
+        <a href="{% url 'dashboard' 'artisan_messages' %}"
+          hx-get="{% url 'dashboard' 'artisan_messages' %}"
+          hx-target="#dashboard-content"
+          hx-push-url="true"
+          class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-success/30 hover:border-success/60 hover:bg-success/5 transition-all duration-200 group">
+            <div class="flex items-center gap-3 min-w-0">
+                <i class="fa-solid fa-comments text-success text-sm"></i>
+                <div class="flex flex-col min-w-0">
+                    <span class="text-xs font-semibold text-success tracking-wide">Artisan Messages</span>
+                    <span class="text-[10px] text-base-content/50 font-sans">匠人訊息</span>
+                </div>
+            </div>
+            {% if pending_artisan_message_count %}
+            <span class="badge badge-success badge-sm font-mono">{{ pending_artisan_message_count }}</span>
+            {% endif %}
+        </a>
+    </div>
+    {% endif %}
 
   </div>
 

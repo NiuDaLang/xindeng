@@ -794,3 +794,79 @@ def send_vault_upload_rejected_notification(upload_id):
     mail.send()
 
     return True
+
+
+def send_artisan_admin_message_email(message_id):
+    """
+    Notify an artisan that the platform admin has sent them a new
+    message on their artisan ↔ admin thread.
+
+    Mirrors send_artisan_new_order_email in shape: function-body
+    imports (avoids creators ↔ emails circularity at module load;
+    same gotcha class as orders.tasks → orders.utils), async-safe
+    Site.objects.get_current() lookup, bcc to the platform sender.
+
+    Only admin-authored messages reach this helper. The dispatch
+    site in accounts.views.artisan_messages_send fires it inside a
+    transaction.on_commit only after an ArtisanAdminMessage is
+    created by an admin. The artisan-side sibling
+    (creators.views.dashboard_messages_admin_send) does NOT dispatch
+    any email — artisan → admin messages are surfaced to the admin
+    through the sidebar badge (creators.context_processors.
+    artisan_message_count) and the review-queue-style inbox, not by
+    flooding ADMIN_EMAIL.
+    """
+    from creators.models import ArtisanAdminMessage
+
+    message = ArtisanAdminMessage.objects.select_related(
+        "artisan", "artisan__user", "sender",
+    ).get(id=message_id)
+
+    if not message.artisan:
+        # Artisan FK is non-nullable, but guard defensively so a data
+        # anomaly doesn't crash the worker.
+        return False
+
+    artisan = message.artisan
+    artisan_email = artisan.user.email
+
+    mail_subject = (
+        f"📬 New message from the platform｜平台新訊息 — "
+        f"{artisan.display_name}"
+    )
+
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_email = [artisan_email]
+
+    # Async-safe domain lookup — do NOT use request.build_absolute_uri
+    # in a worker; there is no request there.
+    current_site = Site.objects.get_current()
+    site_domain = f"http://{current_site.domain}"
+    dashboard_url = f"{site_domain}/artisans/dashboard/messages/admin/"
+
+    context = {
+        "message": message,
+        "artisan": artisan,
+        "dashboard_url": dashboard_url,
+        "site_domain": site_domain,
+        "year": timezone.now().year,
+    }
+    html_message = render_to_string(
+        "emails/artisan_admin_message.html", context,
+    )
+    plain_message = render_to_string(
+        "emails/artisan_admin_message.txt", context,
+    )
+
+    mail = EmailMultiAlternatives(
+        subject=mail_subject,
+        body=plain_message,
+        from_email=from_email,
+        to=to_email,
+        bcc=[from_email],
+    )
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = "utf-8"
+    mail.send()
+
+    return True

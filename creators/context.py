@@ -3,7 +3,7 @@ from datetime import date
 from django.conf import settings
 from orders.models import OrderProduct
 from django.db.models import Q
-from .models import ArtisanChatMessage
+from .models import ArtisanChatMessage, ArtisanAdminMessage
 
 
 def artisan_dashboard_context(request):
@@ -13,10 +13,12 @@ def artisan_dashboard_context(request):
     pending_dispatch_count counts lines where the artisan has a pending
     action (physical shipments, custom-digital files).
 
-    unread_messages_count reflects the artisan's own inbox. It was a
-    placeholder until ArtisanChatMessage shipped; do NOT repoint it at
-    accounts.ChatMessage — that model is the member↔admin channel and
-    has nothing to do with the artisan's sidebar.
+    unread_messages_count reflects the artisan's customer-thread inbox
+    (ArtisanChatMessage). unread_admin_messages_count reflects the
+    artisan's admin-thread inbox (ArtisanAdminMessage). They are
+    sibling counters on separate models; do NOT repoint one at the
+    other, and do NOT merge the two queries. The sidebar renders both
+    independently.
     """
     profile = request.user.creator_profile
 
@@ -33,8 +35,14 @@ def artisan_dashboard_context(request):
         is_read=False,
     ).count()
 
+    unread_admin_messages = ArtisanAdminMessage.objects.filter(
+        artisan=profile,
+        is_read=False,
+    ).exclude(sender=profile.user).count()
+
     return {
         "profile": profile,
         "pending_dispatch_count": pending_dispatch,
         "unread_messages_count": unread_messages,
+        "unread_admin_messages_count": unread_admin_messages,
     }
