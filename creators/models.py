@@ -173,10 +173,16 @@ class ArtisanChatMessage(models.Model):
         refresh or a form-driven reload is what picks up new messages.
       * No customer-side view in v1. This is the artisan's inbox. The
         customer's view of the same thread is a follow-on.
-
-    is_read semantics: customer-authored messages start is_read=False
-    and are flipped to True when the artisan opens the thread.
-    Artisan-authored messages are created is_read=True.
+   
+    `order_product` is nullable for the pre-purchase "Ask this
+    artisan" case. When set, the message header renders
+    "Re: <Product> — Variation: <X>". When null, the header is
+    the customer's display name only. Guest orders — Order.user
+    is SET_NULL/nullable, so a guest purchase carries only an
+    email — cannot be linked; the customer must be a registered
+    member for the dropdown to offer the line. See the
+    2026-11-01 handoff §6 refinement for the member-only
+    boundary and the guest composer note.
 
     Do not repoint unread_messages_count at accounts.ChatMessage.
     That model is the member↔admin channel; this one is the artisan's
@@ -201,12 +207,29 @@ class ArtisanChatMessage(models.Model):
     content = models.TextField(max_length=2000)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    order_product = models.ForeignKey(
+        "orders.OrderProduct",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="customer_thread_messages",
+        help_text=(
+            "The OrderProduct this message concerns. Nullable for the "
+            "pre-purchase 'Ask this artisan' case. Guest orders (no "
+            "order.user) cannot be linked — the customer must be a "
+            "registered member."
+        ),
+    )
 
     class Meta:
         ordering = ["created_at"]
         indexes = [
             models.Index(fields=["artisan", "customer", "created_at"]),
             models.Index(fields=["artisan", "is_read"]),
+            models.Index(
+                fields=["artisan", "order_product", "created_at"],
+                name="creators_art_ordprod_idx",
+            ),
         ]
 
     def __str__(self):
@@ -256,6 +279,17 @@ class ArtisanAdminMessage(models.Model):
     content = models.TextField(max_length=2000)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    source_chat_message = models.ForeignKey(
+        "creators.ArtisanChatMessage",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="escalated_admin_messages",
+        help_text=(
+            "The customer↔artisan message this admin escalation "
+            "originated from. Null for admin-initiated threads."
+        ),
+    )
 
     class Meta:
         ordering = ["created_at"]
