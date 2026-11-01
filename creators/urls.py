@@ -37,6 +37,8 @@ urlpatterns = [
     path('dashboard/messages/<int:customer_id>/send/', views.dashboard_messages_send, name='a_dashboard_messages_send'),
     path('dashboard/messages/admin/', views.dashboard_messages_admin, name='a_dashboard_messages_admin'),
     path('dashboard/messages/admin/send/', views.dashboard_messages_admin_send, name='a_dashboard_messages_admin_send'),
+    path('thread/<slug:artisan_slug>/', views.customer_thread, name='customer_thread'),
+    path('thread/<slug:artisan_slug>/send/', views.customer_thread_send, name='customer_thread_send'),
 
     path('dashboard/settlements/', views.dashboard_settlements, name='a_dashboard_settlements'),
 

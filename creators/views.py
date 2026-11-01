@@ -2307,3 +2307,218 @@ def dashboard_settlements(request):
     if request.headers.get('HX-Request'):
         return render(request, 'artisans/dashboard/partials/_settlements_panel.html', context)
     return render(request, 'artisans/dashboard/settlements.html', context)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CUSTOMER ↔ ARTISAN MESSAGING — customer-side view (backlog 24, commit 2)
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _customer_has_line_with(artisan, user):
+    """
+    True if `user` has at least one CUSTOM order line fulfilled by
+    `artisan`.
+
+    This is the member-only gate for the customer↔artisan thread.
+    Guest orders carry Order.user=None (see orders/models.py), so a
+    guest purchase never satisfies this filter — the customer must
+    be a registered member. This is the "member-only boundary"
+    recorded in the 2026-11-01 handoff §6 refinement.
+
+    CUSTOM-only, not all-digital or all-orders: physical and INSTANT
+    customers are directed to admin support instead, per the same
+    handoff. The CUSTOM thread is for smoother delivery
+    coordination on made-to-order work, not general enquiries.
+
+    The returned value is used in two places:
+      * customer_thread (GET) — 404 if False.
+      * customer_thread_send (POST) — 404 if False.
+    Both gates are deliberate; a stale tab cannot POST to a thread
+    whose GET would now 404.
+    """
+    return OrderProduct.objects.filter(
+        order__user=user,
+        fulfilled_by=artisan,
+        product__is_digital=True,
+        product__digital_fulfillment_type="CUSTOM",
+    ).exists()
+
+
+@login_required(login_url="login")
+def customer_thread(request, artisan_slug):
+    """
+    Customer-side view of an ArtisanChatMessage thread.
+
+    Registered customers only. Reached from the artisan's public page
+    "Ask this artisan" button and from the CUSTOM order-detail page —
+    both entry points are wired in the template layer; the view is
+    deliberately indifferent to which one was used.
+
+    Renders the full container on a normal GET, the inner partial on
+    HTMX. Mirrors the artisan-side dashboard_messages / messages.html
+    split: container is the page shell, inner is what swaps into
+    #customer-thread-main. See handoff §A7 for the pattern.
+    """
+    artisan = get_object_or_404(CreatorProfile, slug=artisan_slug, is_verified=True)
+
+    if not _customer_has_line_with(artisan, request.user):
+        raise Http404(
+            "No CUSTOM order line connects you to this artisan."
+        )
+
+    # The dropdown in the composer lists this customer's CUSTOM order
+    # lines with this artisan. The user's chosen line, when present in
+    # ?order_product=<id>, is the "active" line for the header and the
+    # prefilled composer. Absent means the composer opens on the
+    # "Pre-purchase question (no specific order)" option.
+    order_product_id = request.GET.get("order_product")
+    active_line = None
+    if order_product_id and str(order_product_id).isdigit():
+        active_line = (
+            OrderProduct.objects
+            .filter(
+                id=int(order_product_id),
+                order__user=request.user,
+                fulfilled_by=artisan,
+                product__is_digital=True,
+                product__digital_fulfillment_type="CUSTOM",
+            )
+            .select_related("order", "product", "product_variation")
+            .first()
+        )
+
+    # The full thread between this customer and this artisan. Ordered
+    # oldest-first by Meta.ordering on the model.
+    messages_qs = (
+        ArtisanChatMessage.objects
+        .filter(artisan=artisan, customer=request.user)
+        .select_related("sender", "order_product",
+                        "order_product__product",
+                        "order_product__product_variation")
+    )
+
+    # Flip incoming unread to read. Symmetric with the artisan side:
+    # the customer is the reader here, so exclude the customer's own
+    # outbound sends (those are the artisan's unread, not the
+    # customer's). Per handoff §A2, the .exclude is on the *reader's*
+    # side, not the message author's.
+    messages_qs_unread_flip = (
+        ArtisanChatMessage.objects
+        .filter(artisan=artisan, customer=request.user, is_read=False)
+        .exclude(sender=request.user)
+    )
+    if messages_qs_unread_flip.exists():
+        messages_qs_unread_flip.update(is_read=True)
+
+    # Re-read after the flip so the template sees post-flip state.
+    # Same ordering as the pre-flip read; the flip only changes
+    # is_read, not created_at, so the queryset can be re-evaluated.
+    messages_qs = (
+        ArtisanChatMessage.objects
+        .filter(artisan=artisan, customer=request.user)
+        .select_related("sender", "order_product",
+                        "order_product__product",
+                        "order_product__product_variation")
+    )
+
+    # All the customer's CUSTOM lines with this artisan, for the
+    # composer dropdown.
+    available_lines = (
+        OrderProduct.objects
+        .filter(
+            order__user=request.user,
+            fulfilled_by=artisan,
+            product__is_digital=True,
+            product__digital_fulfillment_type="CUSTOM",
+        )
+        .select_related("order", "product", "product_variation")
+        .order_by("-order__ordered_at")
+    )
+
+    context = {
+        "artisan": artisan,
+        "active_line": active_line,
+        "available_lines": available_lines,
+        "chat_messages": messages_qs,
+        "page_title": f"Talk to {artisan.display_name}｜與匠人對話",
+    }
+
+    if request.headers.get("HX-Request"):
+        return render(
+            request,
+            "artisans/customer_thread_inner.html",
+            context,
+        )
+    return render(request, "artisans/customer_thread.html", context)
+
+
+@login_required(login_url="login")
+@require_POST
+def customer_thread_send(request, artisan_slug):
+    """
+    Create a customer-authored ArtisanChatMessage.
+
+    Gates:
+      * Login required.
+      * The customer must have at least one CUSTOM line with this
+        artisan (same gate as customer_thread GET, so a stale form
+        from a tab whose underlying order was deleted cannot POST).
+      * If order_product_id is present in the POST body, it must be
+        one of *this* customer's CUSTOM lines with *this* artisan.
+        A forged POST pointing at another customer's order line is
+        rejected with 404 (not 403 — 404 does not leak the existence
+        of the line).
+
+    Redirects back to the thread. No WebSocket, no email — the
+    thread is reloaded, the artisan sees the message on their next
+    dashboard_messages visit (or via the sidebar badge count, which
+    the context processor recomputes per request).
+    """
+    artisan = get_object_or_404(CreatorProfile, slug=artisan_slug, is_verified=True)
+
+    if not _customer_has_line_with(artisan, request.user):
+        raise Http404(
+            "No CUSTOM order line connects you to this artisan."
+        )
+
+    content = (request.POST.get("content") or "").strip()
+    if not content:
+        messages.error(request, "Message cannot be empty.｜訊息不得為空。")
+        return redirect(
+            f"{reverse('customer_thread', kwargs={'artisan_slug': artisan.slug})}"
+        )
+
+    order_product_id = request.POST.get("order_product_id", "").strip()
+    linked_line = None
+    if order_product_id and order_product_id.isdigit():
+        linked_line = (
+            OrderProduct.objects
+            .filter(
+                id=int(order_product_id),
+                order__user=request.user,
+                fulfilled_by=artisan,
+                product__is_digital=True,
+                product__digital_fulfillment_type="CUSTOM",
+            )
+            .first()
+        )
+        if linked_line is None:
+            raise Http404(
+                "Order line not found for this customer."
+            )
+
+    ArtisanChatMessage.objects.create(
+        artisan=artisan,
+        customer=request.user,
+        sender=request.user,
+        content=content,
+        order_product=linked_line,
+        is_read=False,
+    )
+
+    redirect_url = (
+        f"{reverse('customer_thread', kwargs={'artisan_slug': artisan.slug})}"
+        f"?order_product={linked_line.id}"
+        if linked_line
+        else f"{reverse('customer_thread', kwargs={'artisan_slug': artisan.slug})}"
+    )
+    return redirect(redirect_url)

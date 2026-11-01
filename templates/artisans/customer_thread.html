@@ -1,0 +1,29 @@
+{# templates/artisans/customer_thread.html #}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div id="customer-thread-container" class="max-w-4xl mx-auto px-4 lg:px-6 py-10 mt-[65px] lg:mt-[86px]">
+    <div class="mb-6 flex items-start justify-between gap-4 border-b border-base-200 pb-4">
+        <div>
+            <h1 class="font-serif text-2xl tracking-wide">
+                {{ artisan.display_name }}
+                <span class="font-sans font-light text-base opacity-60 ml-2">｜與匠人對話</span>
+            </h1>
+            <p class="text-xs text-base-content/60 mt-1">
+                Direct, member-only thread about your CUSTOM work. For anything else, please use the Help desk.
+                <br>
+                <span class="opacity-70">僅限會員的客製訂單專屬對話。其他事宜請使用客服熱線。</span>
+            </p>
+        </div>
+        <a href="{{ artisan.get_absolute_url }}" class="btn btn-xs btn-ghost rounded-lg whitespace-nowrap">
+            <i class="fa-solid fa-arrow-up-right-from-square text-[10px] mr-1"></i>
+            View page｜公開頁
+        </a>
+    </div>
+
+    <main id="customer-thread-main">
+        {% include 'artisans/customer_thread_inner.html' %}
+    </main>
+</div>
+{% endblock %}

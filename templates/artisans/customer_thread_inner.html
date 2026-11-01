@@ -1,0 +1,101 @@
+{# templates/artisans/customer_thread_inner.html #}
+{# Swaps into #customer-thread-main on HTMX requests. #}
+
+{% if not available_lines %}
+    {# This shouldn't happen in practice — the view 404s before render — but defensive. #}
+    <div class="rounded-2xl border border-base-200 p-8 text-center text-sm text-base-content/60">
+        No CUSTOM order line with this artisan.
+        <br>
+        <span class="text-xs opacity-70">您尚未向此匠人訂購客製數位作品。</span>
+    </div>
+{% else %}
+
+    {# ── Off-platform notice ── #}
+    <div class="mb-6 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-xs leading-relaxed text-warning-content">
+        <p class="font-bold">
+            <i class="fa-solid fa-shield-halved mr-1"></i>
+            Keep payment on-platform.
+        </p>
+        <p class="mt-1">
+            Off-platform arrangements are not covered by buyer protection.
+        </p>
+        <p class="mt-1 opacity-70">
+            請於平台內完成付款。平台外的付款安排不受買家保障條款保護。
+        </p>
+    </div>
+
+    {# ── Active line header (when ?order_product= is present) ── #}
+    {% if active_line %}
+    <div class="mb-6 rounded-xl border border-base-200 bg-base-50 px-4 py-3 text-xs">
+        <p class="font-mono uppercase tracking-wider text-[10px] text-base-content/40 mb-1">
+            About this order line｜關於此訂單項目
+        </p>
+        <p class="font-medium">
+            Re: {{ active_line.product.product_name }}
+            — {{ active_line.product_variation.get_sku }}
+        </p>
+        <p class="text-[11px] text-base-content/60 font-mono mt-0.5">
+            Order #{{ active_line.order.order_number }}
+        </p>
+    </div>
+    {% endif %}
+
+    {# ── Message list ── #}
+    <section class="border border-base-200/60 rounded-2xl bg-base-100 flex flex-col">
+        <div class="flex-1 overflow-y-auto p-4 space-y-3 max-h-[55vh]">
+            {% for m in chat_messages %}
+            <div class="flex {% if m.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
+                <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed
+                            {% if m.sender == request.user %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content{% endif %}">
+                    {% if m.order_product_id %}
+                        <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
+                            Re: {{ m.order_product.product.product_name }}
+                            — {{ m.order_product.product_variation.get_sku }}
+                        </p>
+                    {% endif %}
+                    {{ m.content|linebreaksbr }}
+                    <span class="block text-[9px] opacity-60 mt-1 font-mono">
+                        {{ m.sender.username }} · {{ m.created_at|date:"Y-m-d H:i" }}
+                    </span>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-center text-xs text-base-content/40 py-10">
+                No messages yet. Say hello.｜暫無訊息，歡迎打個招呼。
+            </p>
+            {% endfor %}
+        </div>
+
+        {# ── Composer ── #}
+        <form method="post"
+              action="{% url 'customer_thread_send' artisan.slug %}"
+              class="border-t border-base-200/60 p-3 space-y-2">
+            {% csrf_token %}
+            {% if available_lines %}
+            <div>
+                <label class="text-[10px] uppercase tracking-wider text-base-content/40 block mb-1">
+                    Link to order line (optional)｜連結至訂單項目（可選）
+                </label>
+                <select name="order_product_id" class="select select-bordered select-sm w-full text-xs rounded-xl">
+                    <option value="">Pre-purchase question (no specific order)｜發售前詢問（無指定訂單）</option>
+                    {% for line in available_lines %}
+                    <option value="{{ line.id }}"
+                            {% if active_line and active_line.id == line.id %}selected{% endif %}>
+                        {{ line.product.product_name }} — {{ line.product_variation.get_sku }} · #{{ line.order.order_number }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <textarea name="content" maxlength="2000" rows="3" required
+                      placeholder="Write a short message…｜輸入訊息…"
+                      class="textarea textarea-bordered w-full text-xs rounded-xl"></textarea>
+            <div class="flex justify-end">
+                <button type="submit" class="btn btn-primary btn-sm rounded-xl">
+                    <i class="fa-solid fa-paper-plane text-xs mr-1"></i>
+                    Send｜送出
+                </button>
+            </div>
+        </form>
+    </section>
+{% endif %}
