@@ -548,6 +548,7 @@ def dashboard(request, subpage):
         'blog_review': 'accounts/dashboard_blog_review.html',
         'product_review': 'accounts/dashboard_product_review.html',
         'artisan_messages': 'accounts/dashboard_artisan_messages.html',
+        'frontline_messages': 'accounts/dashboard_frontline_messages.html'
     }
     page_title = {
         'main': 'Main｜管理主頁',
@@ -563,6 +564,7 @@ def dashboard(request, subpage):
         'blog_review': 'Blog Review｜筆記審核',
         'product_review': 'Product Review｜作品審核',
         'artisan_messages': 'Artisan Messages｜匠人訊息',
+        'frontline_messages': 'Frontline Messages｜前線訊息',
     }
     template_name = templates.get(subpage, 'accounts/dashboard_main.html')
     subpage_title = page_title.get(subpage, 'Main｜管理主頁')
@@ -1101,6 +1103,109 @@ def dashboard(request, subpage):
             "active_artisan_messages": active_messages,
         })
 
+    if subpage == "frontline_messages":
+        if not getattr(request.user, "is_superadmin", False):
+            messages.error(request, "Access denied.｜無權限訪問。")
+            return redirect("dashboard", subpage="main")
+
+        from creators.models import (
+            FrontlineThread,
+            ArtisanChatMessage,
+        )
+
+        # ── 1. Resolve filters ──
+        settled_filter = request.GET.get("settled", "false") == "true"
+        q = (request.GET.get("q") or "").strip()
+        active_thread_id = request.GET.get("thread", "")
+
+        # ── 2. Build the list query ──
+        thread_qs = (
+            FrontlineThread.objects
+            .select_related(
+                "artisan",
+                "customer",
+                "order_product",
+                "order_product__order",
+                "order_product__product",
+                "order_product__product_variation",
+                "order_product__product_variation__size",
+                "order_product__product_variation__color",
+                "order_product__product_variation__type",
+            )
+            .filter(settled_at__isnull=not settled_filter)
+            .order_by("-last_message_at", "-created_at")
+        )
+
+        # Search: usernames, artisan display name, order number,
+        # product name, and SKU components. SKU is assembled by
+        # ProductVariation.get_sku() from FK labels + pending_*
+        # fallbacks, so it cannot be filtered on as a single field —
+        # we OR across the underlying columns.
+        if q:
+            thread_qs = thread_qs.filter(
+                Q(customer__username__icontains=q)
+                | Q(customer__email__icontains=q)
+                | Q(artisan__display_name__icontains=q)
+                | Q(order_product__order__order_number__icontains=q)
+                | Q(order_product__product__product_name__icontains=q)
+                | Q(order_product__product_variation__size__size_name__icontains=q)
+                | Q(order_product__product_variation__color__color_name__icontains=q)
+                | Q(order_product__product_variation__type__type_name__icontains=q)
+                | Q(order_product__product_variation__pending_size__icontains=q)
+                | Q(order_product__product_variation__pending_color__icontains=q)
+                | Q(order_product__product_variation__pending_type__icontains=q)
+            )
+
+        thread_rows = list(thread_qs)
+
+        # ── 3. Resolve the active thread for the detail pane ──
+        active_thread = None
+        active_messages = ArtisanChatMessage.objects.none()
+        if active_thread_id and active_thread_id.isdigit():
+            active_thread = next(
+                (t for t in thread_rows if t.id == int(active_thread_id)),
+                None,
+            )
+            # Fallback: allow opening a thread that is filtered out of
+            # the current list (e.g. ?thread=X while ?settled=false and
+            # X is settled). Fetch it directly, still superadmin-gated.
+            if active_thread is None:
+                active_thread = (
+                    FrontlineThread.objects
+                    .select_related(
+                        "artisan", "customer",
+                        "order_product",
+                        "order_product__order",
+                        "order_product__product",
+                        "order_product__product_variation",
+                    )
+                    .filter(id=int(active_thread_id))
+                    .first()
+                )
+            if active_thread is not None:
+                active_messages = (
+                    ArtisanChatMessage.objects
+                    .filter(
+                        artisan=active_thread.artisan,
+                        customer=active_thread.customer,
+                        order_product=active_thread.order_product,
+                    )
+                    .select_related(
+                        "sender",
+                        "order_product",
+                        "order_product__product",
+                        "order_product__product_variation",
+                    )
+                )
+
+        context.update({
+            "thread_rows": thread_rows,
+            "active_thread": active_thread,
+            "active_messages": active_messages,
+            "settled_filter": settled_filter,
+            "search_q": q,
+        })
+
     # blog_review — superuser only
     if subpage == "blog_review":
         if not getattr(request.user, "is_superadmin", False):
@@ -1195,6 +1300,16 @@ def dashboard(request, subpage):
             else:
                 template = "accounts/partials/chat_list.html"
             return render(request, template, context)
+
+        if (
+            subpage == "frontline_messages"
+            and request.headers.get("HX-Target") == "frontline-messages-main"
+        ):
+            return render(
+                request,
+                "accounts/partials/_frontline_messages_inner.html",
+                context,
+            )
 
         # Standard sidebar navigation request (clicking a sidebar link swap)
         response = render(request, template_name, context)
@@ -1643,6 +1758,107 @@ def artisan_messages_send(request, artisan_id):
         f"{reverse('dashboard', kwargs={'subpage': 'artisan_messages'})}"
         f"?artisan={artisan.id}"
     )
+
+
+@login_required(login_url="login")
+@require_POST
+def frontline_thread_mark_settled(request, thread_id):
+    """
+    Mark a FrontlineThread settled (or unsettled) from the admin
+    oversight page. Superadmin only.
+
+    Idempotent via FrontlineThread.mark_settled / mark_unsettled.
+    Returns the refreshed inner partial, so the list (and the settled
+    badge on the row) reflects the new state without a full page
+    reload. Uses HX-Trigger so any sibling badge surfaces can react
+    if they ever need to.
+    """
+    if not getattr(request.user, "is_superadmin", False):
+        return HttpResponse(status=403)
+
+    from creators.models import FrontlineThread, ArtisanChatMessage
+
+    thread = get_object_or_404(FrontlineThread, id=thread_id)
+
+    action = request.POST.get("action", "settle")
+    if action == "unsettle":
+        thread.mark_unsettled()
+    else:
+        thread.mark_settled(by=request.user)
+
+    # Rebuild the minimal context the inner partial needs, matching
+    # the shape built by the `frontline_messages` branch of dashboard.
+    settled_filter = request.POST.get("settled_filter", "false") == "true"
+    q = (request.POST.get("q") or "").strip()
+
+    thread_qs = (
+        FrontlineThread.objects
+        .select_related(
+            "artisan", "customer",
+            "order_product",
+            "order_product__order",
+            "order_product__product",
+            "order_product__product_variation",
+            "order_product__product_variation__size",
+            "order_product__product_variation__color",
+            "order_product__product_variation__type",
+        )
+        .filter(settled_at__isnull=not settled_filter)
+        .order_by("-last_message_at", "-created_at")
+    )
+    if q:
+        thread_qs = thread_qs.filter(
+            Q(customer__username__icontains=q)
+            | Q(customer__email__icontains=q)
+            | Q(artisan__display_name__icontains=q)
+            | Q(order_product__order__order_number__icontains=q)
+            | Q(order_product__product__product_name__icontains=q)
+            | Q(order_product__product_variation__size__size_name__icontains=q)
+            | Q(order_product__product_variation__color__color_name__icontains=q)
+            | Q(order_product__product_variation__type__type_name__icontains=q)
+            | Q(order_product__product_variation__pending_size__icontains=q)
+            | Q(order_product__product_variation__pending_color__icontains=q)
+            | Q(order_product__product_variation__pending_type__icontains=q)
+        )
+    thread_rows = list(thread_qs)
+
+    # If the thread we just settled remains in scope, keep it open;
+    # if the action pushed it out of scope (settled -> active list),
+    # fall back to no active thread so the detail pane resets.
+    active_thread = None
+    active_messages = ArtisanChatMessage.objects.none()
+    if any(t.id == thread.id for t in thread_rows):
+        active_thread = thread
+        active_messages = (
+            ArtisanChatMessage.objects
+            .filter(
+                artisan=thread.artisan,
+                customer=thread.customer,
+                order_product=thread.order_product,
+            )
+            .select_related(
+                "sender",
+                "order_product",
+                "order_product__product",
+                "order_product__product_variation",
+            )
+        )
+
+    response = render(
+        request,
+        "accounts/partials/_frontline_messages_inner.html",
+        {
+            "thread_rows": thread_rows,
+            "active_thread": active_thread,
+            "active_messages": active_messages,
+            "settled_filter": settled_filter,
+            "search_q": q,
+        },
+    )
+    response["HX-Trigger"] = json.dumps({
+        "frontlineThreadSettled": {"thread_id": thread.id, "action": action},
+    })
+    return response
 
 
 def refresh_chat(request):

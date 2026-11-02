@@ -1,4 +1,4 @@
-<!-- templates/accounts/partials/dashbaord_sidebar.html (member) -->
+<!-- templates/accounts/partials/dashboard_sidebar.html (member) -->
 {% load static %}
 <div class="w-full h-full bg-base-100 flex flex-col justify-between select-none">
   
@@ -314,6 +314,24 @@
             {% if pending_artisan_message_count %}
             <span class="badge badge-success badge-sm font-mono">{{ pending_artisan_message_count }}</span>
             {% endif %}
+        </a>
+    </div>
+    {% endif %}
+
+    {% if user.is_superadmin %}
+    <div class="px-4 pb-3 border-b border-base-200/60">
+        <a href="{% url 'dashboard' 'frontline_messages' %}"
+          hx-get="{% url 'dashboard' 'frontline_messages' %}"
+          hx-target="#dashboard-content"
+          hx-push-url="true"
+          class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-info/30 hover:border-info/60 hover:bg-info/5 transition-all duration-200 group">
+            <div class="flex items-center gap-3 min-w-0">
+                <i class="fa-solid fa-satellite-dish text-info text-sm"></i>
+                <div class="flex flex-col min-w-0">
+                    <span class="text-xs font-semibold text-info tracking-wide">Frontline Messages</span>
+                    <span class="text-[10px] text-base-content/50 font-sans">前線訊息</span>
+                </div>
+            </div>
         </a>
     </div>
     {% endif %}

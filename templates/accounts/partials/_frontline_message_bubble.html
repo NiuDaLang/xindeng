@@ -1,0 +1,58 @@
+{# templates/accounts/partials/_frontline_message_bubble.html #}
+{# One message bubble, shared by the Frontline oversight view (3b) and #}
+{# the future admin composer surface (3c). Sender identity determines #}
+{# the bubble style; three branches because Frontline has a third #}
+{# participant (admin) that the customer/artisan private threads do not. #}
+
+{% if m.sender_id == active_thread.artisan.user_id %}
+    {# Artisan-authored #}
+    <div class="flex justify-start">
+        <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-primary text-primary-content">
+            <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
+                {{ m.sender.username }} · artisan
+            </p>
+            {% if m.order_product_id %}
+                <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
+                    Re: {{ m.order_product.product.product_name }}
+                    — {{ m.order_product.product_variation.get_sku }}
+                </p>
+            {% endif %}
+            {{ m.content|linebreaksbr }}
+            <span class="block text-[9px] opacity-60 mt-1 font-mono">
+                {{ m.created_at|date:"Y-m-d H:i" }}
+            </span>
+        </div>
+    </div>
+{% elif m.sender_id == active_thread.customer_id %}
+    {# Customer-authored #}
+    <div class="flex justify-start">
+        <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-base-200 text-base-content">
+            <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
+                {{ m.sender.username }} · customer
+            </p>
+            {% if m.order_product_id %}
+                <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
+                    Re: {{ m.order_product.product.product_name }}
+                    — {{ m.order_product.product_variation.get_sku }}
+                </p>
+            {% endif %}
+            {{ m.content|linebreaksbr }}
+            <span class="block text-[9px] opacity-60 mt-1 font-mono">
+                {{ m.created_at|date:"Y-m-d H:i" }}
+            </span>
+        </div>
+    </div>
+{% else %}
+    {# Admin-authored (or any other participant, defensive) #}
+    <div class="flex justify-end">
+        <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-info text-info-content">
+            <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
+                {{ m.sender.username }} · platform
+            </p>
+            {{ m.content|linebreaksbr }}
+            <span class="block text-[9px] opacity-60 mt-1 font-mono">
+                {{ m.created_at|date:"Y-m-d H:i" }}
+            </span>
+        </div>
+    </div>
+{% endif %}

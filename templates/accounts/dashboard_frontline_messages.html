@@ -1,0 +1,26 @@
+{# templates/accounts/dashboard_frontline_messages.html #}
+{% load humanize %}
+<title>{{ page_title }}</title>
+
+<div id="dashboard_frontline_messages"
+     class="subpage flex flex-col gap-6 animate-fade-in w-full text-neutral font-sans select-none">
+
+    <div class="flex items-end justify-between gap-4 border-b border-base-200 pb-4">
+        <div>
+            <h1 class="font-serif text-2xl tracking-wide">
+                Frontline Messages｜前線訊息
+            </h1>
+            <p class="text-xs text-base-content/50 mt-1">
+                平台對會員與匠人對話的唯讀監察。已升級的對話可由管理員回覆。
+                <span class="opacity-60">｜Read-only oversight of customer↔artisan threads. Escalated threads accept admin replies.</span>
+            </p>
+        </div>
+        <span class="badge badge-info badge-lg font-mono">
+            Admin oversight
+        </span>
+    </div>
+
+    <main id="frontline-messages-main">
+        {% include 'accounts/partials/_frontline_messages_inner.html' %}
+    </main>
+</div>
