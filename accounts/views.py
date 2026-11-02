@@ -1861,6 +1861,194 @@ def frontline_thread_mark_settled(request, thread_id):
     return response
 
 
+@login_required(login_url="login")
+@require_POST
+def frontline_message_send(request, thread_id):
+    """
+    Admin composer on an escalated FrontlineThread. Commit 3c,
+    backlog 33.
+
+    Gates (three, in this order):
+      1. @login_required + is_superadmin. Non-superadmin gets 403.
+         Deliberately not redirected: unlike the dashboard subpage
+         access (which redirects non-superadmins to main with a
+         flash), a POST endpoint being called without privilege is
+         an authorization failure, not a navigation mistake.
+      2. Thread must exist. get_object_or_404 → 404. This is the
+         only 404 branch; the two gates below return 403 because
+         the admin already has oversight of every thread and hiding
+         existence is meaningless — see handoff §7.2 design note.
+      3. Thread must be escalated. Not-escalated → 403, redirect
+         back to the thread with a flash message. This covers the
+         stale-tab case where a thread was already escalated when
+         the tab was rendered but the escalation has since been
+         cleared (future state-change; nothing clears it today, but
+         the gate is defensive).
+
+    Content:
+      * Empty content is handled inline (HTMX 200 with the typed
+        text preserved in the textarea and an error line under it),
+        not by redirect. Round-tripping loses the user's typing on
+        a page whose whole shape is HTMX-in / inner-out.
+
+    The created ArtisanChatMessage has sender=request.user (the
+    admin), is_read=False (artisan's unread next), and
+    order_product=thread.order_product. The creators.signals
+    post_save handler advances FrontlineThread.last_message_at and
+    (per signal logic) clears settled_at — the admin posting into
+    a settled thread naturally reopens it, which is the correct
+    workflow: settlement is a pause, not a closure.
+
+    No email. Artisan-side email mirroring is not part of the
+    Frontline flow (see handoff §4.5 and §4.6 — Frontline is
+    admin-visible state plus message store, not an email channel).
+    The artisan will see the message on their next dashboard
+    visit, and the sidebar badge will reflect it via the context
+    processor recomputation.
+    """
+    if not getattr(request.user, "is_superadmin", False):
+        return HttpResponse(status=403)
+
+    from creators.models import FrontlineThread, ArtisanChatMessage
+
+    thread = get_object_or_404(FrontlineThread, id=thread_id)
+
+    # Rebuild the exact context shape the inner partial expects. This
+    # is duplicated from frontline_thread_mark_settled's rebuild — the
+    # two views differ in side effect (create a message vs. flip a
+    # state bit) but identical in the shape they hand back to HTMX.
+    # If a third HTMX view on this subpage ever lands, factor it out;
+    # until then, inlining the two keeps each view read top-to-bottom.
+    def _rebuild_inner_context():
+        settled_filter = (
+            request.POST.get("settled_filter", "false") == "true"
+        )
+        q = (request.POST.get("q") or "").strip()
+
+        thread_qs = (
+            FrontlineThread.objects
+            .select_related(
+                "artisan", "customer",
+                "order_product",
+                "order_product__order",
+                "order_product__product",
+                "order_product__product_variation",
+                "order_product__product_variation__size",
+                "order_product__product_variation__color",
+                "order_product__product_variation__type",
+            )
+            .filter(settled_at__isnull=not settled_filter)
+            .order_by("-last_message_at", "-created_at")
+        )
+        if q:
+            thread_qs = thread_qs.filter(
+                Q(customer__username__icontains=q)
+                | Q(customer__email__icontains=q)
+                | Q(artisan__display_name__icontains=q)
+                | Q(order_product__order__order_number__icontains=q)
+                | Q(order_product__product__product_name__icontains=q)
+                | Q(order_product__product_variation__size__size_name__icontains=q)
+                | Q(order_product__product_variation__color__color_name__icontains=q)
+                | Q(order_product__product_variation__type__type_name__icontains=q)
+                | Q(order_product__product_variation__pending_size__icontains=q)
+                | Q(order_product__product_variation__pending_color__icontains=q)
+                | Q(order_product__product_variation__pending_type__icontains=q)
+            )
+        thread_rows = list(thread_qs)
+
+        # Always keep the thread we just posted to open, even if a
+        # stale ?settled=true filter would exclude it after the
+        # signal cleared settled_at. The admin's action was "post
+        # here," so the pane must stay on "here."
+        active_thread_obj = thread
+        active_msgs = (
+            ArtisanChatMessage.objects
+            .filter(
+                artisan=thread.artisan,
+                customer=thread.customer,
+                order_product=thread.order_product,
+            )
+            .select_related(
+                "sender",
+                "order_product",
+                "order_product__product",
+                "order_product__product_variation",
+            )
+        )
+
+        return {
+            "thread_rows": thread_rows,
+            "active_thread": active_thread_obj,
+            "active_messages": active_msgs,
+            "settled_filter": settled_filter,
+            "search_q": q,
+        }
+
+    # ── Gate 3: escalation ──
+    if thread.escalated_at is None:
+        messages.error(
+            request,
+            "Thread is not escalated. Admin replies are only permitted "
+            "on escalated threads.｜該對話尚未升級，僅已升級的對話允許管理員回覆。",
+        )
+        context = _rebuild_inner_context()
+        # The detail pane needs the flash; stash it in the context
+        # instead of relying on the messages framework alone (HTMX
+        # swaps do not re-render #dashboard-content, where the alerts
+        # wrapper lives).
+        context["composer_error"] = (
+            "Thread is not escalated. Admin replies are only permitted "
+            "on escalated threads.｜該對話尚未升級。"
+        )
+        response = render(
+            request,
+            "accounts/partials/_frontline_messages_inner.html",
+            context,
+        )
+        # Deliberate 200, not 403. The client still needs the swapped
+        # inner (the list, the detail, the composer with an error);
+        # a bare 403 would leave the HTMX swap as a no-op and the
+        # admin staring at their stale page. The flash and the
+        # in-template error both fire; the status stays 200 so HTMX
+        # performs the swap.
+        return response
+
+    # ── Content validation ──
+    content = (request.POST.get("content") or "").strip()
+    if not content:
+        context = _rebuild_inner_context()
+        context["composer_error"] = (
+            "Message cannot be empty.｜訊息不得為空。"
+        )
+        context["composer_content"] = request.POST.get("content", "")
+        return render(
+            request,
+            "accounts/partials/_frontline_messages_inner.html",
+            context,
+        )
+
+    # ── Create the message ──
+    ArtisanChatMessage.objects.create(
+        artisan=thread.artisan,
+        customer=thread.customer,
+        sender=request.user,
+        content=content,
+        order_product=thread.order_product,
+        is_read=False,
+    )
+
+    context = _rebuild_inner_context()
+    response = render(
+        request,
+        "accounts/partials/_frontline_messages_inner.html",
+        context,
+    )
+    response["HX-Trigger"] = json.dumps({
+        "frontlineMessageSent": {"thread_id": thread.id},
+    })
+    return response
+
+
 def refresh_chat(request):
     msg_id = request.GET.get('msg_id')
     

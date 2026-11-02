@@ -44,6 +44,7 @@ urlpatterns = [
 
     path('artisan_messages/<int:artisan_id>/send/', views.artisan_messages_send, name='artisan_messages_send'),
     path("frontline_threads/<int:thread_id>/mark_settled/", views.frontline_thread_mark_settled, name="frontline_thread_mark_settled"),
+    path("frontline_threads/<int:thread_id>/send/", views.frontline_message_send, name="frontline_message_send"),
 
     # Unread count (used by HTMX badges)
     path('get_unread_count/', views.get_unread_count, name='get_unread_count'),

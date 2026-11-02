@@ -317,4 +317,170 @@ class TestFrontlineHtmxDispatch:
         assert 'id="dashboard_frontline_messages"' in body
         assert 'id="frontline-messages-main"' in body
         assert "grid-cols-1 lg:grid-cols-[320px_1fr]" in body
-        
+
+
+@pytest.mark.django_db
+class TestFrontlineAdminComposer:
+    """
+    Commit 3c: admin reply on escalated threads. Gate order matters
+    (superadmin → thread exists → thread escalated). The escalated
+    gate is 403-status but HTMX-200-body — the swap still needs the
+    refreshed inner or the admin's page goes stale.
+    """
+
+    def _make_escalated_thread(
+        self, customer, artisan_profile, artisan_user, order_product,
+    ):
+        thread = _seed_thread(
+            customer, artisan_profile, order_product, artisan_user,
+        )
+        thread.escalate(by=customer)
+        thread.refresh_from_db()
+        return thread
+
+    def test_no_composer_on_non_escalated_thread(
+        self, client, admin_user, customer, artisan_user,
+        artisan_profile, order_product,
+    ):
+        """The composer form is absent from a thread that has not
+        been escalated; only the read-only notice renders."""
+        thread = _seed_thread(
+            customer, artisan_profile, order_product, artisan_user,
+        )
+        assert thread.escalated_at is None
+
+        client.force_login(admin_user)
+        response = client.get(
+            _url(thread=thread.id, settled="false"),
+        )
+        assert response.status_code == 200
+        body = response.content.decode()
+        # Composer form action is absent.
+        assert (
+            f'/accounts/frontline_threads/{thread.id}/send/'
+            not in body
+        )
+        assert "Read-only until escalated" in body
+
+    def test_composer_renders_on_escalated_thread(
+        self, client, admin_user, customer, artisan_user,
+        artisan_profile, order_product,
+    ):
+        thread = self._make_escalated_thread(
+            customer, artisan_profile, artisan_user, order_product,
+        )
+
+        client.force_login(admin_user)
+        response = client.get(
+            _url(thread=thread.id, settled="false"),
+        )
+        assert response.status_code == 200
+        body = response.content.decode()
+        assert (
+            f'/accounts/frontline_threads/{thread.id}/send/'
+            in body
+        )
+        # The read-only notice is gone.
+        assert "Read-only until escalated" not in body
+
+    def test_post_creates_message_with_correct_shape(
+        self, client, admin_user, customer, artisan_user,
+        artisan_profile, order_product,
+    ):
+        from creators.models import ArtisanChatMessage
+
+        thread = self._make_escalated_thread(
+            customer, artisan_profile, artisan_user, order_product,
+        )
+        before = ArtisanChatMessage.objects.filter(
+            artisan=artisan_profile,
+            customer=customer,
+            order_product=order_product,
+        ).count()
+
+        client.force_login(admin_user)
+        response = client.post(
+            reverse("frontline_message_send", args=[thread.id]),
+            {
+                "content": "Reviewing this now.",
+                "settled_filter": "false",
+                "q": "",
+            },
+        )
+        assert response.status_code == 200
+
+        after_qs = ArtisanChatMessage.objects.filter(
+            artisan=artisan_profile,
+            customer=customer,
+            order_product=order_product,
+        )
+        assert after_qs.count() == before + 1
+
+        new_msg = after_qs.order_by("-created_at").first()
+        assert new_msg.sender_id == admin_user.id
+        assert new_msg.content == "Reviewing this now."
+        assert new_msg.is_read is False  # artisan's unread
+        assert new_msg.order_product_id == order_product.id
+
+        # Thread timestamp advanced and the settled flag (if any)
+        # was cleared by the creators signal.
+        thread.refresh_from_db()
+        assert thread.last_message_at == new_msg.created_at
+        assert thread.settled_at is None
+
+        # HX-Trigger carries the event.
+        trigger = json.loads(response["HX-Trigger"])
+        assert "frontlineMessageSent" in trigger
+        assert trigger["frontlineMessageSent"]["thread_id"] == thread.id
+
+    def test_post_refuses_on_non_escalated_thread(
+        self, client, admin_user, customer, artisan_user,
+        artisan_profile, order_product,
+    ):
+        """
+        Not escalated → 200-body with the flash rendered by the
+        alerts include inside the inner partial. No message is
+        created. The status is 200 (not 403) because HTMX needs a
+        swappable body to actually render the flash — a 403 would
+        leave the swap a no-op and the admin staring at their
+        stale page.
+
+        The refusal message reaches the user via two paths:
+          * The messages framework flash (rendered by the alerts
+            include at the top of this partial).
+          * Not applicable here — composer_error is only rendered
+            inside the is_escalated branch, so it never fires for
+            this gate. The alerts flash is the only surface.
+        """
+        from creators.models import ArtisanChatMessage
+
+        thread = _seed_thread(
+            customer, artisan_profile, order_product, artisan_user,
+        )
+        assert thread.escalated_at is None
+        before = ArtisanChatMessage.objects.filter(
+            artisan=artisan_profile,
+            customer=customer,
+            order_product=order_product,
+        ).count()
+
+        client.force_login(admin_user)
+        response = client.post(
+            reverse("frontline_message_send", args=[thread.id]),
+            {"content": "should not land", "settled_filter": "false"},
+        )
+
+        assert response.status_code == 200
+        body = response.content.decode()
+        # Flash surfaced by the alerts include inside the inner.
+        assert (
+            "not escalated" in body.lower()
+            or "未升級" in body
+        )
+
+        # And no message landed.
+        assert ArtisanChatMessage.objects.filter(
+            artisan=artisan_profile,
+            customer=customer,
+            order_product=order_product,
+        ).count() == before
