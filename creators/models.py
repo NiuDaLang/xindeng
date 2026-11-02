@@ -303,3 +303,199 @@ class ArtisanAdminMessage(models.Model):
             f"{self.sender.username} → {self.artisan.display_name}: "
             f"{self.content[:30]}"
         )
+
+
+class FrontlineThread(models.Model):
+    """
+    Admin-side visibility state for a customer↔artisan thread.
+
+    Not a message store — the messages themselves live on
+    ArtisanChatMessage, unmodified. This model exists to hold the
+    per-thread state that neither the artisan-side nor the
+    customer-side view can own:
+
+      * settled_at / settled_by — the admin has reviewed the thread
+        and considers it closed. Cleared automatically on any new
+        message (see signal in creators/signals.py).
+
+      * escalated_at / escalated_by — the admin has permission to
+        post into this thread. Set once via the "Escalate to
+        platform" button (customer or artisan side); not cleared
+        by settlement, and not reverted by subsequent messages. Once
+        the admin can write to a thread, they can continue to write
+        to it — this matches the "read-plus-write oversight" model
+        recorded in the 2026-11-02 handoff.
+
+      * last_message_at — denormalized from the most recent
+        ArtisanChatMessage.created_at, used as the indexed sort key
+        for the admin's Frontline Messages list. Always advances,
+        never retreats.
+
+    Key: (artisan, customer, order_product). One thread per order
+    line. A customer with two CUSTOM lines from the same artisan has
+    two threads — which is the point: the admin sees them labelled
+    by product+variation+order, not merged into one
+    customer-artisan blob.
+
+    Orphan handling: order_product is CASCADE, not SET_NULL. See the
+    asymmetry with ArtisanChatMessage.order_product (SET_NULL) in
+    the 2026-11-02 handoff §S2. If the order line vanishes, the
+    thread-key object vanishes with it; the messages survive as
+    detached history. Historical messages with order_product=None
+    (pre-dating this model) never had a thread and do not get one
+    retroactively.
+
+    Pre-purchase threads (order_product=None on the message side)
+    are NOT supported under Frontline. See handoff §D5. Enquiries
+    of that shape route through the Help desk.
+
+    Do not collapse this into ArtisanChatMessage. The thread is
+    state; the message is content. Both are necessary, and only
+    one of them is owned by the artisan.
+    """
+    artisan = models.ForeignKey(
+        CreatorProfile,
+        on_delete=models.CASCADE,
+        related_name="frontline_threads",
+    )
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="frontline_threads",
+    )
+    order_product = models.ForeignKey(
+        "orders.OrderProduct",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="frontline_threads",
+        help_text=(
+            "The order line this thread concerns. Nullable only for "
+            "legacy messages that pre-date this model; every new "
+            "thread created by the signal carries a non-null "
+            "order_product."
+        ),
+    )
+
+    last_message_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Denormalized max(ArtisanChatMessage.created_at). Advanced "
+            "on every message by creators.signals."
+        ),
+    )
+    settled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Set by the admin to remove this thread from the active "
+            "list. Cleared automatically on any new message."
+        ),
+    )
+    settled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    escalated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Set when customer or artisan taps 'Escalate to platform'. "
+            "Grants the admin permission to post into this thread. "
+            "Not cleared by settlement."
+        ),
+    )
+    escalated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Frontline thread"
+        verbose_name_plural = "Frontline threads"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["artisan", "customer", "order_product"],
+                name="unique_frontline_thread_per_line",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["-last_message_at"]),
+            models.Index(fields=["settled_at", "-last_message_at"]),
+            models.Index(fields=["escalated_at", "-last_message_at"]),
+        ]
+
+    def __str__(self):
+        line_label = (
+            str(self.order_product) if self.order_product else "(no order line)"
+        )
+        return (
+            f"{self.customer.username} ↔ {self.artisan.display_name} "
+            f"re: {line_label}"
+        )
+
+    # ── State transitions ─────────────────────────────────────────
+
+    def mark_settled(self, by=None):
+        """
+        Mark this thread as settled by the admin. Idempotent — calling
+        it twice does not change settled_at (keeps the earliest
+        timestamp, which is the audit-relevant one).
+
+        If the thread is currently unsettled, sets settled_at and
+        settled_by. If it is already settled, this is a no-op.
+        """
+        from django.utils import timezone as _tz
+        if self.settled_at is not None:
+            return
+        self.settled_at = _tz.now()
+        self.settled_by = by
+        self.save(update_fields=["settled_at", "settled_by", "updated_at"])
+
+    def mark_unsettled(self):
+        """
+        Manually reopen this thread. Rarely needed — any new message
+        from either side already triggers this via the signal. The
+        explicit method exists so a view can offer "reopen" without
+        requiring the user to post a message.
+        """
+        if self.settled_at is None:
+            return
+        self.settled_at = None
+        self.settled_by = None
+        self.save(update_fields=["settled_at", "settled_by", "updated_at"])
+
+    def escalate(self, by):
+        """
+        Grant the admin write access to this thread. Idempotent — the
+        first escalation wins (keeps the earliest escalated_at).
+
+        Called from the customer-side and artisan-side "Escalate to
+        platform" buttons. Not called by the admin directly: the
+        admin's write access is the *result* of one of the two
+        counterparties deciding the admin should join.
+        """
+        from django.utils import timezone as _tz
+        if self.escalated_at is not None:
+            return
+        self.escalated_at = _tz.now()
+        self.escalated_by = by
+        self.save(update_fields=["escalated_at", "escalated_by", "updated_at"])
+
+    @property
+    def is_settled(self):
+        return self.settled_at is not None
+
+    @property
+    def is_escalated(self):
+        return self.escalated_at is not None
