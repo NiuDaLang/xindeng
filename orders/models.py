@@ -355,6 +355,40 @@ class Order(models.Model):
         return self.items.filter(product_variation__product__is_physical=True).exists()
 
     @property
+    def delivery_mode(self):
+        """
+        The customer-facing delivery mode for this order, as a single
+        string. Used by the ledger's "Delivery Type" badge and by the
+        order-complete receipt copy.
+
+        Values: "physical", "custom", "instant", "voucher".
+
+        Precedence: physical > custom > instant > voucher. See the
+        docstring on the ledger template for why custom beats instant
+        (a mixed CUSTOM+INSTANT order still has a CUSTOM line in
+        flight; "auto-fulfilled" would be a lie for the CUSTOM part).
+
+        Empty orders return "instant" — a fail-safe, since empty
+        orders should not exist but the ledger must render something.
+        """
+        items = self.items.all()
+        if items.filter(product__is_physical=True).exists():
+            return "physical"
+        if items.filter(
+            product__is_digital=True,
+            product__digital_fulfillment_type="CUSTOM",
+        ).exists():
+            return "custom"
+        if items.filter(
+            product__is_digital=True,
+            product__digital_fulfillment_type="INSTANT",
+        ).exists():
+            return "instant"
+        if items.filter(product__is_voucher=True).exists():
+            return "voucher"
+        return "instant"
+    
+    @property
     def visible_tracking_records(self):
         """
         Dynamic Visibility Logic Matrix mapping your specific order statuses.

@@ -149,6 +149,14 @@
                                     </span>
                                 </div>
                             {% endif %}
+                        {% elif order.delivery_mode == 'custom' %}
+                            <div class="flex flex-col xs:flex-row xl:flex-col items-start xl:items-start xl:justify-start gap-1 text-[0.68rem]">
+                                <strong class="text-neutral/50 font-bold uppercase tracking-wider text-[0.6rem]">Delivery Type/交付方式:</strong>
+                                <div class="flex flex-col items-start leading-none gap-1 pl-0.5">
+                                    <span class="badge h-auto py-0.5 px-1.5 bg-warning/10 text-warning font-sans font-bold border border-warning/20 tracking-wider text-[8.5px] uppercase">Custom / Manual Delivery</span>
+                                    <span class="text-warning/70 mx-auto xs:mx-2 font-sans font-medium text-[8px] tracking-wide">客製作品人工交付中</span>
+                                </div>
+                            </div>
                         {% else %}
                             <div class="flex flex-col xs:flex-row xl:flex-col items-start xl:items-start xl:justify-start gap-1 text-[0.68rem]">
                                 <strong class="text-neutral/50 font-bold uppercase tracking-wider text-[0.6rem]">Delivery Type/交付方式:</strong>
