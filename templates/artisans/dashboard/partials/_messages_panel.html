@@ -81,6 +81,21 @@
                     <i class="fa-solid fa-paper-plane text-xs"></i>
                 </button>
             </form>
+
+            {# ── Escalate-to-platform trigger (commit 3d) ── #}
+            <form hx-post="{% url 'escalate_frontline_thread' %}"
+                  hx-trigger="confirmed"
+                  hx-swap="none"
+                  class="border-t border-base-200/60 px-4 py-2 flex justify-center bg-base-50/40">
+                {% csrf_token %}
+                <input type="hidden" name="customer_id" value="{{ active_customer.id }}">
+                <button type="button"
+                        onclick="confirmEscalateCustomer(this, {{ active_customer.id }})"
+                        class="text-[10px] text-base-content/50 hover:text-warning transition-colors font-sans tracking-wide">
+                    <i class="fa-solid fa-life-ring text-[10px] mr-1"></i>
+                    Request platform involvement｜申請平台介入
+                </button>
+            </form>
         {% else %}
             <div class="flex-1 flex flex-col items-center justify-center text-center text-base-content/40 py-16">
                 <i class="fa-solid fa-comments text-3xl opacity-30 mb-2"></i>

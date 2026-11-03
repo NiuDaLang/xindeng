@@ -1424,6 +1424,91 @@ function confirmAction(button, title, html, icon, show_cancel, confirm_btn_color
     })
 }
 
+// ── Frontline escalation confirmations ──
+// Two thin wrappers over Swal that trigger the enclosing form's HTMX
+// submit on confirm. Split by caller because the copy is role-aware:
+// the customer is told the artisan still sees their messages; the
+// artisan is told the customer still sees theirs.
+function confirmEscalateThread(button, threadId) {
+    const form = button.closest('form');
+    if (!form) return;
+    Swal.fire({
+        title: 'Request platform involvement?｜申請平台介入？',
+        html: `
+            <div class="text-left text-sm space-y-3 py-1 leading-relaxed">
+                <p class="text-neutral-700">
+                    The platform admin will join this conversation. Your artisan will
+                    still see your messages, and the admin may reply.
+                </p>
+                <p class="text-neutral-600">
+                    平台管理員將加入此對話。您的匠人仍能看到您的訊息，管理員亦可能回覆。
+                </p>
+                <p class="text-neutral-500 text-xs">
+                    Use this for disputes, safety concerns, or anything that needs platform mediation.
+                    <br>
+                    適用於爭議、安全顧慮或任何需要平台協調的事宜。
+                </p>
+            </div>
+        `,
+        icon: 'question',
+        iconColor: '#f59e0b',
+        showCancelButton: true,
+        confirmButtonText: 'Request involvement｜申請介入',
+        cancelButtonText: 'Cancel｜取消',
+        confirmButtonColor: '#f59e0b',
+        cancelButtonColor: '#9ca3af',
+        customClass: {
+            popup: 'rounded-2xl font-sans',
+            title: 'text-base font-semibold',
+        },
+    }).then((result) => {
+        if (result.isConfirmed) {
+            htmx.trigger(form, 'confirmed');
+        }
+    });
+}
+
+function confirmEscalateCustomer(button, customerId) {
+    const form = button.closest('form');
+    if (!form) return;
+    Swal.fire({
+        title: 'Request platform involvement?｜申請平台介入？',
+        html: `
+            <div class="text-left text-sm space-y-3 py-1 leading-relaxed">
+                <p class="text-neutral-700">
+                    The platform admin will join your conversations with this customer.
+                    The customer will still see your messages, and the admin may reply.
+                </p>
+                <p class="text-neutral-600">
+                    平台管理員將加入您與此買家的對話。買家仍能看到您的訊息，管理員亦可能回覆。
+                </p>
+                <p class="text-neutral-500 text-xs">
+                    Use this for disputes, safety concerns, or anything that needs platform mediation.
+                    All active (un-settled) threads with this customer will be flagged.
+                    <br>
+                    適用於爭議、安全顧慮或任何需要平台協調的事宜。與此買家所有進行中的對話將一併標記。
+                </p>
+            </div>
+        `,
+        icon: 'question',
+        iconColor: '#f59e0b',
+        showCancelButton: true,
+        confirmButtonText: 'Request involvement｜申請介入',
+        cancelButtonText: 'Cancel｜取消',
+        confirmButtonColor: '#f59e0b',
+        cancelButtonColor: '#9ca3af',
+        customClass: {
+            popup: 'rounded-2xl font-sans',
+            title: 'text-base font-semibold',
+        },
+    }).then((result) => {
+        if (result.isConfirmed) {
+            htmx.trigger(form, 'confirmed');
+        }
+    });
+}
+
+
 /*************************  GOOGLE AUTO COMPLETE  **************************/ 
 // call before init AutoComplete:
 function preAutoComplete(){
@@ -2290,3 +2375,6 @@ window.updateActiveLink = updateActiveLink;
 window.updateNotificationEnvelope = updateNotificationEnvelope;
 
 window.updateArtisanSidebarActive = updateArtisanSidebarActive;
+
+window.confirmEscalateThread = confirmEscalateThread;
+window.confirmEscalateCustomer = confirmEscalateCustomer;

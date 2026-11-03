@@ -141,7 +141,7 @@ def _seed_thread(customer, artisan_profile, order_product, artisan_user, *, cont
         artisan=artisan_profile, customer=customer, sender=customer,
         content=content, order_product=order_product,
     )
-    return FrontlineThread.objects.get()
+    return FrontlineThread.objects.get(order_product=order_product)
 
 
 def _url(**params):
@@ -484,3 +484,182 @@ class TestFrontlineAdminComposer:
             customer=customer,
             order_product=order_product,
         ).count() == before
+
+
+@pytest.mark.django_db
+class TestFrontlineEscalate:
+    """
+    Commit 3d: customer + artisan escalate buttons.
+
+    Customer POSTs thread_id, artisan POSTs customer_id. The
+    artisan-side fan-out (escalate all non-settled threads with
+    the customer) needs its own pin because a single Post() call
+    flips more than one row in that branch.
+    """
+
+    def _escalate_url(self):
+        return reverse("escalate_frontline_thread")
+
+    def test_customer_can_escalate_own_thread(
+        self, client, customer, artisan_profile, artisan_user,
+        order_product,
+    ):
+        thread = _seed_thread(
+            customer, artisan_profile, order_product, artisan_user,
+        )
+        assert thread.escalated_at is None
+
+        client.force_login(customer)
+        response = client.post(
+            self._escalate_url(),
+            {"thread_id": thread.id},
+        )
+        # Redirect back to customer_thread.
+        assert response.status_code == 302
+        expected = reverse("customer_thread", kwargs={"artisan_slug": artisan_profile.slug})
+        assert response.url.startswith(expected)
+        assert f"order_product={order_product.id}" in response.url
+
+        thread.refresh_from_db()
+        assert thread.escalated_at is not None
+        assert thread.escalated_by_id == customer.id
+
+    def test_artisan_can_escalate_thread(
+        self, client, customer, artisan_user, artisan_profile,
+        order_product,
+    ):
+        thread = _seed_thread(
+            customer, artisan_profile, order_product, artisan_user,
+        )
+        assert thread.escalated_at is None
+
+        client.force_login(artisan_user)
+        response = client.post(
+            self._escalate_url(),
+            {"customer_id": customer.id},
+        )
+        assert response.status_code == 302
+        expected = reverse("a_dashboard_messages")
+        assert response.url.startswith(expected)
+        assert f"customer={customer.id}" in response.url
+
+        thread.refresh_from_db()
+        assert thread.escalated_at is not None
+        assert thread.escalated_by_id == artisan_user.id
+
+    def test_escalation_is_idempotent(
+        self, client, customer, artisan_profile, artisan_user,
+        order_product,
+    ):
+        thread = _seed_thread(
+            customer, artisan_profile, order_product, artisan_user,
+        )
+
+        client.force_login(customer)
+        client.post(self._escalate_url(), {"thread_id": thread.id})
+        thread.refresh_from_db()
+        first_escalated_at = thread.escalated_at
+        assert first_escalated_at is not None
+
+        # Second POST: no state change.
+        response = client.post(
+            self._escalate_url(), {"thread_id": thread.id},
+        )
+        assert response.status_code == 302
+        thread.refresh_from_db()
+        assert thread.escalated_at == first_escalated_at
+
+    def test_non_participant_gets_404(
+        self, client, customer, artisan_profile, artisan_user,
+        order_product, db,
+    ):
+        thread = _seed_thread(
+            customer, artisan_profile, order_product, artisan_user,
+        )
+
+        other_customer = Account.objects.create_user(
+            username="fl-other",
+            email="fl-other@example.com",
+            receive_newsletter=False,
+            password="x",
+            is_active=True,
+        )
+        client.force_login(other_customer)
+        response = client.post(
+            self._escalate_url(), {"thread_id": thread.id},
+        )
+        assert response.status_code == 404
+
+        # State unchanged.
+        thread.refresh_from_db()
+        assert thread.escalated_at is None
+
+    def test_artisan_escalates_all_non_settled_threads_with_customer(
+        self, client, customer, artisan_user, artisan_profile,
+        order_product, product, variation, order,
+    ):
+        """
+        Two threads between the same artisan and customer (two
+        different order lines). Artisan's POST with customer_id
+        escalates both.
+        """
+        from orders.models import OrderProduct
+
+        thread_a = _seed_thread(
+            customer, artisan_profile, order_product, artisan_user,
+        )
+
+        # Second order line, second thread.
+        line_b = OrderProduct.objects.create(
+            order=order, user=order.user,
+            product=product, product_variation=variation,
+            product_price="10.00", quantity=1, ordered=True,
+            fulfilled_by=artisan_profile,
+        )
+        thread_b = _seed_thread(
+            customer, artisan_profile, line_b, artisan_user,
+        )
+
+        assert thread_a.id != thread_b.id
+
+        client.force_login(artisan_user)
+        response = client.post(
+            self._escalate_url(),
+            {"customer_id": customer.id},
+        )
+        assert response.status_code == 302
+
+        thread_a.refresh_from_db()
+        thread_b.refresh_from_db()
+        assert thread_a.escalated_at is not None
+        assert thread_b.escalated_at is not None
+        assert thread_a.escalated_by_id == artisan_user.id
+        assert thread_b.escalated_by_id == artisan_user.id
+
+    def test_artisan_escalate_when_all_already_escalated_is_noop(
+        self, client, customer, artisan_user, artisan_profile,
+        order_product,
+    ):
+        thread = _seed_thread(
+            customer, artisan_profile, order_product, artisan_user,
+        )
+        thread.escalate(by=customer)
+        thread.refresh_from_db()
+        first = thread.escalated_at
+
+        client.force_login(artisan_user)
+        response = client.post(
+            self._escalate_url(),
+            {"customer_id": customer.id},
+        )
+        # Still redirects back to the artisan messages panel.
+        assert response.status_code == 302
+        expected = reverse("a_dashboard_messages")
+        assert response.url.startswith(expected)
+        assert f"customer={customer.id}" in response.url
+
+        thread.refresh_from_db()
+        assert thread.escalated_at == first
+        # The customer's escalation is preserved (not overwritten
+        # by the artisan's already-noop call).
+        assert thread.escalated_by_id == customer.id

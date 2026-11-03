@@ -2522,3 +2522,137 @@ def customer_thread_send(request, artisan_slug):
         else f"{reverse('customer_thread', kwargs={'artisan_slug': artisan.slug})}"
     )
     return redirect(redirect_url)
+
+
+@login_required(login_url="login")
+@require_POST
+def escalate_frontline_thread(request):
+    """
+    Customer or artisan requests platform involvement in a
+    customer↔artisan FrontlineThread. Commit 3d, backlog 34.
+
+    Three callers, distinguished by what they POST:
+
+      * Customer → POST {thread_id}. The customer is only ever on
+        the customer side of a thread, so thread_id is sufficient
+        and unambiguous. Verified by
+        thread.customer_id == request.user.id.
+
+      * Artisan → POST {customer_id}. The artisan's Messages panel
+        is *customer-scoped*, not line-scoped (see
+        handoff_2026-11-02 §F1: "the artisan dashboard's tab strip
+        is the artisan's own view of the two channels they
+        participate in; it does not enumerate per-line threads").
+        A single customer may therefore have more than one
+        FrontlineThread with this artisan — one per CUSTOM order
+        line, per F3. This view resolves the ambiguity by
+        escalating every non-settled thread between the artisan
+        and the customer. Already-escalated threads are no-ops
+        (FrontlineThread.escalate is idempotent), so retries are
+        safe.
+
+      * Anyone else → 404. The gate is "you are the customer on
+        this thread" or "you are the artisan's user on the
+        resolved thread(s)". We deliberately return 404, not 403,
+        so an out-of-band attacker who guesses a thread_id or
+        customer_id cannot distinguish "exists but not mine" from
+        "does not exist."
+
+    Escalation is a thread-state flip, not a message and not a
+    per-message action — see handoff_2026-11-02 §F5 and §F6. The
+    ArtisanAdminMessage.source_chat_message FK exists for a
+    different feature (per-message escalation) and is deliberately
+    not written here.
+
+    Response branches:
+      * Customer caller → redirect to customer_thread, preserving
+        their line selection via ?order_product=<line>.
+      * Artisan caller  → redirect to a_dashboard_messages with
+        ?customer=<id> preserved.
+    Both use messages.success so the flash appears in the redirect
+    target's alerts wrapper.
+    """
+    from creators.models import FrontlineThread
+
+    thread_id = (request.POST.get("thread_id") or "").strip()
+    customer_id = (request.POST.get("customer_id") or "").strip()
+
+    # ── Customer path ──
+    if thread_id and thread_id.isdigit():
+        thread = get_object_or_404(FrontlineThread, id=int(thread_id))
+
+        if thread.customer_id != request.user.id:
+            raise Http404("Not a participant on this thread.")
+
+        already = thread.escalated_at is not None
+        thread.escalate(by=request.user)
+
+        if already:
+            messages.info(
+                request,
+                "Platform involvement was already requested for this "
+                "thread.｜此對話已申請平台介入。",
+            )
+        else:
+            messages.success(
+                request,
+                "Platform involvement requested. An admin will be "
+                "able to join this conversation.｜已申請平台介入，"
+                "管理員將可加入此對話。",
+            )
+
+        redirect_url = (
+            f"{reverse('customer_thread', kwargs={'artisan_slug': thread.artisan.slug})}"
+        )
+        if thread.order_product_id:
+            redirect_url += f"?order_product={thread.order_product_id}"
+        return redirect(redirect_url)
+
+    # ── Artisan path ──
+    if customer_id and customer_id.isdigit():
+        profile = getattr(request.user, "creator_profile", None)
+        if profile is None:
+            raise Http404("No artisan profile on this account.")
+
+        customer = get_object_or_404(Account, id=int(customer_id))
+
+        threads = list(
+            FrontlineThread.objects.filter(
+                artisan=profile,
+                customer=customer,
+                settled_at__isnull=True,
+            )
+        )
+        if not threads:
+            raise Http404("No threads between this artisan and customer.")
+
+        newly_escalated = 0
+        for t in threads:
+            if t.escalated_at is None:
+                t.escalate(by=request.user)
+                newly_escalated += 1
+
+        if newly_escalated:
+            messages.success(
+                request,
+                f"Platform involvement requested for {newly_escalated} "
+                f"thread{'s' if newly_escalated != 1 else ''} with "
+                f"{customer.username}.｜已為與 {customer.username} 的 "
+                f"{newly_escalated} 個對話申請平台介入。",
+            )
+        else:
+            messages.info(
+                request,
+                "Platform involvement was already requested for all "
+                "active threads with this customer.｜與此買家的所有"
+                "進行中對話均已申請平台介入。",
+            )
+
+        return redirect(
+            f"{reverse('a_dashboard_messages')}?customer={customer.id}"
+        )
+
+    # Neither customer_id nor thread_id supplied → 400. A POST with
+    # no identifying payload is a client bug, not an authorization
+    # failure.
+    return HttpResponse(status=400)

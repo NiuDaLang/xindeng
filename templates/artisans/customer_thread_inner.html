@@ -97,5 +97,33 @@
                 </button>
             </div>
         </form>
+
+        {# ── Escalate-to-platform trigger (commit 3d) ── #}
+        {% if active_line %}
+            {% with thread=active_line.frontline_threads.first %}
+            {% if thread and not thread.is_escalated %}
+            <form hx-post="{% url 'escalate_frontline_thread' %}"
+                  hx-trigger="confirmed"
+                  hx-swap="none"
+                  class="border-t border-base-200/60 px-4 py-2 flex justify-center bg-base-50/40">
+                {% csrf_token %}
+                <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                <button type="button"
+                        onclick="confirmEscalateThread(this, {{ thread.id }})"
+                        class="text-[10px] text-base-content/50 hover:text-warning transition-colors font-sans tracking-wide">
+                    <i class="fa-solid fa-life-ring text-[10px] mr-1"></i>
+                    Request platform involvement｜申請平台介入
+                </button>
+            </form>
+            {% elif thread and thread.is_escalated %}
+            <div class="border-t border-base-200/60 px-4 py-2 text-center bg-warning/5">
+                <span class="text-[10px] text-warning font-sans tracking-wide">
+                    <i class="fa-solid fa-bolt text-[10px] mr-1"></i>
+                    Platform involvement requested｜已申請平台介入
+                </span>
+            </div>
+            {% endif %}
+            {% endwith %}
+        {% endif %}
     </section>
 {% endif %}
