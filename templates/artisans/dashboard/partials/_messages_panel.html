@@ -66,6 +66,12 @@
                     <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed
                                 {% if m.sender == request.user %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content{% endif %}">
                         {{ m.content|linebreaksbr }}
+                        {% if m.image %}
+                        <img src="{{ m.image.url }}"
+                             alt="attachment"
+                             class="mt-2 rounded-lg max-h-48 object-contain block"
+                             loading="lazy" />
+                        {% endif %}
                         <span class="block text-[9px] opacity-60 mt-1 font-mono">
                             {{ m.created_at|date:"Y-m-d H:i" }}
                         </span>
@@ -80,14 +86,22 @@
 
             <form method="post"
                   action="{% url 'a_dashboard_messages_send' active_customer.id %}"
-                  class="border-t border-base-200/60 p-3 flex gap-2">
+                  enctype="multipart/form-data"
+                  class="border-t border-base-200/60 p-3 space-y-2">
                 {% csrf_token %}
-                <textarea name="content" maxlength="2000" rows="2" required
+                <textarea name="content" maxlength="2000" rows="2"
                           placeholder="Write a short message…｜輸入訊息…"
-                          class="textarea textarea-bordered flex-1 text-xs rounded-xl"></textarea>
-                <button type="submit" class="btn btn-primary btn-sm rounded-xl">
-                    <i class="fa-solid fa-paper-plane text-xs"></i>
-                </button>
+                          class="textarea textarea-bordered w-full text-xs rounded-xl"></textarea>
+                <div class="flex items-center justify-between gap-2">
+                    <input type="file"
+                           name="image"
+                           accept="image/*"
+                           class="file-input file-input-sm file-input-bordered w-48 sm:w-56 text-xs" />
+                    <button type="submit" class="btn btn-primary btn-sm rounded-xl">
+                        <i class="fa-solid fa-paper-plane text-xs mr-1"></i>
+                        Send｜送出
+                    </button>
+                </div>
             </form>
 
             {# ── Escalate-to-platform trigger (commit 3d) ── #}

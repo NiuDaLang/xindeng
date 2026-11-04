@@ -1202,8 +1202,13 @@ def dashboard_messages_send(request, customer_id):
     customer = get_object_or_404(Account, pk=customer_id)
 
     content = (request.POST.get("content") or "").strip()
-    if not content:
-        messages.error(request, "Message cannot be empty.｜訊息不得為空。")
+    image = request.FILES.get("image")
+
+    if not content and not image:
+        messages.error(
+            request,
+            "Message cannot be empty.｜訊息不得為空。",
+        )
         return redirect(f"{reverse('a_dashboard_messages')}?customer={customer.id}")
 
     ArtisanChatMessage.objects.create(
@@ -1211,6 +1216,7 @@ def dashboard_messages_send(request, customer_id):
         customer=customer,
         sender=request.user,
         content=content,
+        image=image,
         is_read=True,
     )
     return redirect(f"{reverse('a_dashboard_messages')}?customer={customer.id}")
@@ -2481,8 +2487,13 @@ def customer_thread_send(request, artisan_slug):
         )
 
     content = (request.POST.get("content") or "").strip()
-    if not content:
-        messages.error(request, "Message cannot be empty.｜訊息不得為空。")
+    image = request.FILES.get("image")
+
+    if not content and not image:
+        messages.error(
+            request,
+            "Message cannot be empty.｜訊息不得為空。",
+        )
         return redirect(
             f"{reverse('customer_thread', kwargs={'artisan_slug': artisan.slug})}"
         )
@@ -2511,6 +2522,7 @@ def customer_thread_send(request, artisan_slug):
         customer=request.user,
         sender=request.user,
         content=content,
+        image=image,
         order_product=linked_line,
         is_read=False,
     )

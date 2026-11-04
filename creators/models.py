@@ -168,7 +168,11 @@ class ArtisanChatMessage(models.Model):
 
     Deliberately simpler than accounts.ChatMessage (member↔admin):
 
-      * No image/attachment field. Content is text-only.
+      * Image attachment is supported (added in the 3f commit for the
+        CUSTOM delivery workflow — "show me the final piece before
+        delivery"), but no `format_chat` URL-card filter. Plain text
+        and inline URL text render as-is. A richer content renderer is
+        deferred; see backlog 24 §images.
       * No WebSocket. The messages panel is server-rendered; a manual
         refresh or a form-driven reload is what picks up new messages.
       * No customer-side view in v1. This is the artisan's inbox. The
@@ -205,6 +209,18 @@ class ArtisanChatMessage(models.Model):
         related_name="sent_artisan_chat_messages",
     )
     content = models.TextField(max_length=2000)
+    image = models.ImageField(
+        upload_to="artisan_chat_images/",
+        blank=True,
+        null=True,
+        help_text=(
+            "Optional image attachment (product reference, work-in-progress "
+            "preview, screenshot). Mirrors accounts.ChatMessage.image — same "
+            "storage pipeline, same validation. Text-only messages remain the "
+            "common case; this field exists for the cases where a picture "
+            "is faster than a thousand words."
+        ),
+    )    
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     order_product = models.ForeignKey(

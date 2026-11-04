@@ -1,6 +1,6 @@
 {# templates/accounts/partials/_frontline_message_bubble.html #}
 {# One message bubble, shared by the Frontline oversight view (3b) and #}
-{# the future admin composer surface (3c). Sender identity determines #}
+{# the admin composer surface (3c). Sender identity determines #}
 {# the bubble style; three branches because Frontline has a third #}
 {# participant (admin) that the customer/artisan private threads do not. #}
 
@@ -18,13 +18,19 @@
                 </p>
             {% endif %}
             {{ m.content|linebreaksbr }}
+            {% if m.image %}
+            <img src="{{ m.image.url }}"
+                 alt="attachment"
+                 class="mt-2 rounded-lg max-h-48 object-contain block"
+                 loading="lazy" />
+            {% endif %}
             <span class="block text-[9px] opacity-60 mt-1 font-mono">
                 {{ m.created_at|date:"Y-m-d H:i" }}
             </span>
         </div>
     </div>
 {% elif m.sender_id == active_thread.customer_id %}
-    {# Customer-authored #}
+    {# Customer-authored — same shape, base-200 bubble #}
     <div class="flex justify-start">
         <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-base-200 text-base-content">
             <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
@@ -37,19 +43,31 @@
                 </p>
             {% endif %}
             {{ m.content|linebreaksbr }}
+            {% if m.image %}
+            <img src="{{ m.image.url }}"
+                 alt="attachment"
+                 class="mt-2 rounded-lg max-h-48 object-contain block"
+                 loading="lazy" />
+            {% endif %}
             <span class="block text-[9px] opacity-60 mt-1 font-mono">
                 {{ m.created_at|date:"Y-m-d H:i" }}
             </span>
         </div>
     </div>
 {% else %}
-    {# Admin-authored (or any other participant, defensive) #}
+    {# Admin-authored (or any other participant, defensive) — info bubble #}
     <div class="flex justify-end">
         <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-info text-info-content">
             <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
                 {{ m.sender.username }} · platform
             </p>
             {{ m.content|linebreaksbr }}
+            {% if m.image %}
+            <img src="{{ m.image.url }}"
+                 alt="attachment"
+                 class="mt-2 rounded-lg max-h-48 object-contain block"
+                 loading="lazy" />
+            {% endif %}
             <span class="block text-[9px] opacity-60 mt-1 font-mono">
                 {{ m.created_at|date:"Y-m-d H:i" }}
             </span>

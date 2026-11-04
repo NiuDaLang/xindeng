@@ -2015,10 +2015,13 @@ def frontline_message_send(request, thread_id):
 
     # ── Content validation ──
     content = (request.POST.get("content") or "").strip()
-    if not content:
+    image = request.FILES.get("image")
+
+    if not content and not image:
         context = _rebuild_inner_context()
         context["composer_error"] = (
             "Message cannot be empty.｜訊息不得為空。"
+            " (Please re-attach the image if you had one.｜若已附加圖片請重新選擇。)"
         )
         context["composer_content"] = request.POST.get("content", "")
         return render(
@@ -2033,6 +2036,7 @@ def frontline_message_send(request, thread_id):
         customer=thread.customer,
         sender=request.user,
         content=content,
+        image=image,
         order_product=thread.order_product,
         is_read=False,
     )

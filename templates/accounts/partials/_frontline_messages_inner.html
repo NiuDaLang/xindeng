@@ -185,6 +185,7 @@
             <form hx-post="{% url 'frontline_message_send' active_thread.id %}"
                   hx-target="#frontline-messages-main"
                   hx-swap="innerHTML"
+                  enctype="multipart/form-data"
                   class="border-t border-base-200/60 px-4 py-3 space-y-2">
                 {% csrf_token %}
                 <input type="hidden" name="settled_filter" value="{{ settled_filter|yesno:'true,false' }}">
@@ -199,9 +200,13 @@
                           placeholder="Reply as platform admin…｜以平台管理員身份回覆…"
                           class="textarea textarea-bordered w-full text-xs rounded-xl">{{ composer_content|default:'' }}</textarea>
                 <div class="flex items-center justify-between gap-2">
-                    <span class="text-[9px] text-info/70 font-mono uppercase tracking-wider">
+                    <input type="file"
+                           name="image"
+                           accept="image/*"
+                           class="file-input file-input-sm file-input-bordered w-48 sm:w-56 text-xs" />
+                    <span class="text-[9px] text-info/70 font-mono uppercase tracking-wider hidden sm:inline">
                         <i class="fa-solid fa-shield-halved text-[9px] mr-1"></i>
-                        Admin reply · visible to customer and artisan
+                        Admin reply
                     </span>
                     <button type="submit" class="btn btn-sm btn-info rounded-xl">
                         <i class="fa-solid fa-paper-plane text-xs mr-1"></i>

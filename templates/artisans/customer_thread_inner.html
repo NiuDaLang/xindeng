@@ -54,6 +54,12 @@
                         </p>
                     {% endif %}
                     {{ m.content|linebreaksbr }}
+                    {% if m.image %}
+                    <img src="{{ m.image.url }}"
+                         alt="attachment"
+                         class="mt-2 rounded-lg max-h-48 object-contain block"
+                         loading="lazy" />
+                    {% endif %}
                     <span class="block text-[9px] opacity-60 mt-1 font-mono">
                         {{ m.sender.username }} · {{ m.created_at|date:"Y-m-d H:i" }}
                     </span>
@@ -87,10 +93,14 @@
                 </select>
             </div>
             {% endif %}
-            <textarea name="content" maxlength="2000" rows="3" required
+            <textarea name="content" maxlength="2000" rows="3"
                       placeholder="Write a short message…｜輸入訊息…"
                       class="textarea textarea-bordered w-full text-xs rounded-xl"></textarea>
-            <div class="flex justify-end">
+            <div class="flex items-center justify-between gap-2">
+                <input type="file"
+                       name="image"
+                       accept="image/*"
+                       class="file-input file-input-sm file-input-bordered w-48 sm:w-56 text-xs" />
                 <button type="submit" class="btn btn-primary btn-sm rounded-xl">
                     <i class="fa-solid fa-paper-plane text-xs mr-1"></i>
                     Send｜送出
