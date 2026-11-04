@@ -663,3 +663,84 @@ class TestFrontlineEscalate:
         # The customer's escalation is preserved (not overwritten
         # by the artisan's already-noop call).
         assert thread.escalated_by_id == customer.id
+
+
+@pytest.mark.django_db
+class TestFrontlineEntryPoints:
+    """
+    Commit 3g: entry-point links on both sides.
+
+    The view code was already correct; the gap was that neither
+    counterparty had a UI affordance to reach customer_thread /
+    a_dashboard_messages from an order line. These tests pin the
+    three moving parts:
+
+      * OrderProduct.frontline_thread property (None before first
+        message, the FrontlineThread after).
+      * Customer orders modal exposes the link with the right
+        ?order_product=<id> parameter and the right two-branch
+        copy.
+      * Artisan pending-CUSTOM card exposes the link with the right
+        ?customer=<user_id> parameter; guest orders get the
+        informational notice instead.
+    """
+
+    def test_order_product_frontline_thread_property_is_none_before_first_message(
+        self, customer, artisan_profile, artisan_user, order_product,
+    ):
+        assert order_product.frontline_thread is None
+
+        thread = _seed_thread(
+            customer, artisan_profile, order_product, artisan_user,
+        )
+        order_product.refresh_from_db()
+        assert order_product.frontline_thread == thread
+
+    def test_customer_orders_modal_renders_message_link_for_custom(
+        self, client, customer, artisan_profile, artisan_user, order_product,
+    ):
+        client.force_login(customer)
+        response = client.get(
+            reverse("dashboard", kwargs={"subpage": "orders"}),
+        )
+        assert response.status_code == 200
+        body = response.content.decode()
+
+        # The reverse of `customer_thread` renders as a path, not as
+        # the URL name. Same class of assertion bug as 3d's redirect
+        # tests — assert on the path, not the name.
+        expected_url = reverse(
+            "customer_thread", kwargs={"artisan_slug": artisan_profile.slug},
+        )
+        assert expected_url in body
+        assert f"order_product={order_product.id}" in body
+
+        # The "Ask" branch (no thread yet).
+        assert "Ask " in body
+        # The "Continue" branch is not rendered yet.
+        assert "Continue conversation with" not in body
+
+        # Seed a thread and re-render — the "Continue" branch fires.
+        _seed_thread(customer, artisan_profile, order_product, artisan_user)
+        response2 = client.get(
+            reverse("dashboard", kwargs={"subpage": "orders"}),
+        )
+        body2 = response2.content.decode()
+        assert expected_url in body2
+        assert "Continue conversation with" in body2
+
+    def test_artisan_pending_custom_card_renders_message_link(
+        self, client, customer, artisan_user, artisan_profile, order_product,
+    ):
+        client.force_login(artisan_user)
+        response = client.get(reverse("a_dashboard_orders"))
+        assert response.status_code == 200
+        body = response.content.decode()
+
+        # Non-guest order: link present.
+        assert "a_dashboard_messages" in body or "dashboard/messages" in body
+        assert f"customer={customer.id}" in body
+        assert "Message buyer" in body or "Continue conversation with" in body
+        # Guest-branch copy is not rendered (order.user is set in this fixture).
+        assert "Guest order — no in-platform messaging" not in body
+

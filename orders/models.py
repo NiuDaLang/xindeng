@@ -490,6 +490,24 @@ class OrderProduct(models.Model):
         return self.vault_uploads.filter(status="PENDING").count()
 
     @property
+    def frontline_thread(self):
+        """
+        The FrontlineThread for this line, or None if no messages have
+        been exchanged yet.
+
+        One thread per line (F3). The unique constraint
+        `unique_frontline_thread_per_line` guarantees at most one row,
+        so `.first()` is safe — never `.get()` (that would raise on the
+        zero-row case).
+
+        Used by the customer's order-detail modal and the artisan's
+        pending-CUSTOM-digital card, both of which want to decide
+        whether to render "Ask about this line" (no thread yet) or
+        "Continue conversation" (thread exists).
+        """
+        return self.frontline_threads.first()
+
+    @property
     def latest_vault_upload(self):
         """
         The most recent upload for this order line, in any state.

@@ -51,7 +51,24 @@
         </div>
     </div>
 
-    <div class="mt-4 pt-4 border-t border-base-200/60">
+    <div class="mt-4 pt-4 border-t border-base-200/60 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        {# ── 3g: Frontline messaging entry point ── #}
+        {% if line.order.user_id %}
+        <a href="{% url 'a_dashboard_messages' %}?customer={{ line.order.user_id }}"
+           class="text-[10px] text-info hover:text-info-content font-sans font-bold inline-flex items-center gap-1 transition-colors">
+            <i class="fa-solid fa-comment-dots text-[9px]"></i>
+            {% if line.frontline_thread %}
+                Continue conversation with {{ line.order.user.username }}｜繼續與買家對話
+            {% else %}
+                Message buyer｜聯絡買家
+            {% endif %}
+        </a>
+        {% else %}
+        <span class="text-[10px] text-base-content/40 italic font-sans">
+            Guest order — no in-platform messaging｜訪客訂單，無站內訊息
+        </span>
+        {% endif %}
+
         {% with latest=line.latest_vault_upload %}
             {% if latest and latest.status == 'PENDING' %}
                 <div class="flex flex-col items-end gap-1">

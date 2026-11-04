@@ -38,7 +38,15 @@
             </li>
             {% empty %}
             <li class="px-4 py-10 text-center text-[11px] text-base-content/40">
-                No conversations yet.<br>尚無對話。
+                No conversations yet.<br>
+                <span class="opacity-70">
+                    Threads appear here when a buyer messages you about a CUSTOM order line.
+                    You can also start one from the Orders page.
+                </span>
+                <br>
+                <span class="opacity-60 mt-1 block">
+                    尚無對話。買家就客製訂單項目向您發起對話後，對話將顯示於此；您亦可於訂單頁面主動聯繫買家。
+                </span>
             </li>
             {% endfor %}
         </ul>
