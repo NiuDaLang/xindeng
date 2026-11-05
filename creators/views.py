@@ -59,6 +59,7 @@ from django_ckeditor_5.widgets import CKEditor5Widget
 from django.http import JsonResponse
 from django.http import Http404
 import json
+from django.core.exceptions import ValidationError
 
 from store.tasks import (
     send_product_submission_email_task,
@@ -1211,14 +1212,23 @@ def dashboard_messages_send(request, customer_id):
         )
         return redirect(f"{reverse('a_dashboard_messages')}?customer={customer.id}")
 
-    ArtisanChatMessage.objects.create(
-        artisan=profile,
-        customer=customer,
-        sender=request.user,
-        content=content,
-        image=image,
-        is_read=True,
-    )
+    try:
+        ArtisanChatMessage.objects.create(
+            artisan=profile,
+            customer=customer,
+            sender=request.user,
+            content=content,
+            image=image,
+            is_read=True,
+        )
+    except ValidationError:
+        messages.error(
+            request,
+            "The attached file is not a readable image. "
+            "Your message was not sent. "
+            "｜所附加的檔案不是可讀取的圖片，訊息未發送。",
+        )
+        return redirect(f"{reverse('a_dashboard_messages')}?customer={customer.id}")
     return redirect(f"{reverse('a_dashboard_messages')}?customer={customer.id}")
 
 
@@ -2517,15 +2527,30 @@ def customer_thread_send(request, artisan_slug):
                 "Order line not found for this customer."
             )
 
-    ArtisanChatMessage.objects.create(
-        artisan=artisan,
-        customer=request.user,
-        sender=request.user,
-        content=content,
-        image=image,
-        order_product=linked_line,
-        is_read=False,
-    )
+    try:
+        ArtisanChatMessage.objects.create(
+            artisan=artisan,
+            customer=request.user,
+            sender=request.user,
+            content=content,
+            image=image,
+            order_product=linked_line,
+            is_read=False,
+        )
+    except ValidationError:
+        messages.error(
+            request,
+            "The attached file is not a readable image. "
+            "Your message was not sent. "
+            "｜所附加的檔案不是可讀取的圖片，訊息未發送。",
+        )
+        redirect_url = (
+            f"{reverse('customer_thread', kwargs={'artisan_slug': artisan.slug})}"
+            f"?order_product={linked_line.id}"
+            if linked_line
+            else f"{reverse('customer_thread', kwargs={'artisan_slug': artisan.slug})}"
+        )
+        return redirect(redirect_url)
 
     redirect_url = (
         f"{reverse('customer_thread', kwargs={'artisan_slug': artisan.slug})}"

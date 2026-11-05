@@ -105,6 +105,13 @@ IMAGE_FIELD_REGISTRY = {
     ("accounts", "userprofile", "profile_picture"): {"max_dimension": 400, "quality": 85},
     ("accounts", "perk", "featured_image"):         {"max_dimension": 1200, "quality": 82},
     ("accounts", "chatmessage", "image"):           {"max_dimension": 800, "quality": 85},
+    # ── Creators ─────────────────────────────────────────────
+    # Message attachment: mirrors accounts.ChatMessage.image —
+    # same 800px clamp, same quality. Added in 3f-bis after the
+    # 3f commit landed the field but did not register it here,
+    # so uploads bypassed the pipeline entirely (no resize, no
+    # WebP, no EXIF transpose, no size clamp).
+    ("creators", "artisanchatmessage", "image"): {"max_dimension": 800, "quality": 85},
 }
 
 

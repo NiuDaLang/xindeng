@@ -61,6 +61,9 @@ REPLACE_CLEANUP_FIELDS = [
     ("accounts", "perk", "featured_image"),
     ("accounts", "chatmessage", "image"),
 
+    # Creators
+    ("creators", "artisanchatmessage", "image"),
+
     # category
     ("category", "category", "cat_image"),
 

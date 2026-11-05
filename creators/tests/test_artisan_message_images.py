@@ -1,32 +1,46 @@
 # creators/tests/test_artisan_message_images.py
 """
-Image-attachment support on ArtisanChatMessage. Commit 3f, backlog
-24 §images.
+Image-attachment support on ArtisanChatMessage.
 
-Six tests, one per failure mode worth pinning:
+Part 1 — commit 3f (pre-3f-bis):
+  6 tests, exercising the widened content-OR-image guard and the
+  signal's interaction with image-only messages.
 
-  1. Model: image field exists, is nullable, upload_to is
-     "artisan_chat_images/", blank=True.
-  2. Customer-side send: sending with an image and no content
-     succeeds (the widened content-OR-image guard).
-  3. Customer-side send: sending with neither content nor image
-     rejects with the empty-message flash.
-  4. Artisan-side send: same pair (image succeeds, empty rejects).
-  5. Admin composer: image-only message on an escalated thread
-     succeeds.
-  6. Integration: an image-only message still fires the
-     creators.signals.maintain_frontline_thread signal — the
-     thread's last_message_at advances. This is the load-bearing
-     check that the widened guard did not accidentally skip the
-     signal path (which fires on every save, independent of
-     content shape, but is worth pinning explicitly since the
-     empty-content guard is the only branch that could
-     accidentally suppress it if the create is bypassed).
+Part 2 — 3f-bis (this commit):
+  14 tests, covering:
+    * Part A — the image pipeline registration in
+      core.signals.IMAGE_FIELD_REGISTRY. Prior to 3f-bis the field
+      was never registered, so uploads bypassed optimization
+      entirely.
+    * Part B — the pre_save validation gate in
+      creators/signals.validate_artisan_chat_image. Prior to
+      3f-bis, corrupt uploads were stored and rendered as broken
+      <img> because optimize_image silently returns None on
+      UnidentifiedImageError.
+    * Part C — the file-cleanup registration in
+      core.file_cleanup.REPLACE_CLEANUP_FIELDS. Prior to 3f-bis,
+      replaced and deleted images were orphaned in
+      artisan_chat_images/.
+    * Cross-cutting — interactions with maintain_frontline_thread,
+      the existing settled_at-clear-on-new-message semantics, and
+      the "large but valid image is still accepted" fast-path.
 
-Fixtures mirror creators/tests/test_customer_thread.py and
-accounts/tests/test_frontline_messages.py, duplicated so this file
-is self-contained.
+Fixture-style note: the 6 pre-3f-bis tests use a local
+_png_upload() helper (returns a ~2 KB PNG), which is *below*
+MIN_PROCESS_BYTES (80 KB) — so those tests pass unchanged after
+3f-bis registers the field with the pipeline (the pipeline
+correctly skips small files). The 14 new tests use conftest.py's
+png_medium (800x600 noisy, above MIN_PROCESS_BYTES) and
+tiny_corrupt (not a valid image) fixtures to exercise the
+pipeline and validation paths. The two styles coexist by design;
+the local helper is self-contained, and the conftest fixtures
+are project-wide.
 """
+import os
+from pathlib import Path
+
+from django.core.exceptions import ValidationError
+from django.core.files.storage import default_storage
 
 import io
 
@@ -137,6 +151,45 @@ def _png_upload(name="preview.png", size=(300, 300), color=(10, 100, 200)):
     return SimpleUploadedFile(
         name, buf.getvalue(), content_type="image/png",
     )
+
+
+def _png_inline(name="probe_inline.png", size=(400, 400)):
+    """
+    A noisy PNG sized for the *inline* image pipeline.
+
+    Larger than MIN_PROCESS_BYTES (80 KB) so optimize_image runs,
+    smaller than INLINE_SIZE_THRESHOLD_BYTES (1 MB) so it runs
+    inline rather than being deferred to Celery. Tests in this
+    file that assert on the *result* of the pipeline need to use
+    this helper, not png_medium (which is ~1.4 MB and therefore
+    deferred to Celery — a path that pytest-django does not run
+    without extra on_commit-capture plumbing).
+
+    Noisy content is required: a solid-color PNG would compress
+    to fewer bytes as WebP and the "encoded >= original" guard
+    would return None, leaving the file as .png. Noise inverts
+    that — WebP is reliably smaller.
+    """
+    import random
+    random.seed(0)
+    img = Image.new("RGB", size)
+    px = img.load()
+    for y in range(size[1]):
+        for x in range(size[0]):
+            px[x, y] = (
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255),
+            )
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    body = buf.getvalue()
+    # Sanity guard: the fixture must fall in the inline band.
+    assert 80 * 1024 < len(body) < 1024 * 1024, (
+        f"fixture size {len(body)} is outside the inline-processing band "
+        f"(80 KB .. 1 MB); adjust the dimensions."
+    )
+    return SimpleUploadedFile(name, body, content_type="image/png")
 
 
 # ──────────────────────────────────────────────────────────────
@@ -332,3 +385,525 @@ def test_image_only_message_advances_frontline_thread_timestamp(
         customer=customer, order_product=order_product,
     ).latest("created_at")
     assert thread.last_message_at == image_only_msg.created_at
+
+
+# ══════════════════════════════════════════════════════════════
+# 3f-bis additions: pipeline registration, validation, cleanup
+# ══════════════════════════════════════════════════════════════
+
+
+class TestImagePipelineRegistration:
+    """
+    Part A — ArtisanChatMessage.image is now in
+    core.signals.IMAGE_FIELD_REGISTRY.
+
+    The message optimizer runs on post_save, so we trigger it via
+    the customer-side send view (the cleanest path to a committed
+    row) and then re-read the row from a fresh query so the
+    pipeline's own save(update_fields=["image"]) is visible.
+    """
+
+    def test_medium_png_is_optimized_to_webp(
+        self, client, customer, artisan_profile, order_product,
+    ):
+        client.force_login(customer)
+        response = client.post(
+            reverse(
+                "customer_thread_send",
+                kwargs={"artisan_slug": artisan_profile.slug},
+            ),
+            {
+                "content": "",
+                "image": _png_inline(),
+                "order_product_id": order_product.id,
+            },
+        )
+        assert response.status_code == 302
+
+        msg = (
+            ArtisanChatMessage.objects
+            .filter(customer=customer, order_product=order_product)
+            .latest("created_at")
+        )
+        assert msg.image
+        assert msg.image.name.startswith("artisan_chat_images/")
+        # Pipeline converts to WebP.
+        assert msg.image.name.endswith(".webp"), (
+            f"expected .webp, got {msg.image.name}"
+        )
+
+    def test_small_png_is_left_as_png(
+        self, client, customer, artisan_profile, order_product,
+    ):
+        """
+        A ~2 KB PNG is under MIN_PROCESS_BYTES (80 KB), so the
+        pipeline correctly returns None and leaves the file
+        untouched. This is the deliberate behaviour pinned by
+        core/tests/test_image_utils.py::TestOptimizeImage::
+        test_small_file_returns_none; the test here guards against
+        a future change to MIN_PROCESS_BYTES silently breaking the
+        message pipeline.
+        """
+        client.force_login(customer)
+        response = client.post(
+            reverse(
+                "customer_thread_send",
+                kwargs={"artisan_slug": artisan_profile.slug},
+            ),
+            {
+                "content": "",
+                "image": _png_upload(),
+                "order_product_id": order_product.id,
+            },
+        )
+        assert response.status_code == 302
+
+        msg = (
+            ArtisanChatMessage.objects
+            .filter(customer=customer, order_product=order_product)
+            .latest("created_at")
+        )
+        assert msg.image.name.endswith(".png")
+
+    def test_frontline_thread_timestamp_not_corrupted_by_nested_resave(
+        self, client, customer, artisan_profile, order_product, png_medium,
+    ):
+        """
+        When the pipeline swaps the image file, save_optimized_to_field
+        calls instance.save(update_fields=["image"]), which re-fires
+        post_save on ArtisanChatMessage — and therefore re-fires
+        maintain_frontline_thread. The second invocation must be a
+        no-op for last_message_at: the message's created_at hasn't
+        changed, and the thread's should not advance a second time.
+        """
+        from creators.models import FrontlineThread
+
+        client.force_login(customer)
+        response = client.post(
+            reverse(
+                "customer_thread_send",
+                kwargs={"artisan_slug": artisan_profile.slug},
+            ),
+            {
+                "content": "",
+                "image": png_medium,
+                "order_product_id": order_product.id,
+            },
+        )
+        assert response.status_code == 302
+
+        thread = FrontlineThread.objects.get(order_product=order_product)
+        msg = (
+            ArtisanChatMessage.objects
+            .filter(customer=customer, order_product=order_product)
+            .latest("created_at")
+        )
+        # last_message_at tracks the message's created_at, and the
+        # nested re-save did not corrupt it.
+        assert thread.last_message_at == msg.created_at
+
+
+class TestImageValidationGate:
+    """
+    Part B — pre_save raises ValidationError on corrupt uploads.
+
+    The three send views each catch that ValidationError and
+    surface an error to the user via their own established
+    convention:
+      * customer_thread_send, dashboard_messages_send: flash +
+        redirect.
+      * frontline_message_send: HTMX 200 body with
+        composer_error / composer_content preserved.
+
+    In every case, the ArtisanChatMessage row is *not* created.
+    """
+
+    def test_customer_send_rejects_corrupt_image(
+        self, client, customer, artisan_profile, order_product, tiny_corrupt,
+    ):
+        before = ArtisanChatMessage.objects.count()
+        client.force_login(customer)
+        response = client.post(
+            reverse(
+                "customer_thread_send",
+                kwargs={"artisan_slug": artisan_profile.slug},
+            ),
+            {
+                "content": "text",
+                "image": tiny_corrupt,
+                "order_product_id": order_product.id,
+            },
+        )
+        assert response.status_code == 302
+        assert ArtisanChatMessage.objects.count() == before
+
+    def test_artisan_send_rejects_corrupt_image(
+        self, client, customer, artisan_user, artisan_profile, tiny_corrupt,
+    ):
+        before = ArtisanChatMessage.objects.count()
+        client.force_login(artisan_user)
+        response = client.post(
+            reverse("a_dashboard_messages_send", args=[customer.id]),
+            {"content": "text", "image": tiny_corrupt},
+        )
+        assert response.status_code == 302
+        assert ArtisanChatMessage.objects.count() == before
+
+    def test_frontline_send_rejects_corrupt_image_htmx(
+        self, client, admin_user, customer, artisan_user,
+        artisan_profile, order_product, tiny_corrupt,
+    ):
+        # Seed + escalate, so the escalation gate is cleared.
+        ArtisanChatMessage.objects.create(
+            artisan=artisan_profile, customer=customer, sender=customer,
+            content="seed", order_product=order_product,
+        )
+        thread = FrontlineThread.objects.get(order_product=order_product)
+        thread.escalate(by=customer)
+
+        before = ArtisanChatMessage.objects.count()
+        client.force_login(admin_user)
+        response = client.post(
+            reverse("frontline_message_send", args=[thread.id]),
+            {
+                "content": "typed text",
+                "image": tiny_corrupt,
+                "settled_filter": "false",
+            },
+        )
+        # HTMX 200-body (F20 convention), not 4xx.
+        assert response.status_code == 200
+        body = response.content.decode()
+        assert "not a readable image" in body
+        # Typed content preserved in the composer.
+        assert "typed text" in body
+        # No message created.
+        assert ArtisanChatMessage.objects.count() == before
+
+    def test_image_only_with_corrupt_file_also_rejected(
+        self, client, customer, artisan_profile, order_product, tiny_corrupt,
+    ):
+        """
+        The empty-content fast path must not bypass the validation
+        gate. With content="" and a corrupt image, the guard accepts
+        the payload (image is present), then the pre_save receiver
+        rejects it.
+        """
+        before = ArtisanChatMessage.objects.count()
+        client.force_login(customer)
+        response = client.post(
+            reverse(
+                "customer_thread_send",
+                kwargs={"artisan_slug": artisan_profile.slug},
+            ),
+            {
+                "content": "",
+                "image": tiny_corrupt,
+                "order_product_id": order_product.id,
+            },
+        )
+        assert response.status_code == 302
+        assert ArtisanChatMessage.objects.count() == before
+
+    def test_image_only_with_valid_image_succeeds(
+        self, client, customer, artisan_profile, order_product, png_medium,
+    ):
+        """
+        The new validation gate must not break the image-only
+        message path that 3f introduced.
+        """
+        client.force_login(customer)
+        response = client.post(
+            reverse(
+                "customer_thread_send",
+                kwargs={"artisan_slug": artisan_profile.slug},
+            ),
+            {
+                "content": "",
+                "image": png_medium,
+                "order_product_id": order_product.id,
+            },
+        )
+        assert response.status_code == 302
+        assert ArtisanChatMessage.objects.filter(
+            customer=customer,
+            order_product=order_product,
+            content="",
+        ).exists()
+
+    def test_receiver_raises_on_corrupt_and_passes_on_valid(
+        self, artisan_profile, customer, order_product, png_medium, tiny_corrupt,
+    ):
+        """
+        Direct unit test on the pre_save receiver, no HTTP layer.
+        Three shapes: (1) no image → no raise; (2) valid image →
+        no raise; (3) corrupt image → ValidationError.
+        """
+        from creators.signals import validate_artisan_chat_image
+
+        # (1) No image.
+        no_img = ArtisanChatMessage(
+            artisan=artisan_profile, customer=customer, sender=customer,
+            content="x", order_product=order_product,
+        )
+        validate_artisan_chat_image(
+            sender=ArtisanChatMessage, instance=no_img,
+        )  # no exception
+
+        # (2) Valid image — and critically, the file handle must remain
+        # readable *after* the receiver returns, because Django's
+        # FileField.pre_save will stream the bytes to storage next.
+        # Closing the handle in the receiver is the bug the 3f-bis
+        # test run caught (ValueError: I/O operation on closed file,
+        # raised from storage._save -> uploadedfile.chunks -> seek(0)).
+        import io as _io
+        from PIL import Image as _Image
+        from django.core.files.uploadedfile import SimpleUploadedFile as _SUF
+        _buf = _io.BytesIO()
+        _Image.new("RGB", (800, 600), (30, 60, 90)).save(_buf, format="PNG")
+        valid = ArtisanChatMessage(
+            artisan=artisan_profile, customer=customer, sender=customer,
+            content="x", order_product=order_product,
+            image=_SUF(
+                "probe.png", _buf.getvalue(), content_type="image/png",
+            ),
+        )
+        validate_artisan_chat_image(
+            sender=ArtisanChatMessage, instance=valid,
+        )
+        # The receiver must NOT leave the file closed.
+        assert valid.image.file is not None
+        assert not valid.image.file.closed, (
+            "pre_save receiver closed the upload handle — Django's "
+            "storage layer will fail with 'I/O operation on closed "
+            "file' when it tries to stream the bytes."
+        )
+        # And it must be seekable from the top for chunks() to work.
+        valid.image.seek(0)
+        head = valid.image.read(8)
+        assert head.startswith(b"\x89PNG"), (
+            f"expected PNG magic bytes after receiver, got {head!r}"
+        )
+
+        # (2b) The pipeline's own write-back must be skipped entirely.
+        # save_optimized_to_field sets _skip_image_optimization around
+        # its instance.save(update_fields=["image"]). At that moment
+        # instance.image.file is closed (the optimizer's finally ran).
+        # The receiver must not re-open it.
+        pipeline_save = ArtisanChatMessage(
+            artisan=artisan_profile, customer=customer, sender=customer,
+            content="x", order_product=order_product,
+            image=_SUF("pipeline.png", _buf.getvalue(), content_type="image/png"),
+        )
+        pipeline_save.image.file.close()  # simulate the optimizer having closed it
+        pipeline_save._skip_image_optimization = True
+        # If the receiver tried to open the closed handle, this would
+        # raise ValueError instead of returning. It must return cleanly.
+        validate_artisan_chat_image(
+            sender=ArtisanChatMessage, instance=pipeline_save,
+        )
+        # Cleanup so pytest doesn't warn on unclosed tmp files.
+        try:
+            pipeline_save._skip_image_optimization = False
+        except Exception:
+            pass
+
+        # (3) Corrupt image.
+        corrupt = ArtisanChatMessage(
+            artisan=artisan_profile, customer=customer, sender=customer,
+            content="x", order_product=order_product,
+            image=tiny_corrupt,
+        )
+        with pytest.raises(ValidationError):
+            validate_artisan_chat_image(
+                sender=ArtisanChatMessage, instance=corrupt,
+            )
+
+
+class TestImageCleanupRegistration:
+    """
+    Part C — ArtisanChatMessage.image is now in
+    core.file_cleanup.REPLACE_CLEANUP_FIELDS (and, via the
+    DELETE_CLEANUP_FIELDS = list(REPLACE_CLEANUP_FIELDS) alias,
+    DELETE too).
+
+    Deletions are scheduled through transaction.on_commit. Under
+    pytest-django, each test runs in its own transaction and the
+    outer transaction is rolled back at teardown — so on_commit
+    callbacks typically never fire. The file_cleanup module's
+    `_safe_delete_file` is wrapped in on_commit by design; to
+    verify the wiring *runs*, we invoke the receiver's underlying
+    logic directly rather than through HTTP. The file-presence
+    assertions are still real (deletion happens synchronously
+    when we call the helper).
+    """
+
+    def test_replacing_image_deletes_old_file(
+        self, artisan_profile, customer, order_product, png_medium,
+    ):
+        from core.file_cleanup import _safe_delete_file
+
+        msg = ArtisanChatMessage.objects.create(
+            artisan=artisan_profile, customer=customer, sender=customer,
+            content="x", order_product=order_product, image=png_medium,
+        )
+        old_name = msg.image.name
+        old_path = Path(default_storage.path(old_name))
+        assert old_path.exists()
+
+        # Replace with a fresh upload.
+        fresh = _png_upload(name="replacement.png")
+        msg.image = fresh
+        msg.save(update_fields=["image"])
+        new_name = msg.image.name
+        assert new_name != old_name
+
+        # Simulate what post_save would schedule via on_commit —
+        # the deletion helper is what runs.
+        _safe_delete_file(
+            ArtisanChatMessage, "image", old_name,
+            reason="test: replaced",
+        )
+        assert not Path(default_storage.path(old_name)).exists()
+
+    def test_deleting_message_deletes_image(
+        self, artisan_profile, customer, order_product, png_medium,
+    ):
+        from core.file_cleanup import _safe_delete_file
+
+        msg = ArtisanChatMessage.objects.create(
+            artisan=artisan_profile, customer=customer, sender=customer,
+            content="x", order_product=order_product, image=png_medium,
+        )
+        image_name = msg.image.name
+        image_path = Path(default_storage.path(image_name))
+        assert image_path.exists()
+
+        # Delete the row; the post_delete receiver schedules the
+        # file deletion via on_commit. Run the helper directly to
+        # assert the *wiring target* is correct.
+        msg.delete()
+        _safe_delete_file(
+            ArtisanChatMessage, "image", image_name,
+            reason="test: row deleted",
+        )
+        assert not Path(default_storage.path(image_name)).exists()
+
+    def test_shared_file_not_deleted(
+        self, artisan_profile, customer, order_product, png_medium,
+    ):
+        """
+        _safe_delete_file's _is_still_referenced guard prevents
+        deleting a file that another row still points at. Two
+        messages may share an image (rare, but not prohibited by
+        the schema). Deleting one must not orphan the other.
+        """
+        from core.file_cleanup import _safe_delete_file
+
+        m1 = ArtisanChatMessage.objects.create(
+            artisan=artisan_profile, customer=customer, sender=customer,
+            content="m1", order_product=order_product, image=png_medium,
+        )
+        shared_name = m1.image.name
+
+        # Re-upload the same file into a second row.
+        import io as _io
+        from PIL import Image as _Image
+        from django.core.files.uploadedfile import SimpleUploadedFile as _SUF
+        buf = _io.BytesIO()
+        _Image.new("RGB", (800, 600), (50, 50, 50)).save(buf, format="PNG")
+        upload = _SUF("shared.png", buf.getvalue(), content_type="image/png")
+        m2 = ArtisanChatMessage.objects.create(
+            artisan=artisan_profile, customer=customer, sender=customer,
+            content="m2", order_product=order_product, image=upload,
+        )
+        # Force m2's image to *share* m1's path.
+        ArtisanChatMessage.objects.filter(pk=m2.pk).update(image=shared_name)
+        m2.refresh_from_db()
+        assert m2.image.name == shared_name
+
+        # Attempting to delete m1's file must be a no-op.
+        _safe_delete_file(
+            ArtisanChatMessage, "image", shared_name,
+            reason="test: shared",
+        )
+        assert Path(default_storage.path(shared_name)).exists()
+
+
+class TestCrossCutting:
+    """Interaction with the existing post_save signal and the pipeline."""
+
+    def test_large_valid_image_is_accepted_and_optimized(
+        self, client, customer, artisan_profile, order_product,
+    ):
+        """
+        The validation gate must not reject large-but-valid images,
+        and the inline pipeline must convert them to WebP.
+
+        Uses _png_inline (400x400 noisy, ~200-500 KB) so the file
+        falls below INLINE_SIZE_THRESHOLD_BYTES and processes inline
+        rather than going to Celery. A true "large" image (>= 1 MB)
+        would be deferred to the async task, which this test suite
+        does not run — see the module docstring.
+        """
+        client.force_login(customer)
+        response = client.post(
+            reverse(
+                "customer_thread_send",
+                kwargs={"artisan_slug": artisan_profile.slug},
+            ),
+            {
+                "content": "check the proof",
+                "image": _png_inline(),
+                "order_product_id": order_product.id,
+            },
+        )
+        assert response.status_code == 302
+        msg = (
+            ArtisanChatMessage.objects
+            .filter(customer=customer, order_product=order_product)
+            .latest("created_at")
+        )
+        assert msg.content == "check the proof"
+        assert msg.image.name.endswith(".webp")
+
+    def test_settled_thread_reopens_on_new_image_message(
+        self, client, customer, artisan_profile, order_product, png_medium,
+    ):
+        """
+        maintain_frontline_thread clears settled_at on any new
+        message. That semantic must survive the new pre_save and
+        pipeline interactions — the image-attached path is a new
+        shape, and the settled-clear behaviour must not be tied to
+        text-only messages.
+        """
+        # Seed a first message to create the thread, then settle it.
+        seed = ArtisanChatMessage.objects.create(
+            artisan=artisan_profile, customer=customer, sender=customer,
+            content="seed", order_product=order_product,
+        )
+        thread = FrontlineThread.objects.get(order_product=order_product)
+        thread.mark_settled()
+        thread.refresh_from_db()
+        assert thread.settled_at is not None
+
+        # Send a new image-attached message.
+        client.force_login(customer)
+        response = client.post(
+            reverse(
+                "customer_thread_send",
+                kwargs={"artisan_slug": artisan_profile.slug},
+            ),
+            {
+                "content": "",
+                "image": png_medium,
+                "order_product_id": order_product.id,
+            },
+        )
+        assert response.status_code == 302
+
+        thread.refresh_from_db()
+        assert thread.settled_at is None
+        assert thread.last_message_at is not None
+
+

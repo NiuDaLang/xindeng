@@ -71,6 +71,8 @@ from .views_admin_trap import client_ip
 from core.image_utils import safe_image_url
 from creators.models import ArtisanAdminMessage, CreatorProfile
 from django.db.models import Max
+from django.core.exceptions import ValidationError
+
 
 NUM_MSG_PER_LOAD = 10
 
@@ -2031,15 +2033,31 @@ def frontline_message_send(request, thread_id):
         )
 
     # ── Create the message ──
-    ArtisanChatMessage.objects.create(
-        artisan=thread.artisan,
-        customer=thread.customer,
-        sender=request.user,
-        content=content,
-        image=image,
-        order_product=thread.order_product,
-        is_read=False,
-    )
+    try:
+        ArtisanChatMessage.objects.create(
+            artisan=thread.artisan,
+            customer=thread.customer,
+            sender=request.user,
+            content=content,
+            image=image,
+            order_product=thread.order_product,
+            is_read=False,
+        )
+    except ValidationError:
+        context = _rebuild_inner_context()
+        context["composer_error"] = (
+            "The attached file is not a readable image. "
+            "Your message was not sent. "
+            "Please re-attach a valid image if you had one."
+            "｜所附加的檔案不是可讀取的圖片，訊息未發送。"
+            "若已附加圖片請重新選擇。"
+        )
+        context["composer_content"] = request.POST.get("content", "")
+        return render(
+            request,
+            "accounts/partials/_frontline_messages_inner.html",
+            context,
+        )
 
     context = _rebuild_inner_context()
     response = render(
