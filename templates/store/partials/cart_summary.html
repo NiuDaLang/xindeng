@@ -100,19 +100,12 @@
          <span id="total_payable_amount">¥ {{ total_payable }}</span>
          <div hx-get="{% url 'reset_shipping_fragment' %}" hx-trigger="refresh_shipping from:body" hx-swap="none"></div>
      </td>
-     <!-- <td class="py-3 text-right rounded-r-xl pr-1">
-         <span id="total_payable_amount_foreign" class="font-mono text-xs min-[576px]:max-[767px]:text-[16px] min-[768px]:max-[960px]:text-[11px] min-[961px]:text-[13px] font-black text-primary tracking-tight block ">
+    <td class="py-3 text-right rounded-r-xl pr-1">
+        <!-- 💡 Using inline style for guaranteed cross-browser text-shadow execution -->
+        <span id="total_payable_amount_foreign" 
+            style="text-shadow: 2px 2px 0px rgb(244, 252, 1);"
+            class="font-mono text-sm min-[576px]:max-[767px]:text-[18px] min-[768px]:max-[960px]:text-[13px] min-[961px]:text-[15px] font-black text-primary tracking-tight block">
             {{ foreign_currency_symbol }} {{ total_payable_foreign }}
-         </span>
-     </td> -->
-<td class="py-3 text-right rounded-r-xl pr-1">
-    <!-- 💡 Using inline style for guaranteed cross-browser text-shadow execution -->
-    <span id="total_payable_amount_foreign" 
-          style="text-shadow: 2px 2px 0px rgb(244, 252, 1);"
-          class="font-mono text-xs min-[576px]:max-[767px]:text-[16px] min-[768px]:max-[960px]:text-[11px] min-[961px]:text-[13px] font-black text-primary tracking-tight block">
-        {{ foreign_currency_symbol }} {{ total_payable_foreign }}
-    </span>
-</td>
-
-
+        </span>
+    </td>
  </tr>

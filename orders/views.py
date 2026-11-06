@@ -4,6 +4,7 @@ from carts.models import ProformaInvoice
 from carts.forms import ProformaInvoiceForm
 from xindeng import settings
 from accounts.data import COUNTRY_CODE, CURRENCY_SYMBOL, INTEGER_CURRENCIES
+from core.policies import BANK_HOLD_HOURS
 from accounts.models import CustomerVoucher, Perk
 from accounts.evaluators import PerkEvaluator
 from .models import Payment, Order, OrderProduct, OrderVoucherUsage
@@ -125,7 +126,7 @@ def place_order(request, proforma_invoice_no):
                     messages.error(request, "Bank transfer is only available for HKD/CNY.｜銀行轉帳僅支援港幣與人民幣。")
                     return redirect("place_order", proforma_invoice_no=proforma_invoice_no)
 
-                expiry_time = timezone.now() + timedelta(hours=72)
+                expiry_time = timezone.now() + timedelta(hours=BANK_HOLD_HOURS)
                 # expiry_time = timezone.now() + timedelta(minutes=60)
                 # expiry_time = timezone.now() + timedelta(seconds=30)
 

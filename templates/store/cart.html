@@ -41,7 +41,7 @@
      
     <!-- MAIN -->
     <main class="w-full max-w-[1380px] mx-auto px-[max(0.5rem,3vw)] xl:px-[max(2.5rem,8vw)] pt-6 md:pt-10 pb-20 min-h-[calc(100dvh-200px)] bg-base-50/20">
-
+        <div class="w-full max-w-4xl mx-auto relative z-10">
         <!-- progress -->
         {% if cart_items %}
         <div class="w-full max-w-4xl mx-auto px-1 sm:px-4 mt-2 sm:mt-4 mb-8 select-none overflow-hidden">
@@ -104,31 +104,27 @@
         <!-- details -->
         <div id="cart-page-container" class="w-full space-y-8 mt-6">
             
-            <!-- 🌐 LAYER 1: COUPLED UPPER CANVAS (Cart List + Costs Matrix Side-by-Side) -->
-            <!-- Flex-wraps vertically on mobile, changing into a tight column layout at 768px (md) -->
-            <div class="flex flex-col md:grid md:grid-cols-3 gap-4 lg:gap-6 xl:gap-8 items-start w-full max-[767px]:mb-0">
-                
-                <!-- LEFT PILLAR: PRODUCT DATA TRACK -->
-                <div class="w-full min-w-0 md:col-span-2 space-y-4">
+            <!-- 🌐 LAYER 1: COUPLED UPPER CANVAS (Cart List + Costs Matrix) -->
+            <div class="w-full space-y-8">
+                <!-- CART -->
+                <div class="w-full min-w-0 space-y-4">
                     <!-- Cart Section Title Label -->
                     {% if cart_items %}
                     <h2 class="text-sm min-[400px]:text-base md:text-[0.85rem] lg:text-base font-bold tracking-tight text-base-content/90 mb-3 select-none">
                         Cart｜購物車
                     </h2>
                     {% endif %}
-
+    
                     <!-- Cart Dynamic Row Partial Target Box Block -->
                     <div id="cart_item_list_container" class="w-full">
                         {% include 'store/partials/cart_item_row.html' %}
                     </div>
                 </div>
 
-                <!-- RIGHT PILLAR: COSTS CALCULATIONS STICKY SIDEBAR -->
-                <!-- Pushes naturally beneath items on mobile (<md), but locks as a sticky column next to the items at >=md -->
-                <div id="payment_calculation_section" class="w-full relative z-10 md:sticky md:top-24 h-auto shrink-0 mt-6 md:mt-0">
+                <!-- COSTS CALCULATIONS STICKY SIDEBAR -->
+                <div id="payment_calculation_section" class="w-full relative z-10 h-auto">
                     {% include 'store/partials/costs_calculations.html' %}
                 </div>
-
             </div>
 
             <!-- 🌐 LAYER 2: LOWER FULL-WIDTH CANVAS (Wishlist Row Follows Underneath Both) -->
@@ -143,6 +139,7 @@
                 </div>
             </div>
             {% endif %}
+        </div>
         </div>
     </main>
      

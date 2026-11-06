@@ -1,7 +1,14 @@
 # carts/utils.py
 import math
 from decimal import Decimal, InvalidOperation
-from accounts.data import DESTINATIONS_GLOBAL, INTEGER_CURRENCIES
+from accounts.data import DESTINATIONS_GLOBAL, INTEGER_CURRENCIES, DESTINATIONS_GREATER_CHINA, DESTINATIONS_MAINLAND_CHINA, CURRENCY_SYMBOL
+from core.currency import (
+    quantize_amount,
+    format_fx_value,
+    foreign_symbol,
+    foreign_format,
+)
+from core.policies import RATE_LOCK_HOURS, VOUCHER_LOCK_MINUTES, PERK_LOCK_MINUTES
 from accounts.models import Address, CustomerVoucher, Perk, CustomerVoucher, UserPerk
 from .models import ShippingCharge, CartItem
 from store.models import ProductVariation
@@ -11,7 +18,6 @@ from django.shortcuts import render
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.defaultfilters import floatformat
 from django.template.loader import render_to_string
-from accounts.data import CURRENCY_SYMBOL
 from django.http import HttpResponse
 from django.db.models import F, Sum, Q
 from channels.layers import get_channel_layer
@@ -21,7 +27,6 @@ from orders.utils import get_current_rate
 from django.utils import timezone
 import time
 from datetime import timedelta
-from accounts.data import DESTINATIONS_GLOBAL, DESTINATIONS_GREATER_CHINA, DESTINATIONS_MAINLAND_CHINA, CURRENCY_SYMBOL
 from accounts.evaluators import PerkEvaluator
 from django.db import transaction
 import socket
@@ -371,12 +376,21 @@ def update_header_cart_summary(cart):
 
 
 def calculate_foreign_amount(request, cny_amount):
-    foreign_currency_code = request.COOKIES.get('user_currency', 'HKD')
-    foreign_currency_symbol = CURRENCY_SYMBOL[foreign_currency_code]
-    is_integer = True if foreign_currency_code in INTEGER_CURRENCIES else False
-    locked_rate = request.session.get('locked_rate')
-    formatted_foreign = intcomma(f"{(cny_amount * Decimal(str(locked_rate).replace(",", ""))):.0f}") if is_integer else intcomma(f"{(cny_amount * Decimal(str(locked_rate).replace(",", ""))):.2f}")
-    return foreign_currency_symbol, formatted_foreign
+    """
+    Convert a CNY amount to the session's display currency.
+
+    Delegates to core.currency.foreign_format so the ROUND_HALF_UP rule
+    matches CartItem.get_subtotal_foreign and the product-page display.
+    Previously this used Python's format() (banker's rounding), which
+    disagreed with get_subtotal_foreign at the .xx5 boundary — a cart
+    could show HK$ 98.53 for the line item and HK$ 98.52 for the same
+    figure in the summary. See the 2026-11-06 design discussion.
+    """
+    foreign_currency_code = request.COOKIES.get("user_currency", "HKD")
+    foreign_currency_symbol = foreign_symbol(foreign_currency_code)
+    locked_rate = request.session.get("locked_rate")
+    converted = Decimal(str(cny_amount)) * Decimal(str(locked_rate).replace(",", ""))
+    return foreign_currency_symbol, foreign_format(converted, foreign_currency_code)
 
 
 # def get_row_oob(row_id, label_en, label_zh, id_local, id_foreign, amount=0.00, amount_foreign=0.00, symbol="", is_integer=False, show=True):
@@ -457,7 +471,7 @@ def get_cash_voucher_detailed_balance(request):
     # 💡 FIX: Safely read the session key string. If it doesn't exist yet, 
     # fall back to an empty string to prevent recursive database row writes.
     current_session_key = request.session.session_key or ""
-    fifteen_minutes_ago = timezone.now() - timezone.timedelta(minutes=15)
+    fifteen_minutes_ago = timezone.now() - timezone.timedelta(minutes=VOUCHER_LOCK_MINUTES)
 
     # 1. Calculate the raw pool of available vouchers in their wallet
     available_vouchers = CustomerVoucher.objects.filter(
@@ -578,23 +592,6 @@ def get_grand_total_before_voucher(request, cart):
     return grand_total_cny, grand_total_foreign
 
 
-def get_currency_precision(currency_code: str) -> int:
-    return 0 if currency_code.upper() in INTEGER_CURRENCIES else 2
-
-
-def quantize_amount(value: Decimal, currency_code: str) -> Decimal:
-    precision = get_currency_precision(currency_code)
-    decimal_val = Decimal(str(value).replace(",", ""))
-    if precision == 0:
-        return decimal_val.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
-    return decimal_val.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-
-def format_fx_value(value: Decimal, currency_code: str) -> str:
-    precision = get_currency_precision(currency_code)
-    return intcomma(f"{value:.{precision}f}")
-
-
 def update_total_payable(request, cart):
     """
     Component-by-Component Summation Ledger.
@@ -656,7 +653,7 @@ def update_total_payable(request, cart):
 
     total_due_html = f'''
         <span id="total_payable_amount" hx-swap-oob="true">¥ {formatted_net_total_payable}</span>
-        <span id="total_payable_amount_foreign" style="text-shadow: 2px 2px 0px rgb(244, 252, 1);" hx-swap-oob="true" class="font-mono text-xs min-[576px]:max-[767px]:text-[16px] min-[768px]:max-[960px]:text-[11px] min-[961px]:text-[13px] font-black text-primary tracking-tight block">
+        <span id="total_payable_amount_foreign" style="text-shadow: 2px 2px 0px rgb(244, 252, 1);" hx-swap-oob="true" class="font-mono text-sm min-[576px]:max-[767px]:text-[18px] min-[768px]:max-[960px]:text-[13px] min-[961px]:text-[15px] font-black text-primary tracking-tight block">
             {foreign_currency_symbol} {formatted_net_total_payable_foreign}
         </span>
     '''
@@ -710,7 +707,7 @@ def get_or_lock_checkout_rate(request, currency_code):
         
         # Give it the standard 24-hour expiry footprint so JavaScript timers don't crash
         current_time_ms = int(time.time() * 1000)
-        request.session['rate_expiry_timestamp'] = current_time_ms + (24 * 60 * 60 * 1000)
+        request.session['rate_expiry_timestamp'] = current_time_ms + (RATE_LOCK_HOURS * 60 * 60 * 1000)
         request.session.modified = True
         return Decimal("1.0000")
 
@@ -724,7 +721,7 @@ def get_or_lock_checkout_rate(request, currency_code):
     
     if locked_rate and locked_at:
         lock_time = timezone.datetime.fromisoformat(locked_at)
-        if timezone.now() > lock_time + timedelta(hours=24):
+        if timezone.now() > lock_time + timedelta(hours=RATE_LOCK_HOURS):
             refresh_needed = True
 
     if refresh_needed:
@@ -745,7 +742,7 @@ def get_or_lock_checkout_rate(request, currency_code):
         request.session['locked_currency_code'] = currency_code
 
         current_time_ms = int(time.time() * 1000)
-        request.session['rate_expiry_timestamp'] = current_time_ms + (24 * 60 * 60 * 1000)
+        request.session['rate_expiry_timestamp'] = current_time_ms + (RATE_LOCK_HOURS * 60 * 60 * 1000)
         request.session.modified = True
         locked_rate = Decimal(str(new_rate)).quantize(
             Decimal('0.0001'), rounding=ROUND_HALF_UP

@@ -7,6 +7,8 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import Http404, JsonResponse, FileResponse, HttpResponse
 from carts.models import Cart, CartItem
 from carts.views import _cart_id
+from carts.utils import get_currency_format, get_or_lock_checkout_rate
+from core.currency import foreign_symbol
 from django.contrib.sites.shortcuts import get_current_site
 from taggit.models import Tag
 from decimal import Decimal
@@ -29,6 +31,7 @@ from creators.models import CreatorProfile
 from core.image_utils import safe_image_url
 from django.views.decorators.http import require_POST, require_GET
 from accounts.decorators import superuser_required
+from core.policies import DOWNLOAD_TOKEN_CUSTOM_HOURS
 from .tasks import (
     send_product_review_result_email_task,
     send_vault_upload_rejected_email_task,
@@ -115,6 +118,10 @@ def products(request, category_slug=None):
         id__in=[c.id for c in sidebar_reviews]
     ).select_related('user__profile').prefetch_related('content_object').order_by('-created_at')
 
+    is_integer, foreign_currency_code = get_currency_format(request)
+    locked_rate = get_or_lock_checkout_rate(request, foreign_currency_code)
+    foreign_currency_symbol = foreign_symbol(foreign_currency_code)
+
     context = {
         "category": category_slug,
         "available_products": paged_products,
@@ -132,6 +139,11 @@ def products(request, category_slug=None):
         "bread_crumb_3_url": f"/store/products/{category_slug}",
         "available_tags": available_tags,
         "product_reviews": product_reviews,
+        "foreign_currency_code": foreign_currency_code,
+        "foreign_currency_symbol": foreign_currency_symbol,
+        "is_integer": is_integer,
+        "locked_rate": locked_rate,
+        "show_foreign_price": foreign_currency_code != "CNY",
     }
 
     if request.headers.get('HX-Request'):
@@ -220,6 +232,10 @@ def product(request, category_slug, product_slug):
     # Flag for template: Can only review if purchased AND not already reviewed
     user_can_review_flag = has_purchased_product_flag and not has_already_reviewed_flag
 
+    is_integer, foreign_currency_code = get_currency_format(request)
+    locked_rate = get_or_lock_checkout_rate(request, foreign_currency_code)
+    foreign_currency_symbol = foreign_symbol(foreign_currency_code)
+
     context = {
         "single_product": single_product,
         "variations": variations,
@@ -250,6 +266,12 @@ def product(request, category_slug, product_slug):
         "bread_crumb_4": single_product.product_name,
         "bread_crumb_1_url": "/",
         "bread_crumb_2_url": "/store/products/all",
+
+        "foreign_currency_code": foreign_currency_code,
+        "foreign_currency_symbol": foreign_currency_symbol,
+        "is_integer": is_integer,
+        "locked_rate": locked_rate,
+        "show_foreign_price": foreign_currency_code != "CNY",
     }
     return render(request, 'store/product.html', context)
 
@@ -719,7 +741,7 @@ def review_vault_upload_approve(request, upload_id):
                     # cancellation-window shape). See the CUSTOM pipeline v2
                     # handoff, and the email-template branch that must move with
                     # this call.
-                    issue_download_token(locked_order_product, ttl_hours=8760)
+                    issue_download_token(locked_order_product, ttl_hours=DOWNLOAD_TOKEN_CUSTOM_HOURS)
                 else:
                     locked_variation.digital_file_path = new_pointer
                     locked_variation.save(

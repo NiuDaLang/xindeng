@@ -1,5 +1,7 @@
 <!-- templates/store/partials/_products_region.html -->
 {% load humanize %}
+{% load currency_extras %}
+
 <!-- 🌟 FILTERED BY ARTISAN BANNER -->
 {% if active_creator %}
 <!-- Banner -->
@@ -69,7 +71,14 @@
             </h3>
             <p class="text-xs sm:text-sm opacity-70 line-clamp-2 mb-3">{{ product.description }}</p>
             <div class="card-actions justify-between items-center mt-auto">
-                <span class="text-lg sm:text-xl font-bold">CNY {{ product.lowest_price|floatformat:2|intcomma }} ~</span>
+                <div class="flex flex-col">
+                    <span class="text-lg sm:text-xl font-bold">CNY {{ product.lowest_price|floatformat:2|intcomma }} ~</span>
+                    {% if show_foreign_price %}
+                    <span class="text-[10px] sm:text-[11px] font-mono opacity-60 -mt-0.5">
+                        ≈ {{ foreign_currency_symbol }} {% to_foreign product.lowest_price locked_rate foreign_currency_code %} ~
+                    </span>
+                    {% endif %}
+                </div>
                 <a href="{{ product.get_url }}" class="btn btn-primary btn-sm">View｜查看</a>
             </div>
         </div>
@@ -80,6 +89,14 @@
     </div>
     {% endfor %}
 </div>
+
+{% if show_foreign_price and rate_state %}
+<p class="text-[10px] text-base-content/40 text-center mt-6 select-none">
+    Exchange rate pinned {{ rate_state.locked_at_display }} · valid until {{ rate_state.expires_at_display }}
+    <br>
+    匯率鎖定於 {{ rate_state.locked_at_display }} · 有效期至 {{ rate_state.expires_at_display }}
+</p>
+{% endif %}
 
 <!-- pagination -->
 <div class="w-full text-center my-[5rem]">

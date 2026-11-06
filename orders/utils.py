@@ -1,6 +1,7 @@
 # orders/utils.py
 from django.core.cache import cache
 from accounts.data import DEFAULT_EXCHANGE_RATE_VS_CNY, INTERNAL_CURRENCY_ADJUSTMENT, CURRENCY_SYMBOL, INTEGER_CURRENCIES
+from core.policies import DOWNLOAD_TOKEN_INSTANT_HOURS
 from decimal import Decimal, ROUND_HALF_UP
 from .models import Order, OrderProduct
 from carts.models import ProformaInvoice
@@ -1149,7 +1150,7 @@ def get_paypal_items(cart_items, foreign_currency_code, locked_rate, cart_total_
     }
 
 
-def issue_download_token(order_product, *, ttl_hours=168):
+def issue_download_token(order_product, *, ttl_hours=DOWNLOAD_TOKEN_INSTANT_HOURS):
     """
     Create a DigitalDownloadToken for an instant-digital OrderProduct,
     register the post-commit notification email, and mark the line as

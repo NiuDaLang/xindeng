@@ -2,6 +2,7 @@
 from django.db import models
 from accounts.models import Account
 from accounts.data import DESTINATIONS_FOR_INPUT
+from core.policies import EPRODUCT_CANCEL_WINDOW_DAYS
 from django.core.validators import MinValueValidator
 from store.models import ProductVariation, Product
 from carts.models import ProformaInvoice
@@ -315,7 +316,7 @@ class Order(models.Model):
             elif product.is_digital and product.digital_fulfillment_type == 'INSTANT' and not product.is_voucher:
                 if item.is_claimed:
                     return False, decimal.Decimal('0.00'), f"Digital item '{product.product_name} {product_variation.get_sku()}' has already been claimed. / 數位產品已下載領取，無法取消。"
-                if (now - self.created_at).days > 7:
+                if (now - self.created_at).days > EPRODUCT_CANCEL_WINDOW_DAYS:
                     return False, decimal.Decimal('0.00'), "The 7-day digital download window has expired. / 已超過 7 天數位產品鑑賞期限制。"
 
             # 🌟 STEP C: Unused voucher item validation traces

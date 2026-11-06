@@ -1,42 +1,10 @@
-# from .models import Category
-# from carts.models import Cart, CartItem
-# from carts.views import _cart_id
-# from django.contrib.humanize.templatetags.humanize import intcomma
-
-
-# def menu_links(request):
-#     links = Category.objects.all()
-#     return dict(links=links)
-
-
-# def cart_item_count(request):
-#     user = request.user if request.user.is_authenticated else None
-#     try:
-#         if user:
-#             cart = Cart.objects.get(user=user) if Cart.objects.filter(user=user) else Cart.objects.create(cart_id=_cart_id(request), user=user)
-#         else:
-#             cart = Cart.objects.get(cart_id=_cart_id(request)) if Cart.objects.filter(cart_id=_cart_id(request)) else Cart.objects.create(cart_id=_cart_id(request))
-#         cart_items = CartItem.objects.filter(cart=cart, is_active=True).order_by(
-#             '-product_variation__product__is_physical', # True (1) before False (0)
-#             'product_variation__product__is_voucher',  # False (0) before True (1)
-#             'product_variation__product__product_name' # Alphabetical within groups
-#         )
-        
-#         quantity = cart.get_items_count()
-#         cart_total = cart.get_cart_total()
-#         cart_total = intcomma(f"{cart_total:.2f}")
-
-#     except CartItem.DoesNotExist:
-#         quantity = 0
-#         cart_total = intcomma(f"{0:.2f}")
-
-#     return dict(cart_total=cart_total, item_count=quantity, current_cart_items=cart_items)
-
-
-# context_processors.py
+# category/context_processors.py
 from .models import Category
 from carts.models import Cart, CartItem
 from carts.views import _cart_id
+from carts.utils import get_currency_format, get_or_lock_checkout_rate
+from core.currency import foreign_format, foreign_symbol
+from decimal import Decimal
 
 
 def menu_links(request):
@@ -65,12 +33,31 @@ def cart_item_count(request):
             quantity = cart.get_items_count()
             cart_total_value = cart.get_cart_total()
 
-
     except Exception as e:
         print(f"[Context Processor Exception] Global Cart Sync Failed: {str(e)}")
         quantity = 0
         cart_total_value = 0.00
         cart_items = []
 
+    try:
+        is_integer, code = get_currency_format(request)
+        rate = request.session.get("locked_rate")
+        if rate and code and code != "CNY":
+            cny_total = Decimal(str(cart_total_value).replace(",", ""))
+            header_cart_total_foreign = foreign_format(cny_total * Decimal(str(rate)), code)
+            foreign_currency_symbol = foreign_symbol(code)
+        else:
+            header_cart_total_foreign = None
+            foreign_currency_symbol = None
+    except Exception:
+        header_cart_total_foreign = None
+        foreign_currency_symbol = None
+
     # 💡 CHANGE THE KEY NAME HERE TO AVOID CHEKOUT VIEW CLASHES
-    return dict(header_cart_total=cart_total_value, item_count=quantity, current_cart_items=cart_items)
+    return dict(
+        item_count=quantity, 
+        header_cart_total=cart_total_value, 
+        current_cart_items=cart_items,
+        header_cart_total_foreign=header_cart_total_foreign,
+        foreign_currency_symbol=foreign_currency_symbol,
+    )

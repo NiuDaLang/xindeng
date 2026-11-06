@@ -6,6 +6,7 @@ from django.core.validators import MinValueValidator
 from store.models import ProductVariation
 from decimal import Decimal, ROUND_HALF_UP
 from django.contrib.humanize.templatetags.humanize import intcomma
+from core.currency import quantize_amount
 
 
 # Create your models here.
@@ -111,22 +112,14 @@ class CartItem(models.Model):
 
     def get_subtotal_foreign(self, currency_code, exchange_rate):
         """
-        Locks down line-item foreign currency precision at the atomic source.
-        Truncates/Rounds early to treat foreign totals exactly like native CNY.
+        The line-item's foreign subtotal.
+
+        Delegates to core.currency.quantize_amount so the ROUND_HALF_UP
+        rule is one source of truth across the cart and the product
+        display. See the 2026-11-06 design discussion.
         """
-        is_integer = currency_code.upper() in INTEGER_CURRENCIES
         rate_decimal = Decimal(str(exchange_rate))
-        
-        # Calculate raw aggregate conversion for this specific line item block
-        raw_foreign_subtotal = self.subtotal * rate_decimal
-        
-        # Enforce your standardized truncation/rounding rule safely
-        if is_integer:
-            # For integer-only currencies like JPY, truncate fractions immediately
-            return raw_foreign_subtotal.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
-        else:
-            # For standard currencies, cut off everything past the 2nd decimal place
-            return raw_foreign_subtotal.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return quantize_amount(self.subtotal * rate_decimal, currency_code)
     
 
 class ShippingCharge(models.Model):

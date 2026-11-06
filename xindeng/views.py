@@ -11,6 +11,8 @@ from creators.models import CreatorProfile
 from creators.utils import get_search_variants
 from core.image_utils import safe_image_url
 from django.http import HttpResponse
+from carts.utils import get_currency_format, get_or_lock_checkout_rate
+from core.currency import foreign_symbol
 
 
 def home(request):
@@ -74,12 +76,22 @@ def home(request):
             "featured_image": image_url,
             "url": post.get_url(),
         }
+
+    is_integer, foreign_currency_code = get_currency_format(request)
+    locked_rate = get_or_lock_checkout_rate(request, foreign_currency_code)
+    foreign_currency_symbol = foreign_symbol(foreign_currency_code)
+
     context = {
         "page_title": "Home｜首頁",
         "featured_products": featured_products,
         "absolute_url": absolute_url,
         "posts": posts,
         "posts_json": posts_json,
+        "foreign_currency_code": foreign_currency_code,
+        "foreign_currency_symbol": foreign_currency_symbol,
+        "is_integer": is_integer,
+        "locked_rate": locked_rate,
+        "show_foreign_price": foreign_currency_code != "CNY",
     }
     return render(request, 'home.html', context)
 

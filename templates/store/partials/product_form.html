@@ -1,6 +1,8 @@
-<!-- ptemplates/store/partials/roduct_form.html -->
+<!-- ptemplates/store/partials/product_form.html -->
 {% load static %}
 {% load humanize %}
+{% load currency_extras %}
+
 <div id="product-purchase-panel" 
      class="w-full h-full transition-all duration-300"
      data-is-resolved-sku="{{ is_resolved_sku|yesno:'true,false' }}"
@@ -16,7 +18,12 @@
                 {{ single_product.product_name }}
             </h2>
             <div class="w-full font-mono font-extrabold text-left text-[1rem] xs:text-[1.25rem] sm:text-2xl text-primary tracking-tight">
-                <span class="text-[0.6rem] xs:text-[0.675rem] sm:text-xs font-semibold opacity-80 mr-0.5">CNY</span>{{ displayed_price|floatformat:2|intcomma }}<span>{% if not only_one_variation and not is_resolved_sku %}~{% endif %}</span>
+                <span class="text-[0.6rem] xs:text-[0.675rem] sm:text-xs font-semibold opacity-80 mr-0.5">CNY </span>{{ displayed_price|floatformat:2|intcomma }}<span>{% if not only_one_variation and not is_resolved_sku %} ~{% endif %}</span>
+                {% if show_foreign_price %}
+                <div class="text-[11px] sm:text-[13px] font-mono text-base-content/60 mt-0.5">
+                    ≈ {{ foreign_currency_symbol }} {% to_foreign displayed_price locked_rate foreign_currency_code %}<span>{% if not only_one_variation and not is_resolved_sku %} ~{% endif %}</span>
+                </div>
+                {% endif %}
             </div>
         </div>
 

@@ -9,6 +9,9 @@ from accounts.models import UserProductList
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from accounts.data import DESTINATIONS_GLOBAL, DESTINATIONS_GREATER_CHINA, DESTINATIONS_MAINLAND_CHINA, CURRENCIES, CURRENCY_SYMBOL
+from core.currency import foreign_symbol
+from core.policies import RATE_LOCK_HOURS, VOUCHER_LOCK_MINUTES, PERK_LOCK_MINUTES
+
 import json
 import re
 from sqids import Sqids
@@ -332,6 +335,10 @@ def select_variation_htmx(request):
     product_content_type = ContentType.objects.get_for_model(single_product)
     reviews_list = Comment.objects.filter(content_type=product_content_type, object_id=single_product.id, is_approved=True)
 
+    is_integer, foreign_currency_code = get_currency_format(request)
+    locked_rate = get_or_lock_checkout_rate(request, foreign_currency_code)
+    foreign_currency_symbol = foreign_symbol(foreign_currency_code)
+
     context = {
         "single_product": single_product,
         "variations": variations,
@@ -352,6 +359,12 @@ def select_variation_htmx(request):
 
         "has_purchased_product_flag": check_user_has_purchased_product(request.user, single_product.id),
         "reviews_list": reviews_list,
+
+        "foreign_currency_code": foreign_currency_code,
+        "foreign_currency_symbol": foreign_currency_symbol,
+        "is_integer": is_integer,
+        "locked_rate": locked_rate,
+        "show_foreign_price": foreign_currency_code != "CNY",
     }
 
     # Render out-of-band and inner template blocks cleanly
@@ -442,6 +455,10 @@ def add_to_cart_htmx(request):
         {"href": safe_image_url(product_var.images), "title": product_var.get_sku()},
     )
 
+    is_integer, foreign_currency_code = get_currency_format(request)
+    locked_rate = get_or_lock_checkout_rate(request, foreign_currency_code)
+    foreign_currency_symbol = foreign_symbol(foreign_currency_code)
+
     context = {
         "single_product": single_product,
         "variations": variations,
@@ -457,6 +474,11 @@ def add_to_cart_htmx(request):
         "active_filters": active_filters,
         "current_main_image": safe_image_url(product_var.images),
         "product_gallery": gallery_list,
+        "foreign_currency_code": foreign_currency_code,
+        "foreign_currency_symbol": foreign_currency_symbol,
+        "is_integer": is_integer,
+        "locked_rate": locked_rate,
+        "show_foreign_price": foreign_currency_code != "CNY",
     }
 
     right_panel_html = render_to_string('store/partials/product_form.html', context, request=request)
@@ -2117,7 +2139,7 @@ def checkout(request):
                     ).first()
                     
                     if up_perk:
-                        fifteen_minutes_ago = timezone.now() - timezone.timedelta(minutes=15)
+                        fifteen_minutes_ago = timezone.now() - timezone.timedelta(minutes=PERK_LOCK_MINUTES)
                         
                         # 💡 STEP 2: Safe In-Memory Validation Pass.
                         # Verify if a different session holds an unexpired lock on this specific row.
@@ -2167,7 +2189,7 @@ def checkout(request):
 
             if user.is_authenticated and target_voucher_lock > 0:
                 with transaction.atomic():
-                    fifteen_minutes_ago = timezone.now() - timezone.timedelta(minutes=15)
+                    fifteen_minutes_ago = timezone.now() - timezone.timedelta(minutes=VOUCHER_LOCK_MINUTES)
                     
                     # Fetch all unspent voucher rows under an exclusive database write lock
                     vouchers_to_lock = CustomerVoucher.objects.select_for_update().filter(
