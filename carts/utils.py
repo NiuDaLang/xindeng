@@ -290,7 +290,7 @@ def handle_perk_status(request, status, cart, code, perk, formatted_min_spend, o
                 discount_amount = Decimal('0.00')
 
             is_integer, currency_code = get_currency_format(request)
-            rate = Decimal(str(request.session.get('locked_rate', '1.0000')).replace(",", ""))
+            rate = _get_rate_for_request(request, currency_code)
             fx_offer = quantize_amount(discount_amount * rate, currency_code)
 
             # 2. 💡 THE FIX: Map 'is_oob': True to trigger the template's dynamic hx-swap-oob attribute!
@@ -388,7 +388,7 @@ def calculate_foreign_amount(request, cny_amount):
     """
     foreign_currency_code = request.COOKIES.get("user_currency", "HKD")
     foreign_currency_symbol = foreign_symbol(foreign_currency_code)
-    locked_rate = request.session.get("locked_rate")
+    locked_rate = _get_rate_for_request(request, foreign_currency_code)
     converted = Decimal(str(cny_amount)) * Decimal(str(locked_rate).replace(",", ""))
     return foreign_currency_symbol, foreign_format(converted, foreign_currency_code)
 
@@ -531,6 +531,13 @@ def update_applied_voucher(request, cart):
     if not cart or cart.get_items_count() == 0:
         return ""
 
+    # Pin before get_grand_total_before_voucher reads the rate.
+    # update_applied_voucher is called from update_costs_oobs, which
+    # runs before update_total_payable — so without this the voucher
+    # OOB is one currency behind on the request that follows a switch.
+    _, foreign_currency_code = get_currency_format(request)
+    _get_rate_for_request(request, foreign_currency_code)
+
     voucher_applied = Decimal(str(request.session.get("applied_voucher", {}).get("applied_voucher_amount", 0)).replace(",", ""))
     voucher_balance = get_cash_voucher_balance(request)
     new_total_payable, new_total_payable_foreign = get_grand_total_before_voucher(request, cart)
@@ -574,7 +581,7 @@ def update_applied_voucher(request, cart):
 def get_grand_total_before_voucher(request, cart):
     """Computes absolute raw transactional limits using numeric Decimals."""
     is_integer, foreign_currency_code = get_currency_format(request)
-    rate = Decimal(str(request.session.get('locked_rate', '1.0000')).replace(",", ""))
+    rate = _get_rate_for_request(request, foreign_currency_code)
 
     cart_total_ex_voucher = Decimal(str(cart.get_cart_total_ex_voucher()).replace(",", ""))
     
@@ -603,7 +610,7 @@ def update_total_payable(request, cart):
 
     is_integer, foreign_currency_code = get_currency_format(request)
     foreign_currency_symbol = CURRENCY_SYMBOL.get(foreign_currency_code, '$')
-    rate = Decimal(str(request.session.get('locked_rate', '1.0000')).replace(",", ""))
+    rate = _get_rate_for_request(request, foreign_currency_code)
     
     def get_clean_decimal_from_session(key, nested_key):
         raw_val = request.session.get(key, {}).get(nested_key, 0)
@@ -764,6 +771,32 @@ def get_or_lock_checkout_rate(request, currency_code):
     return locked_rate
 
 
+def _get_rate_for_request(request, currency_code):
+    """
+    Return the session-pinned rate for currency_code, pinning first if
+    this request has not yet pinned one.
+
+    Every foreign-amount helper in this module goes through this — do
+    not read session['locked_rate'] directly anywhere below. The old
+    pattern (read session, no pin) let a currency switch on one view
+    leave the next request's totals one currency behind, because the
+    write to session['locked_rate'] happens inside
+    get_or_lock_checkout_rate and nothing else. See gotcha 81 and the
+    3f-bis-followup-8a design discussion.
+
+    Re-entry is safe: get_or_lock_checkout_rate is idempotent within a
+    request (it writes the same session values on every call when the
+    pin is current) and cheap when no refresh is needed.
+
+    currency_code is uppercased inside get_or_lock_checkout_rate, so
+    callers can pass the request-scoped code (from get_currency_format)
+    unchanged. Callers that name their local variable currency_code
+    rather than foreign_currency_code (update_offer, update_cart_totals)
+    pass that name; the helper accepts either.
+    """
+    return get_or_lock_checkout_rate(request, currency_code)
+
+
 def update_shipping_cost(request, cart):
     print("update_shipping_cost triggered")
     if not cart or cart.get_items_count() == 0:
@@ -781,6 +814,13 @@ def update_shipping_cost(request, cart):
 
     # Fetch currency format configurations safely
     is_integer, foreign_currency_code = get_currency_format(request)
+
+    # Pin the rate for this request before anything below reads it.
+    # update_shipping_cost is called from update_costs_oobs (which
+    # does not pin) and update_cart_item_qty (which does not pin), so
+    # without this the shipping foreign figure is one currency behind
+    # after a switch. See _get_rate_for_request's docstring.
+    _get_rate_for_request(request, foreign_currency_code)
 
     # IF SHIPPING COST WAS CALCULATED PREVIOUSLY
     if shipping_data and shipping_data.get("is_calculated"):
@@ -1030,7 +1070,7 @@ def update_offer(request, cart):
     
     is_integer, currency_code = get_currency_format(request)
     foreign_currency_symbol = CURRENCY_SYMBOL.get(currency_code, '$')
-    rate = Decimal(str(request.session.get('locked_rate', '1.0000')).replace(",", ""))
+    rate = _get_rate_for_request(request, currency_code)
 
     # If no coupon code is active, return clean empty strings
     if not code:
@@ -1305,7 +1345,7 @@ def update_cart_totals(request, updated_cart_items, cart):
         
     is_integer, currency_code = get_currency_format(request)
     symbol = CURRENCY_SYMBOL.get(currency_code, '$')
-    rate = Decimal(str(request.session.get('locked_rate', '1.0000')).replace(",", ""))
+    rate = _get_rate_for_request(request, currency_code)
 
     has_physical_items = updated_cart_items.filter(product_variation__product__is_physical=True).exists()
     has_e_items = updated_cart_items.filter(product_variation__product__is_physical=False, product_variation__product__is_voucher=False).exists()

@@ -1179,7 +1179,7 @@ def update_cart_item_qty(request, item_id):
     
     is_integer, foreign_currency_code = get_currency_format(request)
     foreign_currency_symbol = CURRENCY_SYMBOL.get(foreign_currency_code, '$')
-    locked_rate = request.session.get('locked_rate', '1.0000')
+    locked_rate = get_or_lock_checkout_rate(request, foreign_currency_code)
     
     oob_updates, triggers = update_costs_oobs(request, cart, is_integer, foreign_currency_code, foreign_currency_symbol, locked_rate)
     
@@ -1461,7 +1461,7 @@ def delete_cart_item(request, item_id):
 
     is_integer, foreign_currency_code = get_currency_format(request)
     foreign_currency_symbol = CURRENCY_SYMBOL.get(foreign_currency_code, '$')
-    locked_rate = request.session.get('locked_rate', '1.0000')
+    locked_rate = get_or_lock_checkout_rate(request, foreign_currency_code)
 
     htmx_htmls = []
     triggers = {}
@@ -1612,7 +1612,7 @@ def add_to_wishlist(request, item_id):
 
     is_integer, foreign_currency_code = get_currency_format(request)
     foreign_currency_symbol = CURRENCY_SYMBOL.get(foreign_currency_code, '$')
-    locked_rate = request.session.get('locked_rate', '1.0000')
+    locked_rate = get_or_lock_checkout_rate(request, foreign_currency_code)
 
     final_oob_fragments = []
     triggers = {}
