@@ -396,12 +396,28 @@
 
                     <table class="w-full bg-transparent border-collapse table-fixed">
                         <thead>
+                            <!--
+                                Two-line header matching store/partials/cart_summary.html's register: label line, then currency-code line. 
+                                The cart's header is the reference shape (see the 2026-11-06 handoff and the checkout/cart alignment session). 
+                                The second (currency) row is dashed-bordered, matching the cart's currency-chip row, so the visual weight of
+                                "this is the payment column" reads before the amount columns do.
+
+                                Do NOT add a currency <select> here. The currency switcher lives in the header (header.html) and in the cart summary
+                                (costs_calculations.html). Duplicating it on checkout invites a session/rate-pin divergence — the checkout rate is pinned by
+                                get_or_lock_checkout_rate and must not be re-fetched mid-form.
+                            -->
                             <tr class="font-normal border-b border-base-100 select-none">
-                                <td class="w-[30%] py-1 text-left text-[10px] text-base-content/40 font-medium">Items｜項目</td>
-                                <td class="w-[28%] py-1 text-right font-semibold text-[10px] text-base-content/40 tracking-wider">CNY (¥)</td>
-                                <td class="w-[42%] py-1 text-right font-semibold text-[10px] text-primary/60 tracking-wider">{{ foreign_currency_code }}</td>
+                                <td class="w-[30%] py-1 text-left text-[10px] text-base-content/40 font-medium">Item<br>項目</td>
+                                <td class="w-[28%] py-1 text-right font-semibold text-[10px] text-base-content/40 tracking-wider">Amount<br>基準金額</td>
+                                <td class="w-[42%] py-1 text-right font-semibold text-[10px] text-primary/60 tracking-wider">Pay In<br>應付貨幣</td>
+                            </tr>
+                            <tr class="border-b border-dashed border-base-200/60 select-none">
+                                <th class="py-1.5 text-left"></th>
+                                <th class="py-1.5 text-right text-[10px] font-mono text-base-content/40 tracking-wide font-normal">CNY (¥)</th>
+                                <th class="py-1.5 text-right text-[10px] font-mono text-primary/60 tracking-wide font-normal">{{ foreign_currency_code }}</th>
                             </tr>
                         </thead>
+
                         <tbody>
                             <!-- Products Subtotal Row -->
                             <tr class="font-normal border-b border-base-50/60">
@@ -503,7 +519,7 @@
                                 <td class="py-3 text-left text-xs font-bold text-base-content/90 leading-tight pl-1 rounded-l-xl">
                                     Total Due<br><span class="text-[10px] font-normal text-base-content/40">應付總額</span>
                                 </td>
-                                <td class="py-3 text-right font-mono text-[11px] font-medium text-base-content/40 tracking-tight pr-1">
+                                <td class="py-3 text-right font-mono text-[11px] min-[576px]:max-[767px]:text-[13px] min-[768px]:max-[960px]:text-[9.5px] min-[961px]:text-[12px] font-medium text-base-content/60 tracking-tight pr-1">
                                     <span id="total_payable_amount" data-value="{% if cart_items|length != 0 %}{{ total_due }}{% else %}0.00{% endif %}" data-currency="CNY">
                                         ¥ {{ total_due|floatformat:2|intcomma|default:"0.00" }}
                                     </span>
@@ -512,7 +528,7 @@
                                     <!-- Guaranteed inline cross-browser text-shadow pop execution -->
                                     <span id="total_amount_foreign" data-value="{{ total_due_foreign }}" data-currency="{{ foreign_currency_code }}"
                                           style="text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.15);"
-                                          class="font-mono text-xs min-[576px]:max-[767px]:text-[16px] min-[768px]:max-[960px]:text-[11px] min-[961px]:text-[13px] font-black text-primary tracking-tight block">
+                                          class="font-mono text-sm min-[576px]:max-[767px]:text-[18px] min-[768px]:max-[960px]:text-[13px] min-[961px]:text-[15px] font-black text-primary tracking-tight block">
                                         {% if is_integer %}
                                             {{foreign_currency_symbol}} {{ total_due_foreign|floatformat:0|intcomma|default:"0" }}
                                         {% else %}
