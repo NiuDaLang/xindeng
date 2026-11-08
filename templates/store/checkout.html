@@ -534,7 +534,11 @@
                         <p id="locked_exchange_rate" data-value="{{ locked_exchange_rate|floatformat:4|intcomma }}" class="text-[10px] text-base-content/40 leading-relaxed font-medium">
                             * Exchange Rate｜兌換率：<span class="font-mono font-bold text-base-content/60">{{ locked_exchange_rate|floatformat:4|intcomma }}</span>
                             <br/>
-                            (Store Exchange Rate - Valid for 24hrs｜店內匯率 - 24小時有效)
+                            {% if rate_state.expires_at_display %}
+                                <span class="text-[10px]">(Valid until {{ rate_state.expires_at_display }} UTC｜有效至 {{ rate_state.expires_at_display }} UTC)</span>
+                            {% else %}
+                                <span class="text-[10px]">(Store Exchange Rate｜店內匯率)</span>
+                            {% endif %}
                         </p>
                     </div>
 
@@ -542,9 +546,13 @@
                         <div>
                             <i class="fa-solid fa-triangle-exclamation text-error text-sm shrink-0"></i>
                             <span>
-                                Exchange rate <strong>{{ locked_exchange_rate|floatformat:4|intcomma }}</strong> has expired. <a href="{% url 'cart' %}" class="underline font-bold hover:text-error-content">Back to cart</a> to recalculate.
+                                Exchange rate <strong>{{ locked_exchange_rate|floatformat:4|intcomma }}</strong> expired
+                                {% if rate_state.expires_at_display %}at {{ rate_state.expires_at_display }} UTC{% endif %}.
+                                <a href="{% url 'cart' %}" class="underline font-bold hover:text-error-content">Back to cart</a> to recalculate.
                                 <br>
-                                兌換率 <strong>{{ locked_exchange_rate|floatformat:4|intcomma }}</strong> 已失效。請<a href="{% url 'cart' %}" class="underline font-bold hover:text-error-content">返回購物車</a>重新計算。
+                                兌換率 <strong>{{ locked_exchange_rate|floatformat:4|intcomma }}</strong> 已於
+                                {% if rate_state.expires_at_display %}{{ rate_state.expires_at_display }} UTC{% endif %} 失效。
+                                請<a href="{% url 'cart' %}" class="underline font-bold hover:text-error-content">返回購物車</a>重新計算。
                             </span>
                         </div>
                     </div>

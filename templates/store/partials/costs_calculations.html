@@ -67,15 +67,18 @@
              </table>
          </div>
 
-         <!-- Exchange rate expiry warning -->
+         <!-- Exchange rate footnote -->
          <div id="forex_notes" class="mt-4 pt-3 border-t border-base-100 select-none">
              <p class="text-[10px] text-base-content/40 leading-relaxed font-medium">
                  *Exchange Rate｜兌換率：<span id="locked_exchange_rate" class="font-mono font-bold text-base-content/60">{{ locked_rate|floatformat:4|intcomma }}</span>
                  <br/>
-                 (Store Exchange Rate - Valid for 24hrs｜店內匯率 - 24小時有效)
+                 {% if rate_state.expires_at_display %}
+                     <span>(Valid until {{ rate_state.expires_at_display }} UTC｜有效至 {{ rate_state.expires_at_display }} UTC)</span>
+                 {% else %}
+                     <span>(Store Exchange Rate｜店內匯率)</span>
+                 {% endif %}
              </p>
          </div>
-
          <!-- The Overlay (hidden by default) -->
          <div id="price-overlay" class="hidden absolute inset-0 bg-base-100/80 backdrop-blur-[1px] z-10 flex items-center justify-center cursor-not-allowed select-none">
              <span class="bg-error/10 text-error px-3 py-1.5 rounded-xl border border-error/20 text-[10px] font-bold uppercase tracking-wider shadow-sm">
@@ -88,9 +91,13 @@
          <div>
              <i class="fa-solid fa-triangle-exclamation text-error text-sm shrink-0"></i>
              <span>
-                 Exchange rate <strong>{{ locked_rate|floatformat:4|intcomma }}</strong> has expired. <a href="." class="underline font-bold hover:text-error-content">Refresh page</a> to recalculate.
+                 Exchange rate <strong>{{ locked_rate|floatformat:4|intcomma }}</strong> expired
+                 {% if rate_state.expires_at_display %}at {{ rate_state.expires_at_display }} UTC{% endif %}.
+                 <a href="." class="underline font-bold hover:text-error-content">Refresh page</a> to recalculate.
                  <br>
-                 兌換率 <strong>{{ locked_rate|floatformat:4|intcomma }}</strong> 已失效。請<a href="." class="underline font-bold hover:text-error-content">更新頁面</a>重新計算。
+                 兌換率 <strong>{{ locked_rate|floatformat:4|intcomma }}</strong> 已於
+                 {% if rate_state.expires_at_display %}{{ rate_state.expires_at_display }} UTC{% endif %} 失效。
+                 請<a href="." class="underline font-bold hover:text-error-content">更新頁面</a>重新計算。
              </span>
          </div>
      </div>

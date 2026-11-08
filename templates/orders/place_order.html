@@ -38,10 +38,12 @@
     
     <!-- DYNAMIC SESSION EXPIRY BANNER ANCHOR -->
     <div id="price-warning" class="w-full text-center hidden bg-warning/10 border border-warning/30 text-warning-content font-semibold p-3 rounded-xl mb-6 text-xs shadow-none animate-pulse select-none">
-      <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-      Exchange rate has expired. <a href="{% url 'cart' %}" class="underline font-bold hover:opacity-80">Back to cart page</a> to recalculate.
-      <span class="opacity-50 mx-1">｜</span>
-      兌換率已失效。煩請 <a href="{% url 'cart' %}" class="underline font-bold hover:opacity-80">返回購物車</a> 重新計算。
+        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+        Exchange rate expired{% if rate_state.expires_at_display %} at {{ rate_state.expires_at_display }} UTC{% endif %}.
+        <a href="{% url 'cart' %}" class="underline font-bold hover:opacity-80">Back to cart page</a> to recalculate.
+        <span class="opacity-50 mx-1">｜</span>
+        兌換率已於 {% if rate_state.expires_at_display %}{{ rate_state.expires_at_display }} UTC {% endif %}失效。煩請
+        <a href="{% url 'cart' %}" class="underline font-bold hover:opacity-80">返回購物車</a> 重新計算。
     </div>
 
     <!-- PROGRESS TIMELINE CHART -->
