@@ -62,6 +62,51 @@ def place_order(request, proforma_invoice_no):
         if proforma_invoice.is_ordered:
             return redirect(f"/orders/order_complete/?order_number={proforma_invoice_no}&method=bank")
 
+        # ─────────────────────────────────────────────────────────────
+        # 🔄 SELF-HEAL: ProformaInvoice currency drift
+        # ─────────────────────────────────────────────────────────────
+        # ProformaInvoice is frozen at the rate from the checkout() POST.
+        # CheckoutInfo is re-written on every checkout() call (GET or POST),
+        # so a currency switch while the user is on the payment page — or a
+        # back-navigation to checkout() followed by a forward to place_order
+        # — leaves the invoice rendering the old currency's figures under a
+        # new currency label. Heal it before any *_foreign field is read.
+        #
+        # The heal recomputes every *_foreign field from its CNY base × the
+        # fresh rate. It does NOT recompute total_due_foreign by summing the
+        # recomputed component fields — that would introduce a rounding
+        # mismatch at the .xx5 boundary because each component quantizes
+        # independently. Recompute total_due_foreign from
+        # total_due × fresh_rate, matching update_total_payable's shape.
+        # See F60 and the 2026-11-07 8a/8b design discussion.
+        cookie_currency = request.COOKIES.get('user_currency', 'HKD').upper().strip()
+        invoice_currency = (proforma_invoice.currency_code or '').upper().strip()
+
+        if invoice_currency and invoice_currency != cookie_currency:
+            from carts.utils import get_or_lock_checkout_rate
+            from core.currency import quantize_amount
+            fresh_rate = get_or_lock_checkout_rate(request, cookie_currency)
+
+            def _fx(cny_amount):
+                return quantize_amount(
+                    Decimal(str(cny_amount)) * fresh_rate, cookie_currency
+                )
+
+            proforma_invoice.cart_total_foreign = _fx(proforma_invoice.cart_total)
+            proforma_invoice.shipping_cost_amount_foreign = _fx(proforma_invoice.shipping_cost)
+            proforma_invoice.discount_amount_foreign = _fx(proforma_invoice.discount)
+            proforma_invoice.tax_amount_foreign = _fx(proforma_invoice.tax)
+            proforma_invoice.applied_voucher_amount_foreign = _fx(proforma_invoice.voucher_applied)
+            proforma_invoice.total_due_foreign = _fx(proforma_invoice.total_due)
+            proforma_invoice.locked_exchange_rate = fresh_rate
+            proforma_invoice.currency_code = cookie_currency
+            proforma_invoice.save(update_fields=[
+                'cart_total_foreign', 'shipping_cost_amount_foreign',
+                'discount_amount_foreign', 'tax_amount_foreign',
+                'applied_voucher_amount_foreign', 'total_due_foreign',
+                'locked_exchange_rate', 'currency_code',
+            ])
+
        # 🌟 BACKUP LOCKPOINT: Ensure an unauthenticated checkout hasn't snuck through with a member email
         if not request.user.is_authenticated and proforma_invoice.email:
             User = get_user_model()
@@ -390,7 +435,7 @@ def place_order(request, proforma_invoice_no):
             "foreign_currency_code": foreign_currency_code,
             "foreign_currency_symbol": CURRENCY_SYMBOL.get(foreign_currency_code, '$'),
             "locked_rate": proforma_invoice.locked_exchange_rate,
-            "rate_expiry_timestamp": int(request.session.get("rate_expiry_time", 0)),
+            "rate_expiry_timestamp": int(request.session.get("rate_expiry_timestamp", 0)),
             "page_title": f"Pay Order｜支付訂單號 {proforma_invoice_no}",
             "main_title": "Place Order｜支 付 訂 單",
             "sub_title_1": "Complete Purchase｜迎接寶貝",
