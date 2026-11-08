@@ -19,6 +19,8 @@ Fixture setup requires receive_newsletter=False on Account.objects.create_user
 tests/_fakes.py::make_superuser, which does the same. Gotcha 44.
 """
 from decimal import Decimal
+from django.utils import timezone
+from datetime import timedelta
 
 import pytest
 from django.test import Client
@@ -88,9 +90,14 @@ def pinned_hkd_request(db):
     request = _make_request_with_session(client, path='/carts/cart/')
     request.session['locked_rate'] = '0.1100'
     request.session['locked_currency_code'] = 'HKD'
-    request.session['locked_at'] = '2026-11-07T00:00:00+00:00'
+    # Relative, not fixed. A hardcoded '2026-11-07T00:00:00+00:00'
+    # expires 24h later (RATE_LOCK_HOURS) and the helper re-pins to
+    # the live rate, at which point <×0.2 assertions fail. See gotcha 92.
+    request.session['locked_at'] = timezone.now().isoformat()
+    request.session['rate_expiry_timestamp'] = int(
+        (timezone.now() + timedelta(hours=24)).timestamp() * 1000
+    )
     request.session.save()
-
     return request, cart
 
 
@@ -107,6 +114,16 @@ class TestUpdateTotalPayableRepinsOnCurrencySwitch:
             Decimal(fmt_fx.replace(',', ''))
             < Decimal(fmt_cny.replace(',', '')) * Decimal('0.2')
         )
+
+        # Assert the render tracks whatever the session's post-call rate
+        # is. Don't assert on a magnitude tied to a specific rate — the
+        # fixture's seeded rate is only 'the current rate' while the pin
+        # is fresh, and the live rate will move. See gotcha 93.
+        used_rate = Decimal(request.session['locked_rate'])
+        cny_amount = Decimal(fmt_cny.replace(',', ''))
+        fx_amount = Decimal(fmt_fx.replace(',', ''))
+        expected_fx = (cny_amount * used_rate).quantize(Decimal('0.01'))
+        assert abs(fx_amount - expected_fx) <= Decimal('0.01')
 
         # Switch to CNY. Stale 0.1100 in session; the helper must override.
         request.COOKIES['user_currency'] = 'CNY'
