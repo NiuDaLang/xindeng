@@ -41,6 +41,21 @@ from django.db import transaction
 from django.db.models import F, Sum
 # from .tax import calculate_free_port_tax, calculate_australia_tax, calculate_new_zealand_tax,calculate_singapore_tax,calculate_malaysia_tax,calculate_korea_tax,calculate_japan_tax, calculate_taiwan_tax
 from core.image_utils import safe_image_url
+from django.utils import timezone as _tz
+
+
+def _fmt_session_ts(value):
+    """Format a session timestamp (ISO string or ms epoch int) as 'YYYY-MM-DD HH:MM'."""
+    if not value:
+        return ""
+    try:
+        if isinstance(value, str):
+            dt = _tz.datetime.fromisoformat(value)
+        else:
+            dt = _tz.datetime.fromtimestamp(int(value) / 1000)
+        return dt.strftime("%Y-%m-%d %H:%M")
+    except (ValueError, TypeError, OverflowError):
+        return ""
 
 
 def _cart_id(request):
@@ -160,6 +175,35 @@ def update_exchange_rate_api(request):
         warning_html,  # 💡 Injected OOB state override
         overlay_html   # 💡 Injected OOB state override
     ]
+
+    # -13: refresh the header ⓘ Swal, currency display, and the -10 footnote
+    # timestamp on every inner currency switch. Without these, the header
+    # reflects the OLD pin until the next full page load.
+    header_rate_state = {
+        "rate": request.session.get("locked_rate"),
+        "code": request.session.get("locked_currency_code"),
+        "locked_at_display": _fmt_session_ts(request.session.get("locked_at")),
+        "expires_at_display": _fmt_session_ts(request.session.get("rate_expiry_timestamp")),
+    }
+    header_rate_html = render_to_string(
+        'partials/_header_rate_info.html',
+        {"rate_state": header_rate_state, "currency_selection": CURRENCIES},
+        request=request,
+    )
+    summary_foreign_oob.append(
+        f'<div id="header_rate_section" hx-swap-oob="true">{header_rate_html}</div>'
+    )
+    
+    # -4: emit the header cart summary OOB so the dropdown's foreign total
+    # updates immediately when the inner currency switch happens.
+    header_cart_summary_html = update_header_cart_summary(request, cart)
+    summary_foreign_oob.append(header_cart_summary_html)
+
+    summary_foreign_oob.append(
+        f'<span id="rate_validity_note" hx-swap-oob="true">'
+        f'(Valid until {header_rate_state["expires_at_display"]} UTC｜有效至 {header_rate_state["expires_at_display"]} UTC)'
+        f'</span>'
+    )
 
     broadcast_cart_change(request)
     return HttpResponse("".join(filter(None, summary_foreign_oob)))
@@ -494,7 +538,7 @@ def add_to_cart_htmx(request):
     
     header_list_html = render_to_string('store/partials/header_cart_list.html', header_context, request=request)
 
-    updated_header_summary = update_header_cart_summary(cart)
+    updated_header_summary = update_header_cart_summary(request, cart)
         
     payload_response_stream = right_panel_html + left_gallery_html + header_list_html + updated_header_summary
     # + oob_count_span + oob_total_b + oob_summary_count
@@ -1190,9 +1234,10 @@ def update_cart_item_qty(request, item_id):
     subtotal_html = f'<span id="subtotal_{item_id}" hx-swap-oob="true" class="font-mono text-xs sm:text-sm font-extrabold text-base-content leading-tight">¥&nbsp;{formatted_subtotal}</span>'
     oob_updates.append(subtotal_html)
     
-    # 💡 FIX: Removed the redundant .2f and intcomma string parsing since get_cart_total() handles formatting natively
-    updated_header_total_html = f'<span id="cart_sub_total" hx-swap-oob="true" class="font-mono text-primary text-sm xs:text-base">CNY ¥ {cart.get_cart_total()}</span>'
-    oob_updates.append(updated_header_total_html)
+    # Header: emit both CNY and foreign twins via the shared helper.
+    updated_header_summary = update_header_cart_summary(request, cart)
+    if updated_header_summary and str(updated_header_summary).strip():
+        oob_updates.append(updated_header_summary)
 
     # 🔒 SECURED INTERACTIVE CAPACITY GATES (OOB State Swaps)
     if new_qty >= product_stock:
@@ -1325,7 +1370,7 @@ def add_wish_to_cart(request, wish_id):
     final_oob_fragments.append(header_list_html)
     
     # 2. UNIVERSAL NAVIGATION MINI METADATA COUNTERS (OOB)
-    updated_header_summary = update_header_cart_summary(cart)
+    updated_header_summary = update_header_cart_summary(request, cart)
     if updated_header_summary and str(updated_header_summary).strip():
         final_oob_fragments.append(updated_header_summary)
 
@@ -1526,7 +1571,7 @@ def delete_cart_item(request, item_id):
             htmx_htmls.extend(oob_updates)
             
     else:
-        updated_header_summary = update_header_cart_summary(cart)
+        updated_header_summary = update_header_cart_summary(request, cart)
         if updated_header_summary and str(updated_header_summary).strip():
             htmx_htmls.append(updated_header_summary)
 
@@ -1678,7 +1723,7 @@ def add_to_wishlist(request, item_id):
             final_oob_fragments.extend(oob_updates)
 
     else:
-        updated_header_summary = update_header_cart_summary(cart)
+        updated_header_summary = update_header_cart_summary(request, cart)
         if updated_header_summary and str(updated_header_summary).strip():
             final_oob_fragments.append(updated_header_summary)
 

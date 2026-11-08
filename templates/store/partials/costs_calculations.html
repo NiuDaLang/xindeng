@@ -72,11 +72,13 @@
              <p class="text-[10px] text-base-content/40 leading-relaxed font-medium">
                  *Exchange Rate｜兌換率：<span id="locked_exchange_rate" class="font-mono font-bold text-base-content/60">{{ locked_rate|floatformat:4|intcomma }}</span>
                  <br/>
-                 {% if rate_state.expires_at_display %}
-                     <span>(Valid until {{ rate_state.expires_at_display }} UTC｜有效至 {{ rate_state.expires_at_display }} UTC)</span>
-                 {% else %}
-                     <span>(Store Exchange Rate｜店內匯率)</span>
-                 {% endif %}
+                 <span id="rate_validity_note">
+                     {% if rate_state.expires_at_display %}
+                         (Valid until {{ rate_state.expires_at_display }} UTC｜有效至 {{ rate_state.expires_at_display }} UTC)
+                     {% else %}
+                         (Store Exchange Rate｜店內匯率)
+                     {% endif %}
+                 </span>
              </p>
          </div>
          <!-- The Overlay (hidden by default) -->

@@ -1,0 +1,39 @@
+<!-- templates/partials/_header_rate_info.html -->
+<div class="flex items-center gap-1">
+    <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn btn-ghost btn-sm h-8 px-2 gap-1 font-mono text-[11px] font-semibold">
+            {{ request.currency|default:"HKD" }}
+            <i class="fa-solid fa-chevron-down text-[8px] opacity-50"></i>
+        </div>
+        <ul tabindex="0" class="dropdown-content menu menu-sm bg-base-100 rounded-box z-50 w-24 p-1 shadow border border-base-200/50">
+            {% for code in currency_selection %}
+            <li>
+                <a href="#"
+                class="font-mono text-[11px] {% if request.currency == code %}text-primary font-bold{% endif %}"
+                hx-get="{% url 'set_currency' %}?code={{ code }}"
+                hx-swap="none"
+                hx-on::after-request="window.location.reload()">{{ code }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% if rate_state %}
+    <button type="button"
+            class="btn btn-ghost btn-circle btn-xs opacity-50 hover:opacity-100"
+            title="Exchange rate｜匯率詳情"
+            onclick='Swal.fire({
+                icon: "info",
+                title: "Store Exchange Rate｜店內匯率",
+                html: `<div class="text-left text-xs font-mono space-y-1.5">
+                    <p><b>Rate｜匯率：</b>1 CNY ≈ {{ rate_state.rate }} {{ rate_state.code }}</p>
+                    <p><b>Pinned at (UTC)｜鎖定於 (UTC)：</b>{{ rate_state.locked_at_display }}</p>
+                    <p><b>Valid until (UTC)｜有效期至 (UTC)：</b>{{ rate_state.expires_at_display }}</p>
+                    <p class="text-[10px] opacity-60 pt-1 border-t border-base-200/50 mt-2">Prices shown reflect the above rate. Changing currency re-pins a new rate.｜頁面價格以此匯率為準，切換貨幣將重新鎖定匯率。</p>
+                </div>`,
+                confirmButtonText: "Got it｜明白",
+                confirmButtonColor: "#10b981"
+            })'>
+        <i class="fa-solid fa-circle-info text-[11px]"></i>
+    </button>
+    {% endif %}
+</div>

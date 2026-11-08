@@ -1,5 +1,6 @@
 # carts/utils.py
 import math
+import re
 from decimal import Decimal, InvalidOperation
 from accounts.data import DESTINATIONS_GLOBAL, INTEGER_CURRENCIES, DESTINATIONS_GREATER_CHINA, DESTINATIONS_MAINLAND_CHINA, CURRENCY_SYMBOL
 from core.currency import (
@@ -357,7 +358,20 @@ def recalculate_cart_totals(cart):
     return new_cart_total_count, new_cart_grand_total
 
 
-def update_header_cart_summary(cart):
+def update_header_cart_summary(request, cart):
+    oob_updates = []
+    new_cart_total_count, formatted_new_cart_grand_total = recalculate_cart_totals(cart)
+    item_str = "Items" if new_cart_total_count > 1 else "Item"
+ 
+    header_num_icon_html = f'''
+        <span id="cart_count_icon" hx-swap-oob="true" 
+            class="badge badge-sm indicator-item badge-primary cart-update-pop">
+            { new_cart_total_count }
+        </span>
+    '''
+ 
+    header_qty_html = f'<span id="cart_count" hx-swap-oob="true" class="font-mono font-bold text-base-content">{ new_cart_total_count } {item_str}</span>'
+    header_total_html = f'<span id="cart_sub_total" hx-swap-oob="true" class="font-mono text-primary text-sm xs:text-base">CNY ¥ { formatted_new_cart_grand_total }</span>'
     oob_updates = []
     new_cart_total_count, formatted_new_cart_grand_total = recalculate_cart_totals(cart)
     item_str = "Items" if new_cart_total_count > 1 else "Item"
@@ -371,7 +385,17 @@ def update_header_cart_summary(cart):
 
     header_qty_html = f'<span id="cart_count" hx-swap-oob="true" class="font-mono font-bold text-base-content">{ new_cart_total_count } {item_str}</span>'
     header_total_html = f'<span id="cart_sub_total" hx-swap-oob="true" class="font-mono text-primary text-sm xs:text-base">CNY ¥ { formatted_new_cart_grand_total }</span>'
-    oob_updates.extend([header_num_icon_html, header_qty_html, header_total_html])
+
+     # -4: emit the foreign twin OOB alongside the CNY figure.
+    is_integer, foreign_currency_code = get_currency_format(request)
+        
+    # Sanitize the string: remove currency symbols, spaces, and commas
+    clean_cny_str = re.sub(r'[^\d.]', '', str(formatted_new_cart_grand_total))
+    foreign_currency_symbol, formatted_foreign = calculate_foreign_amount(request, clean_cny_str)
+    
+    header_total_foreign_html = f'<span id="cart_sub_total_foreign" hx-swap-oob="true" class="font-mono text-[10px] text-base-content/50 block mt-0.5">≈ { foreign_currency_symbol } { formatted_foreign }</span>'
+
+    oob_updates.extend([header_num_icon_html, header_qty_html, header_total_html, header_total_foreign_html])
     return "".join(filter(None, oob_updates))
 
 
@@ -1246,7 +1270,9 @@ def update_costs_oobs(request, cart, is_integer, foreign_currency_code, foreign_
     fx_voucher_p_str = format_fx_value(clean_model_fx(cart.get_voucher_products_subtotal_foreign(foreign_currency_code, locked_rate)), foreign_currency_code)
 
     # Header calculations summary row
-    updated_header_summary = update_header_cart_summary(cart)
+    updated_header_summary = update_header_cart_summary(request, cart)
+    if updated_header_summary and str(updated_header_summary).strip():
+        oob_updates.append(updated_header_summary)
     if updated_header_summary and str(updated_header_summary).strip():
         oob_updates.append(updated_header_summary)
 
