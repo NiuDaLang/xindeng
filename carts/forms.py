@@ -49,7 +49,7 @@ class ProformaInvoiceForm(forms.ModelForm):
             'address_line_2': forms.TextInput(attrs={'id': 'id_address_line_2', 'class': 'grow font-sans text-xs font-semibold', 'placeholder': 'Address 2 (Apt, Suite, Floor)｜樓層、門牌（選填）'}),
             'city': forms.TextInput(attrs={'id': 'id_city', 'class': 'grow font-sans text-xs font-semibold', 'placeholder': 'City｜城市'}),
             'state_province_region': forms.TextInput(attrs={'id': 'id_state_province_region', 'class': 'grow font-sans text-xs font-semibold', 'placeholder': 'State / Region｜省份/州'}),
-            'country': forms.Select(attrs={'id': 'id_country', 'class': 'select select-sm select-ghost font-sans text-xs font-bold -ml-3 bg-transparent border-0 focus:outline-none focus:ring-0'}),
+            'country': forms.Select(attrs={'id': 'id_country', 'class': 'grow font-sans text-xs font-bold bg-transparent border-0 focus:outline-none focus:ring-0 w-full cursor-pointer appearance-none'}),
             'postal_code': forms.TextInput(attrs={'id': 'id_postal_code', 'class': 'grow font-mono text-xs font-semibold', 'placeholder': 'ZIP Code｜郵遞區號'}),
             
             'recipient_email': forms.EmailInput(attrs={'id': 'id_recipient_email', 'class': 'grow font-mono text-xs font-semibold', 'placeholder': "Recipient's Email｜收件人電子郵件"}),

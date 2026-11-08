@@ -1508,6 +1508,67 @@ function confirmEscalateCustomer(button, customerId) {
     });
 }
 
+// ── Country mismatch confirmation (3f-bis-followup-9) ──
+// The country <select> on checkout.html is rendered readonly — its value
+// comes from the cart's shipping destination and cannot be changed on this
+// page. Google Autocomplete's gmp-select listener populates the other
+// address fields from the typed address but deliberately does not overwrite
+// the locked country. A user who picked "Australia" in the cart and types a
+// Hong Kong address therefore gets a form whose country and address
+// components disagree — a shipment that is guaranteed to fail at customs.
+//
+// This helper is invoked from the gmp-select listener when the two values
+// differ. It offers one escape hatch: go back to the cart and change the
+// destination. Cancelling leaves the user on checkout with the populated
+// address fields cleared, so they can re-type an address that matches the
+// cart's country (or navigate to the cart themselves). The fields are
+// cleared on both branches — never leave the mismatched address sitting in
+// the form.
+function confirmCountryMismatch(cartCountry, typedCountry) {
+    return Swal.fire({
+        title: 'Country Mismatch｜目的地與地址不符',
+        html: `
+            <div class="text-left text-sm space-y-3 py-1 leading-relaxed">
+                <p class="text-neutral-700">
+                    Your cart destination is
+                    <strong>${cartCountry}</strong>, but the address you typed is in
+                    <strong>${typedCountry}</strong>.
+                </p>
+                <p class="text-neutral-600">
+                    您購物車的目的地為 <strong>${cartCountry}</strong>，但輸入的地址位於
+                    <strong>${typedCountry}</strong>。
+                </p>
+                <p class="text-neutral-500 text-xs">
+                    If the parcel is returned because the address does not match
+                    the destination, the round-trip shipping charges are the buyer's
+                    responsibility.
+                    <br>
+                    若因地址與目的地不符導致包裹退件，所產生的來回運費需由買家自行承擔。
+                </p>
+            </div>
+        `,
+        icon: 'warning',
+        iconColor: '#f59e0b',
+        showCancelButton: true,
+        confirmButtonText: 'Go to Cart｜前往購物車',
+        cancelButtonText: 'Fix Address Here｜重新填寫地址',
+        confirmButtonColor: '#f59e0b',
+        cancelButtonColor: '#9ca3af',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        customClass: {
+            popup: 'rounded-2xl font-sans',
+            title: 'text-base font-semibold',
+        },
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '/carts/cart/';
+        }
+        // Cancel branch: fall through. The caller clears the address fields
+        // unconditionally after this promise resolves — this branch does not
+        // need to touch them.
+    });
+}
 
 /*************************  GOOGLE AUTO COMPLETE  **************************/ 
 // call before init AutoComplete:
@@ -1674,12 +1735,62 @@ async function initAutoComplete(form_id) {
             if (stateInput && !stateInput.readOnly) stateInput.value = state;
             if (zipInput && !zipInput.readOnly) zipInput.value = zip;
 
-            // Protect Country field from being overwritten if it is locked
+            // 5a. Country agreement check (3f-bis-followup-9).
+            // The country select is rendered readonly (checkout() sets
+            // widget.attrs["readonly"] = True, and the CSS adds
+            // bg-base-200 pointer-events-none). Its value is the cart's
+            // shipping destination. Google Autocomplete returns ISO-3166
+            // alpha-2 in `country` (e.g. "AU", "HK"), same shape as the
+            // form's choices — direct string comparison is correct, no
+            // normalisation needed.
+            //
+            // If the two disagree, the form is internally inconsistent: the
+            // address components describe one country, the destination another.
+            // Surface the mismatch to the user rather than silently accepting
+            // a shipment that will fail at customs. On either branch of the
+            // confirmation, clear the auto-populated address fields — leaving
+            // them populated lets a mismatched address reach the server.
+            const cartCountryCode = countrySelect ? (countrySelect.value || '').toUpperCase() : '';
+            const typedCountryCode = (country || '').toUpperCase();
+            const countryMismatch = cartCountryCode && typedCountryCode && cartCountryCode !== typedCountryCode;
+
+            if (countryMismatch) {
+                // Stop here. Do not populate the remaining fields below — they
+                // would only have to be cleared again. Show the Swal, then wipe
+                // whatever the autocomplete already wrote into the form.
+                confirmCountryMismatch(cartCountryCode, typedCountryCode).then(() => {
+                    // Clear every field that gmp-select would have populated for
+                    // this selection. `address` itself is the gmp-place-autocomplete
+                    // element; clear both its value and the hidden twin.
+                    const clearFields = [
+                        cityInput, stateInput, zipInput, line2Input,
+                        hiddenInput, idInput, latInput, lngInput, verifiedInput,
+                    ];
+                    clearFields.forEach(el => {
+                        if (el) el.value = '';
+                    });
+                    if (autocomplete && typeof autocomplete.value !== 'undefined') {
+                        autocomplete.value = '';
+                    }
+                    // Reset the "verified by Google" flag — the current DOM no longer
+                    // represents any Google-selected place.
+                    if (verifiedInput) verifiedInput.value = 'False';
+                    // Re-sync the button state so the form reads as incomplete.
+                    if (typeof window.updatePayButtonState === 'function') {
+                        window.updatePayButtonState();
+                    }
+                });
+                return;
+            }
+
+            // No mismatch — country select is readonly, so leave it untouched
+            // (this is the pre-existing behaviour; the guard is preserved for
+            // the case where a future session unlocks the select).
             if (countrySelect && !countrySelect.hasAttribute('readonly') && !countrySelect.disabled) {
                 countrySelect.value = country;
-                // Trigger change event to keep your custom region UI logic synced
                 countrySelect.dispatchEvent(new Event('change', { bubbles: true }));
             }
+            
             if (line2Input && !line2Input.readOnly) line2Input.value = addressLine2;
 
             // Populate Google Metadata
@@ -2378,3 +2489,4 @@ window.updateArtisanSidebarActive = updateArtisanSidebarActive;
 
 window.confirmEscalateThread = confirmEscalateThread;
 window.confirmEscalateCustomer = confirmEscalateCustomer;
+window.confirmCountryMismatch = confirmCountryMismatch;

@@ -139,20 +139,6 @@
                                         <span class="text-error font-bold text-xs">*</span>
                                     </label>
                                 </div>
-                                <!-- <div class="w-full space-y-1 pt-1">
-                                    <span class="text-[0.65rem] font-bold text-base-content/60 pl-1 relative block w-fit">
-                                        Mobile Phone｜手機號碼 <span class="text-error ml-0.5">*</span>
-                                    </span>
-                                    <div class="join w-full rounded-xl overflow-visible">
-                                        {{ proforma_invoice_form.recipient_mobile_area }}
-                                        <div class="flex-grow min-w-0">
-                                            <label class="input input-bordered join-item w-full flex items-center gap-2 h-10">
-                                                <i class="fa-solid fa-mobile-screen-button opacity-40 text-xs"></i>
-                                                {{ proforma_invoice_form.recipient_mobile_number }}
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div> -->
 
                                 <!-- Mobile Contacts Phone Number Input Join Group -->
                                 <div class="w-full space-y-1">
@@ -189,24 +175,28 @@
                                         </label>
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                                        <label class="input input-bordered flex items-center gap-2 rounded-xl h-10">
+                                        <!-- City (add w-full) -->
+                                        <label class="input input-bordered flex items-center gap-2 rounded-xl h-10 w-full">
                                             <i class="fa-solid fa-tree-city opacity-40 text-xs"></i>
                                             {{ proforma_invoice_form.city }} <span class="text-error font-bold text-xs">*</span>
                                         </label>
-                                        <label class="input input-bordered flex items-center gap-2 rounded-xl h-10">
+                                        <!-- State / Region (add w-full) -->
+                                        <label class="input input-bordered flex items-center gap-2 rounded-xl h-10 w-full">
                                             <i class="fa-solid fa-map opacity-40 text-xs"></i>
                                             {{ proforma_invoice_form.state_province_region }} <span class="text-error font-bold text-xs">*</span>
                                         </label>
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                                        <label class="input input-bordered flex items-center gap-2 bg-transparent rounded-xl h-10">
+                                        <!-- Country (add w-full) -->
+                                        <label class="input input-bordered flex items-center gap-2 bg-transparent rounded-xl h-10 w-full">
                                             <i class="fa-solid fa-globe opacity-40 text-xs"></i>
                                             {{ proforma_invoice_form.country }} <span class="text-error font-bold text-xs">*</span>
                                             {% if proforma_invoice_form.country.field.disabled %}
                                                 <input type="hidden" name="country" value="{{ proforma_invoice_form.country.value }}">
                                             {% endif %}
                                         </label>
-                                        <label class="input input-bordered flex items-center gap-2 rounded-xl h-10">
+                                        <!-- Postal Code (add w-full) -->
+                                        <label class="input input-bordered flex items-center gap-2 rounded-xl h-10 w-full">
                                             <i class="fa-solid fa-envelopes-bulk opacity-40 text-xs"></i>
                                             {{ proforma_invoice_form.postal_code }}
                                         </label>

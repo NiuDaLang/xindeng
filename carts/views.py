@@ -2494,7 +2494,10 @@ def checkout(request):
     # -------------------------------------------------------------
     if "country" in proforma_invoice_form.fields:
         proforma_invoice_form.fields["country"].widget.attrs["readonly"] = True
-        proforma_invoice_form.fields["country"].widget.attrs["class"] = "bg-base-200 pointer-events-none"
+        # Strip DaisyUI's inner box styling. Let the parent label handle the border/background.
+        proforma_invoice_form.fields["country"].widget.attrs["class"] = "grow font-sans text-xs font-bold \
+            bg-transparent border-0 focus:outline-none focus:ring-0 w-full cursor-pointer appearance-none pointer-events-none"
+
     if "state_province_region" in proforma_invoice_form.fields and country == "CN":
         proforma_invoice_form.fields["state_province_region"].widget.attrs["readonly"] = True
         proforma_invoice_form.fields["state_province_region"].widget.attrs["class"] = "bg-base-200 pointer-events-none"
