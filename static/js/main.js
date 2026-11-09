@@ -1282,7 +1282,6 @@ document.addEventListener("errorMssg", function(evt) {
         }
     });
 });
-
 document.addEventListener("infoMssg", function(evt) {
     Swal.fire({
         title: evt.detail.title,

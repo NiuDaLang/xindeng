@@ -1,0 +1,41 @@
+<!-- templates/store/partials/cart_summary_thead_rows.html -->
+<tr class="font-normal select-none border-b border-base-100">
+    <td class="w-[26%] min-[768px]:max-[900px]:w-[26%] py-1.5 text-left font-semibold text-[10px] text-base-content/40">Item<br>項目</td>
+    <td class="w-[34%] min-[768px]:max-[900px]:w-[32%] py-1.5 text-right font-semibold text-[10px] text-base-content/40 tracking-wider">
+        {% if foreign_currency_code != 'CNY' %}
+        <span>Amount<br>基準金額</span>
+        {% endif %}
+    </td>
+    <td class="w-[40%] min-[768px]:max-[900px]:w-[42%] py-1.5 text-right font-semibold text-[10px] text-primary/60 tracking-wider">
+        <span>Pay In<br>應付貨幣</span>
+    </td>
+</tr>
+<tr class="border-b border-dashed border-base-200/60">
+    <th class="py-2 text-left"></th>
+    <th class="py-2 text-right text-[10px] font-mono text-base-content/40 tracking-wide font-normal">{% if foreign_currency_code != 'CNY' %}CNY (¥){% endif %}</th>
+    <th class="py-2 pl-[2px] text-right text-xs">
+        <div class="flex justify-end items-center w-full">
+            <form id="select_currency_form" method="POST" autocomplete="off" class="m-0 p-0 w-full max-w-[85px] relative group">
+                {% csrf_token %}
+                <select id="select_currency_input" 
+                        name="select_currency" 
+                        hx-get="/carts/set_currency/"
+                        hx-trigger="change"
+                        hx-target="#cart_summary_section"
+                        hx-swap="none"
+                        hx-vals='js:{code: event.target.value}'
+                        style="font-size: clamp(0.675rem, 1vw + 0.1rem, 0.75rem);"
+                        class="select select-bordered select-xs font-bold text-primary focus:outline-none focus:border-primary min-h-0 h-7 cursor-pointer bg-base-200 border-base-300 w-full text-left pl-2.5 pr-6 rounded-lg transition-all !appearance-none bg-none hover:bg-base-300/60">
+                    {% for currency_code in currency_selection %}
+                        <option {% if request.currency == currency_code %}selected
+                                {% elif not request.currency and currency_code == "HKD" %}selected{% endif %}
+                                value="{{ currency_code }}">{{ currency_code }}</option>
+                    {% endfor %}
+                </select>
+                <div class="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-primary/60 group-hover:text-primary transition-colors">
+                    <i class="fa-solid fa-chevron-down text-[9px]"></i>
+                </div>
+            </form>
+        </div>
+    </th>
+</tr>

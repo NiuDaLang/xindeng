@@ -523,13 +523,6 @@
             const overlay = document.getElementById('price-overlay');
             if (overlay) overlay.classList.add('hidden');
 
-            const checkout_btn = document.querySelector("#checkout-btn");
-            if (checkout_btn && checkout_btn.hasAttribute('disabled') && !checkout_btn.classList.contains('opacity-80')) {
-                // Only re-enable if it wasn't disabled by the physical shipping check
-                checkout_btn.classList.add("btn-success");
-                checkout_btn.classList.remove("btn-disabled", "opacity-80", "cursor-not-allowed");
-                checkout_btn.disabled = false;
-            }
             return; // Exit early, skipping time calculations
         }
 

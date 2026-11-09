@@ -25,7 +25,7 @@ from django.contrib.auth import get_user_model
 from .utils import get_available_services, calculate_shipping_cost, \
 htmx_invalid_offer_response, handle_perk_status, htmx_invalid_voucher_response, calculate_foreign_amount, \
 get_grand_total_before_voucher, update_applied_voucher, update_total_payable, get_currency_format, broadcast_cart_change, \
-get_or_lock_checkout_rate, get_cash_voucher_balance, update_costs_oobs, get_cart_totals, update_header_cart_summary
+get_or_lock_checkout_rate, get_cash_voucher_balance, update_costs_oobs, get_cart_totals, update_header_cart_summary, get_cart_summary_oob
 
 from accounts.models import Perk, CustomerVoucher, UserPerk, UserProfile
 from .forms import ProformaInvoiceForm
@@ -69,18 +69,20 @@ def _cart_id(request):
 
 def set_currency(request):
     currency_code = request.GET.get('code', 'HKD')
-    # We create a JsonResponse instead of HttpResponseRedirect
     response = JsonResponse({
         "status": "success",
         "redirect_url": request.META.get('HTTP_REFERER', '/'),
     })
-    # Set the cookie on this JSON response
     response.set_cookie(
         'user_currency', 
         currency_code, 
-        max_age=31536000, #365 days 
+        max_age=31536000,
         samesite='Lax'
     )
+    # Tell HTMX to fire refresh_forex after the cookie is set. The
+    # #cart_summary_section element listens for refresh_forex and calls
+    # update_exchange_rate_api, which redraws the tbody + thead.
+    response['HX-Trigger'] = json.dumps({"refresh_forex": {}})
     return response
 
 
@@ -119,17 +121,12 @@ def update_exchange_rate_api(request):
     e_products_total, e_products_total_foreign, voucher_products_total, voucher_products_total_foreign, \
     foreign_currency_symbol, cart_items_quantity = get_cart_totals(request, cart)
 
-    physical_products_total_foreign_html = f'<span id="physical_products_total_foreign" hx-swap-oob="true">{ foreign_currency_symbol } { physical_products_total_foreign }</span>' if has_physical_items else ""
-    e_products_total_foreign_html = f'<span id="e_products_total_foreign" hx-swap-oob="true">{ foreign_currency_symbol } { e_products_total_foreign }</span>' if has_e_items else  ""
-    voucher_products_total_foreign_html = f'<span id="voucher_purchase_total_foreign" hx-swap-oob="true">{ foreign_currency_symbol } { voucher_products_total_foreign }</span>' if has_cash_voucher_items else ""
-
     # 2. Shipping Cost
     shipping_data = request.session.get('shipping_data', {})
     shipping_cost = Decimal(str(shipping_data.get('shipping_cost', '0.00')).replace(",", ""))
     foreign_currency_symbol, shipping_cost_foreign = calculate_foreign_amount(request, shipping_cost)
     shipping_cost_foreign_two_digit = Decimal(str(shipping_cost_foreign).replace(",", ""))
     shipping_cost_foreign = intcomma(f"{shipping_cost_foreign_two_digit:.0f}") if is_integer else intcomma(f"{shipping_cost_foreign_two_digit:.2f}")
-    shipping_cost_foreign_html = f'<span id="shipping_cost_amount_foreign" hx-swap-oob="true">{ foreign_currency_symbol } { shipping_cost_foreign }</span>' if has_physical_items else ""
 
     # # 3. Tax & Duty
 
@@ -140,7 +137,6 @@ def update_exchange_rate_api(request):
     offer_applied_foreign_two_digit = Decimal(str(offer_applied_foreign).replace(",", ""))
     fmt_offer = intcomma(f"{offer_applied_foreign_two_digit:.0f}") if is_integer else intcomma(f"{offer_applied_foreign_two_digit:.2f}")
     display_offer = f"({fmt_offer})" if offer_applied_foreign_two_digit > 0 else fmt_offer
-    offer_applied_foreign_html = f'<span id="discount_amount_foreign" hx-swap-oob="true">{ foreign_currency_symbol } { display_offer }</span>'
 
     # 5. Voucher
     voucher_data = request.session.get("applied_voucher", {})
@@ -149,7 +145,6 @@ def update_exchange_rate_api(request):
     voucher_applied_foreign_two_digit = Decimal(str(voucher_applied_foreign).replace(",", ""))
     fmt_voucher_applied_foreign = intcomma(f"{voucher_applied_foreign_two_digit:.0f}") if is_integer else intcomma(f"{voucher_applied_foreign_two_digit:.2f}")
     display_voucher_applied_foreign = f"({fmt_voucher_applied_foreign})" if voucher_applied_foreign_two_digit > 0 else fmt_voucher_applied_foreign
-    voucher_applied_foreign_html = f'<span id="summary_voucher_applied_foreign" hx-swap-oob="true">{ foreign_currency_symbol } { display_voucher_applied_foreign }</span>'
 
     # 6. Total Payable
     total_payables_html, amount, amount_foreign = update_total_payable(request, cart)
@@ -165,13 +160,6 @@ def update_exchange_rate_api(request):
 
     summary_foreign_oob = [
         ex_rate_html,
-        physical_products_total_foreign_html,
-        e_products_total_foreign_html,
-        voucher_products_total_foreign_html,
-        shipping_cost_foreign_html,
-        offer_applied_foreign_html,
-        voucher_applied_foreign_html,
-        total_payables_html,
         warning_html,  # 💡 Injected OOB state override
         overlay_html   # 💡 Injected OOB state override
     ]
@@ -198,6 +186,21 @@ def update_exchange_rate_api(request):
     # updates immediately when the inner currency switch happens.
     header_cart_summary_html = update_header_cart_summary(request, cart)
     summary_foreign_oob.append(header_cart_summary_html)
+
+    # 3f-bis-followup-6/7: emit the full cart summary <tbody> and its
+    # <thead> as two OOB fragments. The thead is the column-collapse
+    # owner — swapping only the tbody leaves the header columns stuck
+    # on the previous layout (see F78 discussion).
+    tbody_html, thead_rows_html = get_cart_summary_oob(
+        request, cart, is_integer, current_currency_code, foreign_currency_symbol, rate
+    )
+    if tbody_html:
+        summary_foreign_oob.append(tbody_html)
+    if thead_rows_html:
+        summary_foreign_oob.append(
+            f'<table><thead id="cart_summary_thead" hx-swap-oob="true" '
+            f'class="font-normal select-none border-b border-base-100">{thead_rows_html}</thead></table>'
+        )
 
     summary_foreign_oob.append(
         f'<span id="rate_validity_note" hx-swap-oob="true">'
@@ -739,6 +742,7 @@ def cart(request):
         "currency_selection": CURRENCIES,
         "locked_rate": locked_rate,
         "foreign_currency_symbol": foreign_currency_symbol,
+        "foreign_currency_code": foreign_currency_code,
         "is_integer": is_integer,
         "shipping_cost_foreign": get_session_fx("shipping_data", "shipping_cost_foreign", "0") if is_integer else get_session_fx("shipping_data", "shipping_cost_foreign", "0.00"),
         "offer_applied_foreign": get_session_fx("offer_applied", "discount_amount_foreign", "0") if is_integer else get_session_fx("offer_applied", "discount_amount_foreign", "0.00"),
@@ -1450,6 +1454,7 @@ def add_wish_to_cart(request, wish_id):
             "currency_selection": CURRENCIES,
             "locked_rate": locked_rate,
             "foreign_currency_symbol": foreign_currency_symbol,
+            "foreign_currency_code": foreign_currency_code,
             "is_integer": is_integer,
             "offer_applied_foreign": 0,
             "voucher_applied_foreign": 0,
@@ -1612,6 +1617,7 @@ def delete_cart_item(request, item_id):
             "currency_selection": CURRENCIES,
             "locked_rate": locked_rate,
             "foreign_currency_symbol": foreign_currency_symbol,
+            "foreign_currency_code": foreign_currency_code,
             "is_integer": is_integer,
             "offer_applied_foreign": "0" if is_integer else "0.00",
             "voucher_applied_foreign": "0" if is_integer else "0.00",
@@ -1763,6 +1769,7 @@ def add_to_wishlist(request, item_id):
             "currency_selection": CURRENCIES,
             "locked_rate": locked_rate,
             "foreign_currency_symbol": foreign_currency_symbol,
+            "foreign_currency_code": foreign_currency_code,
             "is_integer": is_integer,
             "offer_applied_foreign": "0" if is_integer else "0.00",
             "voucher_applied_foreign": "0" if is_integer else "0.00",

@@ -2,7 +2,7 @@
 import math
 import re
 from decimal import Decimal, InvalidOperation
-from accounts.data import DESTINATIONS_GLOBAL, INTEGER_CURRENCIES, DESTINATIONS_GREATER_CHINA, DESTINATIONS_MAINLAND_CHINA, CURRENCY_SYMBOL
+from accounts.data import DESTINATIONS_GLOBAL, INTEGER_CURRENCIES, DESTINATIONS_GREATER_CHINA, DESTINATIONS_MAINLAND_CHINA, CURRENCY_SYMBOL, CURRENCIES
 from core.currency import (
     quantize_amount,
     format_fx_value,
@@ -393,7 +393,12 @@ def update_header_cart_summary(request, cart):
     clean_cny_str = re.sub(r'[^\d.]', '', str(formatted_new_cart_grand_total))
     foreign_currency_symbol, formatted_foreign = calculate_foreign_amount(request, clean_cny_str)
     
-    header_total_foreign_html = f'<span id="cart_sub_total_foreign" hx-swap-oob="true" class="font-mono text-[10px] text-base-content/50 block mt-0.5">≈ { foreign_currency_symbol } { formatted_foreign }</span>'
+    if foreign_currency_code == "CNY":
+        # Keep the span in the DOM but hide it. If we return "", HTMX throws
+        # an oobErrorNoTarget and aborts the rest of the swap payload.
+        header_total_foreign_html = f'<span id="cart_sub_total_foreign" hx-swap-oob="true" class="font-mono text-[10px] text-base-content/50 block mt-0.5 hidden">≈ { foreign_currency_symbol } { formatted_foreign }</span>'
+    else:
+        header_total_foreign_html = f'<span id="cart_sub_total_foreign" hx-swap-oob="true" class="font-mono text-[10px] text-base-content/50 block mt-0.5">≈ { foreign_currency_symbol } { formatted_foreign }</span>'
 
     oob_updates.extend([header_num_icon_html, header_qty_html, header_total_html, header_total_foreign_html])
     return "".join(filter(None, oob_updates))
@@ -1285,6 +1290,94 @@ def update_offer(request, cart):
         return "", "", None
 
 
+def get_cart_summary_oob(request, cart, is_integer, foreign_currency_code, foreign_currency_symbol, locked_rate):
+    """Helper to render the full cart summary table body as an OOB swap."""
+    def get_session_fx(key, nested_key):
+        return request.session.get(key, {}).get(nested_key, "0")
+    
+    cny_shipping_str = get_session_fx("shipping_data", "shipping_cost")
+    cny_offer_str = get_session_fx("offer_applied", "discount_amount")
+    cny_voucher_applied_str = get_session_fx("applied_voucher", "applied_voucher_amount")
+
+    fx_shipping_str = get_session_fx("shipping_data", "shipping_cost_foreign")
+    fx_offer_str = get_session_fx("offer_applied", "discount_amount_foreign")
+    fx_voucher_applied_str = get_session_fx("applied_voucher", "applied_voucher_amount_foreign")
+
+    def clean_model_fx(val_str):
+        return Decimal(str(val_str).replace(",", ""))
+
+    cny_physical = cart.get_physical_products_subtotal()
+    cny_electronic = cart.get_e_products_subtotal()
+    cny_voucher_p = cart.get_voucher_products_subtotal()
+
+    fx_physical_str = get_session_fx("shipping_data", "physical_products_total_foreign")
+    fx_electronic_str = format_fx_value(clean_model_fx(cart.get_e_products_subtotal_foreign(foreign_currency_code, locked_rate)), foreign_currency_code)
+    fx_voucher_p_str = format_fx_value(clean_model_fx(cart.get_voucher_products_subtotal_foreign(foreign_currency_code, locked_rate)), foreign_currency_code)
+
+    cny_discount_val = clean_decimal(cny_offer_str)
+    fx_discount_val = clean_decimal(fx_offer_str)
+    cny_voucher_applied_val = clean_decimal(cny_voucher_applied_str)
+    fx_voucher_applied_val = clean_decimal(fx_voucher_applied_str)
+
+    cny_discount_display = f"{intcomma(f'{cny_discount_val:.2f}')}" if cny_discount_val > 0 else "0.00"
+    fx_discount_display = f"{fx_offer_str}" if fx_discount_val > 0 else f"0{'' if is_integer else '.00'}"
+    cny_voucher_display = f"{intcomma(f'{cny_voucher_applied_val:.2f}')}" if cny_voucher_applied_val > 0 else "0.00"
+    fx_voucher_display = f"{fx_voucher_applied_str}" if fx_voucher_applied_val > 0 else f"0{'' if is_integer else '.00'}"
+
+    cart_items = CartItem.objects.filter(cart=cart, is_active=True)
+    has_physical_items = cart_items.filter(product_variation__product__is_physical=True).exists()
+    has_e_items = cart_items.filter(product_variation__product__is_physical=False, product_variation__product__is_voucher=False).exists()
+    has_cash_voucher_items = cart_items.filter(product_variation__product__is_voucher=True).exists()
+
+    summary_context = {
+        "has_physical_items": has_physical_items,
+        "has_e_items": has_e_items,
+        "has_cash_voucher_items": has_cash_voucher_items,
+        "foreign_currency_symbol": foreign_currency_symbol,
+        "foreign_currency_code": foreign_currency_code,
+        "physical_products_total": cny_physical,
+        "physical_products_total_foreign": fx_physical_str,
+        "shipping_cost": cny_shipping_str,
+        "shipping_cost_foreign": fx_shipping_str,
+        "e_products_total": cny_electronic,
+        "e_products_total_foreign": fx_electronic_str,
+        "offer_applied": cny_discount_display,
+        "offer_applied_foreign": fx_discount_display,
+        "voucher_applied": cny_voucher_display,
+        "voucher_applied_foreign": fx_voucher_display,
+        "voucher_products_total": cny_voucher_p,
+        "voucher_products_total_foreign": fx_voucher_p_str,
+        "is_oob": True,
+    }
+    
+    # Extract total payable directly from the ledger to ensure it matches
+    _, fmt_cny_payable, fmt_fx_payable = update_total_payable(request, cart)
+    summary_context["total_payable"] = fmt_cny_payable
+    summary_context["total_payable_foreign"] = fmt_fx_payable
+
+    summary_cart_total_html = render_to_string("store/partials/cart_summary.html", summary_context, request)
+    tbody_html = f"""
+        <table>
+            <tbody id="cart_summary_section"
+                hx-get="/carts/update_exchange_rate_api/"
+                hx-trigger="refresh_forex from:body"
+                hx-swap-oob="true"
+                hx-swap="none"
+            >
+                {summary_cart_total_html}
+            </tbody>
+        </table>
+    """
+    
+    thead_html = render_to_string("store/partials/cart_summary_thead_rows.html", {
+        "foreign_currency_code": foreign_currency_code,
+        "currency_selection": CURRENCIES,
+        "request": request,
+    }, request=request)
+        
+    return tbody_html, thead_html
+
+
 def update_costs_oobs(request, cart, is_integer, foreign_currency_code, foreign_currency_symbol, locked_rate):
     """
     Unified Shared Cost Calculation Matrix.
@@ -1316,106 +1409,27 @@ def update_costs_oobs(request, cart, is_integer, foreign_currency_code, foreign_
     # =============================================================
     # 🔒 2. RUN THE MASTER LEDGER CORE ANCHOR
     # =============================================================
-    _, fmt_cny_payable, fmt_fx_payable = update_total_payable(request, cart)
-
-    # 3. Extract freshly updated, balanced data metrics out of session safety logs
-    def get_session_fx(key, nested_key):
-        return request.session.get(key, {}).get(nested_key, "0")
-    
-    cny_shipping_str = get_session_fx("shipping_data", "shipping_cost")
-    cny_offer_str = get_session_fx("offer_applied", "discount_amount")
-    cny_voucher_applied_str = get_session_fx("applied_voucher", "applied_voucher_amount")
-
-    fx_shipping_str = get_session_fx("shipping_data", "shipping_cost_foreign")
-    fx_offer_str = get_session_fx("offer_applied", "discount_amount_foreign")
-    fx_voucher_applied_str = get_session_fx("applied_voucher", "applied_voucher_amount_foreign")
-
-    def clean_model_fx(val_str):
-        return Decimal(str(val_str).replace(",", ""))
-
-    # Pull component metrics straight from model tracking rows
-    cny_physical = cart.get_physical_products_subtotal()
-    cny_electronic = cart.get_e_products_subtotal()
-    cny_voucher_p = cart.get_voucher_products_subtotal()
-
-    fx_physical_str = get_session_fx("shipping_data", "physical_products_total_foreign")
-    fx_electronic_str = format_fx_value(clean_model_fx(cart.get_e_products_subtotal_foreign(foreign_currency_code, locked_rate)), foreign_currency_code)
-    fx_voucher_p_str = format_fx_value(clean_model_fx(cart.get_voucher_products_subtotal_foreign(foreign_currency_code, locked_rate)), foreign_currency_code)
 
     # Header calculations summary row
     updated_header_summary = update_header_cart_summary(request, cart)
     if updated_header_summary and str(updated_header_summary).strip():
         oob_updates.append(updated_header_summary)
-    if updated_header_summary and str(updated_header_summary).strip():
-        oob_updates.append(updated_header_summary)
 
-    # Costs layout items formatting via pure Python conditional expressions
-    cny_discount_val = clean_decimal(cny_offer_str)
-    fx_discount_val = clean_decimal(fx_offer_str)
-    cny_voucher_applied_val = clean_decimal(cny_voucher_applied_str)
-    fx_voucher_applied_val = clean_decimal(fx_voucher_applied_str)
-
-    cny_discount_display = f"{intcomma(f'{cny_discount_val:.2f}')}" if cny_discount_val > 0 else "0.00"
-    fx_discount_display = f"{fx_offer_str}" if fx_discount_val > 0 else f"0{'' if is_integer else '.00'}"
-    cny_voucher_display = f"{intcomma(f'{cny_voucher_applied_val:.2f}')}" if cny_voucher_applied_val > 0 else "0.00"
-    fx_voucher_display = f"{fx_voucher_applied_str}" if fx_voucher_applied_val > 0 else f"0{'' if is_integer else '.00'}"
-
-    cart_items = CartItem.objects.filter(cart=cart, is_active=True)
-    has_physical_items = cart_items.filter(product_variation__product__is_physical=True).exists()
-    has_e_items = cart_items.filter(product_variation__product__is_physical=False, product_variation__product__is_voucher=False).exists()
-    has_cash_voucher_items = cart_items.filter(product_variation__product__is_voucher=True).exists()
-
-    summary_context = {
-        "has_physical_items": has_physical_items,
-        "has_e_items": has_e_items,
-        "has_cash_voucher_items": has_cash_voucher_items,
-
-        "foreign_currency_symbol": foreign_currency_symbol,
-        "physical_products_total": cny_physical,
-        "physical_products_total_foreign": fx_physical_str,
-        "shipping_cost": cny_shipping_str,
-        "shipping_cost_foreign": fx_shipping_str,
-        "e_products_total": cny_electronic,
-        "e_products_total_foreign": fx_electronic_str,
-        "offer_applied": cny_discount_display,
-        "offer_applied_foreign": fx_discount_display,
-        "voucher_applied": cny_voucher_display,
-        "voucher_applied_foreign": fx_voucher_display,
-        "voucher_products_total": cny_voucher_p,
-        "voucher_products_total_foreign": fx_voucher_p_str,
-        "total_payable": fmt_cny_payable,
-        "total_payable_foreign": fmt_fx_payable,
-        "is_oob": True,
-    }
-    summary_cart_total_html = render_to_string("store/partials/cart_summary.html", summary_context, request)
-    summary_cart_wrapper_html = f"""
-        <table>
-            <tbody id="cart_summary_section"
-                hx-get="/carts/update_exchange_rate_api/"
-                hx-trigger="refresh_forex from:body"
-                hx-swap-oob="true"
-                hx-swap="none"
-            >
-                {summary_cart_total_html}
-            </tbody>
-        </table>
-    """
-    # oob_updates.append(summary_cart_wrapper_html)
-       
-    # 💡 THE ULTIMATE FIX: Strip away the outer <table> wrapper elements completely!
-    # Sending the <tbody> as a clean root tag stops the browser from breaking the DOM attributes.
-    # summary_cart_wrapper_html = f'''
-    # <tbody id="cart_summary_section"
-    #        hx-get="/carts/update_exchange_rate_api/"
-    #        hx-trigger="refresh_forex from:body"
-    #        hx-swap-oob="true"
-    #        hx-swap="none"
-    #        class="bg-transparent">
-    #     {summary_cart_total_html}
-    # </tbody>
-    # '''.strip().replace("\n", "").replace("    ", "")
-    
-    oob_updates.append(summary_cart_wrapper_html)
+    # Render the cart summary <tbody> AND its <thead> as two OOB fragments.
+    # The <thead> must be emitted separately because the inner currency
+    # switcher's `{% if foreign_currency_code != 'CNY' %}` collapse lives
+    # there — swapping only the <tbody> leaves the header columns stuck on
+    # the previous layout.
+    tbody_html, thead_rows_html = get_cart_summary_oob(
+        request, cart, is_integer, foreign_currency_code, foreign_currency_symbol, locked_rate
+    )
+    if tbody_html:
+        oob_updates.append(tbody_html)
+    if thead_rows_html:
+        oob_updates.append(
+            f'<table><thead id="cart_summary_thead" hx-swap-oob="true" '
+            f'class="font-normal select-none border-b border-base-100">{thead_rows_html}</thead></table>'
+        )
 
     if shipping_html:
         styled_shipping_oob = shipping_html.replace(
@@ -1491,7 +1505,6 @@ def get_cart_totals(request, cart):
     voucher_products_total_foreign = cart.get_voucher_products_subtotal_foreign(foreign_currency_code, locked_rate)
 
     cart_items_quantity = cart.get_items_count()
-    print("get_cart_totals - cart_items_quantity: ",  cart.get_items_count())
     return cart_grand_total, cart_total_foreign, physical_products_total, physical_products_total_foreign, \
         e_products_total, e_products_total_foreign, voucher_products_total, voucher_products_total_foreign, \
         foreign_currency_symbol, cart_items_quantity

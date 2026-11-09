@@ -398,13 +398,21 @@
                             -->
                             <tr class="font-normal border-b border-base-100 select-none">
                                 <td class="w-[30%] py-1 text-left text-[10px] text-base-content/40 font-medium">Item<br>項目</td>
-                                <td class="w-[28%] py-1 text-right font-semibold text-[10px] text-base-content/40 tracking-wider">Amount<br>基準金額</td>
-                                <td class="w-[42%] py-1 text-right font-semibold text-[10px] text-primary/60 tracking-wider">Pay In<br>應付貨幣</td>
+                                {% if foreign_currency_code != 'CNY' %}
+                                    <td class="w-[28%] py-1 text-right font-semibold text-[10px] text-base-content/40 tracking-wider">Amount<br>基準金額</td>
+                                    <td class="w-[42%] py-1 text-right font-semibold text-[10px] text-primary/60 tracking-wider">Pay In<br>應付貨幣</td>
+                                {% else %}
+                                    <td class="w-[70%] py-1 text-right font-semibold text-[10px] text-primary/60 tracking-wider" colspan="2">Amount (CNY)<br>基準金額</td>
+                                {% endif %}
                             </tr>
                             <tr class="border-b border-dashed border-base-200/60 select-none">
                                 <th class="py-1.5 text-left"></th>
-                                <th class="py-1.5 text-right text-[10px] font-mono text-base-content/40 tracking-wide font-normal">CNY (¥)</th>
-                                <th class="py-1.5 text-right text-[10px] font-mono text-primary/60 tracking-wide font-normal">{{ foreign_currency_code }}</th>
+                                {% if foreign_currency_code != 'CNY' %}
+                                    <th class="py-1.5 text-right text-[10px] font-mono text-base-content/40 tracking-wide font-normal">CNY (¥)</th>
+                                    <th class="py-1.5 text-right text-[10px] font-mono text-primary/60 tracking-wide font-normal">{{ foreign_currency_code }}</th>
+                                {% else %}
+                                    <th class="py-1.5 text-right text-[10px] font-mono text-primary/60 tracking-wide font-normal" colspan="2">CNY (¥)</th>
+                                {% endif %}
                             </tr>
                         </thead>
 
@@ -412,12 +420,14 @@
                             <!-- Products Subtotal Row -->
                             <tr class="font-normal border-b border-base-50/60">
                                 <td class="py-2 text-left text-[11px] leading-tight text-base-content/70">Products<br><span class="text-[10px] text-base-content/40">商品小計</span></td>
+                                {% if foreign_currency_code != 'CNY' %}
                                 <td class="py-2 text-right font-mono text-[10px] text-base-content/40 tracking-tight pr-1">
                                     <span id="products_subtotal_amount" data-value="{{ cart_total }}" data-currency="CNY">
                                         ¥ {{ cart_total|floatformat:2|intcomma|default:"0.00" }}
                                     </span>
                                 </td>
-                                <td class="py-2 text-right font-mono text-xs font-semibold text-base-content/80">
+                                {% endif %}
+                                <td class="py-2 text-right font-mono text-xs font-semibold text-base-content/80" {% if foreign_currency_code == 'CNY' %}colspan="2"{% endif %}>
                                     <span id="products_subtotal_amount_foreign" data-value="{{ cart_total_foreign }}" data-currency="{{ foreign_currency_code }}">
                                         {% if is_integer %}
                                             {{foreign_currency_symbol}} {{ cart_total_foreign|floatformat:0|intcomma|default:"0" }}
@@ -431,19 +441,20 @@
                             <!-- Shipping Fee Row -->
                             <tr class="font-normal border-b border-base-50/60">
                                 <td class="py-2 text-left text-[11px] leading-tight text-base-content/70">Shipping<br><span class="text-[10px] text-base-content/40">運費加計</span></td>
+                                {% if foreign_currency_code != 'CNY' %}
                                 <td class="py-2 text-right font-mono text-[10px] text-base-content/40 tracking-tight pr-1">
                                     <span id="shipping_cost_amount" data-value="{{ shipping_cost }}" data-currency="CNY">
                                         ¥ {{ shipping_cost|floatformat:2|intcomma|default:"0.00" }}
                                     </span>
                                 </td>
-                                <td class="py-2 text-right font-mono text-xs font-semibold text-success">
+                                {% endif %}
+                                <td class="py-2 text-right font-mono text-xs font-semibold text-success" {% if foreign_currency_code == 'CNY' %}colspan="2"{% endif %}>
                                     <span id="shipping_cost_amount_foreign" data-value="{{ shipping_cost_amount_foreign }}" data-currency="{{ foreign_currency_code }}">
                                             {% if is_integer %}
                                                 {{foreign_currency_symbol}} {{ shipping_cost_amount_foreign|floatformat:0|intcomma|default:"0" }}
                                             {% else %}
                                                 {{foreign_currency_symbol}} {{ shipping_cost_amount_foreign|floatformat:2|intcomma|default:"0.00" }}
                                             {% endif %}
-
                                     </span>
                                 </td>
                             </tr>
@@ -451,12 +462,14 @@
                             <!-- Discounts Row -->
                             <tr class="font-normal border-b border-base-50/60">
                                 <td class="py-2 text-left text-[11px] leading-tight text-base-content/70">Discount<br><span class="text-[10px] text-base-content/40">優惠折抵</span></td>
+                                {% if foreign_currency_code != 'CNY' %}
                                 <td class="py-2 text-right font-mono text-[10px] text-error/50 tracking-tight pr-1">
                                     <span id="discount_amount" data-value="{{ discount_amount }}" data-currency="CNY">
                                         ¥ {% if discount_amount != 0 %}({{ discount_amount|floatformat:2|intcomma }}){% else %}(0.00){% endif %}
                                     </span>
                                 </td>
-                                <td class="py-2 text-right font-mono text-xs font-semibold text-error">
+                                {% endif %}
+                                <td class="py-2 text-right font-mono text-xs font-semibold text-error" {% if foreign_currency_code == 'CNY' %}colspan="2"{% endif %}>
                                     <span id="discount_amount_foreign" data-value="{{ discount_amount_foreign }}" data-currency="{{ foreign_currency_code }}">
                                         {% if discount_amount_foreign != 0 %}
                                             {% if is_integer %}
@@ -479,12 +492,14 @@
                             {% if request.user.is_authenticated %}
                             <tr class="font-normal border-b border-base-50/60">
                                 <td class="py-2 text-left text-[11px] leading-tight text-base-content/70">Voucher Applied<br><span class="text-[10px] text-base-content/40">現金券扣抵</span></td>
+                                {% if foreign_currency_code != 'CNY' %}
                                 <td class="py-2 text-right font-mono text-[10px] text-info/50 tracking-tight pr-1">
                                     <span id="cash_voucher_amount" data-value="{{ voucher_applied }}" data-currency="CNY">
                                         ¥ {% if voucher_applied != 0 %}({{ voucher_applied|floatformat:2|intcomma }}){% else %}(0.00){% endif %}
                                     </span>
                                 </td>
-                                <td class="py-2 text-right font-mono text-xs font-semibold text-info">
+                                {% endif %}
+                                <td class="py-2 text-right font-mono text-xs font-semibold text-info" {% if foreign_currency_code == 'CNY' %}colspan="2"{% endif %}>
                                     <span id="cash_voucher_amount_foreign" data-value="{{ applied_voucher_amount_foreign }}" data-currency="{{ foreign_currency_code }}">
                                         {% if applied_voucher_amount_foreign != 0 %}
                                             {% if is_integer %}
@@ -509,12 +524,14 @@
                                 <td class="py-3 text-left text-xs font-bold text-base-content/90 leading-tight pl-1 rounded-l-xl">
                                     Total Due<br><span class="text-[10px] font-normal text-base-content/40">應付總額</span>
                                 </td>
+                                {% if foreign_currency_code != 'CNY' %}
                                 <td class="py-3 text-right font-mono text-[11px] min-[576px]:max-[767px]:text-[13px] min-[768px]:max-[960px]:text-[9.5px] min-[961px]:text-[12px] font-medium text-base-content/60 tracking-tight pr-1">
                                     <span id="total_payable_amount" data-value="{% if cart_items|length != 0 %}{{ total_due }}{% else %}0.00{% endif %}" data-currency="CNY">
                                         ¥ {{ total_due|floatformat:2|intcomma|default:"0.00" }}
                                     </span>
                                 </td>
-                                <td class="py-3 text-right rounded-r-xl pr-1">
+                                {% endif %}
+                                <td class="py-3 text-right rounded-r-xl pr-1" {% if foreign_currency_code == 'CNY' %}colspan="2"{% endif %}>
                                     <!-- Guaranteed inline cross-browser text-shadow pop execution -->
                                     <span id="total_amount_foreign" data-value="{{ total_due_foreign }}" data-currency="{{ foreign_currency_code }}"
                                           style="text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.15);"

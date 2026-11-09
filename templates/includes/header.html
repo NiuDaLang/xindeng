@@ -218,7 +218,7 @@
                                 <span>Sub-Total｜小計:</span>
                                 <div class="flex flex-col items-end">
                                     <span id="cart_sub_total" class="font-mono text-primary text-sm xs:text-base">CNY ¥{{ header_cart_total }}</span>
-                                    <span id="cart_sub_total_foreign" class="font-mono text-[10px] text-base-content/50 block mt-0.5 {% if not header_cart_total_foreign or not rate_state %}hidden{% endif %}">
+                                    <span id="cart_sub_total_foreign" class="font-mono text-[10px] text-base-content/50 block mt-0.5 {% if foreign_currency_code == 'CNY' or not header_cart_total_foreign or not rate_state %}hidden{% endif %}">
                                         ≈ {{ foreign_currency_symbol }} {{ header_cart_total_foreign }}
                                     </span>
                                 </div>
