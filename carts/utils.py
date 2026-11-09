@@ -725,17 +725,34 @@ def broadcast_cart_change(request):
 
 def get_or_lock_checkout_rate(request, currency_code):
     """
-    Get or lock the latest rate for each user (session). 
+    Get or lock the latest rate for each user (session).
     Bypasses external lookups for base CNY currency with a strict 1.0000 multiplier.
+
+    Session pin preservation (3f-bis-followup-11): when the requested
+    currency differs from the currently-pinned one, we first look for a
+    still-valid remembered pin for that currency in
+    session['last_pin_per_currency']. If found, we restore it verbatim —
+    the same rate and the same locked_at / rate_expiry_timestamp — so a
+    user who switches HKD -> JPY -> HKD sees the HKD rate they had
+    minutes earlier, not a freshly-fetched one. The remembered pin is
+    only honoured while its own expiry is still in the future; an
+    expired remembered pin falls through to a fresh fetch.
+
+    The dict is written on every genuine fresh pin (the fresh-fetch path)
+    and *backfilled* on the reuse path if the currency is missing from
+    the dict. This ensures a session that started life on the old code
+    (where the dict didn't exist) will populate the dict on its first
+    reuse of a currency, so the next switch-away-and-back can restore it.
+    CNY is deliberately not remembered in the dict.
     """
-    currency_code = currency_code.upper() # Ensure consistency
-    
+    currency_code = currency_code.upper()  # Ensure consistency
+
     # 💡 BYPASS RULE FOR BASE CURRENCY
     if currency_code == "CNY":
         request.session['locked_rate'] = "1.0000"
         request.session['locked_at'] = timezone.now().isoformat()
         request.session['locked_currency_code'] = "CNY"
-        
+
         # Give it the standard 24-hour expiry footprint so JavaScript timers don't crash
         current_time_ms = int(time.time() * 1000)
         request.session['rate_expiry_timestamp'] = current_time_ms + (RATE_LOCK_HOURS * 60 * 60 * 1000)
@@ -749,13 +766,36 @@ def get_or_lock_checkout_rate(request, currency_code):
 
     if not locked_rate or locked_currency != currency_code:
         refresh_needed = True
-    
+
     if locked_rate and locked_at:
         lock_time = timezone.datetime.fromisoformat(locked_at)
         if timezone.now() > lock_time + timedelta(hours=RATE_LOCK_HOURS):
             refresh_needed = True
 
     if refresh_needed:
+        # ── 3f-bis-followup-11: try to restore a remembered pin first ──
+        current_time_ms = int(time.time() * 1000)
+        remembered_pins = request.session.get('last_pin_per_currency', {}) or {}
+        remembered = remembered_pins.get(currency_code)
+
+        if remembered and remembered.get('expires_ms', 0) >= current_time_ms:
+            request.session['locked_rate'] = remembered['rate']
+            request.session['locked_at'] = remembered['locked_at']
+            request.session['locked_currency_code'] = currency_code
+            request.session['rate_expiry_timestamp'] = remembered['expires_ms']
+            request.session.modified = True
+            try:
+                return Decimal(str(remembered['rate'])).quantize(
+                    Decimal('0.0001'), rounding=ROUND_HALF_UP
+                )
+            except (InvalidOperation, TypeError, ValueError):
+                # A corrupt remembered entry must not trap the request.
+                # Fall through to a fresh fetch, which will overwrite it.
+                logger.error(
+                    "get_or_lock_checkout_rate: bad remembered rate %r for %s; refetching",
+                    remembered.get('rate'), currency_code,
+                )
+
         new_rate = get_current_rate(
             base_currency_code="CNY", target_currency_code=currency_code
         )
@@ -768,21 +808,54 @@ def get_or_lock_checkout_rate(request, currency_code):
             )
             new_rate = 1.0
 
-        request.session['locked_rate'] = str(new_rate)
-        request.session['locked_at'] = timezone.now().isoformat()
-        request.session['locked_currency_code'] = currency_code
-
+        locked_at_iso = timezone.now().isoformat()
         current_time_ms = int(time.time() * 1000)
-        request.session['rate_expiry_timestamp'] = current_time_ms + (RATE_LOCK_HOURS * 60 * 60 * 1000)
+        expiry_ms = current_time_ms + (RATE_LOCK_HOURS * 60 * 60 * 1000)
+
+        request.session['locked_rate'] = str(new_rate)
+        request.session['locked_at'] = locked_at_iso
+        request.session['locked_currency_code'] = currency_code
+        request.session['rate_expiry_timestamp'] = expiry_ms
+
+        # ── 3f-bis-followup-11: record this fresh pin in the dict ──
+        # Prune expired entries first so the dict stays bounded. The
+        # current currency's entry is written on top.
+        pruned = {
+            code: entry for code, entry in remembered_pins.items()
+            if isinstance(entry, dict) and entry.get('expires_ms', 0) >= current_time_ms
+        }
+        pruned[currency_code] = {
+            'rate': str(new_rate),
+            'locked_at': locked_at_iso,
+            'expires_ms': expiry_ms,
+        }
+        request.session['last_pin_per_currency'] = pruned
         request.session.modified = True
+
         locked_rate = Decimal(str(new_rate)).quantize(
             Decimal('0.0001'), rounding=ROUND_HALF_UP
         )
     else:
+        # ── 3f-bis-followup-11: Reuse path (no refresh needed) ──
         try:
             locked_rate = Decimal(str(locked_rate)).quantize(
                 Decimal('0.0001'), rounding=ROUND_HALF_UP
             )
+            
+            # Backfill the dict if this currency is missing from it.
+            # This catches sessions that started before the dict existed
+            # (e.g., across a server restart) so their next switch-away-
+            # and-back will correctly restore this pin.
+            pins = request.session.get('last_pin_per_currency', {}) or {}
+            if locked_currency not in pins:
+                pins[locked_currency] = {
+                    'rate': str(locked_rate),
+                    'locked_at': locked_at,
+                    'expires_ms': request.session.get('rate_expiry_timestamp', 0),
+                }
+                request.session['last_pin_per_currency'] = pins
+                request.session.modified = True
+
         except (InvalidOperation, TypeError, ValueError):
             logger.error(
                 "get_or_lock_checkout_rate: bad session rate %r; resetting to 1.0",

@@ -225,3 +225,166 @@ class TestUpdateCostsOobsRepinsAfterQuantityChange:
         # CNY-scale value (100.00, not 11.00).
         written_fx = request.session['applied_voucher']['applied_voucher_amount_foreign']
         assert Decimal(written_fx.replace(',', '')) == Decimal('100.00')
+
+
+class TestPinPreservationAcrossCurrencySwitches:
+    """
+    3f-bis-followup-11: session pin preservation per currency.
+
+    When the user switches away from a currency and back, the remembered
+    pin from the first visit is restored — same rate, same locked_at,
+    same expiry — provided it has not itself expired. An expired
+    remembered pin falls through to a fresh fetch.
+
+    These tests seed session['last_pin_per_currency'] and the flat keys
+    directly rather than going through get_or_lock_checkout_rate for the
+    seed step, so the assertions are about the restore path, not about
+    what get_current_rate happens to return under test.
+    """
+
+    def _seed_remembered_hkd(self, request, rate='0.1100', hours_valid=24):
+        """Put an HKD entry in the dict with a future expiry."""
+        from datetime import timedelta as _td
+        locked_at = timezone.now()
+        expires_ms = int((locked_at + _td(hours=hours_valid)).timestamp() * 1000)
+        pins = request.session.get('last_pin_per_currency', {}) or {}
+        pins['HKD'] = {
+            'rate': rate,
+            'locked_at': locked_at.isoformat(),
+            'expires_ms': expires_ms,
+        }
+        request.session['last_pin_per_currency'] = pins
+        request.session.save()
+        return locked_at
+
+    def _seed_expired_remembered_hkd(self, request, rate='0.1100'):
+        """Put an HKD entry in the dict whose own expiry is in the past."""
+        from datetime import timedelta as _td
+        locked_at = timezone.now() - _td(hours=48)
+        expires_ms = int((locked_at + _td(hours=24)).timestamp() * 1000)  # past
+        pins = request.session.get('last_pin_per_currency', {}) or {}
+        pins['HKD'] = {
+            'rate': rate,
+            'locked_at': locked_at.isoformat(),
+            'expires_ms': expires_ms,
+        }
+        request.session['last_pin_per_currency'] = pins
+        request.session.save()
+        return locked_at
+
+    def _pin_jpy(self, request, rate='0.0480'):
+        """Write a JPY pin into the flat keys, simulating an active switch."""
+        request.session['locked_rate'] = rate
+        request.session['locked_at'] = timezone.now().isoformat()
+        request.session['locked_currency_code'] = 'JPY'
+        request.session['rate_expiry_timestamp'] = int(
+            (timezone.now() + timedelta(hours=24)).timestamp() * 1000
+        )
+        request.session.save()
+
+    def test_switch_back_restores_previous_pin(self, pinned_hkd_request):
+        from carts.utils import get_or_lock_checkout_rate
+
+        request, _cart = pinned_hkd_request
+        self._seed_remembered_hkd(request, rate='0.1100')
+        self._pin_jpy(request, rate='0.0480')
+
+        rate = get_or_lock_checkout_rate(request, 'HKD')
+
+        # Restored — the rate is the remembered one, not a fresh fetch.
+        assert rate == Decimal('0.1100')
+        assert request.session['locked_rate'] == '0.1100'
+        assert request.session['locked_currency_code'] == 'HKD'
+
+    def test_switch_back_preserves_locked_at_display(self, pinned_hkd_request):
+        from carts.utils import get_or_lock_checkout_rate
+
+        request, _cart = pinned_hkd_request
+        remembered_locked_at = self._seed_remembered_hkd(request, rate='0.1100')
+        remembered_iso = remembered_locked_at.isoformat()
+        self._pin_jpy(request)
+
+        get_or_lock_checkout_rate(request, 'HKD')
+
+        # The locked_at written back is the remembered one, not now().
+        # This is the display-correctness point: the header ⓘ Swal shows
+        # the moment of the original pin, not the moment of the switch-back.
+        assert request.session['locked_at'] == remembered_iso
+
+    def test_expired_remembered_pin_is_not_restored(self, pinned_hkd_request):
+        from carts.utils import get_or_lock_checkout_rate
+
+        request, _cart = pinned_hkd_request
+        self._seed_expired_remembered_hkd(request, rate='0.1100')
+        self._pin_jpy(request)
+
+        rate = get_or_lock_checkout_rate(request, 'HKD')
+
+        # The stale 0.1100 was not restored. Whatever get_current_rate
+        # returns, it is not the remembered value — and crucially the
+        # flat keys have been overwritten with a fresh pin.
+        assert rate != Decimal('0.1100') or request.session['locked_rate'] != '0.1100'
+        # And the expired entry was pruned as part of the fresh write.
+        pins = request.session.get('last_pin_per_currency', {}) or {}
+        assert 'HKD' in pins
+        assert pins['HKD']['expires_ms'] > int(timezone.now().timestamp() * 1000)
+
+    def test_cny_bypass_does_not_write_dict(self, pinned_hkd_request):
+        from carts.utils import get_or_lock_checkout_rate
+
+        request, _cart = pinned_hkd_request
+        self._seed_remembered_hkd(request, rate='0.1100')
+
+        get_or_lock_checkout_rate(request, 'CNY')
+
+        pins = request.session.get('last_pin_per_currency', {}) or {}
+        assert 'CNY' not in pins
+
+    def test_dict_pruned_of_expired_entries(self, pinned_hkd_request):
+        from carts.utils import get_or_lock_checkout_rate
+
+        request, _cart = pinned_hkd_request
+        # Seed one expired remembered pin for a currency we are NOT about
+        # to pin, and a fresh JPY pin.
+        self._seed_expired_remembered_hkd(request, rate='0.1100')
+        self._pin_jpy(request)
+
+        # A fresh EUR pin triggers the write path, which prunes.
+        get_or_lock_checkout_rate(request, 'EUR')
+
+        pins = request.session.get('last_pin_per_currency', {}) or {}
+        assert 'HKD' not in pins       # expired, pruned
+        assert 'EUR' in pins           # freshly written
+        assert pins['EUR']['expires_ms'] > int(timezone.now().timestamp() * 1000)
+
+    def test_reuse_path_backfills_dict_on_first_reuse(self, pinned_hkd_request):
+        """
+        Pre-existing flat-key pins (from before this code shipped) are
+        invisible to the dict on first reuse. The reuse branch backfills
+        the dict so the *next* switch-away-and-back hits the restore path.
+        Without this, a session that started life on the old code would
+        miss once per currency after the deploy.
+        """
+        from carts.utils import get_or_lock_checkout_rate
+
+        request, _cart = pinned_hkd_request
+        
+        # Simulate a legacy session: flat keys are present, but the dict
+        # has been wiped (or never existed). We reset the flat keys back
+        # to the fixture's known 0.1100 rate to override whatever the
+        # cart view fetched during setup.
+        request.session.pop('last_pin_per_currency', None)
+        request.session['locked_rate'] = '0.1100'
+        request.session['locked_currency_code'] = 'HKD'
+        request.session['locked_at'] = timezone.now().isoformat()
+        request.session['rate_expiry_timestamp'] = int(
+            (timezone.now() + timedelta(hours=24)).timestamp() * 1000
+        )
+        request.session.save()
+
+        get_or_lock_checkout_rate(request, 'HKD')  # reuse, not refresh
+
+        pins = request.session.get('last_pin_per_currency', {}) or {}
+        assert 'HKD' in pins
+        assert pins['HKD']['rate'] == '0.1100'
+        assert pins['HKD']['locked_at'] == request.session['locked_at']
