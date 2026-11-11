@@ -103,7 +103,18 @@ def _create_settlement_lines_for_order(order, admin_user):
 
     created = []
     skipped = []
+    pending_dispatch = []
     for artisan, revenue in revenue_by_artisan.items():
+        # Per-artisan dispatch gate (Session A, Option C):
+        # settlement is only created for this artisan once every one
+        # of their lines on this order is dispatched. Other artisans
+        # on the same order settle independently.
+        artisan_lines = billable.filter(fulfilled_by=artisan)
+        undispatched_count = artisan_lines.filter(is_dispatched=False).count()
+        if undispatched_count > 0:
+            pending_dispatch.append(artisan)
+            continue
+
         existing = ArtisanSettlementLine.objects.filter(
             order=order, artisan=artisan
         ).first()
@@ -111,17 +122,56 @@ def _create_settlement_lines_for_order(order, admin_user):
             skipped.append(artisan)
             continue
 
+        # Aggregate new fields from line snapshots.
+        commission_total = sum(
+            (ln.platform_commission_amount or Decimal("0.00") for ln in artisan_lines),
+            Decimal("0.00"),
+        )
+        discount_artisan_total = sum(
+            (ln.discount_absorbed_by_artisan_cny or Decimal("0.00") for ln in artisan_lines),
+            Decimal("0.00"),
+        )
+        discount_platform_total = sum(
+            (ln.discount_absorbed_by_platform_cny or Decimal("0.00") for ln in artisan_lines),
+            Decimal("0.00"),
+        )
+        shipping_shortfall_total = sum(
+            (ln.shipping_shortfall_absorbed_by_artisan_cny or Decimal("0.00") for ln in artisan_lines),
+            Decimal("0.00"),
+        )
+        shipping_surplus_total = sum(
+            (ln.shipping_surplus_returned_to_artisan_cny or Decimal("0.00") for ln in artisan_lines),
+            Decimal("0.00"),
+        )
+        mode_counts = {}
+        for ln in artisan_lines:
+            mode = ln.dispatch_mode or "UNDECIDED"
+            mode_counts[mode] = mode_counts.get(mode, 0) + 1
+        mode_mix = ", ".join(f"{m} x{c}" for m, c in sorted(mode_counts.items()))
+        perk_codes = sorted({ln.applied_perk_code for ln in artisan_lines if ln.applied_perk_code})
+
         line = ArtisanSettlementLine.objects.create(
             order=order,
             artisan=artisan,
             product_revenue=revenue,
             shipping_charged_to_customer=shipping_by_artisan[artisan],
-            # website_margin_rate defaults to 0; admin fills it in
-            # on the change form. website_margin_amount will remain
-            # 0 until the admin sets the rate and saves.
+            platform_commission_amount=commission_total,
+            discount_absorbed_by_artisan=discount_artisan_total,
+            discount_absorbed_by_platform=discount_platform_total,
+            applied_perk_codes=",".join(perk_codes),
+            shipping_mode_mix=mode_mix,
+            shipping_shortfall_absorbed_by_artisan=shipping_shortfall_total,
+            shipping_surplus_returned_to_artisan=shipping_surplus_total,
             settlement_exchange_rate=order.locked_exchange_rate,
         )
         created.append(line)
+
+    if pending_dispatch:
+        names = ", ".join(a.display_name for a in pending_dispatch)
+        warnings.append(
+            f"Order {order.order_number}: settlement deferred for "
+            f"artisan(s) {names} — awaiting dispatch of all their lines."
+        )
 
     return {"created": created, "skipped": skipped, "warnings": warnings}
 

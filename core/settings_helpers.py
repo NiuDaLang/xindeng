@@ -16,6 +16,9 @@ from django.core.cache import cache
 
 _DDP_KEY = "site_config:ddp_enabled"
 _DDP_TTL_SECONDS = 60
+_ARTISAN_DIRECT_SHIP_KEY = "site_config:allow_artisan_direct_ship"
+_ARTISAN_DIRECT_SHIP_TTL_SECONDS = 60
+
 
 
 def is_ddp_enabled() -> bool:
@@ -37,4 +40,25 @@ def is_ddp_enabled() -> bool:
     obj = SiteConfig.objects.filter(pk=1).first()
     value = bool(obj.ddp_enabled) if obj is not None else False
     cache.set(_DDP_KEY, value, timeout=_DDP_TTL_SECONDS)
+    return value
+
+
+def is_artisan_direct_ship_allowed() -> bool:
+    """
+    True when the SiteConfig singleton permits DIRECT dispatch.
+
+    Missing row → True (default). This is the permissive choice: a
+    fresh DB should not silently lock artisans out of direct dispatch
+    the moment Session A lands. The admin flips it off deliberately
+    when the Beijing-hub consolidation is ready.
+    """
+    cached = cache.get(_ARTISAN_DIRECT_SHIP_KEY)
+    if cached is not None:
+        return cached
+
+    from core.models import SiteConfig
+
+    obj = SiteConfig.objects.filter(pk=1).first()
+    value = bool(obj.allow_artisan_direct_ship) if obj is not None else True
+    cache.set(_ARTISAN_DIRECT_SHIP_KEY, value, timeout=_ARTISAN_DIRECT_SHIP_TTL_SECONDS)
     return value

@@ -110,6 +110,9 @@ class CartItem(models.Model):
         """Absolute unquantized baseline subtotal truth layer in core CNY currency."""
         return self.product_variation.price * self.quantity
 
+    def get_subtotal(self):
+        return self.subtotal
+
     def get_subtotal_foreign(self, currency_code, exchange_rate):
         """
         The line-item's foreign subtotal.

@@ -6,6 +6,8 @@ from .models import (
 )
 import admin_thumbnails
 from reviews.admin import CommentInline
+from django import forms
+from decimal import Decimal
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -162,6 +164,39 @@ class ProductAdmin(admin.ModelAdmin):
         self.message_user(request, f"Restored {restored} product(s).")
 
 
+class ProductVariationAdminForm(forms.ModelForm):
+    acknowledge_net_loss = forms.BooleanField(
+        required=False,
+        label="I acknowledge this SKU will be net-loss for the platform",
+        help_text=(
+            "Tick this if you are setting commission below 3.4% "
+            "(the PayPal/Stripe gateway floor). The platform will "
+            "lose money on every sale of this SKU until the commission "
+            "is raised."
+        ),
+    )
+
+    class Meta:
+        model = ProductVariation
+        fields = "__all__"
+
+    def clean(self):
+        cleaned = super().clean()
+        pct = cleaned.get("platform_commission_pct")
+        ack = cleaned.get("acknowledge_net_loss")
+
+        if pct is not None and pct < Decimal("3.4") and not ack:
+            raise forms.ValidationError({
+                'platform_commission_pct': (
+                    "Commission is below 3.4% — the platform will be net-negative "
+                    "on this SKU. Tick 'I acknowledge this SKU will be net-loss' "
+                    "to proceed, or raise the commission to at least 5%."
+                ),
+            })
+        
+        return cleaned
+
+
 class ProductVariationAdmin(admin.ModelAdmin):
     list_display = (
         'product',
@@ -179,7 +214,32 @@ class ProductVariationAdmin(admin.ModelAdmin):
         'modified_date',
     )
     inlines = [ProductVariationGalleryInline]
-
+    fieldsets = (
+        ("Identity", {
+            "fields": ("product", "color", "size", "type",
+                       "pending_color", "pending_size", "pending_type"),
+        }),
+        ("Pricing & Stock", {
+            "fields": ("price", "original_price", "stock",
+                       "is_available", "cancellation_fee_pct"),
+        }),
+        ("Shipping", {
+            "fields": ("with_shipping", "single_pack", "weight"),
+        }),
+        ("Platform Commission", {
+            "fields": ("platform_commission_pct",),
+            "description": (
+                "Admin-set. The artisan sees this value in the variation "
+                "card but cannot edit it. Commission below 3.4% means "
+                "the platform loses money on the line even before any "
+                "campaign — PayPal/Stripe charges ~3.4% of the sale "
+                "price. 5% is the minimum healthy rate."
+            ),
+        }),
+        ("Media", {
+            "fields": ("images",),
+        }),
+    )
     def display_category_name(self, obj):
         return obj.product.category.category_name if obj.product.category else None
     display_category_name.short_description = "Category Name"

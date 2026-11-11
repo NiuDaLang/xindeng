@@ -1185,3 +1185,185 @@ def issue_download_token(order_product, *, ttl_hours=DOWNLOAD_TOKEN_INSTANT_HOUR
     order_product.dispatched_at = timezone.now()
     order_product.save(update_fields=["is_dispatched", "dispatched_at"])
     return token
+
+# settlement related
+def snapshot_line_commission(line, variation):
+    """
+    Populate OrderProduct.platform_commission_pct and
+    .platform_commission_amount from the variation's current values.
+
+    Called at OrderProduct creation time, in the same transaction.
+    The snapshot is the source of truth for settlement — later edits
+    to the variation's commission do not retroactively change this line.
+    """
+    pct = variation.platform_commission_pct or Decimal('0.00')
+    amount = (line.get_subtotal() * pct / Decimal('100')).quantize(
+        Decimal('0.01'), rounding=ROUND_HALF_UP,
+    )
+    line.platform_commission_pct = pct
+    line.platform_commission_amount = amount
+    line.save(update_fields=['platform_commission_pct', 'platform_commission_amount'])
+    return line
+
+
+def line_participates_in_platform_perk(line, perk):
+    """
+    Does this OrderProduct line participate in a given platform-funded Perk?
+
+    Rules (do not simplify without re-opening the policy discussion):
+      1. Commission gate: zero-commission SKUs never participate — the
+         platform cannot fund a discount on a SKU it isn't making
+         commission on.
+      2. Artisan-sale exclusion: a SKU on artisan sale (price <
+         original_price) is excluded from platform campaigns. The
+         artisan is already funding a discount; the platform doesn't
+         stack onto it. (Semantics A from the 2026-11-10 design
+         discussion.)
+      3. Enrolment gate: only when enrolment_mode=OPT_IN_BY_ARTISAN;
+         line must have a VariationCampaignEnrolment row with
+         enrolled_at <= perk.enrolment_deadline (if deadline is set).
+
+    Accepts any object with `.product_variation` and `.get_subtotal()`.
+    Both OrderProduct and CartItem qualify; CartItem's
+    `get_subtotal()` is the `subtotal` property, so add a tiny
+    adapter in carts/views.py.
+    """
+    from accounts.models import Perk
+    from store.models import VariationCampaignEnrolment
+
+    variation = line.product_variation
+    if variation is None:
+        return False
+
+    # Rule 1: commission gate.
+    if (variation.platform_commission_pct or Decimal('0.00')) <= Decimal('0.00'):
+        return False
+
+    # Rule 2: artisan-sale exclusion.
+    if variation.original_price and variation.price < variation.original_price:
+        return False
+
+    # Rule 3: enrolment gate.
+    if perk.enrolment_mode == Perk.EnrolmentMode.ENFORCED:
+        return True
+    if perk.enrolment_mode == Perk.EnrolmentMode.NONE:
+        return True
+    if perk.enrolment_mode == Perk.EnrolmentMode.OPT_IN_BY_ARTISAN:
+        enrolment = (
+            VariationCampaignEnrolment.objects
+            .filter(variation=variation, perk=perk)
+            .first()
+        )
+        if enrolment is None:
+            return False
+        if perk.enrolment_deadline and enrolment.enrolled_at > perk.enrolment_deadline:
+            return False
+        return True
+    return False
+
+
+def allocate_platform_perk(order, perk):
+    """
+    Allocate an order-level platform-funded Perk across participating
+    lines and populate OrderProduct.discount_absorbed_by_{artisan,platform}_cny.
+
+    Called after OrderProduct rows exist and their commission snapshots
+    are populated. Idempotent — safe to call more than once (overwrites
+    fields cleanly).
+
+    Returns (raw_discount, participating_count) so the caller can tell
+    the customer "0.00 discount" if no line participates.
+    """
+    lines = list(order.items.select_related(
+        'product_variation', 'product_variation__product',
+    ).all())
+    if not lines:
+        return Decimal('0.00'), 0
+
+    participating = [ln for ln in lines if line_participates_in_platform_perk(ln, perk)]
+
+    if not participating:
+        # Nothing participates — zero all discount attribution.
+        for ln in lines:
+            ln.discount_absorbed_by_artisan_cny = Decimal('0.00')
+            ln.discount_absorbed_by_platform_cny = Decimal('0.00')
+            ln.save(update_fields=[
+                'discount_absorbed_by_artisan_cny',
+                'discount_absorbed_by_platform_cny',
+            ])
+        return Decimal('0.00'), 0
+
+    participating_subtotal = sum(
+        (ln.get_subtotal() for ln in participating), Decimal('0.00'),
+    )
+    if participating_subtotal <= Decimal('0.00'):
+        return Decimal('0.00'), 0
+
+    # Compute the raw discount from the perk's rules.
+    if perk.discount_type == 'percentage':
+        raw_discount = (participating_subtotal * perk.discount_value / Decimal('100'))
+    elif perk.discount_type == 'fixed_amount':
+        raw_discount = min(perk.discount_value, participating_subtotal)
+    else:
+        return Decimal('0.00'), 0
+    raw_discount = raw_discount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    # Allocate proportionally across participating lines.
+    remaining = raw_discount
+    for i, ln in enumerate(participating):
+        is_last = (i == len(participating) - 1)
+        if is_last:
+            line_share = remaining
+        else:
+            line_share = (
+                ln.get_subtotal() / participating_subtotal * raw_discount
+            ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            remaining -= line_share
+
+        # Split by the perk's funding rules.
+        if perk.funding_source == 'PLATFORM':
+            platform_absorbed = line_share
+            artisan_absorbed = Decimal('0.00')
+        elif perk.funding_source == 'ARTISAN':
+            platform_absorbed = Decimal('0.00')
+            artisan_absorbed = line_share
+        else:  # SPLIT
+            platform_absorbed = (
+                line_share * perk.platform_funding_share_pct / Decimal('100')
+            ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            artisan_absorbed = line_share - platform_absorbed
+
+        # Invariant 2: platform-absorbed cannot exceed commission on this line.
+        line_commission = ln.platform_commission_amount or Decimal('0.00')
+        if platform_absorbed > line_commission:
+            excess = platform_absorbed - line_commission
+            platform_absorbed = line_commission
+            artisan_absorbed += excess
+
+        ln.discount_absorbed_by_artisan_cny = artisan_absorbed
+        ln.discount_absorbed_by_platform_cny = platform_absorbed
+        ln.applied_perk_code = perk.code or ""
+        ln.save(update_fields=[
+            'discount_absorbed_by_artisan_cny',
+            'discount_absorbed_by_platform_cny',
+            'applied_perk_code',
+        ])
+
+    # Zero out non-participating lines in case they were set by a prior run.
+    participating_ids = {ln.id for ln in participating}
+    for ln in lines:
+        if ln.id not in participating_ids:
+            ln.discount_absorbed_by_artisan_cny = Decimal('0.00')
+            ln.discount_absorbed_by_platform_cny = Decimal('0.00')
+            ln.applied_perk_code = ""
+            ln.save(update_fields=[
+                'discount_absorbed_by_artisan_cny',
+                'discount_absorbed_by_platform_cny',
+                'applied_perk_code',
+            ])
+
+    # Update Order.discount to reflect what was actually allocated.
+    order.discount = raw_discount
+    order.save(update_fields=['discount'])
+
+    return raw_discount, len(participating)

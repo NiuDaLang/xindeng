@@ -815,23 +815,38 @@ def dashboard_dispatch_line(request, line_id):
     )
 
     if not line.product.is_physical:
-        messages.error(
-            request,
-            "Only physical items can be dispatched.｜只有實體商品可標記發貨。",
-        )
+        messages.error(request, "Only physical items can be dispatched.｜只有實體商品可標記發貨。")
         return dashboard_orders(request)
 
-    tracking_code = request.POST.get('tracking_code', '').strip()
-    carrier = request.POST.get('carrier', '').strip()
+    dispatch_mode = request.POST.get("dispatch_mode", "").strip()
+    tracking_code = request.POST.get("tracking_code", "").strip()
+    carrier = request.POST.get("carrier", "").strip()
+
+    allowed_modes = {OrderProduct.DispatchMode.VIA_PLATFORM_HUB}
+    from core.settings_helpers import is_artisan_direct_ship_allowed
+    if is_artisan_direct_ship_allowed():
+        allowed_modes.add(OrderProduct.DispatchMode.DIRECT_TO_CUSTOMER)
+
+    if dispatch_mode not in allowed_modes:
+        messages.error(
+            request,
+            "Please choose how you are dispatching this parcel.｜請選擇發貨方式。",
+        )
+        return dashboard_orders(request)
 
     if not tracking_code:
         messages.error(request, "Tracking number is required.｜請填寫物流單號。")
         return dashboard_orders(request)
 
     with transaction.atomic():
+        line.dispatch_mode = dispatch_mode
+        line.dispatch_mode_chosen_at = timezone.now()
         line.is_dispatched = True
         line.dispatched_at = timezone.now()
-        line.save(update_fields=['is_dispatched', 'dispatched_at'])
+        line.save(update_fields=[
+            'dispatch_mode', 'dispatch_mode_chosen_at',
+            'is_dispatched', 'dispatched_at',
+        ])
 
         TrackingNumber.objects.create(
             order=line.order,
@@ -842,6 +857,35 @@ def dashboard_dispatch_line(request, line_id):
 
     messages.success(request, "Line dispatched successfully.｜已標記發貨。")
     return dashboard_orders(request)
+
+
+@artisan_required
+@require_POST
+def dashboard_variation_unenrol_campaign(request, variation_pk, enrolment_pk):
+    profile = request.user.creator_profile
+    from store.models import ProductVariation, VariationCampaignEnrolment
+
+    variation = get_object_or_404(
+        ProductVariation, pk=variation_pk, product__creator=profile,
+    )
+    enrolment = get_object_or_404(
+        VariationCampaignEnrolment, pk=enrolment_pk, variation=variation,
+    )
+
+    perk_code = enrolment.perk.code
+    enrolment.delete()
+
+    # Return the refreshed variation cards so the campaign badge
+    # disappears without a full page reload.
+    variations = variation.product.variations.all().order_by("created_date")
+    messages.success(
+        request,
+        f"Left campaign {perk_code}.｜已退出活動 {perk_code}。",
+    )
+    return render(request, "artisans/dashboard/partials/_product_variation_cards.html", {
+        "product": variation.product,
+        "variations": variations,
+    })
 
 
 @artisan_required

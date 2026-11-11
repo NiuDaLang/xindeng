@@ -15,6 +15,7 @@ import decimal
 from django.core.exceptions import ValidationError
 from accounts.utils import get_real_admin_url
 from django.utils.text import slugify
+from decimal import Decimal
 
 
 # Create your models here.
@@ -440,6 +441,31 @@ class ProductVariation(models.Model):
     
     created_date    = models.DateTimeField(auto_now_add=True)
     modified_date   = models.DateTimeField(auto_now=True)
+
+    platform_commission_pct = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        default=Decimal('0.00'),
+        validators=[MinValueValidator(0), MaxValueValidator(50)],
+        help_text=(
+            "Platform commission on this SKU. Admin-set; the artisan sees "
+            "it but cannot edit it. Snapshotted onto OrderProduct at "
+            "order-creation time. Zero means the platform takes no "
+            "commission on this SKU, which also excludes it from "
+            "platform-funded campaigns (see line_participates_in_platform_perk)."
+        ),
+    )
+
+    enrolled_perks = models.ManyToManyField(
+        'accounts.Perk',
+        blank=True,
+        related_name='enrolled_variations',
+        through='store.VariationCampaignEnrolment',
+        help_text=(
+            "Platform-funded campaigns this SKU is explicitly enrolled in. "
+            "Only consulted when Perk.enrolment_mode=OPT_IN_BY_ARTISAN. "
+            "Each enrolment has its own enrolled_at timestamp for audit."
+        ),
+    )
 
     class Meta:
         # Enforce uniqueness for the combination of product, color, and size
@@ -1120,3 +1146,49 @@ class VaultUploadReviewLog(models.Model):
     def __str__(self):
         who = self.actor.username if self.actor else "system"
         return f"{self.action} by {who} on {str(self.upload.id)[:8]}"
+
+
+class VariationCampaignEnrolment(models.Model):
+    """
+    One artisan-opted-in enrolment of a variation in a platform-funded
+    campaign.
+
+    The through-table exists (rather than using the M2M default) to
+    record `enrolled_at` and `enrolled_by` — the two pieces of history
+    that dispute arbitration needs.
+    """
+    variation = models.ForeignKey(
+        'store.ProductVariation',
+        on_delete=models.CASCADE,
+        related_name='campaign_enrolments',
+    )
+    perk = models.ForeignKey(
+        'accounts.Perk',
+        on_delete=models.CASCADE,
+        related_name='variation_enrolments',
+    )
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+    enrolled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='+',
+        help_text=(
+            "The artisan's user account, or null if enrolled by an admin "
+            "on the artisan's behalf."
+        ),
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['variation', 'perk'],
+                name='unique_variation_perk_enrolment',
+            ),
+        ]
+        verbose_name = 'Variation campaign enrolment'
+        verbose_name_plural = 'Variation campaign enrolments'
+        indexes = [models.Index(fields=['perk', 'enrolled_at'])]
+
+    def __str__(self):
+        return f"{self.variation.get_sku()} → {self.perk.code}"

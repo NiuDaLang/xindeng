@@ -13,7 +13,8 @@ from django.http import FileResponse, Http404
 from .utils import (
     generate_order_confirmation_pdf, format_accounting_currency, 
     mark_off_perk_at_checkout, execute_atomic_voucher_deduction, 
-    reverse_perk_usage_at_cancellation, VoucherBalanceError
+    reverse_perk_usage_at_cancellation, VoucherBalanceError,
+    snapshot_line_commission, allocate_platform_perk
 )
 from django.utils import timezone
 from django.contrib import messages
@@ -348,6 +349,21 @@ def place_order(request, proforma_invoice_no):
                                 fulfilled_by=variation.product.creator,   # 🌟 NEW — auto-attributed
                                 fulfillment_started_at=timezone.now(),     # 🌟 NEW — payment just cleared
                             )
+
+                        # Snapshot commission per line and allocate discount
+                        # attribution if a campaign was applied. Both are
+                        # no-ops if the order has no lines or no campaign.
+                        for op in OrderProduct.objects.filter(order=order):
+                            snapshot_line_commission(op, op.product_variation)
+
+                        applied_perk_code = (offer_code or "").strip().upper()
+                        if applied_perk_code:
+                            from accounts.models import Perk
+                            applied_perk = Perk.objects.filter(
+                                code=applied_perk_code, is_active=True,
+                            ).first()
+                            if applied_perk:
+                                allocate_platform_perk(order, applied_perk)
 
                         # 4. ADDRESS BOOK INJECTION
                         if request.user.is_authenticated and invoice.is_default_address is False:
@@ -842,6 +858,21 @@ def complete_zero_due_voucher_order(request):
                 elif getattr(variation.product, 'is_digital', False) and getattr(variation.product, 'digital_fulfillment_type', 'INSTANT') == 'INSTANT':
                     from orders.utils import issue_download_token
                     issue_download_token(order_prod)
+
+            # Snapshot commission + discount attribution
+            for op in OrderProduct.objects.filter(order=order):
+                from orders.utils import snapshot_line_commission
+                snapshot_line_commission(op, op.product_variation)
+
+            applied_perk_code = (offer_session.get("offer_code") or "").strip().upper()
+            if applied_perk_code:
+                from accounts.models import Perk
+                from orders.utils import allocate_platform_perk
+                applied_perk = Perk.objects.filter(
+                    code=applied_perk_code, is_active=True,
+                ).first()
+                if applied_perk:
+                    allocate_platform_perk(order, applied_perk)
 
             # After handling individual lines, automatically evaluate final status
             order.update_fulfillment_status()

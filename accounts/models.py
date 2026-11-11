@@ -19,6 +19,7 @@ from PIL import Image
 import io
 from django.core.files.base import ContentFile
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator
 
 
 # Create your models here.
@@ -227,6 +228,9 @@ class Address(models.Model):
     
     def save(self, *args, **kwargs):
         # Use an atomic transaction to prevent race conditions
+        # Enforce funding-source consistency on programmatic saves too.
+        # Keep in sync with clean() below — clean() gives nicer admin
+        # field-level errors; save() closes the programmatic path.
         with transaction.atomic():
             # 1. If this is the account's first address, mark it as default automatically
             if not Address.objects.filter(profile=self.profile).exists():
@@ -380,7 +384,90 @@ class Perk(models.Model):
     @property
     def safe_min_spending(self):
         return self.min_spending_requirement or 0
-    
+
+    class FundingSource(models.TextChoices):
+        PLATFORM = 'PLATFORM', 'Platform-funded'
+        ARTISAN  = 'ARTISAN',  'Artisan-funded (price-based)'
+        SPLIT    = 'SPLIT',    'Split (platform + artisan)'
+
+    funding_source = models.CharField(
+        max_length=10,
+        choices=FundingSource.choices,
+        default=FundingSource.PLATFORM,
+        help_text=(
+            "Who bears this discount. PLATFORM: full discount is the "
+            "platform's marketing spend. ARTISAN: full discount reduces "
+            "the artisan's proceeds. SPLIT: split by platform_funding_share_pct. "
+            "See ArtisanSettlementLine.discount_absorbed_by_{artisan,platform}."
+        ),
+    )
+    platform_funding_share_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('100.00'),
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text=(
+            "Only meaningful for SPLIT. Platform's share of the discount "
+            "(0-100). The artisan absorbs the remainder."
+        ),
+    )
+
+    class EnrolmentMode(models.TextChoices):
+        NONE = 'NONE', 'No enrolment required (public code)'
+        OPT_IN_BY_ARTISAN = 'OPT_IN_BY_ARTISAN', 'Artisan must opt in'
+        ENFORCED = 'ENFORCED', 'Enforced (all eligible SKUs participate)'
+
+    enrolment_mode = models.CharField(
+        max_length=20,
+        choices=EnrolmentMode.choices,
+        default=EnrolmentMode.NONE,
+        help_text=(
+            "NONE: perk applies to all eligible SKUs (e.g. NEW_MEMBER codes). "
+            "OPT_IN_BY_ARTISAN: perk applies only to SKUs whose artisan "
+            "explicitly opted in via VariationCampaignEnrolment. "
+            "ENFORCED: perk applies to all eligible SKUs regardless of "
+            "artisan preference."
+        ),
+    )
+    enrolment_deadline = models.DateTimeField(
+        null=True, blank=True,
+        help_text=(
+            "Artisans who opt in before this deadline are eligible. "
+            "After the deadline, no new opt-ins are accepted for this "
+            "campaign. Only meaningful when enrolment_mode=OPT_IN_BY_ARTISAN."
+        ),
+    )
+
+    def save(self, *args, **kwargs):
+        errors = {}
+        if (self.funding_source == self.FundingSource.PLATFORM
+                and self.platform_funding_share_pct != Decimal('100.00')):
+            errors['platform_funding_share_pct'] = (
+                "For PLATFORM funding, platform_funding_share_pct must be 100."
+            )
+        if (self.funding_source == self.FundingSource.ARTISAN
+                and self.platform_funding_share_pct != Decimal('0.00')):
+            errors['platform_funding_share_pct'] = (
+                "For ARTISAN funding, platform_funding_share_pct must be 0."
+            )
+        if errors:
+            raise ValidationError(errors)
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if (self.funding_source == self.FundingSource.PLATFORM
+                and self.platform_funding_share_pct != Decimal('100.00')):
+            errors['platform_funding_share_pct'] = (
+                "For PLATFORM funding, platform_funding_share_pct must be 100."
+            )
+        if (self.funding_source == self.FundingSource.ARTISAN
+                and self.platform_funding_share_pct != Decimal('0.00')):
+            errors['platform_funding_share_pct'] = (
+                "For ARTISAN funding, platform_funding_share_pct must be 0."
+            )
+        if errors:
+            raise ValidationError(errors)
+
       
 # ####### IMPORTANT ########
 # 3. Handling "General Sales" (Non-Member)

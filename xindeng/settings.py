@@ -159,6 +159,7 @@ TEMPLATES = [
                 "category.context_processors.menu_links",
                 "category.context_processors.cart_item_count",
                 "creators.context_processors.artisan_message_count",
+                "creators.context_processors.site_config_flags",
                 "sekizai.context_processors.sekizai",
             ],
         },

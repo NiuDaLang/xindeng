@@ -33,6 +33,19 @@ class SiteConfig(models.Model):
 
     updated_at = models.DateTimeField(auto_now=True)
 
+    allow_artisan_direct_ship = models.BooleanField(
+        default=True,
+        help_text=(
+            "If True, artisans may choose 'Direct to customer' at dispatch "
+            "time. If False, the dispatch-mode radio hides that option, and "
+            "dashboard_dispatch_line refuses DIRECT dispatch for any new "
+            "line. Existing lines already dispatched as DIRECT are not "
+            "affected — this is forward-only. Use when the platform wants "
+            "to consolidate all international shipping through the Beijing "
+            "hub (e.g. during a beta, or to renegotiate courier contracts)."
+        ),
+    )
+
     class Meta:
         verbose_name = "Site configuration"
         verbose_name_plural = "Site configuration"
@@ -48,6 +61,7 @@ class SiteConfig(models.Model):
         # immediately, not after the TTL.
         from django.core.cache import cache
         cache.delete("site_config:ddp_enabled")
+        cache.delete("site_config:allow_artisan_direct_ship")
 
     @classmethod
     def get_solo(cls):

@@ -97,6 +97,78 @@ class ArtisanSettlementLine(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # ── Commission (from line snapshots) ──
+    platform_commission_amount = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Sum of OrderProduct.platform_commission_amount across this artisan's lines.",
+    )
+
+    # ── Discount attribution (from line snapshots) ──
+    discount_absorbed_by_artisan = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        default=Decimal('0.00'),
+        validators=[MinValueValidator(0)],
+        help_text=(
+            "Sum of OrderProduct.discount_absorbed_by_artisan_cny. "
+            "Reduces net_payable_to_artisan."
+        ),
+    )
+    discount_absorbed_by_platform = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        default=Decimal('0.00'),
+        validators=[MinValueValidator(0)],
+        help_text=(
+            "Sum of OrderProduct.discount_absorbed_by_platform_cny. "
+            "Does NOT reduce net_payable_to_artisan. Shown for audit."
+        ),
+    )
+    applied_perk_codes = models.CharField(
+        max_length=255, blank=True, default="",
+        help_text="Comma-separated snapshot of Perk.code for readability.",
+    )
+
+    # ── Dispatch mode summary ──
+    shipping_mode_mix = models.CharField(
+        max_length=50, blank=True, default="",
+        help_text=(
+            "Comma-separated summary of which dispatch modes apply, "
+            "e.g. 'DIRECT x2, VIA_HUB x1'."
+        ),
+    )
+
+    # ── Shipping variance (inert in Session A, populated in Backlog 39) ──
+    shipping_shortfall_absorbed_by_artisan = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        default=Decimal('0.00'),
+        validators=[MinValueValidator(0)],
+        help_text="Sum of OrderProduct.shipping_shortfall_absorbed_by_artisan_cny. Populated in Backlog 39.",
+    )
+    shipping_surplus_returned_to_artisan = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        default=Decimal('0.00'),
+        validators=[MinValueValidator(0)],
+        help_text="Sum of OrderProduct.shipping_surplus_returned_to_artisan_cny. Populated in Backlog 39.",
+    )
+
+    # ── Revised formula ──
+    @property
+    def net_payable_to_artisan(self) -> Decimal:
+        return (
+            self.gross_payable_to_artisan
+            - self.platform_commission_amount
+            - self.discount_absorbed_by_artisan
+            - self.website_margin_amount
+            - self.shipping_paid_by_website
+            - self.tax_paid_by_website
+            + self.shipping_paid_by_artisan
+            + self.tax_paid_by_artisan
+            - self.shipping_shortfall_absorbed_by_artisan
+            + self.shipping_surplus_returned_to_artisan
+            + self.other_costs
+        )
+
+
     class Meta:
         ordering = ['-created_at']
         constraints = [
@@ -111,23 +183,6 @@ class ArtisanSettlementLine(models.Model):
     @property
     def gross_payable_to_artisan(self) -> Decimal:
         return self.product_revenue + self.shipping_charged_to_customer
-
-    @property
-    def net_payable_to_artisan(self) -> Decimal:
-        """
-        Computes the net amount owed to the artisan in CNY.
-        Formula confirmed against the 2026-10-19 session memo.
-        """
-        # Ensure all values are treated as Decimals
-        return (
-            self.gross_payable_to_artisan
-            - self.website_margin_amount
-            - self.shipping_paid_by_website
-            - self.tax_paid_by_website
-            + self.shipping_paid_by_artisan
-            + self.tax_paid_by_artisan
-            + self.other_costs
-        )
 
 
 class LogisticsAdvance(models.Model):

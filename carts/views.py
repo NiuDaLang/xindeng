@@ -1000,8 +1000,28 @@ def apply_offer(request):
     # 3. Execute full lifecycle condition validation pass
     status = PerkEvaluator.get_eligibility_status(user, perk_target)
     print("status: ", status)
+
     if status != "VALID":
         return htmx_invalid_offer_response(request, f"Ineligible: {status}｜條件不符，無法套用。", "")
+
+    # Pre-check: does any line participate? Only meaningful once the perk
+    # itself is valid — otherwise the "no participating items" message would
+    # mask a more actionable "expired" or "already used" status.
+    from orders.utils import line_participates_in_platform_perk
+    from carts.models import CartItem as CartItemModel
+
+    cart_lines = list(CartItemModel.objects.filter(cart=cart, is_active=True))
+    participating_lines = [
+        cl for cl in cart_lines
+        if line_participates_in_platform_perk(cl, perk_target)
+    ]
+    if not participating_lines:
+        return htmx_invalid_offer_response(
+            request,
+            "This offer does not apply to items in your cart.｜此優惠不適用於您購物車中的商品。",
+            "None of the items in your cart are eligible for this campaign.｜您購物車中沒有符合此活動條件的商品。",
+        )
+
     formatted_min_spend = intcomma(f"{perk_target.safe_min_spending:.2f}")
 
     # 4. Save clean parameters into session storage state container

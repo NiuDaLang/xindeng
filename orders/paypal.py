@@ -523,6 +523,21 @@ def capture_paypal_order(request):
                         elif getattr(variation.product, 'is_digital', False) and getattr(variation.product, 'digital_fulfillment_type', 'INSTANT') == 'INSTANT':
                             from orders.utils import issue_download_token
                             issue_download_token(order_prod)
+
+                    # Snapshot commission + discount attribution
+                    for op in OrderProduct.objects.filter(order=order):
+                        from orders.utils import snapshot_line_commission
+                        snapshot_line_commission(op, op.product_variation)
+
+                    applied_perk_code = (offer_session.get("offer_code") or "").strip().upper()
+                    if applied_perk_code:
+                        from accounts.models import Perk
+                        from orders.utils import allocate_platform_perk
+                        applied_perk = Perk.objects.filter(
+                            code=applied_perk_code, is_active=True,
+                        ).first()
+                        if applied_perk:
+                            allocate_platform_perk(order, applied_perk)
                             
                     # After handling individual lines, automatically evaluate if order needs an upgraded order status!
                     order.update_fulfillment_status() # Covered in Step 4 below

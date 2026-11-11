@@ -12,6 +12,7 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save
 from django.db.models import Sum
 import decimal
+from decimal import Decimal
 from django.utils import timezone
 import uuid
 
@@ -445,6 +446,96 @@ class OrderProduct(models.Model):
     
     created_at              = models.DateTimeField(auto_now_add=True)
     updated_at              = models.DateTimeField(auto_now=True)
+
+    # ── Commission snapshot (Invariant 1) ──
+    platform_commission_pct = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Snapshot of ProductVariation.platform_commission_pct at order-creation time.",
+    )
+    platform_commission_amount = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Computed: product_price × quantity × platform_commission_pct / 100.",
+    )
+
+    # ── Discount attribution (Invariant 2) ──
+    discount_absorbed_by_artisan_cny = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        default=Decimal('0.00'),
+        validators=[MinValueValidator(0)],
+        help_text=(
+            "CNY portion of this line's discount that the artisan absorbs. "
+            "Reduces the artisan's settlement."
+        ),
+    )
+    discount_absorbed_by_platform_cny = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        default=Decimal('0.00'),
+        validators=[MinValueValidator(0)],
+        help_text=(
+            "CNY portion of this line's discount that the platform absorbs. "
+            "GUARDED: cannot exceed platform_commission_amount. Platform "
+            "cannot go net-negative on this line."
+        ),
+    )
+    applied_perk_code = models.CharField(max_length=100, blank=True, default="")
+
+    # ── Dispatch mode (Invariant 3) ──
+    class DispatchMode(models.TextChoices):
+        DIRECT_TO_CUSTOMER = 'DIRECT', 'Direct to customer'
+        VIA_PLATFORM_HUB  = 'VIA_HUB', 'Via platform hub (China)'
+        UNDECIDED         = 'UNDECIDED', 'Not yet chosen'
+
+    dispatch_mode = models.CharField(
+        max_length=10,
+        choices=DispatchMode.choices,
+        default=DispatchMode.UNDECIDED,
+        help_text=(
+            "Chosen by the artisan when marking the line dispatched. "
+            "Undecided on lines that have not yet been dispatched."
+        ),
+    )
+    dispatch_mode_chosen_at = models.DateTimeField(null=True, blank=True)
+
+    # ── Shipping economics (Invariant 4 — inert in Session A, populated in Backlog 39) ──
+    shipping_charged_to_customer_cny = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        default=Decimal('0.00'),
+        help_text=(
+            "This line's allocated share of Order.shipping_cost. "
+            "Populated in Backlog 39; zero in Session A."
+        ),
+    )
+    actual_shipping_cost_cny = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        default=Decimal('0.00'),
+        help_text=(
+            "The ACTUAL international shipping cost the artisan bore "
+            "(DIRECT mode) or the platform bore (VIA_HUB mode), in CNY. "
+            "Populated in Backlog 39."
+        ),
+    )
+    shipping_shortfall_absorbed_by_artisan_cny = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        default=Decimal('0.00'),
+        validators=[MinValueValidator(0)],
+        help_text=(
+            "For DIRECT mode: max(0, actual_shipping_cost_cny - "
+            "shipping_charged_to_customer_cny). Reduces artisan settlement. "
+            "Populated in Backlog 39."
+        ),
+    )
+    shipping_surplus_returned_to_artisan_cny = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        default=Decimal('0.00'),
+        validators=[MinValueValidator(0)],
+        help_text=(
+            "For DIRECT mode: max(0, shipping_charged_to_customer_cny - "
+            "actual_shipping_cost_cny). Added to artisan settlement. "
+            "Populated in Backlog 39."
+        ),
+    )
 
     def __str__(self):
         return str(self.product_variation)

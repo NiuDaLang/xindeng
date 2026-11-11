@@ -244,16 +244,19 @@ class TestDispatchLineGuard:
         client.force_login(chain["artisan_user"])
         url = reverse("a_dashboard_dispatch_line", args=[line.id])
         response = client.post(
-            url, {"tracking_code": "SF-12345", "carrier": "SF Express"},
+            url,
+            {
+                "tracking_code": "SF-12345",
+                "carrier": "SF Express",
+                "dispatch_mode": "VIA_HUB",
+            },
         )
         assert response.status_code == 200
 
         line.refresh_from_db()
         assert line.is_dispatched is True
-        assert line.dispatched_at is not None
-        assert TrackingNumber.objects.filter(
-            order_product=line, tracking_code="SF-12345",
-        ).exists()
+        assert line.dispatch_mode == "VIA_HUB"
+        assert line.dispatch_mode_chosen_at is not None
 
     def test_custom_digital_line_dispatch_is_rejected(
         self, client, artisan_orders_setup,

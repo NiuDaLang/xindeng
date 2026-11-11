@@ -55,6 +55,51 @@
                         {% endwith %}
                     {% endif %}
                 </div>
+                {% if v.enrolled_perks.exists %}
+                    {% for enrolment in v.enrolled_perks.all %}
+                    <div class="mt-2 p-2 bg-info/5 border border-info/20 rounded-lg text-[10px] text-base-content/70 leading-relaxed">
+                        <p class="font-bold text-info-content flex items-center gap-1">
+                            <i class="fa-solid fa-bullhorn text-[9px]"></i>
+                            Enrolled in {{ enrolment.code }}｜已參與 {{ enrolment.code }}
+                        </p>
+                        <p class="mt-1">
+                            <strong>{{ enrolment.discount_rate }}</strong> off for customers.
+                        </p>
+                        <p class="mt-1 font-mono">
+                            {% if enrolment.funding_source == 'PLATFORM' %}
+                                <span class="text-success">Platform absorbs the full discount.</span>
+                            {% elif enrolment.funding_source == 'ARTISAN' %}
+                                <span class="text-warning">You absorb the full discount.</span>
+                            {% else %}
+                                <span class="text-base-content/80">
+                                    Split: platform {{ enrolment.platform_funding_share_pct }}%,
+                                    you the remainder.
+                                </span>
+                            {% endif %}
+                            <br>
+                            Your current commission: {{ v.platform_commission_pct }}%
+                        </p>
+                        {% if enrolment.funding_source == 'PLATFORM' and enrolment.discount_type == 'percentage' and v.platform_commission_pct < enrolment.discount_value %}
+                        <p class="mt-1.5 text-warning font-bold">
+                            ⚠ Your commission is lower than the campaign discount.
+                            On each sale you absorb the difference.
+                            <br>
+                            您的抽成低於活動折扣，每筆銷售的差額將由您承擔。
+                        </p>
+                        {% endif %}
+                        <form hx-post="{% url 'a_dashboard_variation_unenrol_campaign' product.id v.id enrolment.id %}"
+                            hx-target="#variation-cards-container"
+                            hx-swap="innerHTML"
+                            hx-confirm="Leave this campaign?｜退出此活動？"
+                            class="mt-1.5">
+                            {% csrf_token %}
+                            <button type="submit" class="text-[10px] text-error hover:underline">
+                                Leave campaign｜退出活動
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                {% endif %}
             </div>
         </div>
 

@@ -38,6 +38,39 @@
             </div>
         </div>
 
+        {% if line.discount_absorbed_by_artisan > 0 or line.discount_absorbed_by_platform > 0 %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mt-3 pt-3 border-t border-base-200/60">
+            {% if line.discount_absorbed_by_platform > 0 %}
+            <div>
+                <p class="text-xs text-base-content/50">Platform-Funded Discount｜平台承擔折扣</p>
+                <p class="font-mono text-success">¥ {{ line.discount_absorbed_by_platform|floatformat:2 }}</p>
+                <p class="text-[10px] text-base-content/40 mt-1 leading-relaxed">
+                    Absorbed by the platform — this does not reduce your income.<br>
+                    由平台承擔，不影響您的收入。
+                </p>
+            </div>
+            {% endif %}
+            {% if line.discount_absorbed_by_artisan > 0 %}
+            <div>
+                <p class="text-xs text-base-content/50">Your Share of Campaign Discount｜您承擔的活動折扣</p>
+                <p class="font-mono text-error">− ¥ {{ line.discount_absorbed_by_artisan|floatformat:2 }}</p>
+                <p class="text-[10px] text-base-content/40 mt-1 leading-relaxed">
+                    Campaign{% if line.applied_perk_codes %} {{ line.applied_perk_codes }}{% endif %} — your opt-in.
+                    <br>
+                    您參與活動{% if line.applied_perk_codes %} {{ line.applied_perk_codes }}{% endif %} 而承擔的部分。
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if line.platform_commission_amount > 0 %}
+        <div class="mt-3 pt-3 border-t border-base-200/60 text-sm">
+            <p class="text-xs text-base-content/50">Platform Commission｜平台抽成</p>
+            <p class="font-mono text-error">− ¥ {{ line.platform_commission_amount|floatformat:2 }}</p>
+        </div>
+        {% endif %}
+
         <div class="mt-4 pt-4 border-t border-base-200/60">
             {% if line.is_finalised %}
                 <p class="text-xs text-base-content/50">Net Payable｜應付總額</p>

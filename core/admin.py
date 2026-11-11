@@ -28,6 +28,16 @@ class SiteConfigAdmin(admin.ModelAdmin):
                 "the underlying policy decision."
             ),
         }),
+        ("Dispatch mode availability", {
+            "fields": ("allow_artisan_direct_ship",),
+            "description": (
+                "Toggles whether artisans may choose 'Direct to customer' "
+                "at dispatch time. When off, the dispatch-mode radio on "
+                "the orders dashboard shows only 'Via platform hub', and "
+                "forged POSTs are refused. Forward-only — existing DIRECT "
+                "lines are unaffected."
+            ),
+        }),
         ("Audit", {
             "fields": ("updated_at",),
             "classes": ("collapse",),

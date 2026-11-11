@@ -36,3 +36,13 @@ def artisan_message_count(request):
             is_read=False,
         ).exclude(sender=admin_user).count(),
     }
+
+
+def site_config_flags(request):
+    """Expose site-wide boolean flags to every template that needs them."""
+    from core.settings_helpers import is_artisan_direct_ship_allowed
+    return {
+        "site_config": {
+            "allow_artisan_direct_ship": is_artisan_direct_ship_allowed(),
+        },
+    }

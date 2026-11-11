@@ -20,12 +20,13 @@ Two responsibilities, both project-wide:
 """
 
 from __future__ import annotations
-
 import io
-
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
+from decimal import Decimal
+from django.utils import timezone
+from accounts.models import Perk
 
 
 # ──────────────────────────────────────────────────────────────
@@ -163,4 +164,35 @@ def tiny_corrupt() -> SimpleUploadedFile:
     """Not a valid image — for negative paths."""
     return SimpleUploadedFile(
         "broken.png", b"\x89PNG\r\n\x1a\nnot-really", content_type="image/png"
+    )
+
+
+@pytest.fixture
+def campaign_perk(db):
+    return Perk.objects.create(
+        code="XMAS2026",
+        description="Holiday sale",
+        discount_type="percentage",
+        discount_value=Decimal('20'),
+        valid_from=timezone.now(),
+        funding_source='PLATFORM',
+        platform_funding_share_pct=Decimal('100'),
+        enrolment_mode='OPT_IN_BY_ARTISAN',
+        enrolment_deadline=timezone.now() + timezone.timedelta(days=30),
+    )
+
+
+@pytest.fixture
+def sample_variation(db):
+    from store.models import Product, ProductVariation
+    from category.models import Category
+    cat = Category.objects.create(category_name="Test", slug="test")
+    p = Product.objects.create(
+        product_name="Test Product", category=cat, status="Published",
+        is_physical=True, is_active=True,
+    )
+    return ProductVariation.objects.create(
+        product=p, price=Decimal('100'), original_price=Decimal('100'),
+        stock=10, platform_commission_pct=Decimal('5.0'),
+        images='test/image.jpg',
     )
