@@ -1,0 +1,44 @@
+{% autoescape off %}
+📣 {{ announcement.subject }}｜CAMPAIGN ANNOUNCEMENT
+
+Dear {{ artisan.display_name }}｜{{ artisan.display_name }} 您好:
+
+============================================================
+📋 CAMPAIGN DETAILS｜活動詳情
+============================================================
+Campaign｜活動: {{ perk.code }}
+Discount｜折扣: {{ perk.discount_rate }}
+{% if perk.funding_source == 'PLATFORM' %}Funding｜折扣承擔: Platform-funded（由平台承擔）
+{% elif perk.funding_source == 'ARTISAN' %}Funding｜折扣承擔: Artisan-funded（由匠人承擔）
+{% else %}Funding｜折扣承擔: Split — platform {{ perk.platform_funding_share_pct }}%，剩餘由匠人承擔
+{% endif %}{% if perk.enrolment_deadline %}Enrol by｜報名截止: {{ perk.enrolment_deadline|date:"Y-m-d H:i" }}
+{% endif %}{% if perk.valid_to %}Campaign ends｜活動結束: {{ perk.valid_to|date:"Y-m-d" }}
+{% endif %}
+============================================================
+
+{% if announcement.body %}{{ announcement.body }}
+
+============================================================
+{% endif %}
+⚠️ 請注意｜PLEASE NOTE
+
+報名後，參與狀態須維持至活動結束或庫存售罄為止。活動期間如需退出，
+請聯繫平台團隊，退出申請需經管理員審核。
+
+Once enrolled, your participation must remain active for the
+full campaign period or while stock lasts. To unenrol during
+the campaign, please contact the platform team — un-enrolment
+is subject to admin approval.
+
+============================================================
+
+Please log in to manage your campaign enrolments.
+請登入工作台管理活動報名。
+
+→ {{ dashboard_url }}
+
+============================================================
+Hṛdayadīpa (हृदयदीप)｜心燈
+Automated notification — please do not reply directly.
+系統自動通知，請勿直接回覆。
+{% endautoescape %}

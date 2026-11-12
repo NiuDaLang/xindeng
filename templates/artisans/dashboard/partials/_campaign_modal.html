@@ -1,0 +1,155 @@
+{% comment %}
+templates/artisans/dashboard/partials/_campaign_modal.html
+
+Rendered by dashboard_product_campaigns on GET, into #campaign-modal-content
+via HTMX. One card per active campaign. Inside each card:
+  * NONE / ENFORCED  — read-only "applies automatically"
+  * OPT_IN_BY_ARTISAN — per-variation toggle (enrol / leave)
+
+Exclusion rows (on artisan sale / zero commission) render as disabled
+with an explanatory tooltip. This is the same predicate that
+line_participates_in_platform_perk uses, so the artisan sees exactly
+what checkout will apply.
+{% endcomment %}
+
+<h3 class="font-serif text-lg mb-2">Campaigns｜活動</h3>
+<p class="text-xs text-base-content/60 mb-4">
+    {{ product.product_name }}
+</p>
+
+{% if not campaign_rows %}
+<div class="bg-base-50 border border-base-200/60 rounded-xl p-6 text-center">
+    <i class="fa-solid fa-bullhorn text-2xl text-base-content/20 mb-2"></i>
+    <p class="text-sm text-base-content/50 mb-1">目前沒有進行中的活動</p>
+    <p class="text-xs text-base-content/30">No active campaigns right now.</p>
+</div>
+{% else %}
+<div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+    {% for row in campaign_rows %}
+    {% with perk=row.perk %}
+    <div class="border border-base-200/60 rounded-xl p-4 bg-base-50/40">
+
+        {# ── Campaign header ── #}
+        <div class="flex items-start gap-3 pb-3 border-b border-base-200/60">
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-bullhorn text-[11px] text-info"></i>
+                    {{ perk.code }}
+                </p>
+                <p class="text-xs text-base-content/60 mt-1 leading-relaxed">
+                    {{ perk.desc_en }}
+                </p>
+                <div class="flex flex-wrap gap-1.5 mt-2">
+                    <span class="badge badge-xs badge-neutral font-mono">
+                        {{ perk.discount_rate }}
+                    </span>
+                    {% if perk.funding_source == 'PLATFORM' %}
+                    <span class="badge badge-xs badge-success">Platform-funded</span>
+                    {% elif perk.funding_source == 'ARTISAN' %}
+                    <span class="badge badge-xs badge-warning">You absorb</span>
+                    {% else %}
+                    <span class="badge badge-xs badge-info">
+                        Split: {{ perk.platform_funding_share_pct }}% platform
+                    </span>
+                    {% endif %}
+                    {% if perk.enrolment_deadline %}
+                    <span class="badge badge-xs
+                                 {% if row.enrolment_deadline_passed %}badge-error{% else %}badge-ghost{% endif %}">
+                        {% if row.enrolment_deadline_passed %}
+                        Deadline passed｜已截止
+                        {% else %}
+                        Enrol by {{ perk.enrolment_deadline|date:"Y-m-d" }}
+                        {% endif %}
+                    </span>
+                    {% endif %}
+                </div>
+                {% if perk.funding_source == 'ARTISAN' or perk.funding_source == 'SPLIT' %}
+                <p class="text-[10px] text-warning mt-2 leading-relaxed">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                    {% if perk.funding_source == 'ARTISAN' %}
+                    You bear the full discount on enrolled sales.
+                    {% else %}
+                    You bear {{ 100|add:"-"|add:perk.platform_funding_share_pct }}% of the discount on enrolled sales.
+                    {% endif %}
+                    <br>
+                    參與活動的銷售，折扣由您承擔。
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ── Variation rows ── #}
+        <div class="mt-3 space-y-2">
+            {% for r in row.rows %}
+            <div class="flex items-center gap-3 text-xs bg-white border border-base-200/60 rounded-lg px-3 py-2">
+
+                <div class="flex-1 min-w-0">
+                    <p class="font-mono font-semibold truncate">{{ r.variation.get_sku }}</p>
+                    <p class="text-[10px] text-base-content/50">
+                        ¥{{ r.variation.price }}
+                        · {{ r.variation.platform_commission_pct }}% commission
+                    </p>
+                </div>
+
+                {# Exclusion state #}
+                {% if r.exclusion == 'on_sale' %}
+                <span class="badge badge-xs badge-warning tooltip tooltip-left"
+                      data-tip="On artisan sale — excluded (Semantics A)">
+                    特價中
+                </span>
+                {% elif r.exclusion == 'zero_commission' %}
+                <span class="badge badge-xs badge-ghost tooltip tooltip-left"
+                    data-tip="Zero commission — platform earns nothing, so campaign doesn't apply">
+                    ⚠ 佣金為零 (Zero Commission)
+                </span>
+
+                {# NONE / ENFORCED — read-only #}
+                {% elif perk.enrolment_mode == 'NONE' %}
+                <span class="badge badge-xs badge-info">Automatic｜自動參與</span>
+
+                {% elif perk.enrolment_mode == 'ENFORCED' %}
+                <span class="badge badge-xs badge-info">Enforced｜強制參與</span>
+
+                {# OPT_IN_BY_ARTISAN — the actionable state #}
+                {% elif r.enrolled %}
+                <span class="badge badge-xs badge-success">Enrolled｜已參加</span>
+                
+                {# 🚨 UI LOCKOUT GUARD: Only lock if the campaign has ACTUALLY started #}
+                {% if perk.valid_from and perk.valid_from <= now %}
+                <span class="badge badge-xs badge-ghost tooltip tooltip-left" 
+                      data-tip="Campaign has started. Contact admin to unenrol.">
+                    Locked｜已鎖定
+                </span>
+                {% else %}
+                <form hx-post="{% url 'a_dashboard_variation_unenrol_campaign' product.id r.variation.id r.enrolment.id %}"
+                      hx-target="#campaign-modal-content"
+                      hx-swap="innerHTML">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn btn-xs btn-ghost text-error rounded-lg px-2">
+                        Leave｜退出
+                    </button>
+                </form>
+                {% endif %}
+                {% else %}
+                {# Not enrolled yet #}
+                <form hx-post="{% url 'a_dashboard_variation_enrol_campaign' product.id r.variation.id perk.id %}"
+                      hx-target="#campaign-modal-content"
+                      hx-swap="innerHTML">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn btn-xs btn-primary rounded-lg px-3"
+                            {% if row.enrolment_deadline_passed or perk.valid_from <= now %}disabled{% endif %}>
+                        Opt in｜加入
+                    </button>
+                </form>
+                {% endif %}
+
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endwith %}
+    {% endfor %}
+</div>
+{% endif %}

@@ -1,0 +1,86 @@
+{% autoescape off %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ announcement.subject }}</title>
+</head>
+<body style="font-family: sans-serif; background-color: #f7f5f3; padding: 20px; margin: 0;">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #cccccc; border-radius: 8px;">
+        <tr>
+            <td style="background-color: #4b9aaa; padding: 25px; text-align: center; color: white; font-size: 1.1rem; font-weight: bold;">
+                📣 {{ announcement.subject }}
+                <br><span style="font-size: 0.85rem; font-weight: normal; opacity: 0.9;">{{ perk.code }}</span>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="padding: 30px; font-size: 0.85rem; line-height: 1.5rem; color: #161616;">
+                <p style="margin: 0 0 14px 0;">
+                    Dear <strong>{{ artisan.display_name }}</strong>,<br>
+                    親愛的 <strong>{{ artisan.display_name }}</strong>，您好：
+                </p>
+
+                {# ── Fixed campaign details table (structured, always current) ── #}
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #f9f9f9; border-left: 4px solid #4b9aaa; margin-bottom: 20px;">
+                    <tr><td style="padding: 15px; font-size: 0.85rem; line-height: 1.6rem; color: #333333;">
+                        <strong>Campaign｜活動：</strong> {{ perk.code }}<br>
+                        <strong>Discount｜折扣：</strong> {{ perk.discount_rate }}<br>
+                        {% if perk.funding_source == 'PLATFORM' %}
+                        <strong>Funding｜折扣承擔：</strong> Platform-funded（由平台承擔）<br>
+                        {% elif perk.funding_source == 'ARTISAN' %}
+                        <strong>Funding｜折扣承擔：</strong> Artisan-funded（由匠人承擔）<br>
+                        {% else %}
+                        <strong>Funding｜折扣承擔：</strong> Split — platform {{ perk.platform_funding_share_pct }}%，剩餘由匠人承擔<br>
+                        {% endif %}
+                        {% if perk.enrolment_deadline %}
+                        <strong>Enrol by｜報名截止：</strong> {{ perk.enrolment_deadline|date:"Y-m-d H:i" }}<br>
+                        {% endif %}
+                        {% if perk.valid_to %}
+                        <strong>Campaign ends｜活動結束：</strong> {{ perk.valid_to|date:"Y-m-d" }}
+                        {% endif %}
+                    </td></tr>
+                </table>
+
+                {# ── Free-content body from CKEditor ── #}
+                {% if announcement.body %}
+                <div style="font-size: 0.85rem; line-height: 1.6rem; color: #333333;">
+                    {{ announcement.body|safe }}
+                </div>
+                {% endif %}
+
+                {# ── Lockout notice (always shown, per Backlog 44 spec) ── #}
+                <p style="margin: 20px 0 0 0; font-size: 0.75rem; line-height: 1.4rem; color: #8b8b8b; padding: 12px; background-color: #fff5f5; border-left: 3px solid #e5b3b3;">
+                    <strong>Please note｜請注意：</strong>
+                    Once enrolled, your participation must remain active for
+                    the full campaign period or while stock lasts. To unenrol
+                    during the campaign, please contact the platform team —
+                    un-enrolment is subject to admin approval.
+                    <br>
+                    報名後，參與狀態須維持至活動結束或庫存售罄為止。活動期間如需退出，請聯繫平台團隊，退出申請需經管理員審核。
+                </p>
+
+                <div style="text-align: center; margin: 26px 0;">
+                    <a href="{{ dashboard_url }}" style="display: inline-block; padding: 12px 26px; background-color: #4b9aaa; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">
+                        Manage Enrolments｜管理活動報名 →
+                    </a>
+                </div>
+
+                <p style="margin: 0; font-size: 0.75rem; line-height: 1.4rem; color: #8b8b8b; text-align: center;">
+                    Please log in to manage your campaign enrolments.<br>
+                    請登入工作台管理活動報名。
+                </p>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="background-color: #333333; padding: 20px; text-align: center; color: white; font-size: 0.7rem; line-height: 1.4rem;">
+                Hṛdayadīpa (हृदयदीप)｜心燈<br>
+                <span style="opacity: 0.7;">Automated notification — please do not reply directly.｜系統自動通知，請勿直接回覆。</span>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+{% endautoescape %}

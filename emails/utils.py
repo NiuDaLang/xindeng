@@ -870,3 +870,99 @@ def send_artisan_admin_message_email(message_id):
     mail.send()
 
     return True
+
+
+def send_campaign_announcement_email(announcement_id, recipient_user_id):
+    """
+    Send a single CampaignAnnouncement email to one recipient.
+
+    Returns True on successful send, False if the recipient could not
+    be resolved or had no usable email address. Exceptions propagate
+    to the caller — the caller (accounts.tasks.send_campaign_announcement_email_task)
+    catches them per-recipient so one bad address cannot abort the batch.
+
+    The template receives:
+      * `announcement` — the model row, carrying `.subject`, `.body`,
+        and `.perk`
+      * `perk` — the parent campaign, for the fixed layout block
+      * `artisan` — the recipient CreatorProfile, for personalisation
+      * `dashboard_url` — the artisan dashboard, for the CTA
+
+    Function-body imports (rather than module-level) to avoid a
+    circular import — emails.utils already imports from
+    accounts.models at module load for CustomerVoucher, and the
+    announcement dispatcher path goes accounts → creators → emails
+    → accounts, which would cycle. Same gotcha class as the other
+    function-body imports in this file.
+    """
+    from accounts.models import CampaignAnnouncement
+    from creators.models import CreatorProfile
+
+    try:
+        announcement = CampaignAnnouncement.objects.select_related(
+            'perk',
+        ).get(id=announcement_id)
+    except CampaignAnnouncement.DoesNotExist:
+        logger.warning(
+            "send_campaign_announcement_email: announcement %s not found",
+            announcement_id,
+        )
+        return False
+
+    artisan = CreatorProfile.objects.select_related('user').filter(
+        user_id=recipient_user_id,
+        is_verified=True,
+    ).first()
+
+    if artisan is None:
+        logger.warning(
+            "send_campaign_announcement_email: no verified artisan for user %s",
+            recipient_user_id,
+        )
+        return False
+
+    if not artisan.user.email:
+        logger.warning(
+            "send_campaign_announcement_email: artisan %s has no email; skipping",
+            artisan.id,
+        )
+        return False
+
+    perk = announcement.perk
+
+    # Async-safe site domain lookup — matches the pattern in the
+    # other creator-facing senders in this file.
+    current_site = Site.objects.get_current()
+    site_domain = f"http://{current_site.domain}"
+    dashboard_url = f"{site_domain}/artisans/dashboard/products/"
+
+    context = {
+        "announcement": announcement,
+        "perk": perk,
+        "artisan": artisan,
+        "dashboard_url": dashboard_url,
+        "site_domain": site_domain,
+        "year": timezone.now().year,
+    }
+
+    html_message = render_to_string(
+        "emails/campaign_announcement.html", context,
+    )
+    plain_message = render_to_string(
+        "emails/campaign_announcement.txt", context,
+    )
+
+    mail_subject = f"📣 {announcement.subject} [{perk.code}]"
+
+    mail = EmailMultiAlternatives(
+        subject=mail_subject,
+        body=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[artisan.user.email],
+        bcc=[settings.DEFAULT_FROM_EMAIL],
+    )
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = 'utf-8'
+    mail.send()
+
+    return True

@@ -4,6 +4,9 @@ from django.contrib.auth.admin import UserAdmin
 from .models import UserProfile, UserProductList, Perk, CustomerVoucher, Address, Perk, UserPerk, ChatMessage, AdminTrapHit, LoginEvent
 from django.utils.html import format_html
 from .evaluators import PerkEvaluator
+from accounts.models import CampaignAnnouncement
+from accounts.tasks import send_campaign_announcement_email_task
+from django.db import transaction
 
 
 # get user model
@@ -45,16 +48,30 @@ class AddressAdmin(admin.ModelAdmin):
 
 class PerkAdmin(admin.ModelAdmin):
     # 🌟 converted from tuples to list matrices for scalability
-    list_display = ['code', 'discount_type', 'discount_value', 'is_active', 'valid_to', 'uses_count']
-    list_filter = ['discount_type', 'is_active']
+    list_display = ['code', 'discount_type', 'discount_value', 'is_active', 'enrolment_mode', 'valid_to', 'uses_count']
+    list_filter = ['discount_type', 'is_active', 'enrolment_mode', 'funding_source']
     search_fields = ['code', 'description']
     
-    # 🌟 FIXED: Removed 'uses_count' from here so it becomes fully editable!
     readonly_fields = ['created_at', 'updated_at']
     
     fieldsets = [
         ['General Info', {'fields': ['code', 'description', 'featured_image', 'is_active', 'is_member_exclusive']}],
         ['Discount Settings', {'fields': ['discount_type', 'discount_value', 'min_spending_requirement']}],
+        ['Funding Attribution｜折扣承擔', {
+            'fields': ['funding_source', 'platform_funding_share_pct'],
+            'description': (
+                "Who bears the discount. PLATFORM = platform marketing spend. "
+                "ARTISAN = reduces the artisan's payout. SPLIT = divide by platform_funding_share_pct."
+            )
+        }],
+        ['Campaign Enrolment｜活動報名', {
+            'fields': ['enrolment_mode', 'enrolment_deadline'],
+            'description': (
+                "OPT_IN_BY_ARTISAN requires the artisan to explicitly enrol in the "
+                "campaign via their dashboard. ENFORCED applies automatically. "
+                "NONE is for public codes like NEW_MEMBER."
+            )
+        }],
         ['Usage & Validity', {'fields': ['valid_from', 'valid_to', 'max_uses', 'uses_count']}],
         ['Timestamps', {'fields': ['created_at', 'updated_at']}],
     ]
@@ -131,3 +148,61 @@ class LoginEventAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+
+@admin.register(CampaignAnnouncement)
+class CampaignAnnouncementAdmin(admin.ModelAdmin):
+    list_display = (
+        'perk',
+        'subject',
+        'recipient_scope',
+        'send_count',
+        'last_sent_at',
+        'created_at',
+    )
+    list_filter = ('recipient_scope', 'perk', 'created_at')
+    search_fields = ('subject', 'perk__code')
+    readonly_fields = ('last_sent_at', 'send_count', 'created_at', 'created_by')
+
+    fieldsets = (
+        ("Campaign｜活動", {
+            'fields': ('perk',),
+        }),
+        ("Announcement Content｜公告內容", {
+            'fields': ('subject', 'body'),
+        }),
+        ("Recipients｜收件對象", {
+            'fields': ('recipient_scope',),
+            'description': (
+                "ELIGIBLE_ARTISANS: only artisans with a commission-bearing, "
+                "not-on-sale variation on a Published product. "
+                "ALL_VERIFIED_ARTISANS: every verified artisan."
+            ),
+        }),
+        ("Send History｜發送記錄", {
+            'fields': ('send_count', 'last_sent_at', 'created_at', 'created_by'),
+            'classes': ('collapse',),
+        }),
+    )
+
+    actions = ['send_announcement_action']
+
+    def save_model(self, request, obj, form, change):
+        if not change and not obj.created_by_id:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+    @admin.action(description="📨 Send to recipients (blind re-send)")
+    def send_announcement_action(self, request, queryset):
+        queued = 0
+        for announcement in queryset:
+            announcement_id = announcement.id
+            transaction.on_commit(
+                lambda aid=announcement_id:
+                    send_campaign_announcement_email_task.delay(aid)
+            )
+            queued += 1
+        self.message_user(
+            request,
+            f"Queued {queued} announcement(s) for dispatch.",
+        )

@@ -861,9 +861,10 @@ def dashboard_dispatch_line(request, line_id):
 
 @artisan_required
 @require_POST
-def dashboard_variation_unenrol_campaign(request, variation_pk, enrolment_pk):
+def dashboard_variation_unenrol_campaign(request, product_pk, variation_pk, enrolment_pk):
     profile = request.user.creator_profile
     from store.models import ProductVariation, VariationCampaignEnrolment
+    from django.utils import timezone
 
     variation = get_object_or_404(
         ProductVariation, pk=variation_pk, product__creator=profile,
@@ -872,20 +873,274 @@ def dashboard_variation_unenrol_campaign(request, variation_pk, enrolment_pk):
         VariationCampaignEnrolment, pk=enrolment_pk, variation=variation,
     )
 
-    perk_code = enrolment.perk.code
+    perk = enrolment.perk
+
+    # 🚨 LOCKOUT GUARD: Prevent leaving if the campaign has started
+    if timezone.now() >= perk.valid_from:
+        messages.error(
+            request,
+            f"活動 {perk.code} 已經開始，無法直接退出。請聯繫平台團隊申請退出。"
+            f"｜Campaign {perk.code} has already started. To unenrol, please contact the platform team.",
+        )
+        if request.headers.get("HX-Target") == "campaign-modal-content":
+            return dashboard_product_campaigns(request, pk=variation.product.id)
+        variations = variation.product.variations.all().order_by("created_date")
+        return render(request, "artisans/dashboard/partials/_product_variation_cards.html", {
+            "product": variation.product,
+            "variations": variations,
+        })
+
+    perk_code = perk.code
     enrolment.delete()
 
-    # Return the refreshed variation cards so the campaign badge
-    # disappears without a full page reload.
-    variations = variation.product.variations.all().order_by("created_date")
     messages.success(
         request,
         f"Left campaign {perk_code}.｜已退出活動 {perk_code}。",
     )
+
+    if request.headers.get("HX-Target") == "campaign-modal-content":
+        return dashboard_product_campaigns(request, pk=variation.product.id)
+
+    variations = variation.product.variations.all().order_by("created_date")
     return render(request, "artisans/dashboard/partials/_product_variation_cards.html", {
         "product": variation.product,
         "variations": variations,
     })
+
+
+@artisan_required
+def dashboard_product_campaigns(request, pk):
+    """
+    Render the campaign modal body for a single Published product.
+
+    Lists every active platform campaign the artisan's variations could
+    participate in, with a per-variation row for OPT_IN_BY_ARTISAN
+    campaigns (the only mode with an action for the artisan to take).
+
+    NONE and ENFORCED campaigns are rendered read-only. The modal is
+    "here's what's running on your products", not strictly a to-do
+    list — the artisan still benefits from seeing that a public code
+    is live, even though there's nothing to click.
+
+    Gated on Published only. A Draft product can't enrol (the campaign
+    wouldn't apply to it — the SKU isn't on sale), a Pending product
+    is under admin review and should not be mutating campaign state,
+    and a Rejected/Unpublished product is off-sale for the same
+    reason. Stock-edit uses the same gate; the two are conceptually
+    paired ("actions you can take on a live product").
+
+    The variation-partition logic mirrors line_participates_in_platform_perk
+    so the artisan sees exactly what the checkout will apply. Two
+    non-participating cases are surfaced per-row:
+      * "on artisan sale" — original_price > price
+      * "zero commission" — platform_commission_pct <= 0
+    The artisan's own action (enrol/un-enrol) is available only on
+    rows that clear both gates.
+    """
+    profile = request.user.creator_profile
+    product = get_object_or_404(
+        Product, pk=pk, creator=profile, is_deleted=False,
+    )
+
+    if product.status != "Published":
+        messages.error(
+            request,
+            "只有已發布的作品可以管理活動報名。"
+            "｜Only published products can manage campaign enrolments.",
+        )
+        return redirect("a_dashboard_products")
+
+    from accounts.models import Perk
+    from store.models import VariationCampaignEnrolment
+    from django.db.models import Prefetch, Q
+    from django.utils import timezone
+
+    now = timezone.now()
+
+    # All currently-relevant campaigns. A campaign is relevant if it is
+    # active, has not yet expired, and hasn't passed its enrolment deadline.
+    # We deliberately do NOT filter on valid_from here: an artisan must be
+    # able to opt in *before* the campaign starts. The template handles
+    # the visual state of "already started" vs "upcoming".
+    campaigns = list(
+        Perk.objects
+        .filter(is_active=True)
+        .filter(Q(valid_to__isnull=True) | Q(valid_to__gte=now))
+        .order_by("-valid_from")
+        .prefetch_related(
+            Prefetch(
+                "variation_enrolments",
+                queryset=VariationCampaignEnrolment.objects.select_related(
+                    "variation__product",
+                ),
+                to_attr="prefetched_enrolments",
+            ),
+        )
+    )
+
+    variations = (
+        product.variations
+        .filter(is_available=True)
+        .order_by("created_date")
+    )
+
+    # Build a lookup: (variation_id, perk_id) -> enrolment, so the
+    # template can check membership without a query per row.
+    enrolments_by_key = {}
+    for campaign in campaigns:
+        for enrolment in campaign.prefetched_enrolments:
+            enrolments_by_key[(enrolment.variation_id, campaign.id)] = enrolment
+
+    # Partition variations per campaign into participating / excluded
+    # buckets. "Excluded" is the aggregate of the two gates; the
+    # template checks each row's individual reason.
+    campaign_rows = []
+    for campaign in campaigns:
+        rows = []
+        for var in variations:
+            on_sale = (
+                var.original_price
+                and var.price < var.original_price
+            )
+            zero_commission = (var.platform_commission_pct or 0) <= 0
+            enrolled = (var.id, campaign.id) in enrolments_by_key
+
+            exclusion = None
+            if on_sale:
+                exclusion = "on_sale"
+            elif zero_commission:
+                exclusion = "zero_commission"
+
+            rows.append({
+                "variation": var,
+                "enrolled": enrolled,
+                "exclusion": exclusion,
+                "enrolment": enrolments_by_key.get((var.id, campaign.id)),
+            })
+
+        campaign_rows.append({
+            "perk": campaign,
+            "rows": rows,
+            "enrolment_deadline_passed": (
+                campaign.enrolment_deadline is not None
+                and now > campaign.enrolment_deadline
+            ),
+        })
+
+    context = {
+        "product": product,
+        "campaign_rows": campaign_rows,
+        "now": now,
+    }
+    return render(
+        request,
+        "artisans/dashboard/partials/_campaign_modal.html",
+        context,
+    )
+
+
+@artisan_required
+@require_POST
+def dashboard_variation_enrol_campaign(request, product_pk, variation_pk, perk_pk):
+    """
+    Enrol a single variation in a single campaign. POST-only.
+
+    Mirrors dashboard_variation_unenrol_campaign exactly: same
+    ownership gate (product__creator=profile), same response
+    contract (refreshed variation cards partial), same flash
+    message shape.
+
+    The unique constraint `unique_variation_perk_enrolment` makes the
+    create idempotent at the DB layer. We check for an existing row
+    first anyway so the flash message is honest about whether this
+    call actually changed anything ("Enrolled" vs "Already enrolled").
+
+    Enrolment deadline: if the campaign has an enrolment_deadline in
+    the past, we refuse. The modal disables the button in this case,
+    but the POST is the security boundary — a stale tab can still
+    submit.
+
+    enrolled_by is the artisan's user account. This is what the audit
+    trail on VariationCampaignEnrolment.enrolled_by is for.
+    """
+    profile = request.user.creator_profile
+    from accounts.models import Perk
+    from store.models import ProductVariation, VariationCampaignEnrolment
+    from django.utils import timezone
+
+    product = get_object_or_404(
+        Product, pk=product_pk, creator=profile, is_deleted=False,
+    )
+    variation = get_object_or_404(
+        ProductVariation, pk=variation_pk, product=product,
+    )
+    perk = get_object_or_404(Perk, pk=perk_pk, is_active=True)
+
+    now = timezone.now()
+
+    # ── Deadline check ──
+    if perk.enrolment_deadline and now > perk.enrolment_deadline:
+        messages.error(
+            request,
+            f"活動 {perk.code} 的報名截止日期已過。"
+            f"｜The enrolment deadline for {perk.code} has passed.",
+        )
+        return dashboard_product_campaigns(request, pk=product.id)
+
+    # 🚨 LOCKOUT GUARD: Prevent enrolling after campaign has started
+    if now >= perk.valid_from:
+        messages.error(
+            request,
+            f"活動 {perk.code} 已經開始，無法再加入。"
+            f"｜Campaign {perk.code} has already started. You can no longer opt in.",
+        )
+        return dashboard_product_campaigns(request, pk=product.id)
+
+    # ── Participation gate ──
+    if variation.platform_commission_pct is None or variation.platform_commission_pct <= 0:
+        messages.error(
+            request,
+            "此款式佣金為零，不符合活動條件。"
+            "｜This variation has zero platform commission and cannot participate.",
+        )
+    elif (
+        variation.original_price
+        and variation.price < variation.original_price
+    ):
+        messages.error(
+            request,
+            "此款式正在進行匠人特價，無法同時參與平台活動。"
+            "｜This variation is on artisan sale and cannot join a platform campaign.",
+        )
+    else:
+        _, created = VariationCampaignEnrolment.objects.get_or_create(
+            variation=variation,
+            perk=perk,
+            defaults={"enrolled_by": request.user},
+        )
+        if created:
+            messages.success(
+                request,
+                f"已加入活動 {perk.code}。｜Enrolled in {perk.code}.",
+            )
+        else:
+            messages.info(
+                request,
+                f"此款式已參與活動 {perk.code}。｜Already enrolled in {perk.code}.",
+            )
+
+    if request.headers.get("HX-Target") == "campaign-modal-content":
+        return dashboard_product_campaigns(request, pk=product.id)
+
+    variations = product.variations.all().order_by("created_date")
+    return render(
+        request,
+        "artisans/dashboard/partials/_product_variation_cards.html",
+        {
+            "product": product,
+            "variations": variations,
+        },
+    )
 
 
 @artisan_required

@@ -20,6 +20,7 @@ import io
 from django.core.files.base import ContentFile
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator
+from django_ckeditor_5.fields import CKEditor5Field
 
 
 # Create your models here.
@@ -683,3 +684,81 @@ class ChatMessage(models.Model):
 
         # 5. Call the 'real' save method to write to the database
         super().save(*args, **kwargs)
+
+
+class CampaignAnnouncement(models.Model):
+    """
+    A re-sendable announcement email for a platform campaign (Perk).
+
+    The artisan-supplied prose lives in `body`. The fixed layout —
+    campaign name, discount, funding split, deadline, lockout notice —
+    lives in the email template and is rendered from the related Perk
+    on every send, so the structured details are always current even
+    if the announcement body was written weeks ago.
+
+    Re-send semantics: the admin action
+    send_campaign_announcement_action dispatches to every recipient in
+    `recipient_scope` on every invocation. This is the "edit and
+    re-send" workflow — no per-recipient receipt tracking. See
+    Backlog 44 design notes for why the receipt-table alternative was
+    rejected (the action is human-driven, and accidental double-sends
+    are recoverable — the cost of a receipt table exceeds the cost of
+    the occasional duplicate email).
+
+    recipient_scope:
+      * ELIGIBLE_ARTISANS — verified artisans with at least one
+        Published, active variation whose platform_commission_pct > 0
+        and whose price >= original_price (i.e. not on artisan sale).
+        This is the same gate line_participates_in_platform_perk uses,
+        so the recipient set matches the artisans who actually have a
+        decision to make.
+      * ALL_VERIFIED_ARTISANS — every CreatorProfile with
+        is_verified=True. Use for general marketing announcements
+        where the artisan doesn't need to have a SKU in a specific
+        campaign shape to care.
+
+    Pairs with accounts.tasks.send_campaign_announcement_email_task
+    (dispatcher) and templates/emails/campaign_announcement.html /
+    .txt (renderer).
+    """
+
+    class RecipientScope(models.TextChoices):
+        ELIGIBLE_ARTISANS = "ELIGIBLE_ARTISANS", "Eligible artisans"
+        ALL_VERIFIED_ARTISANS = "ALL_VERIFIED_ARTISANS", "All verified artisans"
+
+    perk = models.ForeignKey(
+        'accounts.Perk',
+        on_delete=models.CASCADE,
+        related_name='announcements',
+    )
+    subject = models.CharField(max_length=200)
+    body = CKEditor5Field(config_name='extends', blank=True, null=True)
+    recipient_scope = models.CharField(
+        max_length=30,
+        choices=RecipientScope.choices,
+        default=RecipientScope.ELIGIBLE_ARTISANS,
+        help_text=(
+            "ELIGIBLE_ARTISANS: only artisans with a commission-bearing, "
+            "not-on-sale variation on a Published product. "
+            "ALL_VERIFIED_ARTISANS: every verified artisan. "
+            "See the class docstring for the exact predicate."
+        ),
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='+',
+    )
+    last_sent_at = models.DateTimeField(null=True, blank=True)
+    send_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Campaign announcement'
+        verbose_name_plural = 'Campaign announcements'
+
+    def __str__(self):
+        return f"{self.perk.code} — {self.subject}"
