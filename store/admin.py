@@ -2,7 +2,8 @@
 from django.contrib import admin
 from .models import (
     Product, ProductVariation, Color, Size, Type,
-    ProductGallery, ProductVariationGallery, ProductReviewLog
+    ProductGallery, ProductVariationGallery, ProductReviewLog,
+    VariationCampaignEnrolment
 )
 import admin_thumbnails
 from reviews.admin import CommentInline
@@ -198,6 +199,7 @@ class ProductVariationAdminForm(forms.ModelForm):
 
 
 class ProductVariationAdmin(admin.ModelAdmin):
+    form = ProductVariationAdminForm
     list_display = (
         'product',
         'display_category_name',
@@ -271,6 +273,18 @@ class ProductReviewLogAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(VariationCampaignEnrolment)
+class VariationCampaignEnrolmentAdmin(admin.ModelAdmin):
+    list_display = ("variation", "perk", "enrolled_at", "enrolled_by")
+    list_filter = ("perk",)
+    search_fields = (
+        "variation__product__product_name",
+        "perk__code",
+    )
+    raw_id_fields = ("variation", "enrolled_by")
+    readonly_fields = ("enrolled_at",)
 
 
 # ═══════════════════════════════════════════════════════════════

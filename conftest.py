@@ -29,6 +29,15 @@ from django.utils import timezone
 from accounts.models import Perk
 
 
+# Session A test scaffolding lives in tests/fixtures/session_a.py.
+# Registering it here makes every fixture in that module globally
+# visible — including _physical_product_base, which the variation
+# fixtures depend on but which is not imported by any test file
+# directly. Without this registration, cross-fixture resolution
+# through imported fixtures fails: pytest walks the conftest chain,
+# not arbitrary module namespaces.
+pytest_plugins = ["tests.fixtures.session_a"]
+
 # ──────────────────────────────────────────────────────────────
 # Media-root redirection (autouse, project-wide)
 # ──────────────────────────────────────────────────────────────
