@@ -32,7 +32,7 @@ urlpatterns = [
     path('dashboard/products/<int:pk>/gallery/<int:gallery_pk>/delete/', views.dashboard_product_gallery_delete, name='a_dashboard_product_gallery_delete'),
     path('dashboard/products/<int:pk>/variations/<int:variation_pk>/upload-vault/', views.dashboard_product_variation_upload_vault, name='a_dashboard_product_variation_upload_vault'),
     path('dashboard/products/<int:product_pk>/variations/<int:variation_pk>/enrolments/<int:enrolment_pk>/unenrol/', views.dashboard_variation_unenrol_campaign, name='a_dashboard_variation_unenrol_campaign'),
-    path('dashboard/products/<int:pk>/campaigns/', views.dashboard_product_campaigns, name='a_dashboard_product_campaigns'),
+    path('dashboard/products/<int:product_pk>/campaigns/', views.dashboard_product_campaigns, name='a_dashboard_product_campaigns'),
     path('dashboard/products/<int:product_pk>/variations/<int:variation_pk>/enrolments/<int:perk_pk>/enrol/', views.dashboard_variation_enrol_campaign, name='a_dashboard_variation_enrol_campaign'),
     
     path('dashboard/profile/', views.dashboard_profile_edit, name='a_dashboard_profile'),

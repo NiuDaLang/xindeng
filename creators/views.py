@@ -883,7 +883,7 @@ def dashboard_variation_unenrol_campaign(request, product_pk, variation_pk, enro
             f"｜Campaign {perk.code} has already started. To unenrol, please contact the platform team.",
         )
         if request.headers.get("HX-Target") == "campaign-modal-content":
-            return dashboard_product_campaigns(request, pk=variation.product.id)
+            return dashboard_product_campaigns(request, product_pk=variation.product.id)
         variations = variation.product.variations.all().order_by("created_date")
         return render(request, "artisans/dashboard/partials/_product_variation_cards.html", {
             "product": variation.product,
@@ -899,7 +899,7 @@ def dashboard_variation_unenrol_campaign(request, product_pk, variation_pk, enro
     )
 
     if request.headers.get("HX-Target") == "campaign-modal-content":
-        return dashboard_product_campaigns(request, pk=variation.product.id)
+        return dashboard_product_campaigns(request, product_pk=variation.product.id)
 
     variations = variation.product.variations.all().order_by("created_date")
     return render(request, "artisans/dashboard/partials/_product_variation_cards.html", {
@@ -909,7 +909,7 @@ def dashboard_variation_unenrol_campaign(request, product_pk, variation_pk, enro
 
 
 @artisan_required
-def dashboard_product_campaigns(request, pk):
+def dashboard_product_campaigns(request, product_pk):
     """
     Render the campaign modal body for a single Published product.
 
@@ -939,7 +939,7 @@ def dashboard_product_campaigns(request, pk):
     """
     profile = request.user.creator_profile
     product = get_object_or_404(
-        Product, pk=pk, creator=profile, is_deleted=False,
+        Product, pk=product_pk, creator=profile, is_deleted=False,
     )
 
     if product.status != "Published":
@@ -1085,7 +1085,7 @@ def dashboard_variation_enrol_campaign(request, product_pk, variation_pk, perk_p
             f"活動 {perk.code} 的報名截止日期已過。"
             f"｜The enrolment deadline for {perk.code} has passed.",
         )
-        return dashboard_product_campaigns(request, pk=product.id)
+        return dashboard_product_campaigns(request, product_pk=variation.product.id)
 
     # 🚨 LOCKOUT GUARD: Prevent enrolling after campaign has started
     if now >= perk.valid_from:
@@ -1094,7 +1094,7 @@ def dashboard_variation_enrol_campaign(request, product_pk, variation_pk, perk_p
             f"活動 {perk.code} 已經開始，無法再加入。"
             f"｜Campaign {perk.code} has already started. You can no longer opt in.",
         )
-        return dashboard_product_campaigns(request, pk=product.id)
+        return dashboard_product_campaigns(request, product_pk=variation.product.id)
 
     # ── Participation gate ──
     if variation.platform_commission_pct is None or variation.platform_commission_pct <= 0:
@@ -1130,7 +1130,7 @@ def dashboard_variation_enrol_campaign(request, product_pk, variation_pk, perk_p
             )
 
     if request.headers.get("HX-Target") == "campaign-modal-content":
-        return dashboard_product_campaigns(request, pk=product.id)
+        return dashboard_product_campaigns(request, product_pk=variation.product.id)
 
     variations = product.variations.all().order_by("created_date")
     return render(
