@@ -1,0 +1,80 @@
+<!-- templates/accounts/dashboard_custom_orders.html -->
+{% load humanize %}
+{% load static %}
+<title>{{ page_title }}</title>
+
+<div id="dashboard_custom_orders" class="subpage flex flex-col gap-6 animate-fade-in w-full text-neutral font-sans select-none">
+
+    <!-- ═══ Header strip ═══ -->
+    <div class="flex flex-col gap-1">
+        <h1 class="font-serif text-2xl tracking-wide">Custom Orders｜訂製訂單</h1>
+        <p class="text-sm text-base-content/60 mt-1 leading-relaxed">
+            Each line below is a made-to-order piece in progress. Tap
+            <strong>Message with artisan</strong> to coordinate delivery,
+            share references, or ask a question about that specific line.
+            <br>
+            <span class="opacity-70">
+                下列每一行都是一件正在製作中的客製作品。點擊「聯絡匠人」，即可就該訂單項目與匠人溝通交期、分享參考資料或提出問題。
+            </span>
+        </p>
+    </div>
+
+    {% if custom_order_lines %}
+    <!-- ═══ Line list ═══ -->
+    <div class="flex flex-col gap-3">
+        {% for line in custom_order_lines %}
+        <div class="flex flex-col md:flex-row md:items-center gap-4 border border-info/40 bg-neutral-content/20 rounded-[20px] p-4 shadow-sm hover:bg-neutral-content/30 transition-all">
+
+            <!-- Product identity -->
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-black text-sm text-info-content truncate">{{ line.product.product_name }}</span>
+                    {% if line.unread_thread %}
+                    <span class="badge badge-xs badge-primary font-mono">{{ line.unread_thread }}</span>
+                    {% endif %}
+                </div>
+                <div class="text-[0.7rem] font-mono text-base-content/60 mt-1 truncate">
+                    SKU: {{ line.product_variation.get_sku }} × {{ line.quantity }}
+                </div>
+                <div class="text-[0.7rem] text-base-content/50 mt-0.5">
+                    Invoice #{{ line.order.order_number }}
+                    · Artisan:
+                    <a href="{{ line.fulfilled_by.get_absolute_url }}" target="_blank" rel="noopener"
+                       class="underline hover:text-primary">{{ line.fulfilled_by.display_name }}</a>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button type="button"
+                        onclick="openCustomThreadModal('{{ line.fulfilled_by.slug }}', {{ line.id }}, 'custom_thread_modal')"
+                        class="btn btn-sm btn-outline border-info-content/30 text-info-content hover:bg-info-content hover:text-white rounded-xl font-bold">
+                    <i class="fa-solid fa-comments text-[0.7rem] mr-1"></i>
+                    Message with Artisan｜聯絡匠人
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- ═══ Empty state ═══ -->
+    <div class="relative rounded-[28px] border border-info/40 bg-neutral-content/10 w-full min-h-[16rem] flex flex-col items-center justify-center text-center p-6 shadow-inner">
+        <i class="fa-solid fa-palette text-3xl text-info-content/40 mb-3"></i>
+        <h2 class="text-info-content font-black text-sm tracking-wide">
+            No Custom Orders Yet｜目前尚無訂製訂單
+        </h2>
+        <p class="text-[0.75rem] text-neutral/50 max-w-sm mt-2 leading-relaxed">
+            Made-to-order commissions from artisans will appear here.
+            Each line opens a direct conversation with the artisan
+            handling that specific piece.
+            <br>
+            當您向匠人訂購客製化作品後，訂單將顯示於此。每一項皆可與負責該作品的匠人直接對話。
+        </p>
+        <a href="{% url 'products' category_slug='all' %}"
+           class="btn btn-sm btn-outline mt-4 rounded-xl border-info-content/30 text-info-content hover:bg-info-content hover:text-white">
+            Browse Products｜瀏覽作品
+        </a>
+    </div>
+    {% endif %}
+</div>

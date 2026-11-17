@@ -69,12 +69,54 @@ from blog.models import Post
 from .models import LoginEvent
 from .views_admin_trap import client_ip
 from core.image_utils import safe_image_url
-from creators.models import ArtisanAdminMessage, CreatorProfile
+from creators.models import ArtisanAdminMessage, CreatorProfile, ArtisanChatMessage, FrontlineThread
 from django.db.models import Max
 from django.core.exceptions import ValidationError
 
 
 NUM_MSG_PER_LOAD = 10
+
+
+def _buyer_custom_lines(user):
+    """
+    CUSTOM digital order lines for this buyer, annotated with unread count.
+
+    Strict filter on the current CUSTOM shape (is_digital=True AND
+    digital_fulfillment_type='CUSTOM'). See Backlog 55 in the handoff
+    for the future physical-custom expansion. Isolating this query in a
+    helper means that migration is a one-line change and does not touch
+    the view or the template.
+
+    Unread annotation counts ArtisanChatMessage rows on this line where
+    is_read=False AND sender != the buyer. The sender exclusion is the
+    reader-side gate documented in handoff §A2: the buyer's own
+    outbound sends are already is_read=False in the model (they're the
+    artisan's unread), and must not be counted as the buyer's unread.
+    """
+
+    return (
+        OrderProduct.objects
+        .filter(
+            order__user=user,
+            product__is_digital=True,
+            product__digital_fulfillment_type="CUSTOM",
+        )
+        .select_related(
+            "order",
+            "product",
+            "product_variation",
+            "fulfilled_by",
+            "fulfilled_by__user",
+        )
+        .annotate(
+            unread_thread=Count(
+                "customer_thread_messages",
+                filter=Q(customer_thread_messages__is_read=False)
+                & ~Q(customer_thread_messages__sender=user),
+            ),
+        )
+        .order_by("-order__ordered_at")
+    )
 
 
 # Create your views here.
@@ -541,6 +583,7 @@ def dashboard(request, subpage):
         'profile': 'accounts/dashboard_profile.html',
         'addresses': 'accounts/dashboard_addresses.html',
         'orders': 'accounts/dashboard_orders.html',
+        'custom_orders': 'accounts/dashboard_custom_orders.html',
         'offers': 'accounts/dashboard_offers.html',
         'vouchers': 'accounts/dashboard_vouchers.html',
         'wishlist': 'accounts/dashboard_wishlist.html',
@@ -557,6 +600,7 @@ def dashboard(request, subpage):
         'profile': 'Edit Profile｜會員檔案',
         'addresses': 'Addresses｜地址簿',
         'orders': 'Orders｜購物紀錄',
+        'custom_orders': 'Custom Orders｜訂製訂單',
         'offers': 'Offers｜福利活動',
         'vouchers': 'Vouchers｜禮品券',
         'wishlist': 'Wishlist｜購物清單',
@@ -654,9 +698,18 @@ def dashboard(request, subpage):
     free_cash = get_cash_voucher_balance(request)
     pending_holds_total = get_cash_voucher_pending_holds_total(request)
 
-    # 3. Pull dynamic unread communications counts
-    unread_count = 0 # Re-link to your customer messaging channels loops later
+    # 3. Pull dynamic unread communications counts.
+    # Two independent channels; do not sum them here — the sidebar,
+    # header dropdown, and dashboard_main card each render their own
+    # breakdown. Summing in the view would collapse the distinction the
+    # templates need.
+    unread_count = 0  # Help-desk counter, populated from ChatMessage elsewhere
+    unread_artisan_count = ArtisanChatMessage.objects.filter(customer=request.user, is_read=False).exclude(sender=request.user).count()
+    total_unread_messages = unread_count + unread_artisan_count
 
+    print("unread_count: ", unread_count)
+    print("unread_artisan_count: ", unread_artisan_count)
+    print("unrtotal_unread_messagesead_count: ", total_unread_messages)
     # 🌟 4. ACTIVE TRACKER PIPELINE QUERY: Fetch in-flight split fulfillments safely!
     in_progress_orders = Order.objects.filter(
         user=request.user,
@@ -671,6 +724,8 @@ def dashboard(request, subpage):
         "free_cash": free_cash,
         "pending_holds_total": pending_holds_total,
         "unread_count": unread_count,
+        "unread_artisan_count": unread_artisan_count,
+        "total_unread_messages": total_unread_messages,
         "in_progress_orders": in_progress_orders,
     })
 
@@ -876,7 +931,16 @@ def dashboard(request, subpage):
             main_html = render_to_string("accounts/partials/orders_ledger_list.html", context, request=request)
             response = HttpResponse(main_html + total_found_count_oob)
             return response
-              
+
+    # custom_orders
+    if subpage == "custom_orders":
+        custom_order_lines = _buyer_custom_lines(request.user)
+        # Per-artisan aggregate for the sidebar badge — the entry shows
+        # one number even before the buyer opens the subpage.
+        context.update({
+            "custom_order_lines": custom_order_lines,
+        })
+
     # offers
     eligible_perks = None
     if subpage == "offers":
@@ -1110,11 +1174,6 @@ def dashboard(request, subpage):
             messages.error(request, "Access denied.｜無權限訪問。")
             return redirect("dashboard", subpage="main")
 
-        from creators.models import (
-            FrontlineThread,
-            ArtisanChatMessage,
-        )
-
         # ── 1. Resolve filters ──
         settled_filter = request.GET.get("settled", "false") == "true"
         q = (request.GET.get("q") or "").strip()
@@ -1190,7 +1249,7 @@ def dashboard(request, subpage):
                     .filter(
                         artisan=active_thread.artisan,
                         customer=active_thread.customer,
-                        order_product=active_thread.order_product,
+                        # Removed order_product strict filter
                     )
                     .select_related(
                         "sender",
@@ -1778,8 +1837,6 @@ def frontline_thread_mark_settled(request, thread_id):
     if not getattr(request.user, "is_superadmin", False):
         return HttpResponse(status=403)
 
-    from creators.models import FrontlineThread, ArtisanChatMessage
-
     thread = get_object_or_404(FrontlineThread, id=thread_id)
 
     action = request.POST.get("action", "settle")
@@ -1910,8 +1967,6 @@ def frontline_message_send(request, thread_id):
     """
     if not getattr(request.user, "is_superadmin", False):
         return HttpResponse(status=403)
-
-    from creators.models import FrontlineThread, ArtisanChatMessage
 
     thread = get_object_or_404(FrontlineThread, id=thread_id)
 

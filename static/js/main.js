@@ -1431,7 +1431,17 @@ function confirmAction(button, title, html, icon, show_cancel, confirm_btn_color
 function confirmEscalateThread(button, threadId) {
     const form = button.closest('form');
     if (!form) return;
+
+    // 🌟 Check if we are inside the custom thread modal
+    const dialog = document.getElementById('custom_thread_modal');
+    const isModalOpen = dialog && dialog.open;
+    
+    // If the modal is open, mount the Swal INSIDE the dialog.
+    // Otherwise, fall back to the body.
+    const swalTarget = isModalOpen ? dialog : 'body';
+
     Swal.fire({
+        target: swalTarget, // 🌟 Force Swal into the dialog's top layer
         title: 'Request platform involvement?｜申請平台介入？',
         html: `
             <div class="text-left text-sm space-y-3 py-1 leading-relaxed">
@@ -1459,7 +1469,10 @@ function confirmEscalateThread(button, threadId) {
         customClass: {
             popup: 'rounded-2xl font-sans',
             title: 'text-base font-semibold',
+            container: isModalOpen ? '!absolute !inset-0 !w-full !h-full' : '' 
+            // ^ Optional: forces the Swal container to cover the dialog properly
         },
+
     }).then((result) => {
         if (result.isConfirmed) {
             htmx.trigger(form, 'confirmed');
@@ -2060,6 +2073,41 @@ function closeOrderDetailsModal(orderNumber) {
     const targetModal = document.getElementById(`modal_${orderNumber}`);
     if (targetModal) targetModal.close();
 }
+
+// ── Custom thread modal (buyer ↔ artisan per order line) ──
+// Opens the shared #custom_thread_modal dialog and loads the
+// thread partial into #custom_thread_body. The partial's own
+// <form> posts normally (not HTMX), and customer_thread_send
+// redirects to the full-page thread on success — so the modal
+// naturally closes when the browser navigates away. On cancel or
+// on a validation error the dialog stays open for retry.
+//
+// Artisan slug is URL-encoded defensively; slugs are lowercase-
+// dash by convention, but a stray character should not produce a
+// malformed URL.
+function openCustomThreadModal(artisanSlug, orderProductId, modalId = 'custom_thread_modal') {
+    const dialog = document.getElementById(modalId);
+    const body = document.getElementById('custom_thread_body');
+    if (!dialog || !body) {
+        console.warn('openCustomThreadModal: dialog or body element missing', { modalId });
+        return;
+    }
+    const safeSlug = encodeURIComponent(artisanSlug);
+    body.innerHTML = '<div class="text-center py-10 text-xs opacity-60">Loading…｜載入中…</div>';
+    dialog.showModal();
+    htmx.ajax('GET',
+        `/creators/thread/${safeSlug}/partial/?order_product=${encodeURIComponent(orderProductId)}`,
+        { target: '#custom_thread_body', swap: 'innerHTML' }
+    );
+}
+
+function closeCustomThreadModal(modalId = 'custom_thread_modal') {
+    const dialog = document.getElementById(modalId);
+    const body = document.getElementById('custom_thread_body');
+    if (dialog && dialog.open) dialog.close();
+    if (body) body.innerHTML = '';
+}
+
 // JavaScript cancellation routine handler function execution track
 async function triggerOrderCancellation(orderNumber, totalDue, paidByVoucher, isSelfService) {
     const activeTokenString = window.get_csrf_token();
@@ -2215,6 +2263,12 @@ function updateActiveLink(element) {
         // Orders related
         'orders_header': '#orders_li',
         'works_owned': '#orders_li',
+        // Custom Orders related (new)
+        'custom_orders_header': '#custom_orders_li',
+        'custom_orders_label': '#custom_orders_li',
+        'messages_label': '#custom_orders_li',   // dashboard_main card-3 envelope
+        'help_breakdown': '#help_li',            // dashboard_main card-3 Help link
+        'artisan_breakdown': '#custom_orders_li',// dashboard_main card-3 Artisan link
         // Offers related
         'offers_header': '#perks_li',
         'perks_label': '#perks_li',
@@ -2479,6 +2533,8 @@ window.initRegionLogic = initRegionLogic;
 window.toggleProvinceFields = toggleProvinceFields;
 window.openOrderDetailsModal = openOrderDetailsModal;
 window.closeOrderDetailsModal = closeOrderDetailsModal;
+window.openCustomThreadModal = openCustomThreadModal;
+window.closeCustomThreadModal = closeCustomThreadModal;
 window.triggerOrderCancellation = triggerOrderCancellation;
 
 window.updateActiveLink = updateActiveLink;

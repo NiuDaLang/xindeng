@@ -1,0 +1,33 @@
+<!-- artisans/dashboard/partials/_artisan_message_list.html -->
+{% for m in active_messages %}
+<div class="flex {% if m.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
+    <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed
+                {% if m.sender == request.user %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content{% endif %}">
+        {{ m.content|linebreaksbr }}
+        {% if m.image %}
+        <img src="{{ m.image.url }}"
+             alt="attachment"
+             class="mt-2 rounded-lg max-h-48 object-contain block"
+             loading="lazy" />
+        {% endif %}
+        <span class="block text-[9px] opacity-60 mt-1 font-mono">
+            {{ m.created_at|date:"Y-m-d H:i" }}
+        </span>
+    </div>
+</div>
+{% empty %}
+<p class="text-center text-xs text-base-content/40 py-10">
+    No messages yet. Say hello.｜暫無訊息。
+</p>
+{% endfor %}
+
+<script>
+    requestAnimationFrame(function() {
+        setTimeout(function() {
+            const container = document.getElementById('artisan-message-list');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }, 50);
+    });
+</script>

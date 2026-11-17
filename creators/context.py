@@ -33,7 +33,7 @@ def artisan_dashboard_context(request):
     unread_messages = ArtisanChatMessage.objects.filter(
         artisan=profile,
         is_read=False,
-    ).count()
+    ).exclude(sender=profile.user).count()
 
     unread_admin_messages = ArtisanAdminMessage.objects.filter(
         artisan=profile,

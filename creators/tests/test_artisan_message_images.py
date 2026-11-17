@@ -275,12 +275,16 @@ class TestArtisanPanelImageSend:
         )
 
     def test_image_only_message_succeeds(
-        self, client, customer, artisan_user, artisan_profile,
+        self, client, customer, artisan_user, artisan_profile, order_product,
     ):
         client.force_login(artisan_user)
         response = client.post(
             self._send_url(customer),
-            {"content": "", "image": _png_upload()},
+            {
+                "content": "",
+                "image": _png_upload(),
+                "order_product_id": order_product.id,
+            },
         )
         assert response.status_code == 302
 
@@ -288,18 +292,22 @@ class TestArtisanPanelImageSend:
             artisan=artisan_profile,
             customer=customer,
             sender=artisan_user,
+            order_product=order_product,
         )
         assert msg.content == ""
         assert msg.image
 
     def test_neither_content_nor_image_rejects(
-        self, client, customer, artisan_user, artisan_profile,
+        self, client, customer, artisan_user, artisan_profile, order_product,
     ):
         before = ArtisanChatMessage.objects.count()
         client.force_login(artisan_user)
         response = client.post(
             self._send_url(customer),
-            {"content": ""},
+            {
+                "content": "",
+                "order_product_id": order_product.id,
+            },
         )
         assert response.status_code == 302
         assert ArtisanChatMessage.objects.count() == before
@@ -538,13 +546,18 @@ class TestImageValidationGate:
         assert ArtisanChatMessage.objects.count() == before
 
     def test_artisan_send_rejects_corrupt_image(
-        self, client, customer, artisan_user, artisan_profile, tiny_corrupt,
+        self, client, customer, artisan_user, artisan_profile,
+        order_product, tiny_corrupt,
     ):
         before = ArtisanChatMessage.objects.count()
         client.force_login(artisan_user)
         response = client.post(
             reverse("a_dashboard_messages_send", args=[customer.id]),
-            {"content": "text", "image": tiny_corrupt},
+            {
+                "content": "text",
+                "image": tiny_corrupt,
+                "order_product_id": order_product.id,
+            },
         )
         assert response.status_code == 302
         assert ArtisanChatMessage.objects.count() == before

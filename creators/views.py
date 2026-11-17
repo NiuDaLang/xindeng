@@ -1423,50 +1423,50 @@ def dashboard_profile_edit(request):
 @artisan_required
 def dashboard_messages(request):
     """
-    Artisan inbox: thread list plus, when ?customer=<id> is present,
+    Artisan inbox: thread list plus, when ?order_product=<id> is present,
     the active thread's messages.
-
-    Opening a thread flips every unread customer-authored message in
-    that thread to read. Artisan-authored messages are already
-    is_read=True and are unaffected.
     """
     profile = request.user.creator_profile
-    customer_id = request.GET.get("customer")
+    order_product_id = request.GET.get("order_product")
 
-    # One row per customer who has exchanged messages with this artisan.
-    # last_at is used to order threads most-recently-active first.
+    # One row per OrderProduct that has messages.
     thread_rows = list(
         ArtisanChatMessage.objects
-        .filter(artisan=profile)
-        .values("customer")
+        .filter(artisan=profile, order_product__isnull=False)
+        .values(
+            "order_product", 
+            "order_product__order__order_number", 
+            "order_product__product__product_name", 
+            "customer"
+        )
         .annotate(last_at=Max("created_at"), unread=Count("id", filter=Q(is_read=False)))
         .order_by("-last_at")
     )
 
-    # Fetch the customer Accounts in one query rather than N.
+    # Fetch the Accounts in one query
     customer_ids = [row["customer"] for row in thread_rows]
-    customers_by_id = {
-        u.id: u for u in Account.objects.filter(id__in=customer_ids)
-    }
+    customers_by_id = {u.id: u for u in Account.objects.filter(id__in=customer_ids)}
     for row in thread_rows:
         row["customer_obj"] = customers_by_id.get(row["customer"])
 
     active_customer = None
+    active_line = None
     active_messages = ArtisanChatMessage.objects.none()
 
-    if customer_id:
-        active_customer = customers_by_id.get(int(customer_id)) if customer_id.isdigit() else None
-        if active_customer is None:
-            # The customer isn't in this artisan's existing threads.
-            # Load them anyway if they exist as an Account — a fresh
-            # thread starts empty.
-            active_customer = Account.objects.filter(id=customer_id).first()
-        if active_customer:
+    if order_product_id:
+        active_line = OrderProduct.objects.filter(id=order_product_id, fulfilled_by=profile).select_related("order", "product").first()
+        if active_line:
+            active_customer = active_line.order.user
+            
+            # 🌟 FIX: Include messages for this line, OR old messages from this customer with no line attached
             active_messages = (
                 ArtisanChatMessage.objects
                 .filter(artisan=profile, customer=active_customer)
+                .filter(Q(order_product=active_line) | Q(order_product__isnull=True))
                 .select_related("sender")
+                .order_by("created_at")
             )
+            
             ArtisanChatMessage.objects.filter(
                 artisan=profile,
                 customer=active_customer,
@@ -1478,38 +1478,45 @@ def dashboard_messages(request):
         "active_section": "messages",
         "threads": thread_rows,
         "active_customer": active_customer,
+        "active_line": active_line,
         "active_messages": active_messages,
         "page_title": "Messages｜訊息",
     })
 
     if request.headers.get("HX-Request"):
-        # HTMX swaps only the inner content
+        target = request.headers.get("HX-Target")
+        
+        # 1. Clicking a specific thread inside the messages page
+        if target == "artisan-chat-section":
+            context["is_thread_swap"] = True  # 🌟 Allow OOB swap here
+            return render(request, "artisans/dashboard/partials/_artisan_chat_section.html", context)
+            
+        # 2. Clicking the "Messages" tab from another page
+        elif target == "dashboard-main":
+            context["is_thread_swap"] = False # 🌟 Do NOT OOB swap here
+            return render(request, "artisans/dashboard/partials/_messages_tabs.html", context)
+            
+        # 3. Default fallback
+        context["is_thread_swap"] = False
         return render(request, "artisans/dashboard/partials/_messages_tabs.html", context)
-    # Full page load gets the container
+        
     return render(request, "artisans/dashboard/messages.html", context)
 
 
 @artisan_required
 @require_POST
 def dashboard_messages_send(request, customer_id):
-    """
-    Create a message from this artisan to the given customer.
-
-    Redirects back to the thread. No WebSocket — the reload is what
-    delivers the update.
-    """
     profile = request.user.creator_profile
     customer = get_object_or_404(Account, pk=customer_id)
+    order_product_id = request.POST.get("order_product_id")
+    linked_line = get_object_or_404(OrderProduct, pk=order_product_id, fulfilled_by=profile)
 
     content = (request.POST.get("content") or "").strip()
     image = request.FILES.get("image")
 
     if not content and not image:
-        messages.error(
-            request,
-            "Message cannot be empty.｜訊息不得為空。",
-        )
-        return redirect(f"{reverse('a_dashboard_messages')}?customer={customer.id}")
+        messages.error(request, "Message cannot be empty.｜訊息不得為空。")
+        return redirect(f"{reverse('a_dashboard_messages')}?order_product={linked_line.id}")
 
     try:
         ArtisanChatMessage.objects.create(
@@ -1518,18 +1525,25 @@ def dashboard_messages_send(request, customer_id):
             sender=request.user,
             content=content,
             image=image,
+            order_product=linked_line,
             is_read=True,
         )
     except ValidationError:
-        messages.error(
-            request,
-            "The attached file is not a readable image. "
-            "Your message was not sent. "
-            "｜所附加的檔案不是可讀取的圖片，訊息未發送。",
-        )
-        return redirect(f"{reverse('a_dashboard_messages')}?customer={customer.id}")
-    return redirect(f"{reverse('a_dashboard_messages')}?customer={customer.id}")
+        messages.error(request, "The attached file is not a readable image.")
+        return redirect(f"{reverse('a_dashboard_messages')}?order_product={linked_line.id}")
 
+    if request.headers.get("HX-Request"):
+        active_messages = (
+            ArtisanChatMessage.objects
+            .filter(artisan=profile, order_product=linked_line)
+            .select_related("sender")
+        )
+        return render(request, "artisans/dashboard/partials/_artisan_message_list.html", {
+            "active_messages": active_messages,
+        })
+
+    return redirect(f"{reverse('a_dashboard_messages')}?order_product={linked_line.id}")
+    
 
 @artisan_required
 def dashboard_messages_admin(request):
@@ -2755,6 +2769,7 @@ def customer_thread(request, artisan_slug):
         "available_lines": available_lines,
         "chat_messages": messages_qs,
         "page_title": f"Talk to {artisan.display_name}｜與匠人對話",
+        "is_modal": False,
     }
 
     if request.headers.get("HX-Request"):
@@ -2764,6 +2779,59 @@ def customer_thread(request, artisan_slug):
             context,
         )
     return render(request, "artisans/customer_thread.html", context)
+
+
+@login_required(login_url="login")
+def customer_thread_partial(request, artisan_slug):
+    artisan = get_object_or_404(CreatorProfile, slug=artisan_slug, is_verified=True)
+    if not _customer_has_line_with(artisan, request.user):
+        raise Http404("No CUSTOM order line connects you to this artisan.")
+
+    order_product_id = request.GET.get("order_product")
+    active_line = None
+    if order_product_id and str(order_product_id).isdigit():
+        active_line = OrderProduct.objects.filter(
+            id=int(order_product_id), order__user=request.user, fulfilled_by=artisan,
+            product__is_digital=True, product__digital_fulfillment_type="CUSTOM"
+        ).select_related("order", "product", "product_variation").first()
+
+    # Flip unread to read FOR THIS LINE ONLY
+    if active_line:
+        ArtisanChatMessage.objects.filter(
+            artisan=artisan, customer=request.user, order_product=active_line, is_read=False,
+        ).exclude(sender=request.user).update(is_read=True)
+
+    # Load messages FOR THIS LINE ONLY
+    messages_qs = (
+        ArtisanChatMessage.objects
+        .filter(artisan=artisan, customer=request.user)
+        .filter(Q(order_product=active_line) | Q(order_product__isnull=True))
+        .select_related("sender", "order_product", "order_product__product", "order_product__product_variation")
+        .order_by("created_at")
+    )
+
+    available_lines = (
+        OrderProduct.objects
+        .filter(
+            order__user=request.user,
+            fulfilled_by=artisan,
+            product__is_digital=True,
+            product__digital_fulfillment_type="CUSTOM",
+        )
+        .select_related("order", "product", "product_variation")
+        .order_by("-order__ordered_at")
+    )
+
+    context = {
+        "artisan": artisan,
+        "active_line": active_line,
+        "available_lines": available_lines,
+        "chat_messages": messages_qs,
+        "is_modal": True,
+    }
+    return render(
+        request, "artisans/customer_thread_inner.html", context,
+    )
 
 
 @login_required(login_url="login")
@@ -2857,6 +2925,29 @@ def customer_thread_send(request, artisan_slug):
         if linked_line
         else f"{reverse('customer_thread', kwargs={'artisan_slug': artisan.slug})}"
     )
+
+    if request.headers.get("HX-Request"):
+        # Re-fetch data to render the partial
+        messages_qs = (
+            ArtisanChatMessage.objects
+            .filter(artisan=artisan, customer=request.user, order_product=linked_line) # 🌟 ADD THIS FILTER
+            .select_related("sender", "order_product", "order_product__product", "order_product__product_variation")
+            .order_by("created_at")
+        )
+        available_lines = (
+            OrderProduct.objects
+            .filter(order__user=request.user, fulfilled_by=artisan, product__is_digital=True, product__digital_fulfillment_type="CUSTOM")
+            .select_related("order", "product", "product_variation")
+            .order_by("-order__ordered_at")
+        )
+        return render(request, "artisans/customer_thread_inner.html", {
+            "artisan": artisan,
+            "active_line": linked_line,
+            "available_lines": available_lines,
+            "chat_messages": messages_qs,
+            "is_modal": True,
+        })
+
     return redirect(redirect_url)
 
 

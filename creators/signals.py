@@ -154,3 +154,24 @@ def validate_artisan_chat_image(sender, instance, **kwargs):
         image.seek(0)
     except Exception:
         pass
+
+
+@receiver(post_save, sender=ArtisanChatMessage)
+def notify_counterparty_on_artisan_message(sender, instance, created, **kwargs):
+    """
+    Email the counterparty when a new order-scoped ArtisanChatMessage
+    is created. Pre-purchase messages (order_product=None) are
+    inbox-only. Bypasses on updates (created=False). Fires post-commit
+    via Celery so an SMTP failure cannot roll back the message row.
+    """
+    if not created:
+        return
+    if instance.order_product_id is None:
+        return
+
+    from django.db import transaction
+    from creators.tasks import send_artisan_chat_message_email_task
+
+    transaction.on_commit(
+        lambda mid=instance.id: send_artisan_chat_message_email_task.delay(mid)
+    )

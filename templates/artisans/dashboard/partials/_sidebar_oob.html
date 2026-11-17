@@ -1,0 +1,52 @@
+<!-- templates/artisans/dashboard/partials/_sidebar_oob.html -->
+{% load static %}
+{# This swaps ONLY the navigation links inside the sidebar #}
+<nav id="artisan-sidebar-nav" hx-swap-oob="outerHTML" class="flex-1 px-2 py-4 space-y-1 text-sm">
+    <a hx-get="{% url 'a_dashboard' %}" hx-target="#dashboard-main" hx-push-url="true"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors {% if active_section == 'overview' %}bg-base-200 text-primary font-semibold{% endif %}">
+        <i class="fa-solid fa-gauge text-xs w-4 text-center"></i>
+        <span>Overview｜總覽</span>
+    </a>
+    
+    <a hx-get="{% url 'a_dashboard_orders' %}" hx-target="#dashboard-main" hx-push-url="true"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors {% if active_section == 'orders' %}bg-base-200 text-primary font-semibold{% endif %}">
+        <i class="fa-solid fa-bag-shopping text-xs w-4 text-center"></i>
+        <span class="flex-1">Orders｜訂單</span>
+        {% if pending_dispatch_count %}
+        <span class="badge badge-primary badge-xs">{{ pending_dispatch_count }}</span>
+        {% endif %}
+    </a>
+
+    <a hx-get="{% url 'a_dashboard_settlements' %}" hx-target="#dashboard-main" hx-push-url="true"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors {% if active_section == 'settlements' %}bg-base-200 text-primary font-semibold{% endif %}">
+        <i class="fa-solid fa-money-check-dollar text-xs w-4 text-center"></i>
+        <span>Settlements｜結算</span>
+    </a>
+
+    <a hx-get="{% url 'a_dashboard_products' %}" hx-target="#dashboard-main" hx-push-url="true"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors {% if active_section == 'products' %}bg-base-200 text-primary font-semibold{% endif %}">
+        <i class="fa-solid fa-box text-xs w-4 text-center"></i>
+        <span>Products｜作品</span>
+    </a>
+
+    <a hx-get="{% url 'a_dashboard_blog' %}" hx-target="#dashboard-main" hx-push-url="true"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors {% if active_section == 'blog' %}bg-base-200 text-primary font-semibold{% endif %}">
+        <i class="fa-solid fa-pen-fancy text-xs w-4 text-center"></i>
+        <span>Blog｜筆記</span>
+    </a>
+
+    <a hx-get="{% url 'a_dashboard_profile' %}" hx-target="#dashboard-main" hx-push-url="true"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors {% if active_section == 'profile' %}bg-base-200 text-primary font-semibold{% endif %}">
+        <i class="fa-solid fa-id-badge text-xs w-4 text-center"></i>
+        <span>Profile｜匠人檔案</span>
+    </a>
+
+    <a hx-get="{% url 'a_dashboard_messages' %}" hx-target="#dashboard-main" hx-push-url="true"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200/60 cursor-pointer transition-colors {% if active_section == 'messages' %}bg-base-200 text-primary font-semibold{% endif %}">
+        <i class="fa-solid fa-comments text-xs w-4 text-center"></i>
+        <span class="flex-1">Messages｜訊息</span>
+        {% if unread_messages_count %}
+        <span class="badge badge-primary badge-xs">{{ unread_messages_count }}</span>
+        {% endif %}
+    </a>
+</nav>

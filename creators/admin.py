@@ -3,8 +3,7 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
 
-from .models import CreatorProfile, CraftType
-
+from .models import CreatorProfile, CraftType, ArtisanChatMessage, ArtisanAdminMessage
 
 @admin.register(CraftType)
 class CraftTypeAdmin(admin.ModelAdmin):
@@ -102,3 +101,10 @@ class CreatorProfileAdmin(admin.ModelAdmin):
         updated = queryset.update(is_verified=False)
         self.message_user(request, f"{updated} artisan(s) un-verified.")
 
+
+@admin.register(ArtisanChatMessage)
+class ArtisanChatMessageAdmin(admin.ModelAdmin):
+    list_display = ('id', 'artisan', 'customer', 'sender', 'content', 'is_read', 'created_at')
+    list_filter = ('is_read', 'artisan', 'customer')
+    search_fields = ('content', 'artisan__display_name', 'customer__username', 'sender__username')
+    raw_id_fields = ('artisan', 'customer', 'sender', 'order_product')

@@ -33,7 +33,7 @@
         </div>
 
         <!-- Navigation -->
-        <nav class="flex-1 px-2 py-4 space-y-1 text-sm">
+        <nav id="artisan-sidebar-nav" class="flex-1 px-2 py-4 space-y-1 text-sm">
 
             <a hx-get="{% url 'a_dashboard' %}"
                hx-target="#dashboard-main"
@@ -141,6 +141,7 @@
         <ul class="menu gap-1">
             <li><a hx-get="{% url 'a_dashboard' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Overview｜總覽</a></li>
             <li><a hx-get="{% url 'a_dashboard_orders' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Orders｜訂單</a></li>
+            <li><a hx-get="{% url 'a_dashboard_settlements' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Settlements｜結算</a></li>
             <li><a hx-get="{% url 'a_dashboard_products' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Products｜作品</a></li>
             <li><a hx-get="{% url 'a_dashboard_blog' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Blog｜筆記</a></li>
             <li><a hx-get="{% url 'a_dashboard_profile' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Profile｜匠人檔案</a></li>

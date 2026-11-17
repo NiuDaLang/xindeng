@@ -165,6 +165,25 @@
         </a>
       </li>
 
+      <!-- ITEM: CUSTOM ORDERS ｜ 訂製訂單 -->
+      <li id="custom_orders_li" class="dashboard-item transition-all hover:bg-base-200/40 {% if subpage == 'custom_orders' %}is-active{% endif %}">
+        <a href="{% url 'dashboard' 'custom_orders' %}" 
+           hx-get="{% url 'dashboard' 'custom_orders' %}" 
+           hx-target="#dashboard-content" 
+           hx-push-url="true" 
+           hx-on:click="updateActiveLink(this)"
+           id="custom_orders_link"
+           class="sidebar_link flex items-center gap-3 px-6 py-3.5 w-full text-left tracking-wide">
+          <i class="fa-solid fa-palette text-xs opacity-70 w-4 text-center"></i>
+          <span class="flex-1">Custom Orders｜訂製訂單</span>
+          {% if unread_artisan_count %}
+          <span class="badge badge-sm badge-primary text-[10px] font-sans font-bold px-1.5 min-w-5">
+            {{ unread_artisan_count }}
+          </span>
+          {% endif %}
+        </a>
+      </li>
+
       <!-- ITEM: PERKS -->
       <li id="perks_li" class="dashboard-item transition-all hover:bg-base-200/40 {% if subpage == 'offers' %}is-active{% endif %}">
         <a href="{% url 'dashboard' 'offers' %}" 

@@ -1,0 +1,28 @@
+{% autoescape off %}
+💬 NEW MESSAGE ABOUT YOUR ORDER｜訂單有新訊息
+
+Dear {{ recipient_user.username }}｜{{ recipient_user.username }} 您好:
+
+{{ msg.sender.username }} sent you a new message regarding your order.
+{{ msg.sender.username }} 就您的訂單發送了新訊息。
+
+============================================================
+📋 ORDER DETAILS｜訂單詳情
+============================================================
+Order｜訂單: #{{ msg.order_product.order.order_number }}
+Product｜商品: {{ msg.order_product.product.product_name }}
+SKU: {{ msg.order_product.product_variation.get_sku }}
+============================================================
+
+"{{ msg.content|truncatechars:150 }}"
+
+Please log in to view the full conversation:
+請登入查看完整對話：
+
+→ {{ link_url }}
+
+============================================================
+Hṛdayadīpa (हृदयदीप)｜心燈
+Automated notification — please do not reply directly.
+系統自動通知，請勿直接回覆。
+{% endautoescape %}

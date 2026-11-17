@@ -1,0 +1,59 @@
+{% autoescape off %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Message</title>
+</head>
+<body style="font-family: sans-serif; background-color: #f7f5f3; padding: 20px; margin: 0;">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #cccccc; border-radius: 8px;">
+        <tr>
+            <td style="background-color: #4b9aaa; padding: 25px; text-align: center; color: white; font-size: 1.1rem; font-weight: bold;">
+                💬 New Message about your Order
+                <br><span style="font-size: 0.85rem; font-weight: normal; opacity: 0.9;">訂單有新訊息</span>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="padding: 30px; font-size: 0.85rem; line-height: 1.5rem; color: #161616;">
+                <p style="margin: 0 0 14px 0;">
+                    Dear <strong>{{ recipient_user.username }}</strong>,<br>
+                    親愛的 <strong>{{ recipient_user.username }}</strong>，您好：
+                </p>
+
+                <p style="margin: 0 0 14px 0;">
+                    <strong>{{ msg.sender.username }}</strong> sent you a new message regarding your order.<br>
+                    <strong>{{ msg.sender.username }}</strong> 就您的訂單發送了新訊息。
+                </p>
+
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #f9f9f9; border-left: 4px solid #4b9aaa; margin-bottom: 20px;">
+                    <tr><td style="padding: 15px; font-size: 0.85rem; line-height: 1.6rem; color: #333333;">
+                        <strong>Order｜訂單：</strong> #{{ msg.order_product.order.order_number }}<br>
+                        <strong>Product｜商品：</strong> {{ msg.order_product.product.product_name }}<br>
+                        <strong>SKU：</strong> {{ msg.order_product.product_variation.get_sku }}
+                    </td></tr>
+                </table>
+
+                <div style="background-color: #f0f4f8; padding: 15px; border-radius: 8px; font-style: italic; color: #4a5568; margin-bottom: 20px;">
+                    "{{ msg.content|truncatechars:150 }}"
+                </div>
+
+                <div style="text-align: center; margin: 26px 0;">
+                    <a href="{{ link_url }}" style="display: inline-block; padding: 12px 26px; background-color: #4b9aaa; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">
+                        View Conversation｜查看對話 →
+                    </a>
+                </div>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="background-color: #333333; padding: 20px; text-align: center; color: white; font-size: 0.7rem; line-height: 1.4rem;">
+                Hṛdayadīpa (हृदयदीप)｜心燈<br>
+                <span style="opacity: 0.7;">Automated notification — please do not reply directly.｜系統自動通知，請勿直接回覆。</span>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+{% endautoescape %}

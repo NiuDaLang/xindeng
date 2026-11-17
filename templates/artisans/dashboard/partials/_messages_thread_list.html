@@ -1,0 +1,27 @@
+<!-- templates/artisans/dashboard/partials/_messages_thread_list.html -->
+<ul {% if not oob %}id="artisan-thread-list"{% endif %} {% if oob %}id="artisan-thread-list" hx-swap-oob="true"{% endif %} class="divide-y divide-base-200/40">
+    {% for t in threads %}
+    <li>
+        <a hx-get="{% url 'a_dashboard_messages' %}?order_product={{ t.order_product }}"
+           hx-target="#artisan-chat-section"
+           hx-swap="outerHTML"
+           hx-push-url="true"
+           class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-base-200/40 transition-colors
+                  {% if active_line and active_line.id|stringformat:'s' == t.order_product|stringformat:'s' %}bg-base-200/60{% endif %}">
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-medium truncate">
+                    {{ t.customer_obj.username }} <span class="text-base-content/40">·</span> {{ t.order_product__product__product_name }}
+                </p>
+                <p class="text-[10px] text-base-content/40 font-mono">
+                    #{{ t.order_product__order__order_number }} · {{ t.last_at|date:"Y-m-d H:i" }}
+                </p>
+            </div>
+            {% if t.unread %}
+            <span class="badge badge-xs badge-primary">{{ t.unread }}</span>
+            {% endif %}
+        </a>
+    </li>
+    {% empty %}
+    {# ... empty state ... #}
+    {% endfor %}
+</ul>

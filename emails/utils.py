@@ -1,4 +1,4 @@
-# emails.utils.py
+# emails/utils.py
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
@@ -966,3 +966,100 @@ def send_campaign_announcement_email(announcement_id, recipient_user_id):
     mail.send()
 
     return True
+
+
+def send_artisan_chat_message_email(message_id):
+    """
+    Send an email notification to the counterparty (buyer or artisan)
+    when a new order-scoped ArtisanChatMessage is posted.
+    """
+    from creators.models import ArtisanChatMessage, FrontlineThread
+    from django.contrib.auth import get_user_model
+
+    try:
+        msg = ArtisanChatMessage.objects.select_related(
+            "artisan__user", "customer", "sender",
+            "order_product",
+            "order_product__order", "order_product__product",
+            "order_product__product_variation",
+        ).get(id=message_id)
+    except ArtisanChatMessage.DoesNotExist:
+        return 0
+
+    if msg.order_product_id is None:
+        return 0
+
+    # Determine recipients: everyone but the sender.
+    recipients = []
+    if msg.sender_id == msg.customer_id:
+        # Buyer -> Artisan
+        if msg.artisan.user.email:
+            recipients.append(("artisan", msg.artisan.user))
+    elif msg.sender_id == msg.artisan.user_id:
+        # Artisan -> Buyer
+        if msg.customer.email:
+            recipients.append(("customer", msg.customer))
+    else:
+        # Admin -> Both
+        if msg.customer.email:
+            recipients.append(("customer", msg.customer))
+        if msg.artisan.user.email:
+            recipients.append(("artisan", msg.artisan.user))
+
+    # If the thread is escalated, also notify the admin on any
+    # customer/artisan-originated message.
+    thread = FrontlineThread.objects.filter(
+        artisan=msg.artisan,
+        customer=msg.customer,
+        order_product=msg.order_product,
+    ).first()
+    
+    if thread and thread.escalated_at and msg.sender_id in (
+        msg.customer_id, msg.artisan.user_id,
+    ):
+        Account = get_user_model()
+        admin = Account.objects.filter(is_superadmin=True).first()
+        if admin and admin.email:
+            recipients.append(("admin", admin))
+
+    current_site = Site.objects.get_current()
+    site_domain = f"http://{current_site.domain}"
+
+    sent = 0
+    for role, user in recipients:
+        try:
+            # Build the role-specific URL
+            if role == "customer":
+                link_url = f"{site_domain}/creators/thread/{msg.artisan.slug}/?order_product={msg.order_product_id}"
+            elif role == "artisan":
+                link_url = f"{site_domain}/creators/dashboard/messages/?customer={msg.customer_id}"
+            else:  # admin
+                link_url = f"{site_domain}/accounts/dashboard/frontline_messages/?thread={thread.id}"
+
+            context = {
+                "msg": msg,
+                "recipient_role": role,
+                "recipient_user": user,
+                "site_domain": site_domain,
+                "link_url": link_url,
+                "year": timezone.now().year,
+            }
+            
+            html_message = render_to_string("emails/artisan_chat_message.html", context)
+            plain_message = render_to_string("emails/artisan_chat_message.txt", context)
+
+            mail = EmailMultiAlternatives(
+                subject="New message about your order｜訂單有新訊息",
+                body=plain_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[user.email],
+                bcc=[settings.DEFAULT_FROM_EMAIL],
+            )
+            mail.attach_alternative(html_message, "text/html")
+            mail.encoding = 'utf-8'
+            mail.send()
+            sent += 1
+        except Exception as exc:
+            logger.error(f"Failed to send chat email to {role} {user.email}: {exc}")
+
+    return sent

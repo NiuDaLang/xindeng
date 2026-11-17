@@ -35,3 +35,20 @@ def send_artisan_admin_message_email_task(message_id):
             f"💥 Artisan admin-message email failed (message={message_id}): {exc}"
         )
         raise
+
+
+@shared_task(name="creators.tasks.send_artisan_chat_message_email_task")
+def send_artisan_chat_message_email_task(message_id):
+    """
+    Celery wrapper: dispatch the counterparty notification email
+    for a new order-scoped ArtisanChatMessage.
+    """
+    from emails.utils import send_artisan_chat_message_email
+    try:
+        sent = send_artisan_chat_message_email(message_id)
+        return f"Artisan chat message email(s) sent={sent} (message={message_id})."
+    except Exception as exc:
+        logger.exception(
+            f"💥 Artisan chat message email failed (message={message_id}): {exc}"
+        )
+        raise

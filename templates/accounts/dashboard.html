@@ -897,6 +897,20 @@ document.body.addEventListener('htmx:afterSwap', (evt) => {
     }
     evt.detail.target.dataset.swapping = 'true';
 
+    if (evt.detail.target.id === 'dashboard-main') {
+        window.scrollTo(0, 0); 
+    } else if (evt.detail.target.id === 'artisan-chat-section') {
+        // When swapping the chat section, force the inner list to scroll
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const container = document.getElementById('artisan-message-list');
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            }, 50);
+        });
+    }
+
     requestAnimationFrame(() => {
         if (!evt.detail || !evt.detail.target) {
             setTimeout(() => {
@@ -1471,4 +1485,34 @@ window.stopCountdown = stopCountdown;
 
 
 </script>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     🗨️ SHARED CUSTOM-THREAD MODAL (buyer ↔ artisan per order line)
+     Opened by openCustomThreadModal(slug, orderProductId, 'custom_thread_modal').
+     Content swapped into #custom_thread_body via HTMX GET against
+     /artisans/thread/<slug>/partial/?order_product=<id>.
+     The partial's <form> POSTs to customer_thread_send, which redirects
+     to the full-page thread — so on submit, the browser navigates out of
+     the modal naturally. Close button and backdrop both dismiss.
+     ══════════════════════════════════════════════════════════════════ -->
+<dialog id="custom_thread_modal" class="modal bg-black/50 backdrop-blur-sm">
+    <div class="modal-box max-w-3xl p-0 rounded-2xl bg-base-100 border border-base-200 shadow-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-base-200 bg-base-50">
+            <div class="flex items-center gap-2 min-w-0">
+                <i class="fa-solid fa-comments text-info-content text-sm"></i>
+                <h3 class="font-serif text-sm font-bold truncate">Message with Artisan｜聯絡匠人</h3>
+            </div>
+            <button type="button"
+                    onclick="closeCustomThreadModal('custom_thread_modal')"
+                    class="btn btn-xs btn-circle btn-ghost text-base-content/60 hover:text-base-content">
+                ✕
+            </button>
+        </div>
+        <div id="custom_thread_body" class="p-3">
+            <!-- Swapped by openCustomThreadModal() -->
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
 {% endblock %}

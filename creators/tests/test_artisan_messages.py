@@ -148,43 +148,99 @@ class TestDashboardMessagesView:
         self, client, artisan_with_customers,
     ):
         from creators.models import ArtisanChatMessage
+        from orders.models import Order, OrderProduct
+        from store.models import Product, ProductVariation
+        from category.models import Category
 
         chain = artisan_with_customers
+
+        cat = Category.objects.create(category_name="T", slug="t")
+        product = Product.objects.create(
+            product_name="P", category=cat, is_digital=True,
+            digital_fulfillment_type="CUSTOM",
+        )
+        var = ProductVariation.objects.create(product=product, price=100, stock=10)
+
+        order_a = Order.objects.create(
+            user=chain["customer_a"], email="a@x.com",
+            order_number="ORD-A", is_ordered=True,
+        )
+        line_a = OrderProduct.objects.create(
+            order=order_a, product=product, product_variation=var,
+            fulfilled_by=chain["profile"], quantity=1,
+        )
+
+        order_b = Order.objects.create(
+            user=chain["customer_b"], email="b@x.com",
+            order_number="ORD-B", is_ordered=True,
+        )
+        line_b = OrderProduct.objects.create(
+            order=order_b, product=product, product_variation=var,
+            fulfilled_by=chain["profile"], quantity=1,
+        )
+
         ArtisanChatMessage.objects.create(
             artisan=chain["profile"], customer=chain["customer_a"],
             sender=chain["customer_a"], content="hello A",
+            order_product=line_a,
         )
         ArtisanChatMessage.objects.create(
             artisan=chain["profile"], customer=chain["customer_b"],
             sender=chain["customer_b"], content="hello B",
+            order_product=line_b,
         )
         ArtisanChatMessage.objects.create(
             artisan=chain["profile"], customer=chain["customer_a"],
             sender=chain["customer_a"], content="A again",
+            order_product=line_a,
         )
 
         client.force_login(chain["artisan_user"])
         response = client.get(reverse("a_dashboard_messages"))
         threads = list(response.context["threads"])
         assert len(threads) == 2
-        by_id = {t["customer"]: t for t in threads}
-        assert by_id[chain["customer_a"].id]["unread"] == 2
-        assert by_id[chain["customer_b"].id]["unread"] == 1
+        # Key on order_product, not customer, since the view now groups by line.
+        by_op = {t["order_product"]: t for t in threads}
+        assert by_op[line_a.id]["unread"] == 2
+        assert by_op[line_b.id]["unread"] == 1
 
     def test_opening_a_thread_flips_unread_to_read(
         self, client, artisan_with_customers,
     ):
         from creators.models import ArtisanChatMessage
+        from orders.models import Order, OrderProduct
+        from store.models import Product, ProductVariation
+        from category.models import Category
 
         chain = artisan_with_customers
+
+        cat = Category.objects.create(category_name="T", slug="t")
+        product = Product.objects.create(
+            product_name="P", category=cat, is_digital=True,
+            digital_fulfillment_type="CUSTOM",
+        )
+        var = ProductVariation.objects.create(product=product, price=100, stock=10)
+        order = Order.objects.create(
+            user=chain["customer_a"], email="a@x.com",
+            order_number="ORD-OPEN", is_ordered=True,
+        )
+        line = OrderProduct.objects.create(
+            order=order, product=product, product_variation=var,
+            fulfilled_by=chain["profile"], quantity=1,
+        )
+
         msg = ArtisanChatMessage.objects.create(
             artisan=chain["profile"], customer=chain["customer_a"],
             sender=chain["customer_a"], content="please read",
+            order_product=line,
         )
         assert msg.is_read is False
 
         client.force_login(chain["artisan_user"])
-        url = reverse("a_dashboard_messages") + f"?customer={chain['customer_a'].id}"
+        url = (
+            reverse("a_dashboard_messages")
+            + f"?order_product={line.id}"
+        )
         response = client.get(url)
         assert response.status_code == 200
 
@@ -221,21 +277,36 @@ class TestDashboardMessagesView:
 
 
 class TestDashboardMessagesSend:
-
-    def test_send_creates_message_marked_read(
-        self, client, artisan_with_customers,
-    ):
+    
+    def test_send_creates_message_marked_read(self, client, artisan_with_customers):
         from creators.models import ArtisanChatMessage
+        from orders.models import Order, OrderProduct
+        from store.models import Product, ProductVariation
+        from category.models import Category
 
         chain = artisan_with_customers
-        client.force_login(chain["artisan_user"])
-        url = reverse(
-            "a_dashboard_messages_send", args=[chain["customer_a"].id],
+        cat = Category.objects.create(category_name="T", slug="t")
+        product = Product.objects.create(
+            product_name="P", category=cat, is_digital=True,
+            digital_fulfillment_type="CUSTOM",
         )
-        response = client.post(url, {"content": "hi there"})
+        var = ProductVariation.objects.create(product=product, price=100, stock=10)
+        order = Order.objects.create(
+            user=chain["customer_a"], email="x@x.com", order_number="ORD-1", is_ordered=True,
+        )
+        line = OrderProduct.objects.create(
+            order=order, product=product, product_variation=var,
+            fulfilled_by=chain["profile"], quantity=1,
+        )
+
+        client.force_login(chain["artisan_user"])
+        url = reverse("a_dashboard_messages_send", args=[chain["customer_a"].id])
+        response = client.post(url, {"content": "hi there", "order_product_id": line.id})
         assert response.status_code in (301, 302)
 
-        msg = ArtisanChatMessage.objects.get(artisan=chain["profile"])
+        msg = ArtisanChatMessage.objects.get(
+            artisan=chain["profile"], order_product=line,
+        )
         assert msg.content == "hi there"
         assert msg.sender == chain["artisan_user"]
         assert msg.is_read is True
@@ -244,13 +315,30 @@ class TestDashboardMessagesSend:
         self, client, artisan_with_customers,
     ):
         from creators.models import ArtisanChatMessage
+        from orders.models import Order, OrderProduct
+        from store.models import Product, ProductVariation
+        from category.models import Category
 
         chain = artisan_with_customers
-        client.force_login(chain["artisan_user"])
-        url = reverse(
-            "a_dashboard_messages_send", args=[chain["customer_a"].id],
+        cat = Category.objects.create(category_name="T", slug="t")
+        product = Product.objects.create(
+            product_name="P", category=cat, is_digital=True,
+            digital_fulfillment_type="CUSTOM",
         )
-        response = client.post(url, {"content": "   "})
+        var = ProductVariation.objects.create(product=product, price=100, stock=10)
+        order = Order.objects.create(
+            user=chain["customer_a"], email="x@x.com", order_number="ORD-2", is_ordered=True,
+        )
+        line = OrderProduct.objects.create(
+            order=order, product=product, product_variation=var,
+            fulfilled_by=chain["profile"], quantity=1,
+        )
+
+        client.force_login(chain["artisan_user"])
+        url = reverse("a_dashboard_messages_send", args=[chain["customer_a"].id])
+        response = client.post(
+            url, {"content": "   ", "order_product_id": line.id},
+        )
         assert response.status_code in (301, 302)
         assert not ArtisanChatMessage.objects.filter(
             artisan=chain["profile"],

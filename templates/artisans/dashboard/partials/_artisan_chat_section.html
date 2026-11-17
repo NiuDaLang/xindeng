@@ -1,0 +1,92 @@
+<!-- artisans/dashboard/partials/_artisan_chat_section.html -->
+{% if is_thread_swap %}
+    {% include 'artisans/dashboard/partials/_messages_thread_list.html' with oob=True %}
+{% endif %}
+
+<div id="artisan-chat-section" class="w-full">
+    <section class="border border-base-200/60 rounded-2xl bg-base-100 flex flex-col h-full">
+        {% if active_customer and active_line %}
+            <div class="px-4 py-3 border-b border-base-200/60 flex justify-between items-center">
+                <div>
+                    <p class="text-sm font-medium">{{ active_customer.username }}</p>
+                    <p class="text-[10px] text-base-content/40">{{ active_customer.email }}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-bold text-primary">#{{ active_line.order.order_number }}</p>
+                    <p class="text-[10px] text-base-content/60">{{ active_line.product.product_name }}</p>
+                </div>
+            </div>
+
+            <div id="artisan-message-list" class="flex-1 overflow-y-auto p-4 space-y-3 max-h-[50vh]">
+                {% include 'artisans/dashboard/partials/_artisan_message_list.html' %}
+            </div>
+
+            <form hx-post="{% url 'a_dashboard_messages_send' active_customer.id %}"
+                  hx-target="#artisan-message-list"
+                  hx-swap="innerHTML"
+                  enctype="multipart/form-data"
+                  class="border-t border-base-200/60 p-3 space-y-2"
+                  hx-on::after-request="if(event.detail.successful) this.reset()">
+                {% csrf_token %}
+                <input type="hidden" name="order_product_id" value="{{ active_line.id }}">
+                
+                <textarea name="content" maxlength="2000" rows="2"
+                          placeholder="Write a short message…｜輸入訊息…"
+                          class="textarea textarea-bordered w-full text-xs rounded-xl"></textarea>
+                <div class="flex items-center justify-between gap-2">
+                    <input type="file" name="image" accept="image/*" class="file-input file-input-sm file-input-bordered w-48 sm:w-56 text-xs" />
+                    <button type="submit" class="btn btn-primary btn-sm rounded-xl">
+                        <i class="fa-solid fa-paper-plane text-xs mr-1"></i> Send｜送出
+                    </button>
+                </div>
+            </form>
+            {% if active_line %}
+                {% with thread=active_line.frontline_threads.first %}
+                {% if thread and not thread.is_escalated %}
+                <form hx-post="{% url 'escalate_frontline_thread' %}"
+                      hx-trigger="confirmed"
+                      hx-swap="none"
+                      class="border-t border-base-200/60 px-4 py-2 flex justify-center bg-base-50/40">
+                    {% csrf_token %}
+                    <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                    <button type="button"
+                            onclick="this.blur(); confirmEscalateThread(this, {{ thread.id }})"
+                            class="text-[10px] text-base-content/50 hover:text-warning transition-colors font-sans tracking-wide cursor-pointer">
+                        <i class="fa-solid fa-life-ring text-[10px] mr-1"></i>
+                        Request platform involvement｜申請平台介入
+                    </button>
+                </form>
+                {% elif thread and thread.is_escalated %}
+                <div class="border-t border-base-200/60 px-4 py-2 text-center bg-warning/5">
+                    <span class="text-[10px] text-warning font-sans tracking-wide">
+                        <i class="fa-solid fa-bolt text-[10px] mr-1"></i>
+                        Platform involvement requested｜已申請平台介入
+                    </span>
+                </div>
+                {% endif %}
+                {% endwith %}
+            {% endif %}
+
+
+            {# ... escalate form remains the same ... #}
+        {% else %}
+            <div class="flex-1 flex flex-col items-center justify-center text-center text-base-content/40 py-16">
+                <i class="fa-solid fa-comments text-3xl opacity-30 mb-2"></i>
+                <p class="text-sm">Select a conversation to view messages.</p>
+                <p class="text-xs opacity-70 mt-1">請選擇對話以查看訊息。</p>
+            </div>
+        {% endif %}
+    </section>
+</div>
+
+<script>
+    // 1. Auto-scroll to bottom
+    requestAnimationFrame(function() {
+        setTimeout(function() {
+            const container = document.getElementById('artisan-message-list');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }, 50);
+    });
+</script>

@@ -739,7 +739,7 @@ class TestFrontlineEntryPoints:
 
         # Non-guest order: link present.
         assert "a_dashboard_messages" in body or "dashboard/messages" in body
-        assert f"customer={customer.id}" in body
+        assert f"order_product={order_product.id}" in body
         assert "Message buyer" in body or "Continue conversation with" in body
         # Guest-branch copy is not rendered (order.user is set in this fixture).
         assert "Guest order — no in-platform messaging" not in body

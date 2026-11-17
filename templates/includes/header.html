@@ -314,6 +314,22 @@
                             </a>
                         </li>
                         <li>
+                            <a href="{% url 'dashboard' 'custom_orders' %}" {% if request.resolver_match.url_name == 'dashboard' %} 
+                               hx-get="{% url 'dashboard' 'custom_orders' %}" 
+                               hx-target="#dashboard-content" 
+                               hx-push-url="true" {% endif %}
+                               hx-on:click="updateActiveLink(this)"
+                               id="custom_orders_header"
+                               >
+                                <div class="flex items-center gap-1 justify-between w-full">
+                                    <span><i class="fa-solid fa-palette"></i> Custom Orders｜訂製訂單</span>
+                                    {% if unread_artisan_count %}
+                                    <span class="badge badge-xs badge-primary font-mono">{{ unread_artisan_count }}</span>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        </li>
+                        <li>
                             <a href="{% url 'dashboard' 'offers' %}" {% if request.resolver_match.url_name == 'dashboard' %} 
                                hx-get="{% url 'dashboard' 'offers' %}" 
                                hx-target="#dashboard-content" 
@@ -368,21 +384,6 @@
                                 <div class="flex items-center gap-1">
                                     <i class="fa-solid fa-headset"></i>
                                     <span>Help｜客服熱線</span>
-                                </div>
-
-                                <div class="badge text-[10px] bg-primary text-primary-content flex items-center gap-1 py-2">
-                                    New
-                                    <i class="fa-solid fa-message"></i>
-                                    <!-- Fixed: Corrected 'lass' typo string to standard 'class' element handling -->
-                                    <span id="unread-count-header" 
-                                        hx-swap-oob="true" 
-                                        class="badge badge-xs badge-secondary text-primary-content font-bold">
-                                        {% if unread_count %}
-                                            <span>{{ unread_count }}</span>
-                                        {% else %}
-                                            <span>0</span>
-                                        {% endif %}
-                                    </span>
                                 </div>
                             </a>
                         </li>

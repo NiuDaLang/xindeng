@@ -91,25 +91,53 @@
         <!-- CARD 3: UNREAD ACCOUNT COMMUNICATIONS -->
         <div class="flex flex-col border-2 border-info rounded-[24px] bg-neutral-content/40 items-center p-4 pb-8 justify-between transition-all hover:bg-neutral-content/60 shadow-sm relative group overflow-hidden">
             <div class="flex flex-col w-full items-start font-black text-[0.68rem] tracking-wider uppercase opacity-60">
-                <span>Unread Messages</span>
-                <span class="font-sans font-medium text-[0.62rem] opacity-70">未讀通知訊息</span>
+                <span>Messages</span>
+                <span class="font-sans font-medium text-[0.62rem] opacity-70">未讀訊息</span>
             </div>
             <div class="flex justify-between w-full">
                 <div class="flex items-baseline gap-1 mt-1 font-mono">
-                    <strong class="text-4xl font-black {% if unread_count > 0 %}text-error animate-pulse{% else %}text-info-content/40{% endif %} tracking-tight">
-                        {{ unread_count|default:"0"|intcomma }}
+                    <strong class="text-4xl font-black {% if unread_count|add:unread_artisan_count > 0 %}text-error animate-pulse{% else %}text-info-content/40{% endif %} tracking-tight">
+                        {{ total_unread_messages|intcomma }}
                     </strong>
-                    <span class="text-[0.68rem] opacity-50 font-sans">lines｜條</span>
+                    <span class="text-[0.68rem] opacity-50 font-sans">unread｜未讀</span>
                 </div>
-                <div class="tooltip tooltip-left flex items-center justify-center p-2 rounded-xl bg-info-content/5 text-info-content hover:bg-info-content hover:text-white transition-all cursor-pointer" data-tip="Support Chat｜聯絡客服">
-                    <a href="{% url 'dashboard' 'help' %}" 
-                        hx-get="{% url 'dashboard' 'help' %}" 
-                        hx-target="#dashboard-content" 
+                <div class="tooltip tooltip-left flex items-center justify-center p-2 rounded-xl bg-info-content/5 text-info-content hover:bg-info-content hover:text-white transition-all cursor-pointer" data-tip="All Messages｜所有訊息">
+                    <a href="{% url 'dashboard' 'custom_orders' %}"
+                        hx-get="{% url 'dashboard' 'custom_orders' %}"
+                        hx-target="#dashboard-content"
                         hx-push-url="true"
                         hx-on:click="updateActiveLink(this)"
-                        id="helpdesk"
+                        id="messages_label"
                     >
                         <i class="fa-solid fa-envelope text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Bottom Segment: Dynamic Breakdown -->
+            <div class="absolute left-0 bottom-0 w-full px-4 pb-1">
+                <div class="border-t border-dashed border-base-200 flex items-center gap-[1rem] text-[10px] font-sans">
+                    <a href="{% url 'dashboard' 'help' %}"
+                       hx-get="{% url 'dashboard' 'help' %}"
+                       hx-target="#dashboard-content"
+                       hx-push-url="true"
+                       hx-on:click="updateActiveLink(this)"
+                       id="help_breakdown"
+                       class="flex items-center gap-1 text-base-content/60 hover:text-primary transition-colors">
+                        <i class="fa-solid fa-headset text-[9px]"></i>
+                        Help｜客服
+                        <span class="font-mono font-bold text-primary">{{ unread_count|default:0 }}</span>
+                    </a>
+                    <a href="{% url 'dashboard' 'custom_orders' %}"
+                       hx-get="{% url 'dashboard' 'custom_orders' %}"
+                       hx-target="#dashboard-content"
+                       hx-push-url="true"
+                       hx-on:click="updateActiveLink(this)"
+                       id="artisan_breakdown"
+                       class="flex items-center gap-1 text-base-content/60 hover:text-primary transition-colors">
+                        <i class="fa-solid fa-palette text-[9px]"></i>
+                        Artisan｜匠人
+                        <span class="font-mono font-bold text-primary">{{ unread_artisan_count|default:0 }}</span>
                     </a>
                 </div>
             </div>

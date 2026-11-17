@@ -1,4 +1,8 @@
 <!-- templates/artisans/dashboard/partials/_messages_tabs.html -->
+{% if is_thread_swap %}
+    {% include 'artisans/dashboard/partials/_sidebar_oob.html' %}
+{% endif %}
+
 <div class="mb-4 border-b border-base-200/60">
     <div class="flex items-end gap-2">
         <a hx-get="{% url 'a_dashboard_messages' %}"

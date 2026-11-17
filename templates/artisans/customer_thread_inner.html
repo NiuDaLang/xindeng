@@ -2,7 +2,6 @@
 {# Swaps into #customer-thread-main on HTMX requests. #}
 
 {% if not available_lines %}
-    {# This shouldn't happen in practice — the view 404s before render — but defensive. #}
     <div class="rounded-2xl border border-base-200 p-8 text-center text-sm text-base-content/60">
         No CUSTOM order line with this artisan.
         <br>
@@ -10,39 +9,44 @@
     </div>
 {% else %}
 
-    {# ── Off-platform notice ── #}
-    <div class="mb-6 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-xs leading-relaxed text-warning-content">
-        <p class="font-bold">
-            <i class="fa-solid fa-shield-halved mr-1"></i>
-            Keep payment on-platform.
-        </p>
-        <p class="mt-1">
-            Off-platform arrangements are not covered by buyer protection.
-        </p>
-        <p class="mt-1 opacity-70">
-            請於平台內完成付款。平台外的付款安排不受買家保障條款保護。
-        </p>
-    </div>
+    <div class="flex flex-col h-[70vh] max-h-[800px] bg-base-100">
+        
+        {# ── FIXED TOP SECTION ── #}
+        <div class="flex-shrink-0 p-4 pb-0 space-y-4">
+            {# Off-platform notice #}
+            <div class="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-xs leading-relaxed text-warning-content">
+                <p class="font-bold">
+                    <i class="fa-solid fa-shield-halved mr-1"></i>
+                    Keep payment on-platform.
+                </p>
+                <p class="mt-1">
+                    Off-platform arrangements are not covered by buyer protection.
+                </p>
+                <p class="mt-1 opacity-70">
+                    請於平台內完成付款。平台外的付款安排不受買家保障條款保護。
+                </p>
+            </div>
 
-    {# ── Active line header (when ?order_product= is present) ── #}
-    {% if active_line %}
-    <div class="mb-6 rounded-xl border border-base-200 bg-base-50 px-4 py-3 text-xs">
-        <p class="font-mono uppercase tracking-wider text-[10px] text-base-content/40 mb-1">
-            About this order line｜關於此訂單項目
-        </p>
-        <p class="font-medium">
-            Re: {{ active_line.product.product_name }}
-            — {{ active_line.product_variation.get_sku }}
-        </p>
-        <p class="text-[11px] text-base-content/60 font-mono mt-0.5">
-            Order #{{ active_line.order.order_number }}
-        </p>
-    </div>
-    {% endif %}
+            {# Active line header #}
 
-    {# ── Message list ── #}
-    <section class="border border-base-200/60 rounded-2xl bg-base-100 flex flex-col">
-        <div class="flex-1 overflow-y-auto p-4 space-y-3 max-h-[55vh]">
+            {% if active_line %}
+            <div class="rounded-xl border border-base-200 bg-base-50 px-4 py-3 text-xs">
+                <p class="font-mono uppercase tracking-wider text-[10px] text-base-content/40 mb-1">
+                    About this order line｜關於此訂單項目
+                </p>
+                <p class="font-medium">
+                    Re: {{ active_line.product.product_name }}
+                    — {{ active_line.product_variation.get_sku }}
+                </p>
+                <p class="text-[11px] text-base-content/60 font-mono mt-0.5">
+                    Order #{{ active_line.order.order_number }}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
+        {# ── SCROLLABLE MESSAGE LIST ── #}
+        <div id="thread-message-list" class="flex-1 overflow-y-auto p-4 space-y-3">
             {% for m in chat_messages %}
             <div class="flex {% if m.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
                 <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed
@@ -72,68 +76,79 @@
             {% endfor %}
         </div>
 
-        {# ── Composer ── #}
-        <form method="post"
-              action="{% url 'customer_thread_send' artisan.slug %}"
-              class="border-t border-base-200/60 p-3 space-y-2">
-            {% csrf_token %}
-            {% if available_lines %}
-            <div>
-                <label class="text-[10px] uppercase tracking-wider text-base-content/40 block mb-1">
-                    Link to order line (optional)｜連結至訂單項目（可選）
-                </label>
-                <select name="order_product_id" class="select select-bordered select-sm w-full text-xs rounded-xl">
-                    <option value="">Pre-purchase question (no specific order)｜發售前詢問（無指定訂單）</option>
-                    {% for line in available_lines %}
-                    <option value="{{ line.id }}"
-                            {% if active_line and active_line.id == line.id %}selected{% endif %}>
-                        {{ line.product.product_name }} — {{ line.product_variation.get_sku }} · #{{ line.order.order_number }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            {% endif %}
-            <textarea name="content" maxlength="2000" rows="3"
-                      placeholder="Write a short message…｜輸入訊息…"
-                      class="textarea textarea-bordered w-full text-xs rounded-xl"></textarea>
-            <div class="flex items-center justify-between gap-2">
-                <input type="file"
-                       name="image"
-                       accept="image/*"
-                       class="file-input file-input-sm file-input-bordered w-48 sm:w-56 text-xs" />
-                <button type="submit" class="btn btn-primary btn-sm rounded-xl">
-                    <i class="fa-solid fa-paper-plane text-xs mr-1"></i>
-                    Send｜送出
-                </button>
-            </div>
-        </form>
-
-        {# ── Escalate-to-platform trigger (commit 3d) ── #}
-        {% if active_line %}
-            {% with thread=active_line.frontline_threads.first %}
-            {% if thread and not thread.is_escalated %}
-            <form hx-post="{% url 'escalate_frontline_thread' %}"
-                  hx-trigger="confirmed"
-                  hx-swap="none"
-                  class="border-t border-base-200/60 px-4 py-2 flex justify-center bg-base-50/40">
+        {# ── FIXED BOTTOM SECTION (Composer & Escalate) ── #}
+        <div class="flex-shrink-0 border-t border-base-200/60 bg-base-100">
+            <form method="post"
+                  action="{% url 'customer_thread_send' artisan.slug %}"
+                  enctype="multipart/form-data"
+                  {% if is_modal %}
+                  hx-post="{% url 'customer_thread_send' artisan.slug %}"
+                  hx-target="#custom_thread_body"
+                  hx-swap="innerHTML"
+                  {% endif %}
+                  class="p-3 space-y-2">
                 {% csrf_token %}
-                <input type="hidden" name="thread_id" value="{{ thread.id }}">
-                <button type="button"
-                        onclick="confirmEscalateThread(this, {{ thread.id }})"
-                        class="text-[10px] text-base-content/50 hover:text-warning transition-colors font-sans tracking-wide">
-                    <i class="fa-solid fa-life-ring text-[10px] mr-1"></i>
-                    Request platform involvement｜申請平台介入
-                </button>
+                
+                {% if active_line %}
+                <input type="hidden" name="order_product_id" value="{{ active_line.id }}">
+                {% endif %}
+                
+                <textarea name="content" maxlength="2000" rows="2"
+                          placeholder="Write a short message…｜輸入訊息…"
+                          class="textarea textarea-bordered w-full text-xs rounded-xl"></textarea>
+                <div class="flex items-center justify-between gap-2">
+                    <input type="file"
+                           name="image"
+                           accept="image/*"
+                           class="file-input file-input-sm file-input-bordered w-48 sm:w-56 text-xs" />
+                    <button type="submit" class="btn btn-primary btn-sm rounded-xl">
+                        <i class="fa-solid fa-paper-plane text-xs mr-1"></i>
+                        Send｜送出
+                    </button>
+                </div>
             </form>
-            {% elif thread and thread.is_escalated %}
-            <div class="border-t border-base-200/60 px-4 py-2 text-center bg-warning/5">
-                <span class="text-[10px] text-warning font-sans tracking-wide">
-                    <i class="fa-solid fa-bolt text-[10px] mr-1"></i>
-                    Platform involvement requested｜已申請平台介入
-                </span>
-            </div>
+
+            {# Escalate-to-platform trigger #}
+            {% if active_line %}
+                {% with thread=active_line.frontline_threads.first %}
+                {% if thread and not thread.is_escalated %}
+                <form hx-post="{% url 'escalate_frontline_thread' %}"
+                      hx-trigger="confirmed"
+                      hx-swap="none"
+                      class="border-t border-base-200/60 px-4 py-2 flex justify-center bg-base-50/40">
+                    {% csrf_token %}
+                    <!-- <input type="hidden" name="thread_id" value="{{ thread.id }}"> -->
+                    <input type="hidden" name="order_product_id" value="{{ active_line.id }}">
+                    <button type="button"
+                            onclick="this.blur(); confirmEscalateThread(this, {{ thread.id }})"
+                            class="text-[10px] text-base-content/50 hover:text-warning transition-colors font-sans tracking-wide cursor-pointer">
+                        <i class="fa-solid fa-life-ring text-[10px] mr-1"></i>
+                        Request platform involvement｜申請平台介入
+                    </button>
+                </form>
+                {% elif thread and thread.is_escalated %}
+                <div class="border-t border-base-200/60 px-4 py-2 text-center bg-warning/5">
+                    <span class="text-[10px] text-warning font-sans tracking-wide">
+                        <i class="fa-solid fa-bolt text-[10px] mr-1"></i>
+                        Platform involvement requested｜已申請平台介入
+                    </span>
+                </div>
+                {% endif %}
+                {% endwith %}
             {% endif %}
-            {% endwith %}
-        {% endif %}
-    </section>
+        </div>
+
+    </div>
 {% endif %}
+
+<script>
+    // Use requestAnimationFrame to ensure the browser has painted the DOM
+    requestAnimationFrame(function() {
+        setTimeout(function() {
+            const container = document.getElementById('thread-message-list');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }, 100);
+    });
+</script>
