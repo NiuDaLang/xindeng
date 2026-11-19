@@ -48,9 +48,20 @@
         {# ── SCROLLABLE MESSAGE LIST ── #}
         <div id="thread-message-list" class="flex-1 overflow-y-auto p-4 space-y-3">
             {% for m in chat_messages %}
-            <div class="flex {% if m.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
+            <div class="flex {% if m.sender == request.user %}justify-end{% elif m.sender.is_superadmin %}justify-center{% else %}justify-start{% endif %}">
                 <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed
-                            {% if m.sender == request.user %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content{% endif %}">
+                            {% if m.sender == request.user %}
+                                bg-primary text-primary-content
+                            {% elif m.sender.is_superadmin %}
+                                bg-info text-info-content border border-info/20 shadow-sm
+                            {% else %}
+                                bg-base-200 text-base-content
+                            {% endif %}">
+                    {% if m.sender.is_superadmin %}
+                        <p class="text-[9px] font-bold uppercase tracking-wider text-info-content/80 mb-1">
+                            <i class="fa-solid fa-shield-halved text-[9px] mr-1"></i>Platform Support｜平台客服
+                        </p>
+                    {% endif %}
                     {% if m.order_product_id %}
                         <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
                             Re: {{ m.order_product.product.product_name }}
@@ -114,11 +125,11 @@
                 {% if thread and not thread.is_escalated %}
                 <form hx-post="{% url 'escalate_frontline_thread' %}"
                       hx-trigger="confirmed"
-                      hx-swap="none"
+                      hx-target="#custom_thread_body"
+                      hx-swap="innerHTML"
                       class="border-t border-base-200/60 px-4 py-2 flex justify-center bg-base-50/40">
                     {% csrf_token %}
-                    <!-- <input type="hidden" name="thread_id" value="{{ thread.id }}"> -->
-                    <input type="hidden" name="order_product_id" value="{{ active_line.id }}">
+                    <input type="hidden" name="thread_id" value="{{ thread.id }}">
                     <button type="button"
                             onclick="this.blur(); confirmEscalateThread(this, {{ thread.id }})"
                             class="text-[10px] text-base-content/50 hover:text-warning transition-colors font-sans tracking-wide cursor-pointer">

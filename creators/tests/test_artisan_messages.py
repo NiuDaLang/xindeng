@@ -278,12 +278,12 @@ class TestDashboardMessagesView:
 
 class TestDashboardMessagesSend:
     
-    def test_send_creates_message_marked_read(self, client, artisan_with_customers):
+    def test_send_creates_message_unread_for_buyer(self, client, artisan_with_customers):
         from creators.models import ArtisanChatMessage
         from orders.models import Order, OrderProduct
         from store.models import Product, ProductVariation
         from category.models import Category
-
+    
         chain = artisan_with_customers
         cat = Category.objects.create(category_name="T", slug="t")
         product = Product.objects.create(
@@ -298,19 +298,21 @@ class TestDashboardMessagesSend:
             order=order, product=product, product_variation=var,
             fulfilled_by=chain["profile"], quantity=1,
         )
-
+    
         client.force_login(chain["artisan_user"])
         url = reverse("a_dashboard_messages_send", args=[chain["customer_a"].id])
         response = client.post(url, {"content": "hi there", "order_product_id": line.id})
         assert response.status_code in (301, 302)
-
+    
         msg = ArtisanChatMessage.objects.get(
             artisan=chain["profile"], order_product=line,
         )
         assert msg.content == "hi there"
         assert msg.sender == chain["artisan_user"]
-        assert msg.is_read is True
-
+        
+        # The artisan sent this message, so it is unread for the BUYER.
+        assert msg.is_read is False
+        
     def test_send_rejects_empty_content(
         self, client, artisan_with_customers,
     ):

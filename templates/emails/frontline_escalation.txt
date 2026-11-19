@@ -1,0 +1,29 @@
+{% autoescape off %}
+🚨 ESCALATION ALERT｜申請平台介入
+
+Attention Admin｜管理員您好:
+
+A customer or artisan has requested platform involvement in a thread.
+買家或匠人已申請平台介入此對話。
+
+============================================================
+📋 THREAD DETAILS｜對話詳情
+============================================================
+Customer｜買家: {{ thread.customer.username }}
+Artisan｜匠人: {{ thread.artisan.display_name }}
+{% if thread.order_product %}
+Order｜訂單: #{{ thread.order_product.order.order_number }}
+Product｜商品: {{ thread.order_product.product.product_name }}
+{% endif %}
+============================================================
+
+Please log in to review the thread:
+請登入以查看此對話：
+
+→ {{ review_url }}
+
+============================================================
+Hṛdayadīpa (हृदयदीप)｜心燈
+Automated notification — please do not reply directly.
+系統自動通知，請勿直接回覆。
+{% endautoescape %}

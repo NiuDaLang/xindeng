@@ -1,40 +1,11 @@
 {# templates/accounts/partials/_frontline_message_bubble.html #}
-{# One message bubble, shared by the Frontline oversight view (3b) and #}
-{# the admin composer surface (3c). Sender identity determines #}
-{# the bubble style; three branches because Frontline has a third #}
-{# participant (admin) that the customer/artisan private threads do not. #}
 
 {% if m.sender_id == active_thread.artisan.user_id %}
     {# Artisan-authored #}
     <div class="flex justify-start">
-        <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-primary text-primary-content">
-            <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
-                {{ m.sender.username }} · artisan
-            </p>
-            {% if m.order_product_id %}
-                <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
-                    Re: {{ m.order_product.product.product_name }}
-                    — {{ m.order_product.product_variation.get_sku }}
-                </p>
-            {% endif %}
-            {{ m.content|linebreaksbr }}
-            {% if m.image %}
-            <img src="{{ m.image.url }}"
-                 alt="attachment"
-                 class="mt-2 rounded-lg max-h-48 object-contain block"
-                 loading="lazy" />
-            {% endif %}
-            <span class="block text-[9px] opacity-60 mt-1 font-mono">
-                {{ m.created_at|date:"Y-m-d H:i" }}
-            </span>
-        </div>
-    </div>
-{% elif m.sender_id == active_thread.customer_id %}
-    {# Customer-authored — same shape, base-200 bubble #}
-    <div class="flex justify-start">
         <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-base-200 text-base-content">
             <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
-                {{ m.sender.username }} · customer
+                {{ m.sender.username }} · Artisan
             </p>
             {% if m.order_product_id %}
                 <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
@@ -44,33 +15,45 @@
             {% endif %}
             {{ m.content|linebreaksbr }}
             {% if m.image %}
-            <img src="{{ m.image.url }}"
-                 alt="attachment"
-                 class="mt-2 rounded-lg max-h-48 object-contain block"
-                 loading="lazy" />
+            <img src="{{ m.image.url }}" alt="attachment" class="mt-2 rounded-lg max-h-48 object-contain block" loading="lazy" />
             {% endif %}
-            <span class="block text-[9px] opacity-60 mt-1 font-mono">
-                {{ m.created_at|date:"Y-m-d H:i" }}
-            </span>
+            <span class="block text-[9px] opacity-60 mt-1 font-mono">{{ m.created_at|date:"Y-m-d H:i" }}</span>
         </div>
     </div>
-{% else %}
-    {# Admin-authored (or any other participant, defensive) — info bubble #}
-    <div class="flex justify-end">
-        <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-info text-info-content">
+
+{% elif m.sender_id == active_thread.customer_id %}
+    {# Customer-authored #}
+    <div class="flex justify-start">
+        <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-base-300 text-base-content border border-base-200">
             <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
-                {{ m.sender.username }} · platform
+                {{ m.sender.username }} · Customer
+            </p>
+            {% if m.order_product_id %}
+                <p class="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-1">
+                    Re: {{ m.order_product.product.product_name }}
+                    — {{ m.order_product.product_variation.get_sku }}
+                </p>
+            {% endif %}
+            {{ m.content|linebreaksbr }}
+            {% if m.image %}
+            <img src="{{ m.image.url }}" alt="attachment" class="mt-2 rounded-lg max-h-48 object-contain block" loading="lazy" />
+            {% endif %}
+            <span class="block text-[9px] opacity-60 mt-1 font-mono">{{ m.created_at|date:"Y-m-d H:i" }}</span>
+        </div>
+    </div>
+
+{% else %}
+    {# Admin-authored #}
+    <div class="flex justify-end">
+        <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-info text-info-content shadow-sm">
+            <p class="text-[9px] font-mono uppercase tracking-wider opacity-80 mb-1">
+                <i class="fa-solid fa-shield-halved text-[9px] mr-1"></i>{{ m.sender.username }} · Platform Admin
             </p>
             {{ m.content|linebreaksbr }}
             {% if m.image %}
-            <img src="{{ m.image.url }}"
-                 alt="attachment"
-                 class="mt-2 rounded-lg max-h-48 object-contain block"
-                 loading="lazy" />
+            <img src="{{ m.image.url }}" alt="attachment" class="mt-2 rounded-lg max-h-48 object-contain block" loading="lazy" />
             {% endif %}
-            <span class="block text-[9px] opacity-60 mt-1 font-mono">
-                {{ m.created_at|date:"Y-m-d H:i" }}
-            </span>
+            <span class="block text-[9px] opacity-60 mt-1 font-mono">{{ m.created_at|date:"Y-m-d H:i" }}</span>
         </div>
     </div>
 {% endif %}

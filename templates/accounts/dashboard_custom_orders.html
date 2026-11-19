@@ -48,9 +48,16 @@
             <div class="flex items-center gap-2 flex-shrink-0">
                 <button type="button"
                         onclick="openCustomThreadModal('{{ line.fulfilled_by.slug }}', {{ line.id }}, 'custom_thread_modal')"
-                        class="btn btn-sm btn-outline border-info-content/30 text-info-content hover:bg-info-content hover:text-white rounded-xl font-bold">
+                        class="btn btn-sm btn-outline border-info-content/30 text-info-content hover:bg-info-content hover:text-white rounded-xl font-bold relative">
                     <i class="fa-solid fa-comments text-[0.7rem] mr-1"></i>
                     Message with Artisan｜聯絡匠人
+                    
+                    {% if line.unread_thread %}
+                        <!-- Unread Badge on the Button -->
+                        <span class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-error text-[9px] font-bold text-white shadow-sm ring-2 ring-base-100">
+                            {{ line.unread_thread }}
+                        </span>
+                    {% endif %}
                 </button>
             </div>
         </div>

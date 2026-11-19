@@ -1194,6 +1194,13 @@ def dashboard(request, subpage):
                 "order_product__product_variation__type",
             )
             .filter(settled_at__isnull=not settled_filter)
+            .annotate(
+                unread_count=Count(
+                    "order_product__customer_thread_messages",
+                    filter=Q(order_product__customer_thread_messages__is_read=False)
+                    & ~Q(order_product__customer_thread_messages__sender=request.user)
+                )
+            )
             .order_by("-last_message_at", "-created_at")
         )
 
@@ -1249,7 +1256,7 @@ def dashboard(request, subpage):
                     .filter(
                         artisan=active_thread.artisan,
                         customer=active_thread.customer,
-                        # Removed order_product strict filter
+                        order_product=active_thread.order_product, # 👈 ADD THIS
                     )
                     .select_related(
                         "sender",

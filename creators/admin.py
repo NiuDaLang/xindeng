@@ -104,7 +104,66 @@ class CreatorProfileAdmin(admin.ModelAdmin):
 
 @admin.register(ArtisanChatMessage)
 class ArtisanChatMessageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'artisan', 'customer', 'sender', 'content', 'is_read', 'created_at')
+    list_display = (
+        'id', 
+        'artisan', 
+        'customer', 
+        'sender', 
+        'order_product',
+        'is_read', 
+        'created_at'
+    )
     list_filter = ('is_read', 'artisan', 'customer')
-    search_fields = ('content', 'artisan__display_name', 'customer__username', 'sender__username')
+    search_fields = (
+        'content', 
+        'artisan__display_name', 
+        'customer__username', 
+        'sender__username',
+        'order_product__order__order_number' # 👈 Added this
+    )
     raw_id_fields = ('artisan', 'customer', 'sender', 'order_product')
+
+
+from .models import FrontlineThread
+
+@admin.register(FrontlineThread)
+class FrontlineThreadAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 
+        'customer', 
+        'artisan', 
+        'order_product', 
+        'is_escalated', 
+        'is_settled', 
+        'last_message_at'
+    )
+    list_filter = (
+        'escalated_at', 
+        'settled_at', 
+        'artisan', 
+        'customer'
+    )
+    search_fields = (
+        'customer__username', 
+        'artisan__display_name', 
+        'order_product__order__order_number'
+    )
+    raw_id_fields = ('customer', 'artisan', 'order_product', 'settled_by', 'escalated_by')
+    readonly_fields = ('created_at', 'updated_at', 'last_message_at')
+
+    # Custom boolean indicators for the list view
+    @admin.display(boolean=True, description='Escalated')
+    def is_escalated(self, obj):
+        return obj.escalated_at is not None
+
+    @admin.display(boolean=True, description='Settled')
+    def is_settled(self, obj):
+        return obj.settled_at is not None
+
+    # Action to quickly reset an escalation for testing
+    @admin.action(description="↩️ Un-escalate selected threads (for testing)")
+    def un_escalate_threads(self, request, queryset):
+        updated = queryset.update(escalated_at=None, escalated_by=None)
+        self.message_user(request, f"{updated} thread(s) un-escalated.")
+
+    actions = ['un_escalate_threads']

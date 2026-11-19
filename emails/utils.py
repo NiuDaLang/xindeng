@@ -1063,3 +1063,52 @@ def send_artisan_chat_message_email(message_id):
             logger.error(f"Failed to send chat email to {role} {user.email}: {exc}")
 
     return sent
+
+
+def send_frontline_escalation_email(thread_id):
+    """
+    Notify the platform admin that a customer or artisan has requested
+    platform involvement (escalated a thread).
+    """
+    from creators.models import FrontlineThread
+
+    try:
+        thread = FrontlineThread.objects.select_related(
+            "artisan", "customer", "order_product",
+            "order_product__order", "order_product__product"
+        ).get(id=thread_id)
+    except FrontlineThread.DoesNotExist:
+        return False
+
+    mail_subject = f"🚨 [Escalation] Platform involvement requested｜申請平台介入 — {thread.customer.username} ↔ {thread.artisan.display_name}"
+
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_email = [settings.ADMIN_EMAIL]
+
+    current_site = Site.objects.get_current()
+    site_domain = f"http://{current_site.domain}"
+    # Link directly to the specific thread in the admin dashboard
+    review_url = f"{site_domain}/accounts/dashboard/frontline_messages/?thread={thread.id}"
+
+    context = {
+        "thread": thread,
+        "review_url": review_url,
+        "site_domain": site_domain,
+        "year": timezone.now().year,
+    }
+    
+    html_message = render_to_string("emails/frontline_escalation.html", context)
+    plain_message = render_to_string("emails/frontline_escalation.txt", context)
+
+    mail = EmailMultiAlternatives(
+        subject=mail_subject,
+        body=plain_message,
+        from_email=from_email,
+        to=to_email,
+        bcc=[from_email],
+    )
+    mail.attach_alternative(html_message, "text/html")
+    mail.encoding = "utf-8"
+    mail.send()
+
+    return True

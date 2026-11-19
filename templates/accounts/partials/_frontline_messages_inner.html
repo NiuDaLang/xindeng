@@ -78,6 +78,11 @@
                             </p>
                         </div>
                         <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                            {% if t.unread_count > 0 %}
+                            <span class="badge badge-sm badge-error font-mono text-white font-bold" title="Unread Messages｜未讀訊息">
+                                {{ t.unread_count }}
+                            </span>
+                            {% endif %}
                             {% if t.escalated_at %}
                             <span class="badge badge-xs badge-warning font-mono" title="Escalated｜已升級">
                                 <i class="fa-solid fa-bolt text-[8px]"></i>
@@ -170,7 +175,7 @@
             </div>
 
             {# Message list #}
-            <div class="flex-1 overflow-y-auto p-4 space-y-3 max-h-[55vh]">
+            <div id="admin-thread-message-list" class="flex-1 overflow-y-auto p-4 space-y-3 max-h-[55vh]">
                 {% for m in active_messages %}
                     {% include 'accounts/partials/_frontline_message_bubble.html' with m=m active_thread=active_thread %}
                 {% empty %}
@@ -179,9 +184,19 @@
                 </p>
                 {% endfor %}
             </div>
+            <script>
+                requestAnimationFrame(function() {
+                    setTimeout(function() {
+                        const container = document.getElementById('admin-thread-message-list');
+                        if (container) {
+                            container.scrollTop = container.scrollHeight;
+                        }
+                    }, 50);
+                });
+            </script>
 
             {# ── Composer (only on escalated threads) ── #}
-            {% if active_thread.is_escalated %}
+            {% if active_thread.is_escalated and not active_thread.is_settled %}
             <form hx-post="{% url 'frontline_message_send' active_thread.id %}"
                   hx-target="#frontline-messages-main"
                   hx-swap="innerHTML"

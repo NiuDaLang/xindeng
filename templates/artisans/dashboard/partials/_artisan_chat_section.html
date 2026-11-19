@@ -45,10 +45,11 @@
                 {% if thread and not thread.is_escalated %}
                 <form hx-post="{% url 'escalate_frontline_thread' %}"
                       hx-trigger="confirmed"
-                      hx-swap="none"
+                      hx-target="#artisan-chat-section"
+                      hx-swap="innerHTML"
                       class="border-t border-base-200/60 px-4 py-2 flex justify-center bg-base-50/40">
                     {% csrf_token %}
-                    <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                    <input type="hidden" name="customer_id" value="{{ active_customer.id }}">
                     <button type="button"
                             onclick="this.blur(); confirmEscalateThread(this, {{ thread.id }})"
                             class="text-[10px] text-base-content/50 hover:text-warning transition-colors font-sans tracking-wide cursor-pointer">

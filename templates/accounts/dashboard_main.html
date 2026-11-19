@@ -96,18 +96,19 @@
             </div>
             <div class="flex justify-between w-full">
                 <div class="flex items-baseline gap-1 mt-1 font-mono">
+                    <!-- Main Number: Total Unread (Help + Artisan) -->
                     <strong class="text-4xl font-black {% if unread_count|add:unread_artisan_count > 0 %}text-error animate-pulse{% else %}text-info-content/40{% endif %} tracking-tight">
                         {{ total_unread_messages|intcomma }}
                     </strong>
                     <span class="text-[0.68rem] opacity-50 font-sans">unread｜未讀</span>
                 </div>
                 <div class="tooltip tooltip-left flex items-center justify-center p-2 rounded-xl bg-info-content/5 text-info-content hover:bg-info-content hover:text-white transition-all cursor-pointer" data-tip="All Messages｜所有訊息">
-                    <a href="{% url 'dashboard' 'custom_orders' %}"
-                        hx-get="{% url 'dashboard' 'custom_orders' %}"
-                        hx-target="#dashboard-content"
-                        hx-push-url="true"
-                        hx-on:click="updateActiveLink(this)"
-                        id="messages_label"
+                    <a href="{% url 'dashboard' 'help' %}"
+                       hx-get="{% url 'dashboard' 'help' %}"
+                       hx-target="#dashboard-content"
+                       hx-push-url="true"
+                       hx-on:click="updateActiveLink(this)"
+                       id="messages_label"
                     >
                         <i class="fa-solid fa-envelope text-xl"></i>
                     </a>
@@ -117,6 +118,7 @@
             <!-- Bottom Segment: Dynamic Breakdown -->
             <div class="absolute left-0 bottom-0 w-full px-4 pb-1">
                 <div class="border-t border-dashed border-base-200 flex items-center gap-[1rem] text-[10px] font-sans">
+                    <!-- Help Desk Metric -->
                     <a href="{% url 'dashboard' 'help' %}"
                        hx-get="{% url 'dashboard' 'help' %}"
                        hx-target="#dashboard-content"
@@ -128,6 +130,8 @@
                         Help｜客服
                         <span class="font-mono font-bold text-primary">{{ unread_count|default:0 }}</span>
                     </a>
+                    
+                    <!-- Custom Order (Artisan + Admin) Metric -->
                     <a href="{% url 'dashboard' 'custom_orders' %}"
                        hx-get="{% url 'dashboard' 'custom_orders' %}"
                        hx-target="#dashboard-content"
@@ -136,8 +140,10 @@
                        id="artisan_breakdown"
                        class="flex items-center gap-1 text-base-content/60 hover:text-primary transition-colors">
                         <i class="fa-solid fa-palette text-[9px]"></i>
-                        Artisan｜匠人
-                        <span class="font-mono font-bold text-primary">{{ unread_artisan_count|default:0 }}</span>
+                        Custom Order｜訂製
+                        <span class="font-mono font-bold {% if unread_artisan_count > 0 %}text-error{% else %}text-primary{% endif %}">
+                            {{ unread_artisan_count|default:0 }}
+                        </span>
                     </a>
                 </div>
             </div>

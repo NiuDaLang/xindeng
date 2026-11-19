@@ -52,3 +52,22 @@ def send_artisan_chat_message_email_task(message_id):
             f"💥 Artisan chat message email failed (message={message_id}): {exc}"
         )
         raise
+
+
+@shared_task(name="creators.tasks.send_frontline_escalation_email_task")
+def send_frontline_escalation_email_task(thread_id):
+    """
+    Celery wrapper: dispatch the admin notification email
+    when a FrontlineThread is escalated.
+    """
+    from emails.utils import send_frontline_escalation_email
+    try:
+        sent = send_frontline_escalation_email(thread_id)
+        if sent:
+            return f"Frontline escalation email sent (thread={thread_id})."
+        return f"Thread not found (thread={thread_id})."
+    except Exception as exc:
+        logger.exception(
+            f"💥 Frontline escalation email failed (thread={thread_id}): {exc}"
+        )
+        raise

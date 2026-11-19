@@ -1439,7 +1439,13 @@ def dashboard_messages(request):
             "order_product__product__product_name", 
             "customer"
         )
-        .annotate(last_at=Max("created_at"), unread=Count("id", filter=Q(is_read=False)))
+        .annotate(
+            last_at=Max("created_at"), 
+            unread=Count(
+                "id", 
+                filter=Q(is_read=False) & ~Q(sender=profile.user)
+            )
+        )
         .order_by("-last_at")
     )
 
@@ -1526,7 +1532,7 @@ def dashboard_messages_send(request, customer_id):
             content=content,
             image=image,
             order_product=linked_line,
-            is_read=True,
+            is_read=False,
         )
     except ValidationError:
         messages.error(request, "The attached file is not a readable image.")
@@ -3013,6 +3019,11 @@ def escalate_frontline_thread(request):
 
         already = thread.escalated_at is not None
         thread.escalate(by=request.user)
+        
+        if not already:
+            from creators.tasks import send_frontline_escalation_email_task
+            from django.db import transaction
+            transaction.on_commit(lambda tid=thread.id: send_frontline_escalation_email_task.delay(tid))
 
         if already:
             messages.info(
@@ -3028,9 +3039,27 @@ def escalate_frontline_thread(request):
                 "管理員將可加入此對話。",
             )
 
-        redirect_url = (
-            f"{reverse('customer_thread', kwargs={'artisan_slug': thread.artisan.slug})}"
-        )
+        # 👇 CHANGE THE RETURN HERE
+        if request.headers.get("HX-Request"):
+            # Re-fetch the data needed for the partial
+            messages_qs = ArtisanChatMessage.objects.filter(
+                artisan=thread.artisan, customer=request.user
+            ).filter(Q(order_product=thread.order_product) | Q(order_product__isnull=True)).select_related("sender", "order_product", "order_product__product", "order_product__product_variation").order_by("created_at")
+            
+            available_lines = OrderProduct.objects.filter(
+                order__user=request.user, fulfilled_by=thread.artisan, product__is_digital=True, product__digital_fulfillment_type="CUSTOM"
+            ).select_related("order", "product", "product_variation").order_by("-order__ordered_at")
+
+            return render(request, "artisans/customer_thread_inner.html", {
+                "artisan": thread.artisan,
+                "active_line": thread.order_product,  # Set active line so escalate UI updates
+                "available_lines": available_lines,
+                "chat_messages": messages_qs,
+                "is_modal": True,
+            })
+
+        # Fallback for non-HTMX (traditional form submit)
+        redirect_url = f"{reverse('customer_thread', kwargs={'artisan_slug': thread.artisan.slug})}"
         if thread.order_product_id:
             redirect_url += f"?order_product={thread.order_product_id}"
         return redirect(redirect_url)
@@ -3059,6 +3088,14 @@ def escalate_frontline_thread(request):
                 t.escalate(by=request.user)
                 newly_escalated += 1
 
+        if newly_escalated > 0:
+            from creators.tasks import send_frontline_escalation_email_task
+            from django.db import transaction
+            # Just notify the admin once for the whole batch
+            first_escalated = next((t for t in threads if t.escalated_at is not None), None)
+            if first_escalated:
+                transaction.on_commit(lambda tid=first_escalated.id: send_frontline_escalation_email_task.delay(tid))
+
         if newly_escalated:
             messages.success(
                 request,
@@ -3075,6 +3112,28 @@ def escalate_frontline_thread(request):
                 "進行中對話均已申請平台介入。",
             )
 
+        # 👇 CHANGE THE RETURN HERE
+        if request.headers.get("HX-Request"):
+            # Re-fetch the data for the artisan chat section
+            active_customer = customer
+            active_line = OrderProduct.objects.filter(
+                order__user=customer, fulfilled_by=profile, product__is_digital=True, product__digital_fulfillment_type="CUSTOM"
+            ).first() # Just grab the first one to update the UI
+
+            active_messages = (
+                ArtisanChatMessage.objects
+                .filter(artisan=profile, customer=active_customer)
+                .filter(Q(order_product=active_line) | Q(order_product__isnull=True))
+                .select_related("sender")
+                .order_by("created_at")
+            )
+
+            return render(request, "artisans/dashboard/partials/_artisan_chat_section.html", {
+                "active_customer": active_customer,
+                "active_line": active_line,
+                "active_messages": active_messages,
+            })
+
         return redirect(
             f"{reverse('a_dashboard_messages')}?customer={customer.id}"
         )
@@ -3082,4 +3141,5 @@ def escalate_frontline_thread(request):
     # Neither customer_id nor thread_id supplied → 400. A POST with
     # no identifying payload is a client bug, not an authorization
     # failure.
-    return HttpResponse(status=400)
+    logger.warning(f"Escalate view called with no valid ID. POST data: {request.POST.dict()}")
+    return HttpResponse("Missing thread_id or customer_id", status=400)

@@ -1,0 +1,58 @@
+{% autoescape off %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escalation Alert</title>
+</head>
+<body style="font-family: sans-serif; background-color: #f7f5f3; padding: 20px; margin: 0;">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #cccccc; border-radius: 8px;">
+        <tr>
+            <td style="background-color: #dc2626; padding: 25px; text-align: center; color: white; font-size: 1.1rem; font-weight: bold;">
+                🚨 Escalation Alert
+                <br><span style="font-size: 0.85rem; font-weight: normal; opacity: 0.9;">申請平台介入</span>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="padding: 30px; font-size: 0.85rem; line-height: 1.5rem; color: #161616;">
+                <p style="margin: 0 0 14px 0;">
+                    Attention Admin,<br>
+                    管理員您好：
+                </p>
+
+                <p style="margin: 0 0 14px 0;">
+                    A customer or artisan has requested platform involvement in a thread.<br>
+                    買家或匠人已申請平台介入此對話。
+                </p>
+
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #f9f9f9; border-left: 4px solid #dc2626; margin-bottom: 20px;">
+                    <tr><td style="padding: 15px; font-size: 0.85rem; line-height: 1.6rem; color: #333333;">
+                        <strong>Customer｜買家：</strong> {{ thread.customer.username }}<br>
+                        <strong>Artisan｜匠人：</strong> {{ thread.artisan.display_name }}<br>
+                        {% if thread.order_product %}
+                        <strong>Order｜訂單：</strong> #{{ thread.order_product.order.order_number }}<br>
+                        <strong>Product｜商品：</strong> {{ thread.order_product.product.product_name }}
+                        {% endif %}
+                    </td></tr>
+                </table>
+
+                <div style="text-align: center; margin: 26px 0;">
+                    <a href="{{ review_url }}" style="display: inline-block; padding: 12px 26px; background-color: #dc2626; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: bold;">
+                        Review Thread in Admin Dashboard｜前往管理後台 →
+                    </a>
+                </div>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="background-color: #333333; padding: 20px; text-align: center; color: white; font-size: 0.7rem; line-height: 1.4rem;">
+                Hṛdayadīpa (हृदयदीप)｜心燈<br>
+                <span style="opacity: 0.7;">Automated notification — please do not reply directly.｜系統自動通知，請勿直接回覆。</span>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+{% endautoescape %}
