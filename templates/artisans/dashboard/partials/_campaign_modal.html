@@ -105,7 +105,9 @@ what checkout will apply.
 
                 {# NONE / ENFORCED — read-only #}
                 {% elif perk.enrolment_mode == 'NONE' %}
-                <span class="badge badge-xs badge-info">Automatic｜自動參與</span>
+                <span class="badge badge-xs badge-info tooltip tooltip-left" data-tip="No action required. This campaign applies automatically at checkout.｜無需操作，結帳時自動套用。">
+                    Automatic｜自動套用
+                </span>
 
                 {% elif perk.enrolment_mode == 'ENFORCED' %}
                 <span class="badge badge-xs badge-info">Enforced｜強制參與</span>

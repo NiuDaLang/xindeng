@@ -100,10 +100,12 @@ from __future__ import annotations
 
 import os
 import re
+from datetime import datetime, timezone as dt_timezone
 from pathlib import Path
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
 
 from store.models import ArtisanVaultUpload
 
@@ -141,6 +143,19 @@ class Command(BaseCommand):
                 "Equivalent to passing no flag."
             ),
         )
+        # Added for Backlog 12: never sweep files younger than N days.
+        # Protects against the async race where a file lands in
+        # _pending/ before its ArtisanVaultUpload row commits.
+        parser.add_argument(
+            "--older-than",
+            type=int,
+            default=0,
+            metavar="N",
+            help=(
+                "Only sweep files whose mtime is older than N days "
+                "(default: 0, sweep all ages)."
+            ),
+        )
 
     def handle(self, *args, **options):
         do_delete = options["delete"]
@@ -150,6 +165,11 @@ class Command(BaseCommand):
         # this command. It has no effect if --delete is also passed;
         # --delete wins, and we say so below.
         dry_run = options["dry_run"]
+        older_than_days = options["older_than"]
+
+        if older_than_days < 0:
+            raise CommandError("--older-than must be >= 0.")
+
         if dry_run and do_delete:
             raise CommandError(
                 "--dry-run and --delete are mutually exclusive. "
@@ -220,6 +240,23 @@ class Command(BaseCommand):
 
             files_scanned += 1
 
+            # Backlog 12: skip files newer than the age threshold.
+            # A newly-staged file may not yet have its DB row (race),
+            # so the sweeper must not touch it until it's provably old.
+            if older_than_days > 0:
+                try:
+                    mtime = entry.stat().st_mtime
+                except OSError:
+                    # If we can't stat it, we also can't age it —
+                    # err on the side of *not* deleting.
+                    continue
+                age_days = (
+                    timezone.now()
+                    - datetime.fromtimestamp(mtime, tz=dt_timezone.utc)
+                ).days
+                if age_days < older_than_days:
+                    continue
+
             # Shape check. Anything outside the write path's shape
             # is reported separately and swept under --delete; see
             # module docstring ("Why unrecognized names are swept").
@@ -245,9 +282,16 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.NOTICE(f"▶ {pending_root}/")
         )
-        self.stdout.write(
-            f"   files scanned: {files_scanned}"
-        )
+        if older_than_days > 0:
+            self.stdout.write(
+                f"   files scanned: {files_scanned} "
+                f"(age filter: > {older_than_days} day(s))"
+            )
+        else:
+            self.stdout.write(
+                f"   files scanned: {files_scanned}"
+            )
+
         if unrecognized:
             self.stdout.write(
                 self.style.WARNING(

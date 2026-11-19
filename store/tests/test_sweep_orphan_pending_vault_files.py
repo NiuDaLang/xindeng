@@ -20,6 +20,7 @@ Covered:
 from __future__ import annotations
 
 import io
+import os, time
 import uuid
 from contextlib import redirect_stderr, redirect_stdout
 from decimal import Decimal
@@ -259,6 +260,40 @@ class TestDeleteSemantics:
 
         out, _ = _run("--delete")
         assert "Nothing to delete" in out
+
+
+class TestAgeFilter:
+
+    def test_young_file_is_skipped_when_older_than_given(
+        self, pending_root,
+    ):
+        path, _ = _write_staged(pending_root)
+
+        out, _ = _run("--older-than", "2")
+        assert "Orphans: 0" in out
+        assert path.is_file()
+
+    def test_old_file_is_swept_when_older_than_given(
+        self, pending_root,
+    ):
+        path, _ = _write_staged(pending_root)
+        # Backdate the file's mtime to 5 days ago.
+        five_days_ago = time.time() - (5 * 86400)
+        os.utime(path, (five_days_ago, five_days_ago))
+
+        out, _ = _run("--older-than", "2")
+        assert "Orphans: 1" in out
+
+    def test_zero_is_default_and_sweeps_all_ages(
+        self, pending_root,
+    ):
+        path, _ = _write_staged(pending_root)
+        out, _ = _run()  # no flag
+        assert "Orphans: 1" in out
+
+    def test_negative_older_than_is_rejected(self, pending_root):
+        with pytest.raises(CommandError):
+            _run("--older-than", "-1")
 
 
 # ──────────────────────────────────────────────────────────────────

@@ -14,6 +14,7 @@ Usage:
     python manage.py sweep_orphan_media
     python manage.py sweep_orphan_media --path-prefix=ckeditor5_storage/
     python manage.py sweep_orphan_media --delete
+    python manage.py sweep_orphan_media --older-than <# in day>
 """
 
 import os
@@ -22,7 +23,8 @@ from pathlib import Path
 from django.apps import apps
 from django.conf import settings
 from django.core.management.base import BaseCommand
-
+from django.utils import timezone
+from datetime import datetime, timezone as dt_timezone
 
 # ──────────────────────────────────────────────────────────────
 # Managed folder registry — the source of truth for what we sweep.
@@ -66,10 +68,8 @@ MANAGED_FOLDERS = {
     ],
     "chat_images": [
         ("accounts", "chatmessage", "image"),
+        ("creators", "artisanchatmessage", "image"),
     ],
-    # NOTE: ckeditor5_storage/ is deliberately EXCLUDED. It will be
-    # handled by a dedicated sweep command in a later phase, because
-    # its files are referenced by HTML content, not by a DB column.
 }
 
 # Files under managed folders that must NEVER be deleted, even if the
@@ -99,6 +99,11 @@ class Command(BaseCommand):
         parser.add_argument(
             "--list-folders", action="store_true",
             help="List the managed folders and their owning models, then exit.",
+        )
+        # Added for Backlog 12
+        parser.add_argument(
+            "--older-than", type=int, default=0,
+            help="Only sweep files older than N days (default: 0, sweep all).",
         )
 
     def handle(self, *args, **opts):
@@ -161,9 +166,26 @@ class Command(BaseCommand):
                     if rel_name in referenced:
                         continue
 
+                    # --- Age check (Backlog 12) ---
+                    if opts["older_than"] > 0:
+                        try:
+                            mtime = full_path.stat().st_mtime
+                        except OSError:
+                            continue
+                        file_age_days = (
+                            timezone.now()
+                            - datetime.fromtimestamp(mtime, tz=dt_timezone.utc)
+                        ).days
+
+                        if file_age_days < opts["older_than"]:
+                            continue
+                    # -------------------------------
+
+
                     folder_orphans.append(
                         (full_path, rel_name, full_path.stat().st_size)
                     )
+
 
             folder_bytes = sum(s for _, _, s in folder_orphans)
 
