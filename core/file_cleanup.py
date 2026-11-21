@@ -63,6 +63,7 @@ REPLACE_CLEANUP_FIELDS = [
 
     # Creators
     ("creators", "artisanchatmessage", "image"),
+    ("creators", "artisanadminmessage", "image"),
 
     # category
     ("category", "category", "cat_image"),

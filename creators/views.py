@@ -1597,25 +1597,43 @@ def dashboard_messages_admin_send(request):
     """
     Create a message from this artisan to the platform admin.
 
-    The sender is the artisan; is_read is True because the sender
-    has, by definition, read their own message. The admin-side
-    unread counter flips when the admin opens the artisan's thread
-    (that counter is not is_read here; it's the admin-side view's
-    own query).
+    The sender is the artisan; is_read is False because the
+    *recipient* (the admin) has not yet read it. The admin-side
+    unread counter flips when the admin opens the artisan's
+    thread (accounts.views.dashboard, subpage="artisan_messages").
+
+    Image attachments are accepted (Backlog 3b-bis). A message
+    may be image-only — content is no longer required as long as
+    an image is attached. Corrupt images are rejected by the
+    pre_save receiver (creators.signals.
+    validate_artisan_admin_message_image) and surfaced via
+    messages.error + redirect.
     """
     profile = request.user.creator_profile
 
     content = (request.POST.get("content") or "").strip()
-    if not content:
+    image = request.FILES.get("image")
+
+    if not content and not image:
         messages.error(request, "Message cannot be empty.｜訊息不得為空。")
         return redirect("a_dashboard_messages_admin")
 
-    ArtisanAdminMessage.objects.create(
-        artisan=profile,
-        sender=request.user,
-        content=content,
-        is_read=False,
-    )
+    try:
+        ArtisanAdminMessage.objects.create(
+            artisan=profile,
+            sender=request.user,
+            content=content,
+            image=image,
+            is_read=False,
+        )
+    except ValidationError:
+        messages.error(
+            request,
+            "The attached file is not a readable image.｜"
+            "所附加的檔案不是可讀取的圖片。",
+        )
+        return redirect("a_dashboard_messages_admin")
+
     return redirect("a_dashboard_messages_admin")
 
 

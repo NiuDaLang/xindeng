@@ -9,7 +9,11 @@ The platform team has sent you a message via your admin thread.
 ============================================================
 💬 MESSAGE｜訊息
 ============================================================
-{{ message.content }}
+{% if message.content %}{{ message.content }}{% endif %}
+{% if message.image %}
+[An image was attached to this message. Please log in to view it.]
+[此訊息附有圖片，請登入平台查看。]
+{% endif %}
 ============================================================
 
 Sent {{ message.created_at|date:"Y-m-d H:i" }} by {{ message.sender.username }}.

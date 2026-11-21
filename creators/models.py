@@ -257,7 +257,7 @@ class ArtisanChatMessage(models.Model):
 
 class ArtisanAdminMessage(models.Model):
     """
-    A plain-text message in a artisan ↔ admin thread.
+    A message (text and/or image) in an artisan ↔ admin thread.
 
     One thread per artisan, implied by the FK — there is no Thread
     model in v1. Unlike ArtisanChatMessage (which is per-customer),
@@ -266,7 +266,11 @@ class ArtisanAdminMessage(models.Model):
 
     Deliberately simpler than accounts.ChatMessage (member↔admin):
 
-      * No image/attachment field. Content is text-only.
+      * Image attachment is supported (Backlog 3b-bis, mirroring
+        ArtisanChatMessage.image — same storage pipeline, same
+        validation, same cleanup). Text-only messages remain the
+        common case; the field exists for screenshots and
+        work-in-progress previews.
       * No WebSocket. The messages panel is server-rendered; a manual
         refresh or a form-driven reload is what picks up new messages.
       * No artisan-side thread picker. There is one thread — the one
@@ -293,6 +297,17 @@ class ArtisanAdminMessage(models.Model):
         related_name="sent_artisan_admin_messages",
     )
     content = models.TextField(max_length=2000)
+    image = models.ImageField(
+        upload_to="artisan_admin_chat_images/",
+        blank=True,
+        null=True,
+        help_text=(
+            "Optional image attachment (screenshot, work-in-progress "
+            "preview, product reference). Mirrors "
+            "ArtisanChatMessage.image — same storage pipeline, same "
+            "validation, same cleanup. Added in Backlog 3b-bis."
+        ),
+    )
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     source_chat_message = models.ForeignKey(

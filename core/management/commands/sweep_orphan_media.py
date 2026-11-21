@@ -70,6 +70,9 @@ MANAGED_FOLDERS = {
         ("accounts", "chatmessage", "image"),
         ("creators", "artisanchatmessage", "image"),
     ],
+    "artisan_admin_chat_images": [
+        ("creators", "artisanadminmessage", "image"),
+    ],
 }
 
 # Files under managed folders that must NEVER be deleted, even if the

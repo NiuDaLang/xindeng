@@ -99,8 +99,8 @@
                       {% if active_section == 'messages' %}bg-base-200 text-primary font-semibold{% endif %}">
                 <i class="fa-solid fa-comments text-xs w-4 text-center"></i>
                 <span class="flex-1">Messages｜訊息</span>
-                {% if unread_messages_count %}
-                <span class="badge badge-primary badge-xs">{{ unread_messages_count }}</span>
+                {% if unread_messages_count or unread_admin_messages_count %}
+                <span class="badge badge-primary badge-xs">{{ unread_messages_count|add:unread_admin_messages_count }}</span>
                 {% endif %}
             </a>
         </nav>
@@ -145,7 +145,14 @@
             <li><a hx-get="{% url 'a_dashboard_products' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Products｜作品</a></li>
             <li><a hx-get="{% url 'a_dashboard_blog' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Blog｜筆記</a></li>
             <li><a hx-get="{% url 'a_dashboard_profile' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Profile｜匠人檔案</a></li>
-            <li><a hx-get="{% url 'a_dashboard_messages' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">Messages｜訊息</a></li>
+            <li>
+                <a hx-get="{% url 'a_dashboard_messages' %}" hx-target="#dashboard-main" hx-push-url="true" onclick="document.getElementById('mobile-nav').close()">
+                    <span class="flex-1">Messages｜訊息</span>
+                    {% if unread_messages_count or unread_admin_messages_count %}
+                    <span class="badge badge-primary badge-xs">{{ unread_messages_count|add:unread_admin_messages_count }}</span>
+                    {% endif %}
+                </a>
+            </li>
         </ul>
     </div>
     <form method="dialog" class="modal-backdrop"><button>close</button></form>

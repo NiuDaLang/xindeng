@@ -112,6 +112,13 @@ IMAGE_FIELD_REGISTRY = {
     # so uploads bypassed the pipeline entirely (no resize, no
     # WebP, no EXIF transpose, no size clamp).
     ("creators", "artisanchatmessage", "image"): {"max_dimension": 800, "quality": 85},
+    
+    # Admin-thread attachment: sibling of artisanchatmessage.image
+    # (Backlog 3b-bis). Same 800px clamp, same quality. Lives in
+    # its own storage folder (artisan_admin_chat_images/) rather
+    # than sharing chat_images/ — the two threads are deliberately
+    # separate models, and their on-disk layout mirrors that.
+    ("creators", "artisanadminmessage", "image"): {"max_dimension": 800, "quality": 85},
 }
 
 

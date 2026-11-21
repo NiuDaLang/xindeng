@@ -58,12 +58,16 @@
                     <p class="text-[10px] text-base-content/40">{{ active_artisan.user.email }}</p>
                 </div>
 
-                <div class="flex-1 overflow-y-auto p-4 space-y-3 max-h-[50vh]">
+                <div id="admin-artisan-message-list" class="flex-1 overflow-y-auto p-4 space-y-3 max-h-[50vh]">
                     {% for m in active_artisan_messages %}
                     <div class="flex {% if m.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
                         <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed
                                     {% if m.sender == request.user %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content{% endif %}">
-                            {{ m.content|linebreaksbr }}
+                            {% if m.content %}{{ m.content|linebreaksbr }}{% endif %}
+                            {% if m.image %}
+                            <img src="{{ m.image.url }}" alt="attachment"
+                                 class="mt-2 rounded-lg max-h-48 object-contain block" loading="lazy" />
+                            {% endif %}
                             <span class="block text-[9px] opacity-60 mt-1 font-mono">
                                 {{ m.sender.username }} · {{ m.created_at|date:"Y-m-d H:i" }}
                             </span>
@@ -78,14 +82,19 @@
 
                 <form method="post"
                       action="{% url 'artisan_messages_send' active_artisan.id %}"
-                      class="border-t border-base-200/60 p-3 flex gap-2">
+                      enctype="multipart/form-data"
+                      class="border-t border-base-200/60 p-3 flex flex-col gap-2 w-full">
                     {% csrf_token %}
-                    <textarea name="content" maxlength="2000" rows="2" required
+                    <textarea name="content" maxlength="2000" rows="2"
                               placeholder="Write a short message…｜輸入訊息…"
-                              class="textarea textarea-bordered flex-1 text-xs rounded-xl"></textarea>
-                    <button type="submit" class="btn btn-primary btn-sm rounded-xl">
-                        <i class="fa-solid fa-paper-plane text-xs"></i>
-                    </button>
+                              class="textarea textarea-bordered w-full text-xs rounded-xl"></textarea>
+                    <div class="flex items-center gap-2 w-full">
+                        <input type="file" name="image" accept="image/*"
+                               class="file-input file-input-bordered file-input-xs flex-1 text-xs" />
+                        <button type="submit" class="btn btn-primary btn-sm rounded-xl shrink-0">
+                            <i class="fa-solid fa-paper-plane text-xs"></i>
+                        </button>
+                    </div>
                 </form>
             {% else %}
                 <div class="flex-1 flex flex-col items-center justify-center text-center text-base-content/40 py-16">
@@ -97,3 +106,12 @@
         </section>
     </div>
 </div>
+<script>
+    setTimeout(function() {
+        const container = document.getElementById('admin-artisan-message-list');
+        if (container) {
+            console.log("artisan_thread")
+            container.scrollTop = container.scrollHeight;
+        }
+    }, 100);
+</script>

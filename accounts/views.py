@@ -1141,7 +1141,10 @@ def dashboard(request, subpage):
             .values("artisan")
             .annotate(
                 last_at=Max("created_at"),
-                unread=Count("id", filter=Q(is_read=False)),
+                unread=Count(
+                    "id",
+                    filter=Q(is_read=False) & ~Q(sender=request.user) # 👈 Add this exclusion
+                ),
             )
             .order_by("-last_at")
         )
@@ -1163,10 +1166,16 @@ def dashboard(request, subpage):
                 .select_related("sender")
             )
 
+        # Total unread across all artisans (for the header badge)
+        total_unread_admin_messages = ArtisanAdminMessage.objects.filter(
+            is_read=False,
+        ).exclude(sender=request.user).count()
+
         context.update({
             "artisan_message_threads": artisan_rows,
             "active_artisan": active_artisan,
             "active_artisan_messages": active_messages,
+            "pending_artisan_message_count": total_unread_admin_messages,
         })
 
     if subpage == "frontline_messages":
@@ -1794,6 +1803,14 @@ def artisan_messages_send(request, artisan_id):
     Only superadmins can post. The artisan-side unread count
     (unread_admin_messages_count) flips when the artisan opens
     their thread (a separate view); this view only writes.
+
+    Image attachments are accepted (Backlog 3b-bis). A message
+    may be image-only — content is no longer required as long as
+    an image is attached. Corrupt images are rejected by the
+    pre_save receiver (creators.signals.
+    validate_artisan_admin_message_image); the try/except wraps
+    the whole atomic block so a ValidationError neither leaves a
+    partial row nor schedules the notification email.
     """
     if not getattr(request.user, "is_superadmin", False):
         return HttpResponse(status=403)
@@ -1801,31 +1818,44 @@ def artisan_messages_send(request, artisan_id):
     artisan = get_object_or_404(CreatorProfile, id=artisan_id)
 
     content = (request.POST.get("content") or "").strip()
-    if not content:
-        messages.error(request, "Message cannot be empty.｜訊息不得為空。")
-        return redirect(
-            f"{reverse('dashboard', kwargs={'subpage': 'artisan_messages'})}"
-            f"?artisan={artisan.id}"
-        )
+    image = request.FILES.get("image")
 
-    from creators.tasks import send_artisan_admin_message_email_task
-
-    with transaction.atomic():
-        msg = ArtisanAdminMessage.objects.create(
-            artisan=artisan,
-            sender=request.user,
-            content=content,
-            is_read=False,
-        )
-        transaction.on_commit(
-            lambda mid=msg.id:
-                send_artisan_admin_message_email_task.delay(str(mid))
-        )
-
-    return redirect(
+    redirect_url = (
         f"{reverse('dashboard', kwargs={'subpage': 'artisan_messages'})}"
         f"?artisan={artisan.id}"
     )
+
+    if not content and not image:
+        messages.error(request, "Message cannot be empty.｜訊息不得為空。")
+        return redirect(redirect_url)
+
+    from creators.tasks import send_artisan_admin_message_email_task
+
+    try:
+        with transaction.atomic():
+            msg = ArtisanAdminMessage.objects.create(
+                artisan=artisan,
+                sender=request.user,
+                content=content,
+                image=image,
+                is_read=False,
+            )
+            transaction.on_commit(
+                lambda mid=msg.id:
+                    send_artisan_admin_message_email_task.delay(str(mid))
+            )
+    except ValidationError:
+        # Raised by creators.signals.validate_artisan_admin_message_image
+        # before any row is written. The atomic block rolls back, so no
+        # ArtisanAdminMessage exists and no email task was scheduled.
+        messages.error(
+            request,
+            "The attached file is not a readable image.｜"
+            "所附加的檔案不是可讀取的圖片。",
+        )
+        return redirect(redirect_url)
+
+    return redirect(redirect_url)
 
 
 @login_required(login_url="login")

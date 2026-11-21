@@ -30,13 +30,19 @@
                 <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #f9f9f9; border-left: 4px solid #4b9aaa; padding: 15px; margin-bottom: 20px;">
                     <tr>
                         <td style="padding: 15px; font-size: 0.85rem; line-height: 1.5rem; color: #333333; white-space: pre-wrap;">
-                            {# The artisan's message body is admin-authored and may contain HTML-ish characters. #}
-                            {# Escape it even though the surrounding template opts out. #}
-                            {% autoescape on %}{{ message.content }}{% endautoescape %}
+                            {% if message.content %}
+                                {% autoescape on %}{{ message.content }}{% endautoescape %}
+                            {% endif %}
+                            {% if message.image %}
+                                <p style="margin: 0; font-style: italic; color: #666;">
+                                    <i>[An image was attached to this message. Please log in to view it.]</i><br>
+                                    [此訊息附有圖片，請登入平台查看。]
+                                </p>
+                            {% endif %}
                         </td>
                     </tr>
                 </table>
-
+                
                 <p style="margin: 0; font-size: 0.75rem; line-height: 1.4rem; color: #8b8b8b;">
                     Sent {{ message.created_at|date:"Y-m-d H:i" }} by {{ message.sender.username }}.
                 </p>

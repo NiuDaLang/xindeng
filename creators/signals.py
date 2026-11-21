@@ -2,17 +2,29 @@
 """
 Signal handlers for the creators app.
 
-Currently one handler: upsert the FrontlineThread row on every
-ArtisanChatMessage create, and clear the thread's settled_at when a
-new message arrives. See the 2026-11-02 handoff §S3 for why this is
-a signal rather than a model save() override.
+Handlers, in order of registration:
+
+  * maintain_frontline_thread — upsert the FrontlineThread row on
+    every ArtisanChatMessage create, and clear the thread's
+    settled_at when a new message arrives. See the 2026-11-02
+    handoff §S3 for why this is a signal rather than a model
+    save() override.
+  * validate_artisan_chat_image — pre_save fail-closed check on
+    ArtisanChatMessage.image (3f-bis).
+  * notify_counterparty_on_artisan_message — post_save Celery
+    dispatch for order-scoped ArtisanChatMessage rows.
+  * validate_artisan_admin_message_image — pre_save fail-closed
+    check on ArtisanAdminMessage.image (3b-bis). Sibling of
+    validate_artisan_chat_image; the two are deliberately separate
+    receivers so a grep for either model's name lands on the right
+    function.
 """
 
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 from PIL import Image, UnidentifiedImageError
-from .models import ArtisanChatMessage, FrontlineThread
+from .models import ArtisanAdminMessage, ArtisanChatMessage, FrontlineThread
 from django.core.exceptions import ValidationError
 
 
@@ -175,3 +187,53 @@ def notify_counterparty_on_artisan_message(sender, instance, created, **kwargs):
     transaction.on_commit(
         lambda mid=instance.id: send_artisan_chat_message_email_task.delay(mid)
     )
+
+
+
+
+@receiver(pre_save, sender=ArtisanAdminMessage)
+def validate_artisan_admin_message_image(sender, instance, **kwargs):
+    """
+    Reject unreadable image uploads on ArtisanAdminMessage before the
+    row is written.
+
+    Sibling of validate_artisan_chat_image. Same fail-closed logic,
+    same rationale (the optimizer is tolerant; this is the guard),
+    same do-NOT-close-the-handle constraint. Kept as a separate
+    receiver rather than generalised so that a grep for either
+    model's name finds its corresponding validator without
+    indirection.
+
+    Call sites (both must catch ValidationError and flash an error):
+
+      * creators.views.dashboard_messages_admin_send
+        (artisan → admin; no email dispatch)
+      * accounts.views.artisan_messages_send
+        (admin → artisan; dispatches the notification email
+        inside transaction.on_commit, so the ValidationError must
+        be caught *around* the atomic block, not inside it)
+
+    Registered in CreatorsConfig.ready() via `from . import signals`
+    — same discipline as the chat-message sibling (handoff §F10).
+    """
+    image = getattr(instance, "image", None)
+    if not image or not getattr(image, "name", ""):
+        return
+
+    if getattr(instance, "_skip_image_optimization", False):
+        return
+
+    try:
+        img = Image.open(image)
+        img.load()
+    except (UnidentifiedImageError, OSError) as exc:
+        raise ValidationError(
+            "The attached file is not a readable image.｜"
+            "所附加的檔案不是可讀取的圖片。"
+            f" ({exc.__class__.__name__})"
+        )
+
+    try:
+        image.seek(0)
+    except Exception:
+        pass

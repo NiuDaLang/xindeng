@@ -11,12 +11,16 @@
 {% include 'includes/alerts.html' %}
 
 <section class="border border-base-200/60 rounded-2xl bg-base-100 flex flex-col max-w-3xl">
-    <div class="flex-1 overflow-y-auto p-4 space-y-3 max-h-[60vh]">
+    <div id="admin-message-list" class="flex-1 overflow-y-auto p-4 space-y-3 max-h-[60vh]">
         {% for m in admin_messages %}
         <div class="flex {% if m.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
             <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed
                         {% if m.sender == request.user %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content{% endif %}">
-                {{ m.content|linebreaksbr }}
+                {% if m.content %}{{ m.content|linebreaksbr }}{% endif %}
+                {% if m.image %}
+                <img src="{{ m.image.url }}" alt="attachment"
+                     class="mt-2 rounded-lg max-h-48 object-contain block" loading="lazy" />
+                {% endif %}
                 <span class="block text-[9px] opacity-60 mt-1 font-mono">
                     {{ m.sender.username }} · {{ m.created_at|date:"Y-m-d H:i" }}
                 </span>
@@ -31,13 +35,27 @@
 
     <form method="post"
           action="{% url 'a_dashboard_messages_admin_send' %}"
-          class="border-t border-base-200/60 p-3 flex gap-2">
+          enctype="multipart/form-data"
+          class="border-t border-base-200/60 p-3 flex flex-col gap-2 w-full">
         {% csrf_token %}
-        <textarea name="content" maxlength="2000" rows="2" required
+        <textarea name="content" maxlength="2000" rows="2"
                   placeholder="Write a short message…｜輸入訊息…"
-                  class="textarea textarea-bordered flex-1 text-xs rounded-xl"></textarea>
-        <button type="submit" class="btn btn-primary btn-sm rounded-xl">
-            <i class="fa-solid fa-paper-plane text-xs"></i>
-        </button>
+                  class="textarea textarea-bordered w-full text-xs rounded-xl"></textarea>
+        <div class="flex items-center gap-2 w-full">
+            <input type="file" name="image" accept="image/*"
+                   class="file-input file-input-bordered file-input-xs flex-1 text-xs" />
+            <button type="submit" class="btn btn-primary btn-sm rounded-xl shrink-0">
+                <i class="fa-solid fa-paper-plane text-xs"></i>
+            </button>
+        </div>
     </form>
 </section>
+<script>
+    setTimeout(function() {
+        const container = document.getElementById('admin-message-list');
+        if (container) {
+            console.log("admin_thread")
+            container.scrollTop = container.scrollHeight;
+        }
+    }, 100);
+</script>
