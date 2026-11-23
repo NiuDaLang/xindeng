@@ -1,0 +1,39 @@
+{% comment %}
+accounts/partials/_artisan_admin_list.html
+
+The message-list body for the admin ↔ artisan thread. Rendered
+directly into #admin-artisan-message-list on HTMX send.
+
+Same error/restore OOB pattern as the artisan-side partial; the
+IDs are suffixed -artisan- so the two threads can coexist on the
+same page in the future without cross-targeting.
+{% endcomment %}
+{% for m in active_artisan_messages %}
+<div class="flex {% if m.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
+    <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed
+                {% if m.sender == request.user %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content{% endif %}">
+        {% if m.content %}{{ m.content|linebreaksbr }}{% endif %}
+        {% if m.image %}
+        <img src="{{ m.image.url }}" alt="attachment"
+             class="mt-2 rounded-lg max-h-48 object-contain block" loading="lazy" />
+        {% endif %}
+        <span class="block text-[9px] opacity-60 mt-1 font-mono">
+            {{ m.sender.username }} · {{ m.created_at|date:"Y-m-d H:i" }}
+        </span>
+    </div>
+</div>
+{% empty %}
+<p class="text-center text-xs text-base-content/40 py-10">
+    No messages yet. Say hello.｜暫無訊息。
+</p>
+{% endfor %}
+{% if error_message %}
+<div id="admin-artisan-message-error" hx-swap-oob="true"
+     class="alert alert-error text-xs mb-2">
+    {{ error_message }}
+</div>
+<textarea id="admin-artisan-message-content" name="content" hx-swap-oob="true"
+          maxlength="2000" rows="2"
+          placeholder="Write a short message…｜輸入訊息…"
+          class="textarea textarea-bordered w-full text-xs rounded-xl">{{ restore_content|default:"" }}</textarea>
+{% endif %}

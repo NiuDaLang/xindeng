@@ -11,34 +11,24 @@
 {% include 'includes/alerts.html' %}
 
 <section class="border border-base-200/60 rounded-2xl bg-base-100 flex flex-col max-w-3xl">
+    <!-- OOB error banner target (also written here on initial render as empty) -->
+    <div id="admin-message-error"></div>
+
     <div id="admin-message-list" class="flex-1 overflow-y-auto p-4 space-y-3 max-h-[60vh]">
-        {% for m in admin_messages %}
-        <div class="flex {% if m.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
-            <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed
-                        {% if m.sender == request.user %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content{% endif %}">
-                {% if m.content %}{{ m.content|linebreaksbr }}{% endif %}
-                {% if m.image %}
-                <img src="{{ m.image.url }}" alt="attachment"
-                     class="mt-2 rounded-lg max-h-48 object-contain block" loading="lazy" />
-                {% endif %}
-                <span class="block text-[9px] opacity-60 mt-1 font-mono">
-                    {{ m.sender.username }} · {{ m.created_at|date:"Y-m-d H:i" }}
-                </span>
-            </div>
-        </div>
-        {% empty %}
-        <p class="text-center text-xs text-base-content/40 py-10">
-            No messages yet. Say hello to the platform.｜暫無訊息，歡迎向平台打個招呼。
-        </p>
-        {% endfor %}
+        {% include 'artisans/dashboard/partials/_messages_admin_list.html' with admin_messages=admin_messages %}
     </div>
 
     <form method="post"
           action="{% url 'a_dashboard_messages_admin_send' %}"
           enctype="multipart/form-data"
+          hx-post="{% url 'a_dashboard_messages_admin_send' %}"
+          hx-target="#admin-message-list"
+          hx-swap="innerHTML"
+          hx-encoding="multipart/form-data"
+          hx-disabled-elt="find button[type=submit]"
           class="border-t border-base-200/60 p-3 flex flex-col gap-2 w-full">
         {% csrf_token %}
-        <textarea name="content" maxlength="2000" rows="2"
+        <textarea id="admin-message-content" name="content" maxlength="2000" rows="2"
                   placeholder="Write a short message…｜輸入訊息…"
                   class="textarea textarea-bordered w-full text-xs rounded-xl"></textarea>
         <div class="flex items-center gap-2 w-full">
@@ -51,11 +41,25 @@
     </form>
 </section>
 <script>
-    setTimeout(function() {
+    function adminScrollToBottom() {
         const container = document.getElementById('admin-message-list');
-        if (container) {
-            console.log("admin_thread")
-            container.scrollTop = container.scrollHeight;
-        }
-    }, 100);
+        if (container) container.scrollTop = container.scrollHeight;
+    }
+    // Run on full page load OR when this template is swapped in.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', adminScrollToBottom);
+    } else {
+        adminScrollToBottom();
+    }
+    // Clear input + scroll only on a successful send.
+    if (!window._adminMessageSentListenerInstalled) {
+        window._adminMessageSentListenerInstalled = true;
+        document.body.addEventListener('adminMessageSent', () => {
+            const ta = document.getElementById('admin-message-content');
+            if (ta) ta.value = '';
+            const file = document.querySelector('input[type=file][name=image]');
+            if (file) file.value = '';
+            setTimeout(adminScrollToBottom, 50);
+        });
+    }
 </script>

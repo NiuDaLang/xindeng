@@ -1608,14 +1608,39 @@ def dashboard_messages_admin_send(request):
     pre_save receiver (creators.signals.
     validate_artisan_admin_message_image) and surfaced via
     messages.error + redirect.
+
+    HTMX (Session 9): on HX-Request, both success and validation
+    error return the message-list partial (_messages_admin_list.html)
+    for swapping into #admin-message-list. The error path also
+    includes an OOB error banner and a textarea OOB that restores
+    the user's typed content. Non-HTMX POST keeps the original
+    redirect behaviour.
     """
     profile = request.user.creator_profile
 
     content = (request.POST.get("content") or "").strip()
     image = request.FILES.get("image")
 
+    is_htmx = request.headers.get("HX-Request") is not None
+    list_partial = "artisans/dashboard/partials/_messages_admin_list.html"
+
+    def _render_list(error_message=None):
+        admin_messages = (
+            ArtisanAdminMessage.objects
+            .filter(artisan=profile)
+            .select_related("sender")
+        )
+        ctx = {"admin_messages": admin_messages}
+        if error_message is not None:
+            ctx["error_message"] = error_message
+            ctx["restore_content"] = (request.POST.get("content") or "")
+        return render(request, list_partial, ctx)
+
     if not content and not image:
-        messages.error(request, "Message cannot be empty.｜訊息不得為空。")
+        msg = "Message cannot be empty.｜訊息不得為空。"
+        if is_htmx:
+            return _render_list(error_message=msg)
+        messages.error(request, msg)
         return redirect("a_dashboard_messages_admin")
 
     try:
@@ -1627,12 +1652,19 @@ def dashboard_messages_admin_send(request):
             is_read=False,
         )
     except ValidationError:
-        messages.error(
-            request,
+        msg = (
             "The attached file is not a readable image.｜"
-            "所附加的檔案不是可讀取的圖片。",
+            "所附加的檔案不是可讀取的圖片。"
         )
+        if is_htmx:
+            return _render_list(error_message=msg)
+        messages.error(request, msg)
         return redirect("a_dashboard_messages_admin")
+
+    if is_htmx:
+        response = _render_list()
+        response["HX-Trigger"] = json.dumps({"adminMessageSent": True})
+        return response
 
     return redirect("a_dashboard_messages_admin")
 

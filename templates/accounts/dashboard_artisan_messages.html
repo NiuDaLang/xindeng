@@ -25,26 +25,39 @@
             </div>
             <ul class="divide-y divide-base-200/40">
                 {% for t in artisan_message_threads %}
+                {% ifchanged t.last_at %}
+                    {% if t.last_at is None and not forloop.first %}
+                    <li class="px-4 py-2 bg-base-50/40 border-t border-base-200/60">
+                        <p class="text-[10px] font-mono uppercase tracking-wider opacity-60">
+                            All artisans｜全部匠人
+                        </p>
+                    </li>
+                    {% endif %}
+                {% endifchanged %}
                 <li>
                     <a href="?artisan={{ t.artisan }}"
-                       class="flex items-center gap-3 px-4 py-3 hover:bg-base-200/40 transition-colors
-                              {% if active_artisan and active_artisan.id == t.artisan %}bg-base-200/60{% endif %}">
+                    hx-get="?artisan={{ t.artisan }}"
+                    hx-target="#dashboard-content"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                    class="flex items-center gap-3 px-4 py-3 hover:bg-base-200/40 transition-colors
+                            {% if active_artisan and active_artisan.id == t.artisan %}bg-base-200/60{% endif %}">
                         <div class="flex-1 min-w-0">
                             <p class="text-xs font-medium truncate">
                                 {% if t.artisan_obj %}{{ t.artisan_obj.display_name }}{% else %}(unknown){% endif %}
                             </p>
                             <p class="text-[10px] text-base-content/40 font-mono">
-                                {{ t.last_at|date:"Y-m-d H:i" }}
+                                {% if t.last_at %}
+                                    {{ t.last_at|date:"Y-m-d H:i" }}
+                                {% else %}
+                                    No messages yet｜尚無訊息
+                                {% endif %}
                             </p>
                         </div>
                         {% if t.unread %}
                         <span class="badge badge-xs badge-primary">{{ t.unread }}</span>
                         {% endif %}
                     </a>
-                </li>
-                {% empty %}
-                <li class="px-4 py-10 text-center text-[11px] text-base-content/40">
-                    No conversations yet.<br>尚無對話。
                 </li>
                 {% endfor %}
             </ul>
@@ -58,34 +71,24 @@
                     <p class="text-[10px] text-base-content/40">{{ active_artisan.user.email }}</p>
                 </div>
 
+                <!-- OOB error banner target (also written here on initial render as empty) -->
+                <div id="admin-artisan-message-error"></div>
+
                 <div id="admin-artisan-message-list" class="flex-1 overflow-y-auto p-4 space-y-3 max-h-[50vh]">
-                    {% for m in active_artisan_messages %}
-                    <div class="flex {% if m.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
-                        <div class="max-w-[75%] rounded-2xl px-3 py-2 text-xs leading-relaxed
-                                    {% if m.sender == request.user %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content{% endif %}">
-                            {% if m.content %}{{ m.content|linebreaksbr }}{% endif %}
-                            {% if m.image %}
-                            <img src="{{ m.image.url }}" alt="attachment"
-                                 class="mt-2 rounded-lg max-h-48 object-contain block" loading="lazy" />
-                            {% endif %}
-                            <span class="block text-[9px] opacity-60 mt-1 font-mono">
-                                {{ m.sender.username }} · {{ m.created_at|date:"Y-m-d H:i" }}
-                            </span>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <p class="text-center text-xs text-base-content/40 py-10">
-                        No messages yet. Say hello.｜暫無訊息。
-                    </p>
-                    {% endfor %}
+                    {% include 'accounts/partials/_artisan_admin_list.html' with active_artisan_messages=active_artisan_messages %}
                 </div>
 
                 <form method="post"
-                      action="{% url 'artisan_messages_send' active_artisan.id %}"
-                      enctype="multipart/form-data"
-                      class="border-t border-base-200/60 p-3 flex flex-col gap-2 w-full">
+                    action="{% url 'artisan_messages_send' active_artisan.id %}"
+                    enctype="multipart/form-data"
+                    hx-post="{% url 'artisan_messages_send' active_artisan.id %}"
+                    hx-target="#admin-artisan-message-list"
+                    hx-swap="innerHTML"
+                    hx-encoding="multipart/form-data"
+                    hx-disabled-elt="find button[type=submit]"
+                    class="border-t border-base-200/60 p-3 flex flex-col gap-2 w-full">
                     {% csrf_token %}
-                    <textarea name="content" maxlength="2000" rows="2"
+                    <textarea id="admin-artisan-message-content" name="content" maxlength="2000" rows="2"
                               placeholder="Write a short message…｜輸入訊息…"
                               class="textarea textarea-bordered w-full text-xs rounded-xl"></textarea>
                     <div class="flex items-center gap-2 w-full">
@@ -107,11 +110,23 @@
     </div>
 </div>
 <script>
-    setTimeout(function() {
+    function adminArtisanScrollToBottom() {
         const container = document.getElementById('admin-artisan-message-list');
-        if (container) {
-            console.log("artisan_thread")
-            container.scrollTop = container.scrollHeight;
-        }
-    }, 100);
+        if (container) container.scrollTop = container.scrollHeight;
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', adminArtisanScrollToBottom);
+    } else {
+        adminArtisanScrollToBottom();
+    }
+    if (!window._adminArtisanMessageSentListenerInstalled) {
+        window._adminArtisanMessageSentListenerInstalled = true;
+        document.body.addEventListener('adminArtisanMessageSent', () => {
+            const ta = document.getElementById('admin-artisan-message-content');
+            if (ta) ta.value = '';
+            const file = document.querySelector('input[type=file][name=image]');
+            if (file) file.value = '';
+            setTimeout(adminArtisanScrollToBottom, 50);
+        });
+    }
 </script>

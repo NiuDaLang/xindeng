@@ -1114,8 +1114,7 @@ def dashboard(request, subpage):
         active_messages = ArtisanAdminMessage.objects.none()
         artisan_id_param = request.GET.get("artisan")
 
-        # ── 1. Resolve the active artisan (direct lookup — do not
-        #      depend on artisans_by_id, which is built below).
+        # ── 1. Resolve the active artisan ──
         if artisan_id_param and artisan_id_param.isdigit():
             active_artisan = (
                 CreatorProfile.objects
@@ -1124,18 +1123,14 @@ def dashboard(request, subpage):
                 .first()
             )
 
-            # ── 2. Flip unread received messages to read for the
-            #      active artisan BEFORE the annotation below, so the
-            #      row badge in the thread list matches the sidebar
-            #      badge (which the context processor recomputes
-            #      post-flip).
+            # ── 2. Flip unread received messages to read ──
             if active_artisan:
                 ArtisanAdminMessage.objects.filter(
                     artisan=active_artisan,
                     is_read=False,
                 ).exclude(sender=request.user).update(is_read=True)
 
-        # ── 3. Now run the annotation query, post-flip ──
+        # ── 3. Annotate existing thread rows ──
         artisan_rows = list(
             ArtisanAdminMessage.objects
             .values("artisan")
@@ -1143,17 +1138,51 @@ def dashboard(request, subpage):
                 last_at=Max("created_at"),
                 unread=Count(
                     "id",
-                    filter=Q(is_read=False) & ~Q(sender=request.user) # 👈 Add this exclusion
+                    filter=Q(is_read=False) & ~Q(sender=request.user),
                 ),
             )
             .order_by("-last_at")
         )
 
-        # ── 4. Fetch the CreatorProfile rows in one query, not N.
+        # ── 3b. Append verified artisans who have no prior thread ──
+        #       so the admin can *initiate* a conversation.
+        included_ids = {row["artisan"] for row in artisan_rows}
+        extra_artisans = (
+            CreatorProfile.objects
+            .filter(is_verified=True)
+            .exclude(id__in=included_ids)
+            .select_related("user")
+            .order_by("display_name")
+        )
+        for p in extra_artisans:
+            artisan_rows.append({
+                "artisan": p.id,
+                "artisan_obj": p,
+                "last_at": None,
+                "unread": 0,
+            })
+
+        # ── 3c. Sort: threads (newest first) then no-thread (alpha) ──
+        thread_rows = [r for r in artisan_rows if r["last_at"] is not None]
+        thread_rows.sort(key=lambda r: r["last_at"], reverse=True)
+
+        no_thread_rows = [r for r in artisan_rows if r["last_at"] is None]
+        no_thread_rows.sort(
+            key=lambda r: (r["artisan_obj"].display_name or "").lower()
+        )
+
+        artisan_rows = thread_rows + no_thread_rows
+
+        # ── 4. Hydrate artisan_obj for all rows in one query ──
+        #     (Rows from step 3 already have artisan_obj; this covers
+        #      the ones step 3b created *and* reconciles any stale
+        #      reference. Reassigning is cheap.)
         artisan_ids = [row["artisan"] for row in artisan_rows]
         artisans_by_id = {
             p.id: p for p in
-            CreatorProfile.objects.filter(id__in=artisan_ids).select_related("user")
+            CreatorProfile.objects
+            .filter(id__in=artisan_ids)
+            .select_related("user")
         }
         for row in artisan_rows:
             row["artisan_obj"] = artisans_by_id.get(row["artisan"])
@@ -1177,6 +1206,7 @@ def dashboard(request, subpage):
             "active_artisan_messages": active_messages,
             "pending_artisan_message_count": total_unread_admin_messages,
         })
+
 
     if subpage == "frontline_messages":
         if not getattr(request.user, "is_superadmin", False):
@@ -1811,6 +1841,13 @@ def artisan_messages_send(request, artisan_id):
     validate_artisan_admin_message_image); the try/except wraps
     the whole atomic block so a ValidationError neither leaves a
     partial row nor schedules the notification email.
+
+    HTMX (Session 9): on HX-Request, both success and validation
+    error return the message-list partial (_artisan_admin_list.html)
+    for swapping into #admin-artisan-message-list. The error path
+    also includes an OOB error banner and a textarea OOB that
+    restores the user's typed content. Non-HTMX POST keeps the
+    original redirect behaviour.
     """
     if not getattr(request.user, "is_superadmin", False):
         return HttpResponse(status=403)
@@ -1825,8 +1862,26 @@ def artisan_messages_send(request, artisan_id):
         f"?artisan={artisan.id}"
     )
 
+    is_htmx = request.headers.get("HX-Request") is not None
+    list_partial = "accounts/partials/_artisan_admin_list.html"
+
+    def _render_list(error_message=None):
+        active_artisan_messages = (
+            ArtisanAdminMessage.objects
+            .filter(artisan=artisan)
+            .select_related("sender")
+        )
+        ctx = {"active_artisan_messages": active_artisan_messages}
+        if error_message is not None:
+            ctx["error_message"] = error_message
+            ctx["restore_content"] = (request.POST.get("content") or "")
+        return render(request, list_partial, ctx)
+
     if not content and not image:
-        messages.error(request, "Message cannot be empty.｜訊息不得為空。")
+        msg = "Message cannot be empty.｜訊息不得為空。"
+        if is_htmx:
+            return _render_list(error_message=msg)
+        messages.error(request, msg)
         return redirect(redirect_url)
 
     from creators.tasks import send_artisan_admin_message_email_task
@@ -1848,12 +1903,19 @@ def artisan_messages_send(request, artisan_id):
         # Raised by creators.signals.validate_artisan_admin_message_image
         # before any row is written. The atomic block rolls back, so no
         # ArtisanAdminMessage exists and no email task was scheduled.
-        messages.error(
-            request,
+        error_text = (
             "The attached file is not a readable image.｜"
-            "所附加的檔案不是可讀取的圖片。",
+            "所附加的檔案不是可讀取的圖片。"
         )
+        if is_htmx:
+            return _render_list(error_message=error_text)
+        messages.error(request, error_text)
         return redirect(redirect_url)
+
+    if is_htmx:
+        response = _render_list()
+        response["HX-Trigger"] = json.dumps({"adminArtisanMessageSent": True})
+        return response
 
     return redirect(redirect_url)
 
