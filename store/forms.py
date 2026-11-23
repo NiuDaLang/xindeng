@@ -99,7 +99,8 @@ class ArtisanProductForm(forms.ModelForm):
         self.fields['tags_choices'].queryset = (
             Tag.objects.filter(id__in=used_tag_ids).order_by('name')
         )
-
+        self.fields['description'].required = True
+        
         # Pre-select existing tags, Populate product_kind from the instance if editing
         if self.instance and self.instance.pk:
             self.fields['tags_choices'].initial = self.instance.tags.all()
@@ -384,11 +385,45 @@ class ProductVariationForm(forms.ModelForm):
                     f"請擇一：下拉選擇或新增 {label}｜Choose either the dropdown or add a new value.",
                 )
 
-        if not cleaned.get('price'):
-            self.add_error('price', "售價為必填。｜Price is required.")
+        product = getattr(self, '_product', None) or (self.instance.product if self.instance.pk else None)
+        if product and product.is_physical and not cleaned.get('with_shipping'):
+            if not cleaned.get('weight'):
+                self.add_error('weight', "實物商品不包郵時，重量為必填（用於運費計算）。｜Weight is mandatory if price is not inclusive of shipping cost.")
 
-        if not cleaned.get('stock') and cleaned.get('stock') != 0:
+        price = cleaned.get('price')
+        if price is None:
+            self.add_error('price', "售價為必填。｜Price is required.")
+        elif price <= 0:
+            self.add_error('price', "售價必須大於 0。｜Price must be greater than 0.")
+
+        stock = cleaned.get('stock')
+        if stock is None:
             self.add_error('stock', "庫存為必填。｜Stock is required.")
+
+        # 重复款式检查（覆盖 FK 與 pending 文本兩種情況）
+        if self.instance and self.instance.pk:
+            siblings = self.instance.product.variations.exclude(pk=self.instance.pk)
+        else:
+            product = getattr(self, '_product', None)  # 在 view 里 form.product = product
+            siblings = product.variations.all() if product else ProductVariation.objects.none()
+
+        def norm(v):
+            return (v or '').strip().lower()
+
+        new_vals = (
+            norm(cleaned.get('color_custom')) or norm(str(cleaned.get('color') or '')),
+            norm(cleaned.get('size_custom')) or norm(str(cleaned.get('size') or '')),
+            norm(cleaned.get('type_custom')) or norm(str(cleaned.get('type') or '')),
+        )
+        for s in siblings:
+            existing = (
+                norm(s.pending_color or (str(s.color) if s.color else '')),
+                norm(s.pending_size or (str(s.size) if s.size else '')),
+                norm(s.pending_type or (str(s.type) if s.type else '')),
+            )
+            if existing == new_vals:
+                self.add_error(None, "此款式組合已存在。｜This variation combination already exists.")
+                break
 
         return cleaned
 

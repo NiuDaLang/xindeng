@@ -1,0 +1,11 @@
+<!-- templates/artisans/dashboard/partials/_help_button.html -->
+<button type="button"
+        class="align-middle ml-1 -mt-0.5"
+        data-help-open="help-{{ topic }}"
+        aria-label="說明｜Help">
+    <i class="fa-regular fa-circle-question text-[13px] opacity-40 hover:opacity-100 hover:text-primary transition"></i>
+</button>
+<template id="help-{{ topic }}">
+    <h3 class="font-serif text-base tracking-wide mb-3 pb-2 border-b border-base-200/60">{{ title }}</h3>
+    <div class="text-sm leading-relaxed opacity-90">{{ body|safe }}</div>
+</template>

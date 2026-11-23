@@ -1798,10 +1798,10 @@ def dashboard_product_edit(request, pk):
                     raise
             else:
                 if is_submitting:
-                    if not product.variations.exists():
+                    if not _sellable_variations(product).exists():
                         messages.error(
                             request,
-                            "提交前請至少新增一個款式。｜Add at least one variation before submitting."
+                            "提交前請至少新增一個有庫存的款式。｜Add at least one variation with available stock before submitting."
                         )
                     else:
                         # ── Pre-submit deliverability guard (same as
@@ -1886,6 +1886,7 @@ def dashboard_product_variation_add(request, pk):
         )
 
     form = ProductVariationForm(request.POST, request.FILES)
+    form._product = product
     if not form.is_valid():
         # Return errors as JSON for the modal to display
         return JsonResponse({'errors': form.errors}, status=400)
@@ -2002,6 +2003,12 @@ def _missing_instant_deliverables(product):
     )
 
 
+def _sellable_variations(product):
+    """至少一個可售款式：上架中 且 庫存 > 0。
+    INSTANT 電子產品 save() 會強制 stock=1，因此 stock__gt=0 對兩種類型都成立。"""
+    return product.variations.filter(is_available=True, stock__gt=0)
+
+
 @artisan_required
 @require_POST
 def dashboard_product_submit(request, pk):
@@ -2021,10 +2028,10 @@ def dashboard_product_submit(request, pk):
         )
         return redirect('a_dashboard_products')
 
-    if not product.variations.exists():
+    if not _sellable_variations(product).exists():
         messages.error(
             request,
-            "提交前請至少新增一個款式。｜Add at least one variation before submitting."
+            "提交前請至少新增一個有庫存的款式。｜Add at least one variation with available stock before submitting."
         )
         return redirect('a_dashboard_products')
 
@@ -2132,6 +2139,7 @@ def dashboard_product_variation_edit(request, pk, variation_pk):
 
     variation = get_object_or_404(ProductVariation, pk=variation_pk, product=product)
     form = ProductVariationForm(request.POST, request.FILES, instance=variation)
+    form._product = product
     if not form.is_valid():
         return JsonResponse({'errors': form.errors}, status=400)
 

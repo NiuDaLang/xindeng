@@ -1,4 +1,5 @@
 <!-- templates/artisans/dashboard/partials/_product_editor_panel.html -->
+{% load help_tags %}
 <div class="mb-8">
     <h1 class="font-serif text-2xl tracking-wide">
         {% if is_editing %}Edit Product｜編輯作品{% else %}New Product｜新作品{% endif %}
@@ -37,8 +38,8 @@
 
     <!-- SECTION 1: Featured Image -->
     <section class="bg-white border border-base-200/60 rounded-2xl p-6">
-        <h2 class="font-serif text-lg tracking-wide mb-4 pb-3 border-b border-base-200/60">
-            Featured Image｜主視覺
+        <h2 class="font-serif text-lg tracking-wide mb-4 pb-3 border-b border-base-200/60 flex text-center">
+            Featured Image｜主視覺 {% help_button 'featured_image' %}
         </h2>
         <div class="flex items-start gap-4">
             {% if is_editing and product.images %}
@@ -66,8 +67,8 @@
 
     <!-- SECTION 2: Gallery Images -->
     <section class="bg-white border border-base-200/60 rounded-2xl p-6">
-        <h2 class="font-serif text-lg tracking-wide mb-4 pb-3 border-b border-base-200/60">
-            Gallery Images｜作品相簿
+        <h2 class="font-serif text-lg tracking-wide mb-4 pb-3 border-b border-base-200/60 flex text-center">
+            Gallery Images｜作品相簿 {% help_button 'gallery' %}
         </h2>
         <p class="text-xs text-base-content/50 mb-3">
             Upload 1–5 images. These appear in the product page carousel.<br>
@@ -111,8 +112,8 @@
         </div>
 
         <div>
-            <label class="label text-xs uppercase tracking-wider opacity-60">
-                Craft Types｜工藝類型
+            <label class="label text-xs uppercase tracking-wider opacity-60 flex text-center">
+                Craft Types｜工藝類型 {% help_button 'craft_types' %}
             </label>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {% for checkbox in form.craft_types %}
@@ -124,9 +125,10 @@
         </div>
 
         <div>
-            <label class="label text-xs uppercase tracking-wider opacity-60">
+            <label class="label text-xs uppercase tracking-wider opacity-60 flex text-center">
                 HS Code｜海關商品編碼
                 <span class="text-[10px] normal-case tracking-normal opacity-60 ml-1">（可選 / optional）</span>
+                {% help_button 'hs_code' %}
             </label>
             {{ form.hs_code }}
             <p class="text-[10px] opacity-50 mt-1">
@@ -141,8 +143,8 @@
         </div>
 
         <div>
-            <label class="label text-xs uppercase tracking-wider opacity-60">
-                Tags｜標籤
+            <label class="label text-xs uppercase tracking-wider opacity-60 flex text-center">
+                Tags｜標籤 {% help_button 'tags' %}
             </label>
             <p class="text-[10px] opacity-50 mb-2">
                 從現有標籤中挑選；如需新增請聯繫後台。<br>
@@ -197,7 +199,7 @@
         <!-- Digital Fulfillment (only relevant to digital products) -->
         <div id="digital-fulfillment-field" class="pt-3 border-t border-base-200/60">
             <label class="label text-xs uppercase tracking-wider opacity-60">
-                Digital Fulfillment｜電子交付方式
+                Digital Fulfillment｜電子交付方式 {% help_button 'digital_fulfillment' %}
             </label>
             {{ form.digital_fulfillment_type }}
             <p class="text-[10px] opacity-50 mt-1">
@@ -210,7 +212,9 @@
     <!-- SECTION 6: Recommendation Metadata -->
     <section class="bg-white border border-base-200/60 rounded-2xl p-6 space-y-4">
         <div class="pb-3 border-b border-base-200/60">
-            <h2 class="font-serif text-lg tracking-wide">Recommendation Metadata｜推薦標籤（可選）</h2>
+            <h2 class="font-serif text-lg tracking-wide flex text-center">
+                Recommendation Metadata｜推薦標籤（可選）{% help_button 'rec_metadata' %}
+            </h2>
             <p class="text-xs text-base-content/50 mt-1">
                 這些標籤會用於平台的推薦系統，若無想法可保持預設。<br>
                 These tags help our recommendation engine match this piece with visitors.
@@ -338,7 +342,7 @@
                     {{ variation_form.price }}
                 </div>
                 <div>
-                    <label class="label text-xs">Original Price｜原價 (CNY ¥)</label>
+                    <label class="label text-xs">Original Price｜原價 (CNY ¥) {% help_button 'original_price' %}</label>
                     {{ variation_form.original_price }}
                 </div>
                 <div>
@@ -352,8 +356,10 @@
                 <!-- Physical ONLY fields -->
                 <div id="physical-variation-fields" class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                     <div class="flex items-center gap-2">
-                        {{ variation_form.with_shipping }}
-                        <label class="text-xs">Shipping included｜含運費</label>
+                        <label class="text-xs flex items-center gap-2 cursor-pointer">
+                            {{ variation_form.with_shipping }} Shipping included｜含運費
+                        </label>
+                        {% help_button 'with_shipping' %}
                     </div>
 
                     <div class="flex items-center gap-2">
@@ -609,7 +615,27 @@
             }
         });
     }
+
+    // ══════════════════════════════════════════════════════════════
+    // 6. Text area maxlength warning
+    // ══════════════════════════════════════════════════════════════
+    (function () {
+        const el = document.getElementById('id_description');
+        if (!el || el.dataset.counterBound) return;
+        el.dataset.counterBound = '1';
+        const counter = document.createElement('p');
+        counter.className = 'text-[10px] opacity-50 mt-1 text-right';
+        el.insertAdjacentElement('afterend', counter);
+        const update = () => {
+            counter.textContent = `${el.value.length} / 500`;
+            counter.classList.toggle('text-error', el.value.length > 500);
+        };
+        el.addEventListener('input', update);
+        update();
+    })();
 </script>
 
+{% include 'artisans/dashboard/partials/_help_modal.html' %}
+{% include 'includes/crop_modal.html' %}
 <!-- ADD: crop modal is always present -->
 {% include 'includes/crop_modal.html' %}
