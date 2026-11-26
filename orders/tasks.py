@@ -1,4 +1,4 @@
-# orders.tasks.py
+# orders/tasks.py
 from datetime import timedelta
 import requests
 import logging
@@ -204,6 +204,7 @@ def check_and_expire_hold(order_id):
 
                 # ── STEP C: PINPOINT VOUCHER BALANCE REVERSALS ───────────────────
                 if order.voucher_applied > 0:
+                    from orders.utils import _record_voucher_ledger # Local import to avoid circularity
                     usages = OrderVoucherUsage.objects.filter(order=order)
                     for usage in usages:
                         voucher = CustomerVoucher.objects.select_for_update().get(id=usage.voucher.id)
@@ -212,6 +213,14 @@ def check_and_expire_hold(order_id):
                             voucher.is_used = False
                             voucher.used_date = None
                         voucher.save(update_fields=['balance', 'is_used', 'used_date'])
+                        
+                        # 🌟 NEW: Write the ledger entry
+                        _record_voucher_ledger(
+                            voucher,
+                            usage.amount_deducted,
+                            'REFUND_RESTORE',
+                            reference_order=order
+                        )
                     logger.info(f"✨ Restored store credit voucher fields for Order #{order.order_number}")
 
                 # ── STEP D: CONNECTED PROMOTIONAL COUPON PERK REVERSAL ───────────
@@ -225,8 +234,11 @@ def check_and_expire_hold(order_id):
                 order.order_status = 'Cancelled'
                 order.save(update_fields=['order_status'])
                 
-                # Invalidate the checkout token inside the proforma invoice to block bypass loops
-                ProformaInvoice.objects.filter(proforma_order_number=order.order_number).update(is_ordered=True)
+                # Invalidate the checkout token AND clear the pending hold
+                ProformaInvoice.objects.filter(proforma_order_number=order.order_number).update(
+                    is_ordered=True,
+                    order_settled=True  # 🌟 THIS is what removes the Pending Holds UI badge
+                )
                 
                 # Queue the background bank transfer cancellation notification email safely
                 from .tasks import send_bank_hold_cancelled_email_task 

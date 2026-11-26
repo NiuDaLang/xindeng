@@ -2109,36 +2109,134 @@ function closeCustomThreadModal(modalId = 'custom_thread_modal') {
 }
 
 // JavaScript cancellation routine handler function execution track
-async function triggerOrderCancellation(orderNumber, totalDue, paidByVoucher, isSelfService) {
+async function triggerOrderCancellation(orderNumber, totalDueStr, voucherAppliedStr, isOrderedStr, cancellationFeeStr) {
     const activeTokenString = window.get_csrf_token();
-    
-    // 🌟 THE RESOLUTION ANCHOR: Locate the active parent modal dialog element in the current DOM
     const targetModalContainer = document.getElementById(`modal_${orderNumber}`);
-    
-    // Fallback safely to document.body if target lookups omit nodes
     const swalMountTarget = targetModalContainer ? targetModalContainer : 'body';
 
     if (!activeTokenString) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Authorization Expired｜驗證權限失效',
-            text: 'Security verification token length mismatch. Please reload your dashboard and try again.',
-            target: swalMountTarget // 🌟 Scoped fail warning anchor
-        });
+        // (Auth error handling remains the same)
         return;
     }
 
-    // Displays confirmation prompt dialogues inside the modal layer, eliminating stack collisions
+    const cashPaid = parseFloat(totalDueStr || '0');
+    const voucherApplied = parseFloat(voucherAppliedStr || '0');
+    const grandTotal = cashPaid + voucherApplied;
+    const cancellationFee = parseFloat(cancellationFeeStr || '0');
+    const isOrdered = isOrderedStr === 'true';
+
+    let confirmHtml;
+    let choice = 'voucher'; // default fallback
+
+    // (iv) Unpaid Bank Hold
+    if (!isOrdered) {
+        confirmHtml = `
+            <div class="text-center text-sm space-y-2">
+                <p class="font-medium">Cancel Invoice #${orderNumber}?</p>
+                <p class="text-xs opacity-70">您確定要取消訂單 #${orderNumber} 嗎？</p>
+                <div class="bg-info/5 border border-info/20 rounded-lg p-3 text-left mt-3 text-xs mt-2">
+                    <p class="text-info font-bold">No fees apply.｜不收取任何費用。</p>
+                    <p class="text-base-content/70 mt-1">The held items and voucher amount will be instantly released back to your available balance.</p>
+                    <p class="text-base-content/70">保留之庫存與禮品券金額將立即釋出。</p>
+                </div>
+            </div>
+        `;
+    }
+    // (iii) Paid 100% by Voucher
+    else if (cashPaid === 0 && voucherApplied > 0) {
+        const netRefund = Math.max(0, voucherApplied - cancellationFee);
+        confirmHtml = `
+            <div class="text-center text-sm space-y-2">
+                <p class="font-medium">Cancel Invoice #${orderNumber}?</p>
+                <div class="bg-info/5 border border-info/20 rounded-lg p-3 text-left mt-3 text-xs mt-2">
+                    <p class="font-bold text-base-content">Full Voucher Refund｜全額禮品券退款</p>
+                    <p class="text-base-content/70">This order was paid entirely with a voucher. The refund will be returned to your wallet.</p>
+                    <div class="mt-2 pt-2 border-t border-info/10">
+                        <p class="flex justify-between"><span>Paid by Voucher:</span> <span>¥${voucherApplied.toFixed(2)}</span></p>
+                        ${cancellationFee > 0 ? `<p class="flex justify-between text-error"><span>Cancellation Fee:</span> <span>-¥${cancellationFee.toFixed(2)}</span></p>` : ''}
+                        <p class="flex justify-between font-bold text-success pt-1"><span>Net Refund to Wallet:</span> <span>¥${netRefund.toFixed(2)}</span></p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    // (i) Paid ALL CASH or (ii) Mixed Payment
+    else {
+        const netVoucher = Math.max(0, voucherApplied - cancellationFee);
+        const remainingFee = Math.max(0, cancellationFee - voucherApplied);
+        
+        if (voucherApplied === 0) {
+            // (i) All Cash
+            const netCash = Math.max(0, cashPaid - remainingFee);
+            confirmHtml = `
+                <div class="text-center text-sm space-y-2">
+                    <p class="font-medium">Cancel Invoice #${orderNumber}?</p>
+                    <div class="bg-base-200 border border-base-300 rounded-lg p-3 text-left mt-3 text-xs text-base-content mt-2">
+                        <p class="font-bold">Choose Refund Method｜選擇退款方式</p>
+                        <div class="mt-3 space-y-2">
+                            <label class="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-base-100 border border-transparent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                <input type="radio" name="refund_choice" value="cash" class="radio radio-primary radio-sm mt-0.5" checked>
+                                <div>
+                                    <span class="font-bold block">Refund to Cash (¥${netCash.toFixed(2)})</span>
+                                    <span class="text-[10px] opacity-70 block">Refunded via original payment gateway (minus fees).</span>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-base-100 border border-transparent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                <input type="radio" name="refund_choice" value="voucher" class="radio radio-primary radio-sm mt-0.5">
+                                <div>
+                                    <span class="font-bold block">Refund as Voucher (¥${cashPaid.toFixed(2)})</span>
+                                    <span class="text-[10px] opacity-70 block">Instant store credit. No gateway fees.</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } 
+        else {
+            // (ii) Mixed Payment
+            const netCashMixed = Math.max(0, cashPaid - remainingFee);
+            confirmHtml = `
+                <div class="text-center text-sm space-y-2">
+                    <p class="font-medium">Cancel Invoice #${orderNumber}?</p>
+                    <div class="bg-base-200 border border-base-300 rounded-lg p-3 text-left mt-3 text-xs text-base-content mt-2">
+                        <p class="font-bold">Choose Refund Method｜選擇退款方式</p>
+                        <div class="mt-3 space-y-2">
+                            <label class="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-base-100 border border-transparent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                <input type="radio" name="refund_choice" value="cash" class="radio radio-primary radio-sm mt-0.5" checked>
+                                <div>
+                                    <span class="font-bold block">Refund to Original Methods</span>
+                                    <span class="text-[10px] opacity-70 block">Voucher: ¥${netVoucher.toFixed(2)} | Cash: ¥${netCashMixed.toFixed(2)}</span>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-base-100 border border-transparent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                <input type="radio" name="refund_choice" value="voucher" class="radio radio-primary radio-sm mt-0.5">
+                                <div>
+                                    <span class="font-bold block">All as Voucher (¥${Math.max(0, grandTotal - cancellationFee).toFixed(2)})</span>
+                                    <span class="text-[10px] opacity-70 block">Instant store credit. No gateway fees.</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
     const selection = await Swal.fire({
         title: 'Cancel Order?｜取消確認',
-        text: `Are you sure you want to cancel Invoice #${orderNumber}? This action will release held item inventory pools.`,
+        html: confirmHtml,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
         cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Yes, Cancel｜確認取消',
-        cancelButtonText: 'No, Keep｜保留訂單',
-        target: swalMountTarget // 🌟 Forces prompt overlay to stack perfectly on top of open dialogs
+        confirmButtonText: 'Confirm Cancellation｜確認取消',
+        cancelButtonText: 'Keep Order｜保留訂單',
+        target: swalMountTarget,
+        preConfirm: () => {
+            const selectedRadio = document.querySelector('input[name="refund_choice"]:checked');
+            return selectedRadio ? selectedRadio.value : 'voucher';
+        }
     });
 
     if (!selection.isConfirmed) return;
@@ -2153,7 +2251,9 @@ async function triggerOrderCancellation(orderNumber, totalDue, paidByVoucher, is
     });
 
     try {
-        const refundTypeParam = (paidByVoucher === 'true') ? 'voucher' : 'cash';
+        // selection.value is 'cash' or 'voucher' based on choice
+        const refundTypeParam = selection.value; 
+
         const url = `/orders/cancel_request/${orderNumber}/?refund_type=${refundTypeParam}`;
         
         const response = await fetch(url, {

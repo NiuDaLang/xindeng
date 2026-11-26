@@ -293,12 +293,28 @@
                     </div>
                     
                     <div class="flex gap-2 w-full sm:w-auto justify-end">
-                        {% if not order.is_ordered and order.order_status == 'Hold_Pending' %}
+                        {% if order.order_status == 'Hold_Pending' %}
                             <span class="text-[0.62rem] text-warning font-sans font-bold italic flex items-center pr-1 uppercase tracking-wider">
                                 <i class="fa-solid fa-hourglass-half mr-1 animate-pulse"></i> Awaiting Transfer Clearance｜待線下轉帳核銷
                             </span>
+                            <!-- 🌟 ADD THE CANCEL BUTTON HERE -->
+                            <button onclick="triggerOrderCancellation(
+                                '{{ order.order_number }}', 
+                                '{{ order.total_due }}', 
+                                '{{ order.voucher_applied }}', 
+                                'false', 
+                                '0'
+                                )" class="btn btn-xs btn-error btn-outline font-bold rounded-xl h-8 px-3 shadow-xs transition-transform hover:scale-[1.01] w-full sm:w-auto">
+                                Cancel Hold 取消保留
+                            </button>
                         {% elif order.can_be_cancelled_online %}
-                            <button onclick="triggerOrderCancellation('{{ order.order_number }}', '{{ order.total_due }}', '{{ order.voucher_applied|yesno:'true,false' }}', 'true')" class="btn btn-xs btn-error btn-outline font-bold rounded-xl h-8 px-3 shadow-xs transition-transform hover:scale-[1.01] w-full sm:w-auto">Cancel Order 取消訂單</button>
+                            <button onclick="triggerOrderCancellation(
+                                '{{ order.order_number }}', 
+                                '{{ order.total_due }}', 
+                                '{{ order.voucher_applied }}', 
+                                '{{ order.is_ordered|yesno:'true,false' }}', 
+                                '{{ order.estimated_cancellation_fee }}'
+                                )" class="btn btn-xs btn-error btn-outline font-bold rounded-xl h-8 px-3 shadow-xs transition-transform hover:scale-[1.01] w-full sm:w-auto">Cancel Order 取消訂單</button>
                         {% else %}
                             <span class="text-[0.62rem] text-neutral/30 italic flex items-center pr-1">Immutable Master Pass 唯讀鎖定</span>
                         {% endif %}
@@ -306,7 +322,6 @@
                             Close 關閉
                         </button>
                     </div>
-
                 </div>
             </div>
         </dialog>

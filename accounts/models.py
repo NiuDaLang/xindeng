@@ -604,6 +604,19 @@ class CustomerVoucher(models.Model):
 
     expiry_date                 = models.DateTimeField(null=True, blank=True)
 
+    refunded_from_order = models.ForeignKey(
+        'orders.Order',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='refunded_vouchers',
+        help_text="Set only when this voucher was created as a cancellation refund."
+    )
+    source = models.CharField(
+        max_length=20,
+        choices=[('PURCHASE', 'Purchase'), ('REFUND', 'Refund')],
+        default='PURCHASE',
+    )
+
     def __str__(self):
         return f"{self.purchaser_email} - CNY {self.value}"
     
@@ -640,6 +653,42 @@ class CustomerVoucher(models.Model):
             return True
         return False
    
+
+class VoucherLedger(models.Model):
+    """
+    Immutable audit log of every voucher balance change.
+
+    The old history used to be reconstructed from CustomerVoucher rows +
+    OrderVoucherUsage rows, which could not represent a restoration of
+    balance on an existing voucher. This model makes every credit and
+    debit a first-class row, so a "refund restore" is distinguishable
+    from a "top-up" without any date-matching heuristics.
+    """
+    voucher = models.ForeignKey(
+        CustomerVoucher, on_delete=models.CASCADE,
+        related_name='ledger_entries',
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    balance_after = models.DecimalField(max_digits=10, decimal_places=2)
+    entry_type = models.CharField(max_length=20, choices=[
+        ('TOPUP', 'Top-up (purchase)'),
+        ('USAGE', 'Usage (spend)'),
+        ('REFUND_RESTORE', 'Refund (restore to original)'),
+        ('REFUND_NEW', 'Refund (new voucher issued)'),
+    ])
+    reference_order = models.ForeignKey(
+        'orders.Order', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='voucher_ledger_entries',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['voucher', '-created_at']),
+            models.Index(fields=['reference_order']),
+        ]
+
     
 class ChatMessage(models.Model):
     sender = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='sent_messages')

@@ -967,32 +967,58 @@ def dashboard(request, subpage):
 
     # vouchers
     ledger_history = []
+    if subpage == "vouchers":
+        from .models import VoucherLedger
 
-    if subpage == "vouchers":        
-        # Extract Credits: Vouchers claimed by this user
-        claimed_vouchers = CustomerVoucher.objects.filter(owner=request.user, is_claimed=True)
-        for v in claimed_vouchers:
+        entries = (
+            VoucherLedger.objects
+            .filter(voucher__owner=request.user)
+            .select_related('voucher', 'reference_order')
+            .order_by('-created_at')
+        )
+
+        for entry in entries:
+            voucher_short = str(entry.voucher.id)[:8].upper()
+            if entry.entry_type == 'TOPUP':
+                summary = (
+                    f"Gift voucher credit top-up｜充值禮品券面值金額 CNY ¥{entry.amount}"
+                    f"<br/><span class='text-[0.65rem] opacity-60 font-mono'>ID: {voucher_short}...</span>"
+                )
+                amount_class = "text-success font-bold"
+            elif entry.entry_type == 'USAGE':
+                order_num = entry.reference_order.order_number if entry.reference_order else '—'
+                summary = (
+                    f"Voucher usage for Order No｜使用禮品券額度於訂單號："
+                    f"<br/><span class='font-mono font-bold text-primary text-[8px] min-[401px]:max-[500px]:text-[9px] min-[501px]:max-[768px]:text-[11px] min-[769px]:text-xs'>{order_num}</span>"
+                )
+                amount_class = "text-error font-bold"
+            elif entry.entry_type == 'REFUND_RESTORE':
+                order_num = entry.reference_order.order_number if entry.reference_order else '—'
+                summary = (
+                    f"Voucher balance restored for Order No｜訂單取消退回錢包："
+                    f"<br/><span class='font-mono font-bold text-success text-[8px] min-[401px]:max-[500px]:text-[9px] min-[501px]:max-[768px]:text-[11px] min-[769px]:text-xs'>{order_num}</span>"
+                )
+                amount_class = "text-success font-bold"
+            elif entry.entry_type == 'REFUND_NEW':
+                order_num = entry.reference_order.order_number if entry.reference_order else '—'
+                summary = (
+                    f"Voucher refund issued for Order No｜訂單取消發放退款券："
+                    f"<br/><span class='font-mono font-bold text-success text-[8px] min-[401px]:max-[500px]:text-[9px] min-[501px]:max-[768px]:text-[11px] min-[769px]:text-xs'>{order_num}</span>"
+                    f" <span class='text-[0.6rem] opacity-50 font-mono'>ID: {voucher_short}...</span>"
+                )
+                amount_class = "text-success font-bold"
+            else:
+                summary = entry.entry_type
+                amount_class = ""
+
+            sign = "+" if entry.amount >= 0 else ""
             ledger_history.append({
-                "date": v.claimed_date if v.claimed_date else v.created_date,
-                "summary": f"Gift voucher credit top-up｜充值禮品券面值金額 CNY ¥{v.value}<br/><span class='text-[0.65rem] opacity-60 font-mono'>ID: {str(v.id)[:8].upper()}...</span>",
-                "amount": f"+RMB {v.value}",
-                "amount_class": "text-success font-bold",
-                "sort_date": v.claimed_date if v.claimed_date else v.created_date
+                "date": entry.created_at,
+                "summary": summary,
+                "amount": f"{sign}RMB {entry.amount:.2f}",
+                "amount_class": amount_class,
+                "sort_date": entry.created_at,
             })
-
-        # 3. Extract Debits: Voucher points spent on checkouts
-        voucher_usages = OrderVoucherUsage.objects.filter(order__user=request.user).select_related('order', 'voucher')
-        for u in voucher_usages:
-            ledger_history.append({
-                "date": u.created_at,
-                "summary": f"Voucher usage for Order No｜使用禮品券額度於訂單號：<br/><span class='font-mono font-bold text-primary text-[8px] min-[401px]:max-[500px]:text-[9px] min-[501px]:max-[768px]:text-[11px] min-[769px]:text-xs'>{u.order.order_number}</span>",
-                "amount": f"-RMB {u.amount_deducted}",
-                "amount_class": "text-error font-bold",
-                "sort_date": u.created_at
-            })
-
-        # 4. Chronological Pass: Sort all actions newest-to-oldest
-        ledger_history.sort(key=lambda x: x["sort_date"], reverse=True)
 
         context.update({
             "page_title": subpage_title,

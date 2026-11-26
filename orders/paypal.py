@@ -1,4 +1,4 @@
-# orders.paypal.py
+# orders/paypal.py
 from django.http import JsonResponse
 from django.db import transaction
 import requests
@@ -38,12 +38,13 @@ from .models import Order, Payment, OrderProduct, OrderVoucherUsage
 from store.models import DigitalDownloadToken
 from .utils import (
     get_paypal_items, fmt, mark_off_perk_at_checkout, 
-    execute_atomic_voucher_deduction, VoucherBalanceError,
+    execute_atomic_voucher_deduction, VoucherBalanceError, _record_voucher_ledger
 )
 
 import json
 import logging
 from datetime import timedelta
+from .views import _record_voucher_ledger
 
 logger = logging.getLogger(__name__)
 
@@ -423,6 +424,12 @@ def capture_paypal_order(request):
                                 voucher=change['voucher_instance'],
                                 amount_deducted=change['amount']
                             )
+                            _record_voucher_ledger(
+                                change['voucher_instance'],
+                                -change['amount'],   # negative because it's a debit
+                                'USAGE',
+                                reference_order=order,
+                            )
 
                     # Create permanent Payment entry storing explicit authorized configurations
                     payment = Payment.objects.create(
@@ -508,7 +515,7 @@ def capture_paypal_order(request):
                                     claimed_date=None if is_gift else timezone.now(),
                                     is_used=False
                                 )
-
+                                _record_voucher_ledger(voucher, voucher.value, 'TOPUP')
                                 if is_gift:
                                     reg_link = voucher.generate_registration_link(request)
                                     transaction.on_commit(

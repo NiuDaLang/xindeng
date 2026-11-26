@@ -364,12 +364,30 @@
                                 {% endif %}
                                 
                                 <div class="flex gap-2">
-                                    {% if order.can_be_cancelled_online %}
-                                        <!-- ✅ FIXED: Removed double colon -->
-                                        <button onclick="triggerOrderCancellation('{{ order.order_number }}', '{{ order.total_due }}', '{{ order.voucher_applied|yesno:'true,false' }}', 'true')" 
-                                                class="btn btn-xs btn-error btn-outline font-serif font-bold rounded-lg px-2.5 py-1.5 h-auto min-h-0 shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]">
-                                            Cancel Order｜取消訂單
-                                        </button>
+                                    {% if order.order_status == 'Hold_Pending' %}
+                                    <span class="text-[0.62rem] text-warning font-sans font-bold italic flex items-center pr-1 uppercase tracking-wider">
+                                        <i class="fa-solid fa-hourglass-half mr-1 animate-pulse"></i> Awaiting Transfer Clearance｜待線下轉帳核銷
+                                    </span>
+                                    <button onclick="triggerOrderCancellation(
+                                        '{{ order.order_number }}', 
+                                        '{{ order.total_due }}', 
+                                        '{{ order.voucher_applied }}', 
+                                        'false', 
+                                        '0')" class="btn btn-xs btn-error btn-outline font-bold rounded-xl h-8 px-3 shadow-xs transition-transform hover:scale-[1.01] w-full sm:w-auto">
+                                        Cancel Hold 取消保留
+                                    </button>
+                                    {% elif order.can_be_cancelled_online %}
+                                    <!-- ✅ FIXED: Removed double colon -->
+                                    <button onclick="triggerOrderCancellation(
+                                        '{{ order.order_number }}', 
+                                        '{{ order.total_due }}', 
+                                        '{{ order.voucher_applied }}', 
+                                        '{{ order.is_ordered|yesno:'true,false' }}', 
+                                        '{{ order.estimated_cancellation_fee }}'
+                                        )" 
+                                        class="btn btn-xs btn-error btn-outline font-serif font-bold rounded-lg px-2.5 py-1.5 h-auto min-h-0 shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]">
+                                        Cancel Order｜取消訂單
+                                    </button>
                                     {% else %}
                                         <span class="text-xs font-sans text-base-content/30 italic select-none">
                                             Locked｜唯讀鎖定

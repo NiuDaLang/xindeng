@@ -1,4 +1,4 @@
-# orders.views.py
+# orders/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from carts.models import ProformaInvoice
 from carts.forms import ProformaInvoiceForm
@@ -14,7 +14,7 @@ from .utils import (
     generate_order_confirmation_pdf, format_accounting_currency, 
     mark_off_perk_at_checkout, execute_atomic_voucher_deduction, 
     reverse_perk_usage_at_cancellation, VoucherBalanceError,
-    snapshot_line_commission, allocate_platform_perk
+    snapshot_line_commission, allocate_platform_perk, _record_voucher_ledger,
 )
 from django.utils import timezone
 from django.contrib import messages
@@ -314,6 +314,12 @@ def place_order(request, proforma_invoice_no):
                                 order=order,
                                 voucher=change['voucher_instance'],
                                 amount_deducted=change['amount']
+                            )
+                            _record_voucher_ledger(
+                                change['voucher_instance'],
+                                -change['amount'],   # negative because it's a debit
+                                'USAGE',
+                                reference_order=order,
                             )
 
                         # 3. Process inventory deductions and create permanent OrderProduct snapshots
@@ -790,7 +796,12 @@ def complete_zero_due_voucher_order(request):
                     voucher=change['voucher_instance'],
                     amount_deducted=change['amount']
                 )
-
+                _record_voucher_ledger(
+                    change['voucher_instance'],
+                    -change['amount'],   # negative because it's a debit
+                    'USAGE',
+                    reference_order=order,
+                )
             # Create permanent local Payment ledger record
             transaction_id = f"VUCH_SETTLED_{order.order_number}_{int(timezone.now().timestamp())}"
             payment = Payment.objects.create(
@@ -847,6 +858,7 @@ def complete_zero_due_voucher_order(request):
                             claimed_date=None if is_gift else timezone.now(),
                             is_used=False
                         )
+                        _record_voucher_ledger(voucher, voucher.value, 'TOPUP')
                         if is_gift:
                             reg_link = request.build_absolute_uri(reverse('claim_voucher_url', args=[str(voucher.id)]))
                             transaction.on_commit(lambda v_id=voucher.id, link=reg_link: send_gift_voucher_email_task.delay(v_id, link))
@@ -1191,11 +1203,65 @@ def process_order_cancellation(request, order_number):
         return redirect('dashboard', subpage='orders') if request.user.is_authenticated else redirect('contact')
 
     # Enforce hard model constraints: Full voucher check completely overrides choices
-    paid_entirely_by_voucher = (order.voucher_applied >= order.total_due)
-    if paid_entirely_by_voucher:
-        refund_type = 'voucher'
+    # paid_entirely_by_voucher = (order.voucher_applied >= order.total_due)
+    # if paid_entirely_by_voucher:
+    #     refund_type = 'voucher'
 
     user_is_member = order.user is not None
+    # =========================================================================
+    # 🛑 SPECIAL CASE: UNPAID BANK HOLD (Hold_Pending)
+    # =========================================================================
+    if order.order_status == 'Hold_Pending' and not order.is_ordered:
+        try:
+            with transaction.atomic():
+                order = Order.objects.select_for_update().get(id=order.id)
+                
+                # 1. Restore physical inventory
+                for item in order.items.all():
+                    if item.product_variation and not item.product_variation.is_instant_eproduct:
+                        variation = item.product_variation
+                        variation.stock += item.quantity
+                        variation.save(update_fields=['stock'])
+
+                # 2. Restore voucher balance (ONLY what was applied)
+                if order.voucher_applied > 0:
+                    usage_rows = OrderVoucherUsage.objects.filter(order=order).select_related('voucher')
+                    for usage in usage_rows:
+                        voucher = usage.voucher
+                        voucher.balance += usage.amount_deducted
+                        voucher.is_used = False
+                        voucher.save(update_fields=['balance', 'is_used'])
+                        _record_voucher_ledger(voucher, usage.amount_deducted, 'REFUND_RESTORE', reference_order=order)
+
+                # 3. Mark order as cancelled
+                order.order_status = 'Cancelled'
+                order.save(update_fields=['order_status'])
+
+                # 4. 🌟 CRITICAL: Clear the ProformaInvoice hold so the dashboard badge clears!
+                ProformaInvoice.objects.filter(proforma_order_number=order.order_number).update(
+                    is_ordered=True, 
+                    order_settled=True 
+                )
+
+                # 5. Queue the notification email
+                from .tasks import send_bank_hold_cancelled_email_task
+                transaction.on_commit(lambda: send_bank_hold_cancelled_email_task.delay(order.id))
+
+            # Return successful JSON for the frontend
+            if request.headers.get('Content-Type') == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                response = JsonResponse({"status": "SUCCESS", "message": "Hold cancelled successfully."}, status=200)
+                response['HX-Trigger'] = json.dumps({"refreshDashboardCounters": True})
+                return response
+
+            messages.success(request, "Order hold cancelled. Inventory and vouchers released.｜訂單保留已取消，庫存與禮品券已釋出。")
+            return redirect('dashboard', subpage='orders') if request.user.is_authenticated else redirect('home')
+
+        except Exception as e:
+            logger.exception(f"💥 Hold Cancellation Exception: {str(e)}")
+            if request.headers.get('Content-Type') == 'application/json':
+                return JsonResponse({"status": "SERVER_ERROR", "error": str(e)}, status=500)
+            messages.error(request, f"System Error: {str(e)}")
+            return redirect('dashboard', subpage='orders')
 
     # =========================================================================
     # ⚡ BEGIN ATOMIC DATABASE TRANSACTION MATRIX (Section C-e)
@@ -1235,60 +1301,37 @@ def process_order_cancellation(request, order_number):
             reimbursement_voucher = None
             is_gift_voucher_revocation_required = False
 
-            # =========================================================================
-            # 💳 PATHWAY A: STORE VOUCHER CREDIT REIMBURSEMENT MATRIX (Section C-f-Voucher)
-            # =========================================================================
             if refund_type == 'voucher':
-                print("voucher refund")
-                net_voucher_refund_cny = max(decimal.Decimal('0.00'), order.total_due - total_cancellation_fee)
+                # (i-b / ii-a / iii): ALL Voucher Refund
+                # The total refundable amount is the sum of the voucher applied 
+                # AND the cash paid (which is stored in total_due).
+                total_paid_cny = order.voucher_applied + order.total_due
+                net_refund = max(decimal.Decimal('0.00'), total_paid_cny - total_cancellation_fee)
+                
+                # 1. Restore original vouchers
+                usage_rows = OrderVoucherUsage.objects.filter(order=order).select_related('voucher').order_by('created_at')
+                remaining_to_restore = net_refund
+                restored_to_existing = False
 
-                # 🌟 THE FIX: Identify whether the order was fully paid using store credits upfront
-                if paid_entirely_by_voucher:
-                    print('100pct by voucher logic patch engaged')
-                    # Use the actual amount subtracted during checkout as your baseline credit pool
-                    net_voucher_refund_cny = max(decimal.Decimal('0.00'), order.voucher_applied - total_cancellation_fee)
-                else:
-                    # Standard fallback for standard or mixed split-payment accounts
-                    net_voucher_refund_cny = max(decimal.Decimal('0.00'), order.total_due - total_cancellation_fee)
+                for usage in usage_rows:
+                    if remaining_to_restore <= 0:
+                        break
+                    restore_this = min(usage.amount_deducted, remaining_to_restore)
+                    original_voucher = usage.voucher
+
+                    original_voucher.balance += restore_this
+                    original_voucher.is_used = False
+                    original_voucher.save(update_fields=['balance', 'is_used'])
+                    _record_voucher_ledger(original_voucher, restore_this, 'REFUND_RESTORE', reference_order=order)
                     
-                print("net_voucher_refund_cny: ", net_voucher_refund_cny)
-        
-                if paid_entirely_by_voucher:
-                    print('100pct by voucher')
-                    # Case C-g-i: 100% Paid with store credit balance
+                    remaining_to_restore -= restore_this
+                    restored_to_existing = True
+
+                # 2. If cash was paid, issue a NEW voucher for the remaining cash portion
+                if remaining_to_restore > 0:
                     reimbursement_voucher = CustomerVoucher.objects.create(
-                        value=net_voucher_refund_cny,
-                        balance=net_voucher_refund_cny,
-                        purchaser_email=order.email,
-                        registered_email=order.email.lower() if user_is_member else None,
-                        owner=order.user if user_is_member else None,
-                        is_claimed=True if user_is_member else False,
-                        is_used=False,
-                        # 🌟 FIXED: Force instant wallet validation by bypassing default lock flags
-                        is_locked=False,
-                        locked_at=None,
-                        locked_by_session=None
-                    )
-                    voucher_refund_log = f" [100% Voucher Refund]: Restored face value of CNY {net_voucher_refund_cny:.2f} directly to member account."
-
-                elif voucher_refund_pool > 0 and cash_refund_pool > 0:
-                    # Case C-g-ii: Mixed Split Payment arrays
-                    # Step 1: Return the original spent voucher portion first after subtracting item fee metrics
-                    fee_deduction_remainder = total_cancellation_fee
-                    if voucher_refund_pool >= fee_deduction_remainder:
-                        net_voucher_return = voucher_refund_pool - fee_deduction_remainder
-                        fee_deduction_remainder = decimal.Decimal('0.00')
-                    else:
-                        fee_deduction_remainder -= voucher_refund_pool
-                        net_voucher_return = decimal.Decimal('0.00')
-
-                    # Step 2: Convert the cash remainder into a new credit voucher balance row
-                    net_cash_converted_to_voucher = max(decimal.Decimal('0.00'), cash_refund_pool - fee_deduction_remainder)
-                    total_combined_voucher_return = net_voucher_return + net_cash_converted_to_voucher
-
-                    reimbursement_voucher = CustomerVoucher.objects.create(
-                        value=total_combined_voucher_return,
-                        balance=total_combined_voucher_return,
+                        value=remaining_to_restore,
+                        balance=remaining_to_restore,
                         purchaser_email=order.email,
                         registered_email=order.email.lower() if user_is_member else None,
                         owner=order.user if user_is_member else None,
@@ -1296,49 +1339,29 @@ def process_order_cancellation(request, order_number):
                         is_used=False,
                         is_locked=False,
                         locked_at=None,
-                        locked_by_session=None
+                        locked_by_session=None,
+                        refunded_from_order=order,
+                        source='REFUND',
                     )
-                    voucher_refund_log = f" [Split-to-Voucher]: Returned total combined credit value of CNY {total_combined_voucher_return:.2f}."
+                    _record_voucher_ledger(reimbursement_voucher, remaining_to_restore, 'REFUND_NEW', reference_order=order)
+                    voucher_refund_log = f" [Voucher Refund]: Issued replacement voucher CNY {remaining_to_restore:.2f}."
+                elif restored_to_existing:
+                    voucher_refund_log = f" [Voucher Restore]: Restored CNY {net_refund:.2f} to original voucher(s)."
 
-                else:
-                    # Case C-g-iii: 100% Cash-to-Voucher Conversion Funnel (Both members and guests)
-                    reimbursement_voucher = CustomerVoucher.objects.create(
-                        value=net_voucher_refund_cny,
-                        balance=net_voucher_refund_cny,
-                        purchaser_email=order.email,
-                        registered_email=order.email.lower() if user_is_member else None,
-                        owner=order.user if user_is_member else None,
-                        is_claimed=True if user_is_member else False,
-                        is_used=False,
-                        is_locked=False,
-                        locked_at=None,
-                        locked_by_session=None
-                    )
-                    
-                    if user_is_member:
-                        voucher_refund_log = f" [Cash-to-Voucher Member]: Converted net cash portion into CNY {net_voucher_refund_cny:.2f} voucher."
-                    else:
-                        voucher_refund_log = f" [Cash-to-Voucher Guest]: Dispatched unclaimed conversion card voucher ID {reimbursement_voucher.id}."
-
-                # Case C-g-iv: Track gift voucher cancellations for 3rd-party transfers
-                # 🌟 FIXED: Implemented a robust null-safe guard evaluation pass
-                # This safely handles cases where recipient_email or order.email evaluates to None
+                # Gift voucher revocation logic...
                 buyer_email_clean = (order.email or "").strip().lower()
                 recipient_email_clean = (order.recipient_email or "").strip().lower()
+                is_gift_voucher_revocation_required = bool(
+                    recipient_email_clean and buyer_email_clean != recipient_email_clean
+                )
 
-                # Case C-g-iv: Track gift voucher cancellations for 3rd-party transfers safely
-                # If recipient_email exists and is distinct from the buyer, flag it for revocation
-                if recipient_email_clean and buyer_email_clean != recipient_email_clean:
-                    is_gift_voucher_revocation_required = True
-                else:
-                    is_gift_voucher_revocation_required = False                    
-
-            # =========================================================================
-            # 💳 PATHWAY B: ORIGINAL PATHWAY CASH RETOUR MATRIX (Section C-f-Cash)
-            # =========================================================================
-            else:
-                # Step 1: Always restore any spent voucher points back to members automatically (Section C-h-i)
+            else: # refund_type == 'cash'
+                # (i-a / ii-b): Refund to Original Methods (Cash + Voucher)
+                
+                # 1. Deduct fee from voucher first, then cash
                 fee_balance_to_deduct = total_cancellation_fee
+                net_voucher_restored = decimal.Decimal('0.00')
+                
                 if voucher_refund_pool > 0:
                     if voucher_refund_pool >= fee_balance_to_deduct:
                         net_voucher_restored = voucher_refund_pool - fee_balance_to_deduct
@@ -1346,34 +1369,31 @@ def process_order_cancellation(request, order_number):
                     else:
                         fee_balance_to_deduct -= voucher_refund_pool
                         net_voucher_restored = decimal.Decimal('0.00')
-                    
-                    if net_voucher_restored > 0:
-                        reimbursement_voucher = CustomerVoucher.objects.create(
-                            value=net_voucher_restored,
-                            balance=net_voucher_restored,
-                            purchaser_email=order.email,
-                            registered_email=order.email.lower(),
-                            owner=order.user,
-                            is_claimed=True,
-                            is_used=False,
-                            is_locked=False,
-                            locked_at=None,
-                            locked_by_session=None                            
-                        )
-                        voucher_refund_log += f" [Voucher Restored]: Returned CNY {net_voucher_restored:.2f} straight to member account wallet."
 
-                # Step 2: Compute net out-of-pocket cash returns with 5% admin fee factored in (Section C-h-b)
+                if net_voucher_restored > 0:
+                    usage_rows = OrderVoucherUsage.objects.filter(order=order).select_related('voucher').order_by('created_at')
+                    remaining = net_voucher_restored
+                    for usage in usage_rows:
+                        if remaining <= 0:
+                            break
+                        restore_this = min(usage.amount_deducted, remaining)
+                        original_voucher = usage.voucher
+                        original_voucher.balance += restore_this
+                        original_voucher.is_used = False
+                        original_voucher.save(update_fields=['balance', 'is_used'])
+                        _record_voucher_ledger(original_voucher, restore_this, 'REFUND_RESTORE', reference_order=order)
+                        remaining -= restore_this
+                    voucher_refund_log += f" [Voucher Restore]: Returned CNY {net_voucher_restored:.2f} to original voucher(s)."
+
+                # 2. Apply transaction fee to the cash portion
                 net_cash_pool_cny = max(decimal.Decimal('0.00'), cash_refund_pool - fee_balance_to_deduct)
                 
                 if net_cash_pool_cny > 0:
-                    # Formula: (Cash remainder - cancellation fee remainder) * 95% net payout ratio
+                    # Apply the admin fee (e.g., 5%) to the cash refund
                     admin_fee_rate = decimal.Decimal('0.05')
                     net_cash_refund_base = net_cash_pool_cny * (decimal.Decimal('1.00') - admin_fee_rate)
-                    
-                    # Convert values accurately into active checkout denominations
                     net_cash_refund_foreign = net_cash_refund_base * exchange_rate
                     
-                    # Execute explicit regional integer currency rounding logic rules
                     if currency.upper() in INTEGER_CURRENCIES:
                         net_cash_refund_foreign = net_cash_refund_foreign.quantize(decimal.Decimal('1'), rounding=decimal.ROUND_HALF_UP)
                         display_format = f"{net_cash_refund_foreign:.0f}"

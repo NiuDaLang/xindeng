@@ -1,4 +1,4 @@
-# orders.admin.py
+# orders/admin.py
 from datetime import timedelta
 from .models import Payment, OrderVoucherUsage, Order, OrderProduct, OrderInquiry
 from store.models import DigitalDownloadToken
@@ -19,6 +19,7 @@ from .tasks import (
 from django.urls import reverse
 import decimal
 from settlements.admin import create_settlement_lines_for_selected_orders
+from .utils import _record_voucher_ledger
 
 
 @admin.register(Payment)
@@ -190,6 +191,7 @@ def confirm_bank_payment_admin_action(modeladmin, request, queryset):
                                 claimed_date=None if is_gift else timezone.now(),
                                 is_used=False
                             )
+                            _record_voucher_ledger(voucher, voucher.value, 'TOPUP')
                             if is_gift:
                                 reg_link = request.build_absolute_uri(reverse('claim_voucher_url', args=[str(voucher.id)]))
                                 transaction.on_commit(

@@ -17,7 +17,7 @@ from django.db import transaction
 from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.contrib.humanize.templatetags.humanize import intcomma
-from accounts.models import CustomerVoucher
+from accounts.models import CustomerVoucher, VoucherLedger
 from store.models import DigitalDownloadToken
 from django.db.models import F
 
@@ -1367,3 +1367,24 @@ def allocate_platform_perk(order, perk):
     order.save(update_fields=['discount'])
 
     return raw_discount, len(participating)
+
+
+def _record_voucher_ledger(voucher, amount, entry_type, reference_order=None):
+    """
+    Write one row to the VoucherLedger.
+
+    Called whenever a voucher's balance changes. balance_after is read
+    from the voucher AFTER the caller has saved the new balance — the
+    caller is responsible for save() ordering; this helper does not
+    re-save the voucher. That separation keeps the voucher.save() and
+    the ledger write in the same atomic block as the surrounding
+    transaction (both in checkout and cancellation, the caller is
+    already inside transaction.atomic()).
+    """
+    VoucherLedger.objects.create(
+        voucher=voucher,
+        amount=amount,
+        balance_after=voucher.balance,
+        entry_type=entry_type,
+        reference_order=reference_order,
+    )

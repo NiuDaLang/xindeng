@@ -1,7 +1,7 @@
 # accounts/admin.py
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import UserProfile, UserProductList, Perk, CustomerVoucher, Address, Perk, UserPerk, ChatMessage, AdminTrapHit, LoginEvent
+from .models import UserProfile, UserProductList, Perk, CustomerVoucher, Address, Perk, UserPerk, ChatMessage, AdminTrapHit, LoginEvent, VoucherLedger
 from django.utils.html import format_html
 from .evaluators import PerkEvaluator
 from accounts.models import CampaignAnnouncement
@@ -206,3 +206,39 @@ class CampaignAnnouncementAdmin(admin.ModelAdmin):
             request,
             f"Queued {queued} announcement(s) for dispatch.",
         )
+
+
+@admin.register(VoucherLedger)
+class VoucherLedgerAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'voucher_link', 'entry_type', 'amount', 'balance_after', 'reference_order_link')
+    list_filter = ('entry_type', 'created_at')
+    search_fields = ('voucher__id', 'reference_order__order_number', 'voucher__purchaser_email')
+    readonly_fields = ('voucher', 'amount', 'balance_after', 'entry_type', 'reference_order', 'created_at')
+    
+    def voucher_link(self, obj):
+        if obj.voucher:
+            from django.urls import reverse
+            from django.utils.html import format_html
+            url = reverse('admin:accounts_customervoucher_change', args=[obj.voucher.id])
+            return format_html('<a href="{}">{}</a>', url, str(obj.voucher.id)[:8])
+        return "-"
+    voucher_link.short_description = "Voucher ID"
+
+    def reference_order_link(self, obj):
+        if obj.reference_order:
+            from django.urls import reverse
+            from django.utils.html import format_html
+            url = reverse('admin:orders_order_change', args=[obj.reference_order.id])
+            return format_html('<a href="{}">{}</a>', url, obj.reference_order.order_number)
+        return "-"
+    reference_order_link.short_description = "Order"
+
+    # Protect the immutable audit log
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

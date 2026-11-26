@@ -144,7 +144,13 @@
                 <div class="flex flex-col gap-2 pt-1">
                     <!-- LIFECYCLE CHRONO GATE: ALLOW SELF CANCELLATIONS STRICTLY ON SAFE STATUS HOOKS -->
                     {% if order.can_be_cancelled_online %}
-                        <button onclick="triggerOrderCancellation('{{ order.order_number }}', '{{ order.total_due }}')" class="btn btn-sm btn-error btn-outline font-sans text-xs rounded-lg w-full shadow-sm tracking-wide">
+                        <button onclick="triggerOrderCancellation(
+                            '{{ order.order_number }}', 
+                            '{{ order.total_due }}', 
+                            '{{ order.voucher_applied }}', 
+                            '{{ order.is_ordered|yesno:'true,false' }}', 
+                            '{{ order.estimated_cancellation_fee }}'
+                            )" class="btn btn-sm btn-error btn-outline font-sans text-xs rounded-lg w-full shadow-sm tracking-wide">
                             Cancel Order｜取消訂單
                         </button>
                     {% else %}

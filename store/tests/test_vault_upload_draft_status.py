@@ -1,15 +1,42 @@
 # store/tests/test_vault_upload_draft_status.py
 """
-Tests for the DRAFT status on ArtisanVaultUpload.
+Tests for the DRAFT status on ArtisanVaultUpload, and the submit /
+withdraw lifecycle that moves rows between DRAFT and PENDING.
 
-The file has two halves. The first half pins the two
-draft_staged_count properties. The second half pins the status a new
-upload starts in, from the variation-upload view (DRAFT for every
-upload that reaches it) and the order-product-scoped sibling (PENDING
-unconditionally). The promotion of DRAFT → PENDING on submit and the
-demotion on withdraw are a later commit and are not covered here. Testing the counters
-first pins the read side before the write side exists, so a later
-change to the promotion cannot silently break the badge.
+The file has four parts:
+
+  1. The two draft_staged_count properties (per-variation and per-
+     product aggregate). These pin the read side before the write
+     side exists, so a later change to promotion cannot silently
+     break the badge.
+
+  2. The status a new upload starts in, from the variation-upload
+     view (DRAFT for every upload that reaches it) and the
+     order-product-scoped sibling (PENDING unconditionally).
+
+  3. The submit / withdraw lifecycle: the pre-submit deliverability
+     guard on both submit paths, the DRAFT → PENDING promotion on
+     submit (atomic with the product status flip), and the symmetric
+     PENDING → DRAFT demotion on withdraw.
+
+  4. A comparison test across the two submit entry points
+     (dashboard_product_submit and dashboard_product_edit's
+     save_and_submit action), pinning that they agree on both the
+     refusal and the success outcomes. A test that walked only one
+     path would pass while the other drifted.
+
+The guard tests exercise a stack of three pre-submit checks in
+order — is_editable_by_artisan, the A2 featured-image requirement,
+_sellable_variations (at least one is_available=True variation with
+stock), and _missing_instant_deliverables (every is_available=True
+variation on an INSTANT digital product has a live file or a
+DRAFT/PENDING upload). A test targeting the deliverability guard
+must therefore satisfy the sellable-variations guard above it: a
+product whose only variation is withdrawn trips _sellable_variations
+first, so the test for "a withdrawn variation is not a delivery
+obligation" uses two_variation_chain with the second variation left
+available. This ordering is why the fixtures here are slightly
+heavier than a per-test minimal fixture would be.
 
 Mirrors test_vault_upload_badge.py's shape, including the
 two-variation fixture, so the aggregate (Product) and the
@@ -854,20 +881,26 @@ class TestPreSubmitGuard:
         assert chain["product"].status == "Pending"
 
     def test_unavailable_variation_is_not_required_to_have_a_file(
-        self, client, artisan_chain, vault_root_for_draft,
+        self, client, two_variation_chain, vault_root_for_draft,
     ):
         """
         A withdrawn variation is not a delivery obligation. The guard
         filters on is_available=True so a variation the artisan has
-        set aside does not block submission.
+        set aside does not block submission — provided the product still
+        has a sellable variation, which the sellable-variations guard
+        (a separate guard, above the deliverability one) requires.
         """
         from store.models import ProductVariation
 
-        chain = artisan_chain
-        ProductVariation.objects.filter(pk=chain["variation"].pk).update(
+        chain = two_variation_chain
+        # Withdraw variation_a. variation_b remains available and carries
+        # a DRAFT upload, so the sellable guard passes and the
+        # deliverability guard is the one under test.
+        ProductVariation.objects.filter(pk=chain["variation_a"].pk).update(
             is_available=False,
         )
-        chain["variation"].refresh_from_db()
+        chain["variation_a"].refresh_from_db()
+        _make_upload(chain, chain["variation_b"], status_value="DRAFT", name="b.pdf")
         client.force_login(chain["user"])
 
         self._submit_via_standalone(client, chain)
