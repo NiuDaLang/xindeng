@@ -1,20 +1,12 @@
-# creators.models.py
+# creators/models.py
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
 from taggit_selectize.managers import TaggableManager
-from accounts.data import DESTINATIONS_MAINLAND_CHINA
-from pypinyin import slug as pinyin_slug  # add at top
-
-# creators/models.py
-from django.db import models
-from django.conf import settings
-from django.urls import reverse
-from django.utils.text import slugify
 from django.core.exceptions import ValidationError
-
 from accounts.data import DESTINATIONS_MAINLAND_CHINA
+from pypinyin import slug as pinyin_slug
 
 
 class CraftType(models.Model):
